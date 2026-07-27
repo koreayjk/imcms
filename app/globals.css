@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-paper text-ink;
+}
+
+/* 상태 배지 — 기능이 한눈에 보이는 것이 우선 */
+.status-badge {
+  @apply inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium;
+}
+.status-draft { @apply bg-draft/10 text-draft; }
+.status-in_review { @apply bg-review/10 text-review; }
+.status-published { @apply bg-published/10 text-published; }
+.status-rejected { @apply bg-danger/10 text-danger; }
