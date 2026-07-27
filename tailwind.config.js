@@ -18,7 +18,8 @@ module.exports = {
         danger: '#b3392c',
       },
       fontFamily: {
-        sans: ['-apple-system', 'Pretendard', 'sans-serif'],
+        sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        serif: ['Georgia', 'Batang', 'serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
       },
     },

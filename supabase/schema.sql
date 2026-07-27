@@ -145,6 +145,20 @@ create policy "media_assets_select" on media_assets for select to authenticated 
 create policy "media_assets_insert" on media_assets for insert to authenticated with check (true);
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 공개 신문 사이트용 익명(anon) 읽기 권한
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+-- 발행된 기사는 로그인 없이 누구나 읽을 수 있음
+create policy "public_articles_select" on articles for select to anon
+  using (status = 'published');
+
+-- 카테고리·매체·작성자 정보도 공개
+create policy "public_categories_select" on categories for select to anon using (true);
+create policy "public_outlets_select"    on outlets    for select to anon using (true);
+create policy "public_profiles_select"   on profiles   for select to anon using (true);
+create policy "public_media_select"      on media_assets for select to anon using (true);
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- 초기 데이터 예시 (Supabase SQL 에디터에서 직접 실행)
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- insert into outlets (name, domain) values ('뉴미디어타임즈', 'newmdtimes.com');
