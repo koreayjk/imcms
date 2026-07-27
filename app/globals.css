@@ -8,9 +8,27 @@ body {
 
 /* 상태 배지 — 기능이 한눈에 보이는 것이 우선 */
 .status-badge {
-  @apply inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium;
+  @apply inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium leading-none;
 }
-.status-draft { @apply bg-draft/10 text-draft; }
+.status-draft     { @apply bg-draft/10 text-draft; }
 .status-in_review { @apply bg-review/10 text-review; }
 .status-published { @apply bg-published/10 text-published; }
-.status-rejected { @apply bg-danger/10 text-danger; }
+.status-rejected  { @apply bg-danger/10 text-danger; }
+
+/* 기사 본문 렌더링 */
+.article-body { @apply text-sm leading-7 whitespace-pre-wrap; }
+
+/* 입력 공통 */
+.field-input {
+  @apply w-full rounded border border-line px-3 py-2 text-sm
+    focus:outline-none focus:border-ink placeholder:text-line transition-colors;
+}
+.field-label { @apply block text-xs font-medium text-muted mb-1.5; }
+
+/* 버튼 공통 */
+.btn        { @apply rounded px-4 py-2 text-sm font-medium disabled:opacity-40 transition-opacity; }
+.btn-primary   { @apply btn bg-ink text-white hover:opacity-90; }
+.btn-secondary { @apply btn border border-line hover:bg-line/50; }
+.btn-review    { @apply btn bg-review text-white hover:opacity-90; }
+.btn-publish   { @apply btn bg-published text-white hover:opacity-90; }
+.btn-danger    { @apply btn bg-danger text-white hover:opacity-90; }
