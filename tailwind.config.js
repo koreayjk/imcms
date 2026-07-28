@@ -17,7 +17,8 @@ module.exports = {
         published: '#1e7d4d',  // 발행됨
         danger: '#b3392c',
         accent: '#c41c1c',
-        navy:   '#0a2540',
+        navy:   '#003377',
+        'navy-dark': '#002255',
       },
       fontFamily: {
         sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
