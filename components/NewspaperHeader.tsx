@@ -13,62 +13,63 @@ export default function NewspaperHeader({ siteName, categories, currentCategoryS
   })
 
   return (
-    <header className="border-b-2 border-ink">
-      {/* 상단: 날짜 + 사이트명 */}
-      <div className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-end justify-between">
-          <p className="text-xs text-muted">{today}</p>
-          <Link href="/" className="text-xs text-muted hover:text-ink">
-            CMS 관리 →
+    <header>
+      {/* 상단 유틸리티 바 */}
+      <div className="bg-navy text-white">
+        <div className="mx-auto max-w-[1100px] px-4 h-9 flex items-center justify-between">
+          <p className="text-xs text-gray-400">{today}</p>
+          <Link href="/login" className="text-xs text-gray-400 hover:text-white transition-colors">
+            편집국 로그인 →
           </Link>
         </div>
       </div>
 
       {/* 마스트헤드 */}
-      <div className="mx-auto max-w-6xl px-4 py-5 text-center">
-        <Link href="/" className="inline-block">
-          <h1 className="text-4xl font-bold tracking-tight leading-none">{siteName}</h1>
-        </Link>
-        <p className="mt-1 text-xs text-muted tracking-widest uppercase">
-          News · Media · Community
-        </p>
+      <div className="bg-white border-b-2 border-ink">
+        <div className="mx-auto max-w-[1100px] px-4 py-5 flex items-end justify-between gap-4">
+          <Link href="/" className="block">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-none">{siteName}</h1>
+            <p className="mt-1 text-[10px] text-muted tracking-[0.2em] uppercase">News · Media · Community</p>
+          </Link>
+          <p className="hidden md:block text-xs text-muted text-right pb-1">
+            정확하고 빠른 뉴스
+          </p>
+        </div>
       </div>
 
-      {/* 카테고리 네비게이션 */}
-      {categories.length > 0 && (
-        <nav className="border-t border-line">
-          <div className="mx-auto max-w-6xl px-4">
-            <ul className="flex items-center gap-0 overflow-x-auto">
-              <li>
+      {/* 카테고리 네비게이션 — sticky */}
+      <nav className="bg-white border-b border-line shadow-sm sticky top-0 z-20">
+        <div className="mx-auto max-w-[1100px] px-4">
+          <ul className="flex items-center overflow-x-auto scrollbar-hide">
+            <li>
+              <Link
+                href="/"
+                className={`inline-block px-4 py-3 text-sm border-b-[3px] whitespace-nowrap transition-colors ${
+                  !currentCategorySlug
+                    ? 'border-ink font-bold text-ink'
+                    : 'border-transparent text-muted hover:text-ink hover:border-line'
+                }`}
+              >
+                전체
+              </Link>
+            </li>
+            {categories.map((cat) => (
+              <li key={cat.id}>
                 <Link
-                  href="/"
-                  className={`inline-block px-3 py-2.5 text-sm border-b-2 transition-colors ${
-                    !currentCategorySlug
-                      ? 'border-ink font-semibold'
+                  href={`/?category=${cat.slug}`}
+                  className={`inline-block px-4 py-3 text-sm border-b-[3px] whitespace-nowrap transition-colors ${
+                    currentCategorySlug === cat.slug
+                      ? 'border-review text-review font-bold'
                       : 'border-transparent text-muted hover:text-ink hover:border-line'
                   }`}
                 >
-                  전체
+                  {cat.name}
                 </Link>
               </li>
-              {categories.map((cat) => (
-                <li key={cat.id}>
-                  <Link
-                    href={`/?category=${cat.slug}`}
-                    className={`inline-block px-3 py-2.5 text-sm border-b-2 transition-colors whitespace-nowrap ${
-                      currentCategorySlug === cat.slug
-                        ? 'border-ink font-semibold'
-                        : 'border-transparent text-muted hover:text-ink hover:border-line'
-                    }`}
-                  >
-                    {cat.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </nav>
-      )}
+            ))}
+          </ul>
+        </div>
+      </nav>
     </header>
   )
 }

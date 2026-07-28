@@ -18,6 +18,18 @@ body {
 /* 기사 본문 렌더링 */
 .article-body { @apply text-sm leading-7 whitespace-pre-wrap; }
 
+/* 신문 섹션 타이틀 */
+.section-title {
+  @apply text-sm font-bold uppercase tracking-widest border-b-[3px] border-ink pb-1.5 mb-4;
+}
+.section-title-sm {
+  @apply text-xs font-bold uppercase tracking-widest border-b-2 border-ink pb-1 mb-3;
+}
+.section-title-blue {
+  @apply section-title border-review;
+  color: theme('colors.review');
+}
+
 /* 입력 공통 */
 .field-input {
   @apply w-full rounded border border-line px-3 py-2 text-sm

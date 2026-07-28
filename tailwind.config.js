@@ -16,6 +16,8 @@ module.exports = {
         review: '#2d6ca8',     // 검토중
         published: '#1e7d4d',  // 발행됨
         danger: '#b3392c',
+        accent: '#c41c1c',
+        navy:   '#0a2540',
       },
       fontFamily: {
         sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
