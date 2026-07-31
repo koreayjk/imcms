@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IM CMS — 언론사 전용 뉴스 편집 시스템</title>
+<meta name="description" content="NDsoft·Mediaon을 대체하는 자체 언론사 CMS. 월 0원으로 기사 작성·편집·발행·독자 사이트 운영.">
+<style>
+/* ── TOKENS ── */
+:root {
+  --ink:     #1A1A1A;
+  --paper:   #F7F5F1;
+  --gold:    #B8922A;
+  --gold-lt: #F2E4BB;
+  --muted:   #747474;
+  --rule:    #E0DBD4;
+  --card:    #FFFFFF;
+  --dark:    #111111;
+  --dark2:   #1C1C1C;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink:   #EDE8E0;
+    --paper: #141414;
+    --gold:  #D4AA40;
+    --gold-lt:#3A2E10;
+    --muted: #888888;
+    --rule:  #2C2C2C;
+    --card:  #1E1E1E;
+    --dark:  #0A0A0A;
+    --dark2: #181818;
+  }
+}
+:root[data-theme="dark"] {
+  --ink:   #EDE8E0;
+  --paper: #141414;
+  --gold:  #D4AA40;
+  --gold-lt:#3A2E10;
+  --muted: #888888;
+  --rule:  #2C2C2C;
+  --card:  #1E1E1E;
+  --dark:  #0A0A0A;
+  --dark2: #181818;
+}
+:root[data-theme="light"] {
+  --ink:     #1A1A1A;
+  --paper:   #F7F5F1;
+  --gold:    #B8922A;
+  --gold-lt: #F2E4BB;
+  --muted:   #747474;
+  --rule:    #E0DBD4;
+  --card:    #FFFFFF;
+  --dark:    #111111;
+  --dark2:   #1C1C1C;
+}
+
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;font-family:inherit;font-size:inherit}
+
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px}
+
+/* ── NAV ── */
+.nav{background:var(--dark);position:sticky;top:0;z-index:200}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-logo{font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:bold;color:#fff;letter-spacing:-.01em}
+.nav-logo span{color:var(--gold)}
+.nav-right{display:flex;align-items:center;gap:24px}
+.nav-link{font-size:12.5px;color:rgba(255,255,255,.45);letter-spacing:.02em;transition:color .15s}
+.nav-link:hover{color:#fff}
+.nav-cta{background:var(--gold);color:#fff;padding:8px 20px;font-size:12.5px;font-weight:700;letter-spacing:.04em;transition:opacity .15s}
+.nav-cta:hover{opacity:.85}
+
+/* ── HERO ── */
+.hero{background:var(--dark);color:#fff;padding:0 0 0}
+.hero-rule{height:2px;background:var(--gold);width:100%}
+.hero-inner{padding:88px 0 92px;display:grid;grid-template-columns:1fr 420px;gap:80px;align-items:center}
+
+.hero-kicker{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:28px}
+.hero-kicker::before{content:'';display:block;width:24px;height:1px;background:var(--gold)}
+
+.hero-h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(32px,4.2vw,52px);font-weight:bold;line-height:1.18;letter-spacing:-.03em;text-wrap:balance;margin-bottom:22px}
+.hero-h1 strong{color:var(--gold);font-style:italic}
+
+.hero-p{font-size:15px;color:rgba(255,255,255,.6);line-height:1.85;margin-bottom:40px;max-width:440px}
+
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn-gold{background:var(--gold);color:#fff;padding:14px 30px;font-size:13.5px;font-weight:700;letter-spacing:.03em;transition:opacity .15s}
+.btn-gold:hover{opacity:.85}
+.btn-outline{background:transparent;color:rgba(255,255,255,.7);padding:14px 30px;font-size:13.5px;font-weight:600;border:1px solid rgba(255,255,255,.2);transition:all .15s}
+.btn-outline:hover{border-color:rgba(255,255,255,.5);color:#fff}
+
+/* price panel */
+.price-panel{border:1px solid rgba(255,255,255,.1);padding:40px 36px}
+.price-panel-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:32px;display:flex;align-items:center;gap:10px}
+.price-panel-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1)}
+
+.price-item{margin-bottom:24px}
+.price-item-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px}
+.price-item-val{font-family:Georgia,serif;font-variant-numeric:tabular-nums}
+.price-old{font-size:28px;text-decoration:line-through;color:rgba(255,255,255,.22)}
+.price-divider{height:1px;background:rgba(255,255,255,.08);margin:24px 0}
+.price-new{font-size:68px;font-weight:bold;color:var(--gold);line-height:1}
+.price-new-unit{font-size:13px;color:rgba(255,255,255,.3);margin-top:6px;letter-spacing:.06em}
+.price-badge{display:inline-block;margin-top:20px;background:rgba(184,146,42,.15);border:1px solid rgba(184,146,42,.3);color:var(--gold);padding:7px 16px;font-size:11.5px;font-weight:700;letter-spacing:.04em}
+
+/* ── SECTION BASE ── */
+.sec{padding:88px 0;border-bottom:1px solid var(--rule)}
+.sec:last-of-type{border-bottom:none}
+.kicker{font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.kicker::before{content:'';display:block;width:20px;height:1px;background:var(--gold)}
+.sec-h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(22px,2.8vw,36px);font-weight:bold;line-height:1.25;letter-spacing:-.025em;text-wrap:balance;margin-bottom:12px}
+.sec-p{font-size:14.5px;color:var(--muted);max-width:520px;line-height:1.8;margin-bottom:52px}
+
+/* ── FEATURES ── */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.feat{background:var(--card);padding:32px 28px;transition:background .2s}
+.feat:hover{background:color-mix(in srgb,var(--gold) 3%,var(--card))}
+.feat-num{font-family:Georgia,serif;font-size:11px;font-weight:bold;letter-spacing:.1em;color:var(--gold);margin-bottom:20px;opacity:.8}
+.feat-title{font-size:15px;font-weight:700;margin-bottom:9px;letter-spacing:-.01em}
+.feat-desc{font-size:13px;color:var(--muted);line-height:1.75}
+
+/* ── WORKFLOW ── */
+.sec-dark{background:var(--dark2);border-bottom:none;padding:88px 0}
+.sec-dark .kicker{color:var(--gold)}
+.sec-dark .sec-h2{color:#fff}
+.sec-dark .sec-p{color:rgba(255,255,255,.5)}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);position:relative;margin-top:12px}
+.flow-connector{position:absolute;top:32px;left:0;right:0;height:1px;background:rgba(255,255,255,.08);z-index:0}
+.flow-item{padding:28px 24px;position:relative;z-index:1;border-left:1px solid rgba(255,255,255,.07)}
+.flow-item:first-child{border-left:none}
+.flow-dot{width:10px;height:10px;border-radius:50%;background:var(--gold);margin-bottom:20px;position:relative}
+.flow-dot::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:rgba(184,146,42,.15)}
+.flow-label{font-size:9.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px}
+.flow-title{font-size:15.5px;font-weight:700;color:#fff;margin-bottom:8px}
+.flow-desc{font-size:12.5px;color:rgba(255,255,255,.45);line-height:1.7}
+
+/* ── COMPARISON ── */
+.cmp-wrap{overflow-x:auto;margin-top:48px;border:1px solid var(--rule)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+thead th{padding:14px 22px;text-align:left;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid var(--rule)}
+.th-feat{color:var(--muted)}
+.th-us{background:var(--dark);color:var(--gold);text-align:center}
+.th-them{color:var(--muted);text-align:center}
+tbody td{padding:13px 22px;border-bottom:1px solid var(--rule)}
+.td-feat{color:var(--ink)}
+.td-us{background:color-mix(in srgb,var(--dark) 4%,var(--card));text-align:center;font-weight:700}
+.td-them{text-align:center;color:var(--muted)}
+.ck{color:var(--gold);font-weight:700;font-size:15px}
+.cx{font-size:12px;color:#C0B9B0}
+.cp{font-size:11.5px;color:#B07020;font-weight:700}
+.hl-row td{background:var(--gold-lt) !important}
+.hl-row .td-us{background:color-mix(in srgb,var(--gold) 12%,var(--card)) !important}
+.price-old-cell{text-decoration:line-through;opacity:.4;font-family:Georgia,serif;font-variant-numeric:tabular-nums;font-size:15px}
+.price-new-cell{font-family:Georgia,serif;font-variant-numeric:tabular-nums;font-size:20px;font-weight:bold;color:var(--gold)}
+
+/* ── TECH ── */
+.tech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:48px}
+.tech-item{background:var(--card);padding:28px 24px;transition:background .2s}
+.tech-item:hover{background:color-mix(in srgb,var(--gold) 3%,var(--card))}
+.tech-badge{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border:1px solid var(--rule);color:var(--muted);margin-bottom:16px}
+.tech-name{font-size:15px;font-weight:700;margin-bottom:7px;letter-spacing:-.01em}
+.tech-desc{font-size:12.5px;color:var(--muted);line-height:1.7}
+
+/* ── CTA ── */
+.cta{background:var(--dark);color:#fff;padding:100px 32px;text-align:center;border-bottom:none}
+.cta-h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(26px,4vw,46px);font-weight:bold;text-wrap:balance;line-height:1.2;letter-spacing:-.03em;margin-bottom:16px}
+.cta-h2 em{font-style:italic;color:var(--gold)}
+.cta-p{font-size:15px;color:rgba(255,255,255,.5);margin-bottom:44px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.8}
+.cta-note{margin-top:18px;font-size:11.5px;color:rgba(255,255,255,.25);letter-spacing:.04em}
+.cta-rule{width:40px;height:1px;background:var(--gold);margin:0 auto 36px}
+
+/* ── FOOTER ── */
+footer{background:var(--dark);border-top:1px solid rgba(255,255,255,.06);padding:28px 0;font-size:12px;color:rgba(255,255,255,.28)}
+.foot-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.foot-logo{font-family:Georgia,serif;font-size:15px;font-weight:bold;color:#fff}
+.foot-logo span{color:var(--gold)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:860px){
+  .hero-inner{grid-template-columns:1fr;gap:48px;padding:64px 0 68px}
+  .feat-grid{grid-template-columns:repeat(2,1fr)}
+  .flow{grid-template-columns:repeat(2,1fr)}
+  .flow-connector{display:none}
+  .tech-grid{grid-template-columns:repeat(2,1fr)}
+  .nav-link{display:none}
+}
+@media(max-width:520px){
+  .feat-grid,.tech-grid{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr}
+  .price-new{font-size:52px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <div class="nav-logo">IM<span>CMS</span></div>
+    <div class="nav-right">
+      <a href="#features" class="nav-link">기능</a>
+      <a href="#compare" class="nav-link">비교</a>
+      <a href="#cta" class="nav-link">상담</a>
+      <button class="nav-cta">상담 신청</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-rule"></div>
+  <div class="wrap">
+    <div class="hero-inner">
+
+      <div>
+        <div class="hero-kicker">언론사 전용 CMS 솔루션</div>
+        <h1 class="hero-h1">
+          뉴스룸을<br>
+          <strong>직접 소유</strong>하는<br>
+          시대가 왔습니다
+        </h1>
+        <p class="hero-p">
+          NDsoft·Mediaon에 매달 25만원을 내던 시대는 끝났습니다.<br>
+          기자·편집장 워크플로우부터 공개 신문 사이트까지,<br>
+          현대적인 기술로 더 빠르고, 더 자유롭게.
+        </p>
+        <div class="hero-btns">
+          <button class="btn-gold">상담 신청하기</button>
+          <button class="btn-outline">기능 살펴보기 ↓</button>
+        </div>
+      </div>
+
+      <div class="price-panel">
+        <div class="price-panel-title">월 운영 비용 비교</div>
+        <div class="price-item">
+          <div class="price-item-label">기존 NDsoft / Mediaon</div>
+          <div class="price-item-val price-old">₩250,000</div>
+        </div>
+        <div class="price-divider"></div>
+        <div class="price-item">
+          <div class="price-item-label">IM CMS</div>
+          <div class="price-item-val price-new">₩0</div>
+          <div class="price-new-unit">PER MONTH</div>
+        </div>
+        <div class="price-badge">연간 ₩3,000,000 절감</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="sec" id="features">
+  <div class="wrap">
+    <div class="kicker">주요 기능</div>
+    <h2 class="sec-h2">편집국에 필요한 모든 것</h2>
+    <p class="sec-p">기자부터 편집국장까지, 실제 뉴스룸 현장에서 필요한 기능을 처음부터 설계했습니다.</p>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="feat-num">01</div>
+        <div class="feat-title">기사 작성 &amp; 발행</div>
+        <div class="feat-desc">제목·리드문·본문·썸네일·태그 설정. 예약 발행, 즉시 발행, 임시저장. Ctrl+S 단축키 지원.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">02</div>
+        <div class="feat-title">검토 &amp; 승인 워크플로우</div>
+        <div class="feat-desc">기자 작성 → 검토 요청 → 편집장 승인·반려 → 자동 발행. 반려 사유 기록 및 피드백 전달.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">03</div>
+        <div class="feat-title">역할별 권한 관리</div>
+        <div class="feat-desc">기자·편집장·관리자 역할 완전 분리. 기자는 본인 기사만, 편집장은 전체. 데이터베이스 수준 보안.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">04</div>
+        <div class="feat-title">공개 신문 사이트</div>
+        <div class="feat-desc">속보 티커·카테고리 네비·주요기사·최신기사·많이 본 기사 자동 구성. 독자 전용 반응형 UI.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">05</div>
+        <div class="feat-title">다매체 운영 지원</div>
+        <div class="feat-desc">하나의 시스템으로 여러 신문사·방송사 동시 운영. 매체별 카테고리·기자·기사 완전 분리 관리.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-num">06</div>
+        <div class="feat-title">SEO &amp; 공유 최적화</div>
+        <div class="feat-desc">기사마다 OG 태그 자동 생성. 메타 제목·설명 개별 설정. 카카오·네이버·트위터 공유 최적화.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKFLOW -->
+<section class="sec-dark">
+  <div class="wrap">
+    <div class="kicker">편집 프로세스</div>
+    <h2 class="sec-h2">기자부터 발행까지, 자동으로</h2>
+    <p class="sec-p">현장 편집국 워크플로우를 그대로 시스템으로. 사람이 하던 단계를 버튼 하나로.</p>
+    <div class="flow">
+      <div class="flow-connector"></div>
+      <div class="flow-item">
+        <div class="flow-dot"></div>
+        <div class="flow-label">기자</div>
+        <div class="flow-title">기사 작성</div>
+        <div class="flow-desc">제목·본문·이미지·카테고리 입력 후 초안 저장. 언제든 수정 가능.</div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-dot"></div>
+        <div class="flow-label">기자</div>
+        <div class="flow-title">검토 요청</div>
+        <div class="flow-desc">버튼 클릭 한 번으로 편집장에게 검토 요청 전송. 상태 자동 변경.</div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-dot"></div>
+        <div class="flow-label">편집장</div>
+        <div class="flow-title">승인 / 반려</div>
+        <div class="flow-desc">기사 검토 후 승인 또는 반려. 반려 시 사유 기록, 기자에게 자동 전달.</div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-dot"></div>
+        <div class="flow-label">시스템</div>
+        <div class="flow-title">자동 발행</div>
+        <div class="flow-desc">승인 즉시 공개 사이트 게재. 예약 발행 시 지정 시각에 자동 업로드.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="sec" id="compare">
+  <div class="wrap">
+    <div class="kicker">비교 분석</div>
+    <h2 class="sec-h2">NDsoft vs IM CMS</h2>
+    <p class="sec-p">기능은 같거나 더 많고, 비용은 0원. 데이터도 우리 것.</p>
+    <div class="cmp-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="th-feat" style="width:44%">항목</th>
+            <th class="th-us">IM CMS</th>
+            <th class="th-them">NDsoft / Mediaon</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="hl-row">
+            <td class="td-feat" style="font-weight:700">월 이용료</td>
+            <td class="td-us"><span class="price-new-cell">₩0</span></td>
+            <td class="td-them"><span class="price-old-cell">₩250,000</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">기사 작성 · 발행</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="ck" style="color:var(--muted)">✓</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">편집장 검토 워크플로우</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="ck" style="color:var(--muted)">✓</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">역할별 권한 관리</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="ck" style="color:var(--muted)">✓</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">공개 신문 사이트</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="ck" style="color:var(--muted)">✓</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">다매체 동시 운영</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="cp">유료 추가</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">디자인 자유 변경</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="cx">업체 요청 필요</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">기능 직접 추가</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="cx">유료 개발 의뢰</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">데이터 직접 소유</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="cx">업체 서버 종속</span></td>
+          </tr>
+          <tr>
+            <td class="td-feat">오픈소스 · 자체 서버 이전</td>
+            <td class="td-us"><span class="ck">✓</span></td>
+            <td class="td-them"><span class="cx">불가</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section class="sec">
+  <div class="wrap">
+    <div class="kicker">기술 스택</div>
+    <h2 class="sec-h2">현대적인 기술, 안정적인 운영</h2>
+    <p class="sec-p">2000년대 PHP 기반 레거시 CMS와 달리 최신 웹 기술로 구축해 속도·보안·확장성 모두 앞섭니다.</p>
+    <div class="tech-grid">
+      <div class="tech-item">
+        <div class="tech-badge">Next.js 14</div>
+        <div class="tech-name">초고속 렌더링</div>
+        <div class="tech-desc">서버 컴포넌트 + 정적 생성으로 기사 페이지 즉시 로딩. 완벽한 SEO 지원.</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-badge">Supabase</div>
+        <div class="tech-name">DB · 인증 · 스토리지</div>
+        <div class="tech-desc">PostgreSQL 기반 관계형 DB. 로그인·권한·파일 업로드 한 번에 해결.</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-badge">Vercel</div>
+        <div class="tech-name">글로벌 CDN 배포</div>
+        <div class="tech-desc">코드 수정 즉시 전 세계 서버 자동 배포. HTTPS·도메인 연결 5분 완료.</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-badge">GitHub</div>
+        <div class="tech-name">버전 관리 · 협업</div>
+        <div class="tech-desc">모든 코드 변경 이력 보존. 언제든 이전 버전으로 복구 가능.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="cta">
+  <div>
+    <div class="cta-rule"></div>
+    <h2 class="cta-h2">지금 바로 시작할<br><em>준비가 되어 있습니다</em></h2>
+    <p class="cta-p">방송·편집·취재 현장 경험을 가진 분과 함께 만들어갑니다.<br>더 이상 매달 25만원을 낼 이유가 없습니다.</p>
+    <button class="btn-gold" style="font-size:14px;padding:15px 36px">상담 신청하기</button>
+    <div class="cta-note">초기 구축 문의 · 데모 시연 · 맞춤 제안</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap foot-inner">
+    <div class="foot-logo">IM<span>CMS</span></div>
+    <span>언론사 전용 뉴스 편집 시스템</span>
+    <span>© 2025 IM CMS. All rights reserved.</span>
+  </div>
+</footer>
+
+</body>
+</html>
