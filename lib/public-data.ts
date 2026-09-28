@@ -149,12 +149,27 @@ export async function searchArticles(site: SiteConfig, q: string) {
   return (data ?? []).map(toPublic)
 }
 
+export type ArticleSource = { id: string; outletName: string; url: string | null }
+
+// 함께 송고된 사본이면 원본 매체와 원문 주소를 돌려준다 (칸이 아직 없는 DB에서도 조용히 null)
+async function sourceOf(supabase: ReturnType<typeof client>, id: string): Promise<ArticleSource | null> {
+  const { data: self } = await supabase.from('articles').select('source_article_id').eq('id', id).maybeSingle()
+  const sourceId = (self as { source_article_id?: string | null } | null)?.source_article_id
+  if (!sourceId) return null
+  const { data: src } = await supabase
+    .from('articles').select('id, outlet:outlets(name, domain)').eq('id', sourceId).eq('status', 'published').maybeSingle()
+  const outlet = (src as any)?.outlet as { name: string; domain: string | null } | undefined
+  if (!src || !outlet) return null
+  return { id: src.id, outletName: outlet.name, url: outlet.domain ? `https://${outlet.domain}/news/${src.id}` : null }
+}
+
 export async function getArticleData(site: SiteConfig, id: string) {
   if (isDemo) {
     const all = demoArticles()
     const article = all.find((a) => a.id === id)
     if (!article) return null
     return {
+      source: null as ArticleSource | null,
       article,
       related: all.filter((a) => a.category?.slug === article.category?.slug && a.id !== id).slice(0, 4),
       mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 8),
@@ -173,14 +188,16 @@ export async function getArticleData(site: SiteConfig, id: string) {
     .maybeSingle()
   if (!data) return null
 
-  const [related, mostViewed, latest] = await Promise.all([
+  const [related, mostViewed, latest, source] = await Promise.all([
     data.category_id
       ? published(scope).eq('category_id', data.category_id).neq('id', id).order('published_at', { ascending: false }).limit(4)
       : Promise.resolve({ data: [] as any[] }),
     published(scope).order('view_count', { ascending: false }).limit(8),
     published(scope).neq('id', id).order('published_at', { ascending: false }).limit(5),
+    sourceOf(scope.supabase, id),
   ])
   return {
+    source,
     article: toPublic(data),
     related: (related.data ?? []).map(toPublic),
     mostViewed: (mostViewed.data ?? []).map(toPublic),

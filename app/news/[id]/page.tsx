@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${title} | ${site.name}`,
     description,
     icons: { icon: site.logoMark },
+    alternates: data.source?.url ? { canonical: data.source.url } : undefined,
     openGraph: {
       title,
       description,
@@ -38,7 +39,7 @@ export default async function ArticlePage({ params }: Props) {
   const site = currentSite()
   const data = await getArticleData(site, params.id)
   if (!data) notFound()
-  const { article: a, related, mostViewed, latest } = data
+  const { article: a, related, mostViewed, latest, source } = data
   const section = a.category ? findSection(site, a.category.slug) : undefined
 
   return (
@@ -97,7 +98,16 @@ export default async function ArticlePage({ params }: Props) {
           )}
 
           <p className="mt-8 border-y border-rule py-4 text-[13px] text-sub">
-            저작권자 © {site.name} 무단전재 및 재배포 금지
+            {source ? (
+              <>
+                이 기사는 <strong className="text-body">{source.outletName}</strong>에서 제공한 기사입니다.
+                {source.url && (
+                  <a href={source.url} className="ml-2 text-brand underline underline-offset-2">원문 보기</a>
+                )}
+              </>
+            ) : (
+              <>저작권자 © {site.name} 무단전재 및 재배포 금지</>
+            )}
           </p>
 
           {related.length > 0 && (

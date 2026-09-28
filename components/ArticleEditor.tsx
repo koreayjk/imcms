@@ -8,6 +8,7 @@ import { toHtml } from '@/lib/body-text'
 import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@/lib/types'
 import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
+import { describe, syndicate } from '@/lib/syndicate'
 
 type Props = {
   article?: Article
@@ -18,6 +19,9 @@ type Props = {
   authorName: string
   authorEmail: string | null
   isEditorPlus?: boolean
+  outlets: { id: string; name: string }[]
+  syndicatedOutletIds: string[]
+  sourceOutletName: string | null
 }
 
 type Mode = 'draft' | 'review' | 'publish'
@@ -28,7 +32,7 @@ function imagesIn(html: string): string[] {
   return Array.from(html.matchAll(IMG_SRC), (m) => m[1])
 }
 
-export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus }: Props) {
+export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, outlets, syndicatedOutletIds, sourceOutletName }: Props) {
   const router = useRouter()
   const editorRef = useRef<Editor | null>(null)
 
@@ -49,6 +53,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const [metaTitle, setMetaTitle] = useState(article?.meta_title ?? '')
   const [metaDesc, setMetaDesc] = useState(article?.meta_description ?? '')
   const [isFeatured, setIsFeatured] = useState(article?.is_featured ?? false)
+  const [syndicateTo, setSyndicateTo] = useState<string[]>(article?.syndicate_to ?? [])
   const [showSeo, setShowSeo] = useState(false)
   const [saving, setSaving] = useState<Mode | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
@@ -56,6 +61,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
   const status: ArticleStatus = article?.status ?? 'draft'
   const reporterName = article && article.author_id !== userId ? null : authorName
+  const isCopy = !!article?.source_article_id
+  const ownOutlet = article?.outlet_id ?? outletId
+  const otherOutlets = outlets.filter((o) => o.id !== ownOutlet)
 
   async function save(mode: Mode) {
     if (!title.trim()) { setError('제목을 입력해주세요.'); return }
@@ -75,8 +83,10 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       meta_title: metaTitle.trim() || null,
       meta_description: metaDesc.trim() || null,
       is_featured: isFeatured,
-      outlet_id: article?.outlet_id ?? outletId,
+      outlet_id: ownOutlet,
     }
+    // syndication.sql 실행 전 DB에는 이 칸이 없으므로, 기존 값이 있거나 매체를 고른 경우에만 보낸다
+    if (!isCopy && (article?.syndicate_to !== undefined || syndicateTo.length)) payload.syndicate_to = syndicateTo
 
     if (mode === 'review') {
       payload.status = 'in_review'
@@ -99,6 +109,16 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       const { data, error: err } = await supabase.from('articles').insert(payload).select('id').single()
       if (err) { setError(`저장하지 못했습니다: ${err.message}`); setSaving(null); return }
       id = data.id
+    }
+
+    const livePublished = mode === 'publish' || (mode === 'draft' && status === 'published')
+    if (id && livePublished && !isCopy && syndicateTo.length) {
+      try {
+        const summary = describe(await syndicate(id))
+        if (summary) window.alert(summary)
+      } catch (e) {
+        window.alert(`함께 송고 중 문제가 생겼습니다: ${e instanceof Error ? e.message : ''}`)
+      }
     }
 
     setSaving(null)
@@ -214,6 +234,36 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               주요 기사로 지정 (홈페이지 톱 영역 우선 노출)
             </label>
           </div>
+
+          {isCopy ? (
+            <p className="rounded border border-review/30 bg-review/5 px-4 py-3 text-[13px] leading-relaxed text-review">
+              이 기사는 <strong>{sourceOutletName ?? '다른 매체'}</strong>에서 함께 송고된 사본입니다. 원본이 다시 반영되면 제목·본문이 원본 내용으로 바뀝니다.
+            </p>
+          ) : otherOutlets.length > 0 && (
+            <fieldset className="rounded border border-line px-4 py-3.5">
+              <legend className="px-1 text-[13px] font-semibold">함께 송고할 매체</legend>
+              <div className="flex flex-wrap gap-x-5 gap-y-2">
+                {otherOutlets.map((o) => {
+                  const sent = syndicatedOutletIds.includes(o.id)
+                  return (
+                    <label key={o.id} className="flex cursor-pointer items-center gap-2 text-[13.5px]">
+                      <input
+                        type="checkbox"
+                        checked={sent || syndicateTo.includes(o.id)}
+                        disabled={sent}
+                        onChange={(e) => setSyndicateTo((prev) => (e.target.checked ? [...prev, o.id] : prev.filter((x) => x !== o.id)))}
+                      />
+                      {o.name}
+                      {sent && <span className="rounded bg-published/10 px-1.5 text-[11px] text-published">송고됨</span>}
+                    </label>
+                  )
+                })}
+              </div>
+              <p className="mt-2 text-[12px] leading-relaxed text-muted">
+                발행될 때 선택한 매체에 바이라인과 섹션을 맞춰 사본이 올라갑니다. 사본에는 이 기사를 원본으로 알리는 표시가 들어가 검색엔진에서 중복 기사로 처리되지 않습니다.
+              </p>
+            </fieldset>
+          )}
 
           <div className="rounded border border-line">
             <button type="button" onClick={() => setShowSeo(!showSeo)} aria-expanded={showSeo} className="flex w-full items-center justify-between px-4 py-3 text-[13px] text-muted hover:text-ink">

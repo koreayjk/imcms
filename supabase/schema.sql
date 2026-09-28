@@ -48,6 +48,8 @@ create table articles (
   meta_title text,
   meta_description text,
   view_count int not null default 0,
+  source_article_id uuid references articles(id) on delete set null,
+  syndicate_to uuid[] not null default '{}',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -149,7 +151,10 @@ create policy "articles_select" on articles for select to authenticated
   );
 
 create policy "articles_insert" on articles for insert to authenticated
-  with check (author_id = auth.uid());
+  with check (
+    author_id = auth.uid()
+    or exists (select 1 from profiles where id = auth.uid() and role in ('editor', 'admin'))
+  );
 
 create policy "articles_update" on articles for update to authenticated
   using (

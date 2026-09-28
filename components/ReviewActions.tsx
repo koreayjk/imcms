@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { describe, syndicate } from '@/lib/syndicate'
 
 export default function ReviewActions({ articleId }: { articleId: string }) {
   const [showReject, setShowReject] = useState(false)
@@ -13,11 +14,23 @@ export default function ReviewActions({ articleId }: { articleId: string }) {
 
   async function approve() {
     setLoading(true)
-    await supabase.from('articles').update({
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('articles').update({
       status: 'published',
       published_at: new Date().toISOString(),
+      reviewed_by: user?.id ?? null,
       reject_reason: null,
     }).eq('id', articleId)
+    if (error) {
+      window.alert(`승인하지 못했습니다: ${error.message}`)
+    } else {
+      try {
+        const summary = describe(await syndicate(articleId))
+        if (summary) window.alert(summary)
+      } catch (e) {
+        window.alert(`함께 송고 중 문제가 생겼습니다: ${e instanceof Error ? e.message : ''}`)
+      }
+    }
     router.refresh()
     setLoading(false)
   }

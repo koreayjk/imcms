@@ -45,6 +45,8 @@ export interface Article {
   meta_description: string | null
   view_count: number
   is_featured: boolean
+  source_article_id?: string | null
+  syndicate_to?: string[]
   author?: Pick<Profile, 'id' | 'full_name' | 'role'>
   category?: Pick<Category, 'id' | 'name' | 'slug'>
   outlet?: Pick<Outlet, 'id' | 'name'>

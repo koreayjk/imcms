@@ -4,12 +4,13 @@ import { getCmsContext } from '@/lib/cms'
 export default async function NewArticlePage() {
   const { supabase, user, profile, outletId, isEditorPlus } = await getCmsContext()
 
-  const [{ data: categories }, { data: outlet }] = await Promise.all([
+  const [{ data: categories }, { data: outlets }] = await Promise.all([
     outletId
       ? supabase.from('categories').select('*').eq('outlet_id', outletId).order('sort_order')
       : supabase.from('categories').select('*').order('sort_order'),
-    outletId ? supabase.from('outlets').select('name').eq('id', outletId).single() : Promise.resolve({ data: null }),
+    supabase.from('outlets').select('id, name').order('created_at'),
   ])
+  const outlet = outlets?.find((o) => o.id === outletId)
 
   return (
     <div className="mx-auto max-w-[1280px] px-8 py-8">
@@ -22,6 +23,9 @@ export default async function NewArticlePage() {
         authorName={profile?.full_name ?? ''}
         authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}
+        outlets={outlets ?? []}
+        syndicatedOutletIds={[]}
+        sourceOutletName={null}
       />
     </div>
   )

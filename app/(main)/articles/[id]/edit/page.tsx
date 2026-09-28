@@ -11,12 +11,17 @@ export default async function EditArticlePage({ params }: { params: { id: string
   if (article.author_id !== user.id && !isEditorPlus) redirect('/articles')
 
   const scope = article.outlet_id ?? outletId
-  const [{ data: categories }, { data: outlet }] = await Promise.all([
+  const [{ data: categories }, { data: outlets }, { data: copies }, { data: source }] = await Promise.all([
     scope
       ? supabase.from('categories').select('*').eq('outlet_id', scope).order('sort_order')
       : supabase.from('categories').select('*').order('sort_order'),
-    scope ? supabase.from('outlets').select('name').eq('id', scope).single() : Promise.resolve({ data: null }),
+    supabase.from('outlets').select('id, name').order('created_at'),
+    supabase.from('articles').select('outlet_id').eq('source_article_id', article.id),
+    article.source_article_id
+      ? supabase.from('articles').select('outlet:outlets(name)').eq('id', article.source_article_id).single()
+      : Promise.resolve({ data: null }),
   ])
+  const outlet = outlets?.find((o) => o.id === scope)
 
   return (
     <div className="mx-auto max-w-[1280px] px-8 py-8">
@@ -33,6 +38,9 @@ export default async function EditArticlePage({ params }: { params: { id: string
         authorName={profile?.full_name ?? ''}
         authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}
+        outlets={outlets ?? []}
+        syndicatedOutletIds={(copies ?? []).map((c) => c.outlet_id as string)}
+        sourceOutletName={(source as any)?.outlet?.name ?? null}
       />
     </div>
   )
