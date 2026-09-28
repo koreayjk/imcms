@@ -18,6 +18,8 @@ export type SiteConfig = {
   logoMark: string
   colors: { brand: string; brandDark: string; gold: string; goldInk: string }
   sections: SectionConfig[]
+  // 보도자료함 "추천" 탭: 제목·요약에 이 단어가 있으면 이 매체와 관련 있는 보도자료로 본다
+  pressKeywords: string[]
   legal: {
     company: string
     ceo: string
@@ -56,6 +58,11 @@ export const SITES: SiteConfig[] = [
       { slug: 'medical', name: '병원·의료', description: '병원·의료기관 관련 정보', specialty: true },
       { slug: 'senior-care', name: '요양·시니어케어', description: '요양병원·요양시설·시니어케어', specialty: true },
       { slug: 'care-industry', name: '돌봄산업', description: '복지·돌봄산업 관련 소식', specialty: true },
+    ],
+    pressKeywords: [
+      '요양', '돌봄', '간병', '복지', '노인', '어르신', '시니어', '실버', '치매', '장애', '재활',
+      '병원', '의료', '의원', '의사', '간호', '환자', '건강', '보건', '질병', '감염', '백신',
+      '제약', '의약', '의료기기', '헬스케어', '건강보험', '장기요양', '호스피스', '임종',
     ],
     legal: {
       company: '더케어타임즈',
