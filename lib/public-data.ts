@@ -15,6 +15,8 @@ export type PublicArticle = {
   author_name: string | null
   category: { name: string; slug: string } | null
   tags: string[] | null
+  meta_title?: string | null
+  meta_description?: string | null
 }
 
 export const isDemo = !process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -43,6 +45,8 @@ function toPublic(row: any): PublicArticle {
     author_name: row.author?.full_name ?? null,
     category: row.category ?? null,
     tags: row.tags ?? null,
+    meta_title: row.meta_title ?? null,
+    meta_description: row.meta_description ?? null,
   }
 }
 
@@ -162,7 +166,7 @@ export async function getArticleData(site: SiteConfig, id: string) {
   if (!scope) return null
   const { data } = await scope.supabase
     .from('articles')
-    .select(`${LIST_FIELDS}, body, category_id`)
+    .select(`${LIST_FIELDS}, body, category_id, meta_title, meta_description`)
     .eq('id', id)
     .eq('outlet_id', scope.outletId)
     .eq('status', 'published')

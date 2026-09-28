@@ -17,13 +17,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getArticleData(site, params.id)
   if (!data) return { title: `기사를 찾을 수 없습니다 | ${site.name}` }
   const a = data.article
+  const title = a.meta_title || a.title
+  const description = a.meta_description || a.excerpt || undefined
   return {
-    title: `${a.title} | ${site.name}`,
-    description: a.excerpt ?? undefined,
+    title: `${title} | ${site.name}`,
+    description,
     icons: { icon: site.logoMark },
     openGraph: {
-      title: a.title,
-      description: a.excerpt ?? undefined,
+      title,
+      description,
       siteName: site.name,
       type: 'article',
       images: a.thumbnail_url ? [a.thumbnail_url] : undefined,
