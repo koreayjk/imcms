@@ -10,7 +10,7 @@ with ctx as (
            where p.outlet_id = o.id and p.role in ('admin', 'editor')
            order by p.created_at limit 1) as author_id
   from outlets o
-  where o.domain = 'thecaretimes.com'
+  where o.domain = 'thecaretimes.net'
 )
 insert into articles (outlet_id, category_id, author_id, title, body, excerpt, thumbnail_url, status, published_at, is_featured, tags)
 select ctx.outlet_id, c.id, ctx.author_id, v.title, v.body, v.excerpt, v.thumb, 'published', v.published_at, v.featured, array['테스트']

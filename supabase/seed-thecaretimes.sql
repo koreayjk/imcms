@@ -3,7 +3,7 @@
 
 with outlet as (
   insert into outlets (name, domain)
-  values ('더케어타임즈', 'thecaretimes.com')
+  values ('더케어타임즈', 'thecaretimes.net')
   returning id
 )
 insert into categories (outlet_id, name, slug, sort_order)
