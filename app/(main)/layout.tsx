@@ -13,9 +13,13 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     .eq('id', user.id)
     .single()
 
+  const { data: outlet } = profile?.outlet_id
+    ? await supabase.from('outlets').select('name').eq('id', profile.outlet_id).single()
+    : { data: null }
+
   return (
     <div className="flex h-screen overflow-hidden bg-paper">
-      <Sidebar profile={profile} />
+      <Sidebar profile={profile} outletName={outlet?.name ?? null} />
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>

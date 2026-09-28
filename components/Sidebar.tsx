@@ -39,7 +39,9 @@ function NavLink({ href, label, exact }: NavItem) {
   )
 }
 
-export default function Sidebar({ profile }: { profile: Profile | null }) {
+type Props = { profile: Profile | null; outletName: string | null }
+
+export default function Sidebar({ profile, outletName }: Props) {
   const router = useRouter()
   const isEditor = profile?.role === 'editor' || profile?.role === 'admin'
   const isAdmin = profile?.role === 'admin'
@@ -55,9 +57,26 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
     <aside className="w-48 shrink-0 border-r border-line flex flex-col bg-paper">
       {/* 헤더 */}
       <div className="px-4 py-4 border-b border-line">
-        <div className="font-semibold text-sm tracking-tight">IM CMS</div>
+        <div className="text-[10px] uppercase tracking-widest text-muted/70 font-medium">IM CMS 편집국</div>
+        {outletName ? (
+          <>
+            <div className="mt-1 font-bold text-[15px] tracking-tight truncate">{outletName}</div>
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener"
+              className="mt-1 inline-block text-xs text-muted hover:text-ink hover:underline"
+            >
+              홈페이지 보기 ↗
+            </a>
+          </>
+        ) : (
+          <div className="mt-1.5 rounded bg-danger/10 px-2 py-1.5 text-[11px] leading-snug text-danger">
+            소속 매체가 없습니다. 이 계정으로 쓴 기사는 홈페이지에 표시되지 않습니다. 관리자에게 소속 지정을 요청하세요.
+          </div>
+        )}
         {profile && (
-          <div className="mt-1 text-xs text-muted truncate">{profile.full_name}</div>
+          <div className="mt-2 text-xs text-muted truncate">{profile.full_name}</div>
         )}
       </div>
 
