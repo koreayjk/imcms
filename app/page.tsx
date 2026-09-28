@@ -1,401 +1,236 @@
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
-import NewspaperHeader from '@/components/NewspaperHeader'
-import BreakingNewsTicker from '@/components/BreakingNewsTicker'
+import type { Metadata } from 'next'
+import { currentSite, getHomeData, isDemo, type PublicArticle } from '@/lib/public-data'
+import { formatDate, formatShort } from '@/lib/format'
+import SiteFrame from '@/components/site/SiteFrame'
+import SectionHeading from '@/components/site/SectionHeading'
+import MostViewed from '@/components/site/MostViewed'
+import SpecialtyTabs from '@/components/site/SpecialtyTabs'
+import Thumb from '@/components/site/Thumb'
+import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
 
-function anonClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+export function generateMetadata(): Metadata {
+  const site = currentSite()
+  return {
+    title: `${site.name} | ${site.nameEn}`,
+    description: site.description,
+    icons: { icon: site.logoMark },
+    openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website' },
+  }
 }
 
-type SearchParams = { category?: string }
+export default async function HomePage() {
+  const site = currentSite()
+  const { latest, mostViewed, bySection } = await getHomeData(site)
 
-export default async function NewspaperHomePage({
-  searchParams,
-}: {
-  searchParams: SearchParams
-}) {
-  const supabase = anonClient()
-  const categorySlug = searchParams.category
-
-  const [{ data: outlets }, { data: categories }] = await Promise.all([
-    supabase.from('outlets').select('*').limit(1),
-    supabase.from('categories').select('*').order('sort_order'),
-  ])
-
-  const outlet = outlets?.[0]
-  const siteName = outlet?.name ?? 'IM NEWS'
-
-  let catId: string | undefined
-  if (categorySlug && categories) {
-    catId = categories.find((c) => c.slug === categorySlug)?.id
+  if (!latest.length) {
+    return (
+      <SiteFrame site={site}>
+        <div className="mx-auto max-w-[1200px] px-4 py-28 text-center">
+          <p className="text-[18px] font-semibold text-body">아직 발행된 기사가 없습니다.</p>
+          <p className="mt-2 text-[14px] text-sub">편집국에서 기사를 발행하면 이곳에 표시됩니다.</p>
+        </div>
+      </SiteFrame>
+    )
   }
 
-  let query = supabase
-    .from('articles')
-    .select(
-      'id, title, excerpt, thumbnail_url, published_at, is_featured, view_count, author:profiles!articles_author_id_fkey(full_name), category:categories(name, slug)'
-    )
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
+  const used = new Set<string>()
+  const take = (n: number, pred: (a: PublicArticle) => boolean = () => true) => {
+    const out: PublicArticle[] = []
+    for (const a of latest) {
+      if (out.length >= n) break
+      if (used.has(a.id) || !pred(a)) continue
+      out.push(a)
+      used.add(a.id)
+    }
+    return out
+  }
+  const hasImage = (a: PublicArticle) => !!a.thumbnail_url
 
-  if (catId) query = query.eq('category_id', catId)
+  const headline = take(1, (a) => a.is_featured && hasImage(a))[0] ?? take(1, hasImage)[0] ?? take(1)[0]
+  const subTops = take(2, hasImage)
+  subTops.push(...take(2 - subTops.length))
+  const realtime = take(5)
+  const major = take(6, hasImage)
+  major.push(...take(6 - major.length))
 
-  const [{ data: articles }, { data: mostViewed }, { data: tickerArticles }] = await Promise.all([
-    query.limit(32),
-    supabase
-      .from('articles')
-      .select('id, title, view_count')
-      .eq('status', 'published')
-      .order('view_count', { ascending: false })
-      .limit(10),
-    supabase
-      .from('articles')
-      .select('id, title')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(8),
-  ])
-
-  const featured = articles?.filter((a) => a.is_featured) ?? []
-  const mainFeature = featured[0] ?? articles?.[0]
-  const sideFeatures = (featured.length > 1 ? featured.slice(1) : articles?.slice(1))?.slice(0, 4) ?? []
-  const latestArticles = articles?.slice(mainFeature ? 5 : 0) ?? []
-  const gridArticles = latestArticles.slice(0, 12)
-  const extraArticles = latestArticles.slice(12, 20)
+  const specialty = site.sections.filter((s) => s.specialty)
+  const general = site.sections.filter((s) => !s.specialty)
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <NewspaperHeader
-        siteName={siteName}
-        categories={categories ?? []}
-        currentCategorySlug={categorySlug}
-      />
-
-      {/* 속보 티커 */}
-      <BreakingNewsTicker items={tickerArticles ?? []} />
-
-      <div className="mx-auto max-w-[1200px] px-4 py-5">
-
-        {/* 빈 상태 */}
-        {!articles?.length && (
-          <div className="py-24 text-center text-[#888]">
-            <p className="text-lg text-[#555]">아직 발행된 기사가 없습니다.</p>
-            <Link href="/login" className="mt-4 inline-block text-sm text-navy hover:underline">
-              기자로 참여하기 →
-            </Link>
+    <SiteFrame site={site}>
+      <div className="mx-auto max-w-[1200px] px-4">
+        {/* ── 톱 기사: PC ── */}
+        <section aria-label="톱 기사" className="hidden grid-cols-[250px_1fr_300px] gap-8 border-b border-rule py-7 lg:grid">
+          <div className="divide-y divide-rule">
+            {subTops.map((a) => (
+              <Link key={a.id} href={`/news/${a.id}`} className="headline-link group block py-5 first:pt-0">
+                <Thumb src={a.thumbnail_url} alt={a.title} ratio="5 / 3" />
+                <CategoryLabel article={a} className="mt-3" />
+                <h3 className="headline-text mt-1 line-clamp-2 text-[17px] font-bold leading-[1.4] tracking-[-0.02em]">{a.title}</h3>
+                {a.excerpt && <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.55] text-sub">{a.excerpt}</p>}
+              </Link>
+            ))}
           </div>
-        )}
 
-        {/* ─── 톱 기사 영역 ─── */}
-        {mainFeature && (
-          <section className="bg-white border border-[#dddddd] p-4 mb-5">
-            <div className="flex gap-5">
+          <Link href={`/news/${headline.id}`} className="headline-link group block">
+            <Thumb src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" />
+            <div className="mt-5 px-4 text-center">
+              <CategoryLabel article={headline} />
+              <h2 className="headline-text mt-1.5 line-clamp-2 text-balance text-[30px] font-extrabold leading-[1.3] tracking-[-0.035em] text-body">
+                {headline.title}
+              </h2>
+              {headline.excerpt && <p className="mt-3 line-clamp-2 text-[15px] leading-[1.6] text-sub">{headline.excerpt}</p>}
+            </div>
+          </Link>
 
-              {/* 메인 피처 (60%) */}
-              <div className="flex-[6] min-w-0 border-r border-[#eeeeee] pr-5">
-                {mainFeature.thumbnail_url && (
-                  <Link href={`/news/${mainFeature.id}`}>
-                    <img
-                      src={mainFeature.thumbnail_url}
-                      alt={mainFeature.title}
-                      className="w-full aspect-[16/9] object-cover mb-3 hover:opacity-95 transition-opacity"
-                    />
-                  </Link>
-                )}
-                <div className="flex items-center gap-2 mb-1.5">
-                  {(mainFeature.category as any)?.name && (
-                    <Link
-                      href={`/?category=${(mainFeature.category as any).slug}`}
-                      className="text-[11px] font-bold text-accent uppercase tracking-wide"
-                    >
-                      [{(mainFeature.category as any).name}]
-                    </Link>
-                  )}
-                  {mainFeature.is_featured && (
-                    <span className="text-[11px] font-bold text-navy">★ 주요기사</span>
-                  )}
+          <aside>
+            <SectionHeading title="실시간 뉴스" as="h3" />
+            <RealtimeList items={realtime} />
+          </aside>
+        </section>
+
+        {/* ── 톱 기사: 모바일 (좌우로 넘기기) ── */}
+        <section aria-label="톱 기사" className="-mx-4 pt-4 lg:hidden">
+          <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1">
+            {[headline, ...subTops].map((a) => (
+              <Link key={a.id} href={`/news/${a.id}`} className="w-[86%] flex-shrink-0 snap-center border border-rule bg-white">
+                <div className="px-4 pb-3 pt-4">
+                  <CategoryLabel article={a} />
+                  <h2 className="mt-1 line-clamp-2 text-[20px] font-bold leading-[1.38] tracking-[-0.03em]">{a.title}</h2>
                 </div>
-                <Link href={`/news/${mainFeature.id}`}>
-                  <h2 className="text-[22px] font-bold leading-tight text-[#111] hover:text-navy transition-colors mb-2">
-                    {mainFeature.title}
-                  </h2>
-                </Link>
-                {mainFeature.excerpt && (
-                  <p className="text-[14px] text-[#555] leading-relaxed line-clamp-3 mb-3">
-                    {mainFeature.excerpt}
-                  </p>
-                )}
-                <div className="flex items-center gap-2 text-[12px] text-[#888]">
-                  {(mainFeature.author as any)?.full_name && (
-                    <span className="text-[#444] font-medium">{(mainFeature.author as any).full_name} 기자</span>
-                  )}
-                  {mainFeature.published_at && (
-                    <>
-                      <span>|</span>
-                      <time dateTime={mainFeature.published_at}>
-                        {new Date(mainFeature.published_at).toLocaleDateString('ko-KR', {
-                          year: 'numeric', month: '2-digit', day: '2-digit',
-                        })}
+                <Thumb src={a.thumbnail_url} alt={a.title} ratio="16 / 10" />
+                {a.excerpt && <p className="line-clamp-2 px-4 py-3 text-[14px] leading-[1.6] text-sub">{a.excerpt}</p>}
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* ── 주요뉴스 + 많이 본 뉴스 ── */}
+        <div className="grid gap-10 py-8 lg:grid-cols-[1fr_300px]">
+          <section>
+            <SectionHeading title="주요뉴스" />
+            <ul className="divide-y divide-rule lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-8 lg:divide-y-0">
+              {major.map((a) => (
+                <li key={a.id} className="py-4 first:pt-0 lg:py-0">
+                  <Link href={`/news/${a.id}`} className="headline-link group flex gap-3.5 lg:block">
+                    <Thumb src={a.thumbnail_url} alt={a.title} ratio="3 / 2" className="w-[118px] flex-shrink-0 lg:w-full" />
+                    <div className="min-w-0 flex-1 lg:mt-3">
+                      <CategoryLabel article={a} className="hidden lg:block" />
+                      <h3 className="headline-text line-clamp-2 text-[16px] font-bold leading-[1.42] tracking-[-0.02em] lg:mt-1">{a.title}</h3>
+                      {a.excerpt && <p className="mt-1 hidden line-clamp-2 text-[13px] leading-[1.55] text-sub lg:block">{a.excerpt}</p>}
+                      <time dateTime={a.published_at ?? undefined} className="mt-1.5 block text-[12px] text-[#8A918C] tabular-nums">
+                        {formatDate(a.published_at)}
                       </time>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* 사이드 기사들 (40%) */}
-              <div className="flex-[4] min-w-0 divide-y divide-[#eeeeee]">
-                {sideFeatures.map((a) => (
-                  <div key={a.id} className="py-3 first:pt-0">
-                    <div className="flex gap-3">
-                      {a.thumbnail_url ? (
-                        <Link href={`/news/${a.id}`} className="flex-shrink-0">
-                          <img
-                            src={a.thumbnail_url}
-                            alt={a.title}
-                            className="w-[100px] h-[68px] object-cover hover:opacity-90 transition-opacity"
-                          />
-                        </Link>
-                      ) : (
-                        <div className="w-[100px] h-[68px] bg-[#f0f0f0] flex-shrink-0 flex items-center justify-center">
-                          <span className="text-[10px] text-[#bbb]">이미지 없음</span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        {(a.category as any)?.name && (
-                          <span className="text-[10px] font-bold text-accent uppercase">
-                            [{(a.category as any).name}]
-                          </span>
-                        )}
-                        <Link href={`/news/${a.id}`}>
-                          <h3 className="mt-0.5 text-[13px] font-bold leading-snug text-[#111] hover:text-navy line-clamp-3">
-                            {a.title}
-                          </h3>
-                        </Link>
-                        {a.excerpt && (
-                          <p className="mt-1 text-[11px] text-[#888] line-clamp-1">{a.excerpt}</p>
-                        )}
-                        <p className="mt-1 text-[11px] text-[#aaa]">
-                          {a.published_at &&
-                            new Date(a.published_at).toLocaleDateString('ko-KR', {
-                              year: 'numeric', month: '2-digit', day: '2-digit',
-                            })}
-                        </p>
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ─── 메인 + 사이드바 ─── */}
-        <div className="flex gap-5">
-
-          {/* 메인 컨텐츠 (70%) */}
-          <div className="flex-[7] min-w-0">
-
-            {/* 최신 기사 그리드 */}
-            {gridArticles.length > 0 && (
-              <section className="mb-5">
-                <h2 className="section-title">최신 기사</h2>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {gridArticles.map((a) => (
-                    <article key={a.id} className="bg-white border border-[#dddddd] group">
-                      <Link href={`/news/${a.id}`}>
-                        {a.thumbnail_url ? (
-                          <img
-                            src={a.thumbnail_url}
-                            alt={a.title}
-                            className="w-full aspect-video object-cover group-hover:opacity-90 transition-opacity"
-                          />
-                        ) : (
-                          <div className="w-full aspect-video bg-[#f0f0f0] flex items-center justify-center">
-                            <span className="text-[10px] text-[#ccc]">이미지 없음</span>
-                          </div>
-                        )}
-                      </Link>
-                      <div className="p-2.5">
-                        {(a.category as any)?.name && (
-                          <Link
-                            href={`/?category=${(a.category as any).slug}`}
-                            className="text-[10px] font-bold text-accent uppercase"
-                          >
-                            [{(a.category as any).name}]
-                          </Link>
-                        )}
-                        <Link href={`/news/${a.id}`}>
-                          <h3 className="mt-0.5 text-[13px] font-bold leading-snug text-[#111] group-hover:text-navy transition-colors line-clamp-3">
-                            {a.title}
-                          </h3>
-                        </Link>
-                        <div className="mt-1.5 text-[11px] text-[#aaa] flex items-center gap-1.5">
-                          {(a.author as any)?.full_name && (
-                            <span>{(a.author as any).full_name}</span>
-                          )}
-                          {a.published_at && (
-                            <span>
-                              {new Date(a.published_at).toLocaleDateString('ko-KR', {
-                                month: '2-digit', day: '2-digit',
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* 추가 기사 리스트 */}
-            {extraArticles.length > 0 && (
-              <section className="bg-white border border-[#dddddd] p-4">
-                <h2 className="section-title">더보기</h2>
-                <ul className="divide-y divide-[#eeeeee]">
-                  {extraArticles.map((a) => (
-                    <li key={a.id} className="py-3 flex gap-3">
-                      {a.thumbnail_url && (
-                        <Link href={`/news/${a.id}`} className="flex-shrink-0">
-                          <img
-                            src={a.thumbnail_url}
-                            alt={a.title}
-                            className="w-[88px] h-[60px] object-cover hover:opacity-90 transition-opacity"
-                          />
-                        </Link>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        {(a.category as any)?.name && (
-                          <span className="text-[10px] font-bold text-accent uppercase">
-                            [{(a.category as any).name}]
-                          </span>
-                        )}
-                        <Link href={`/news/${a.id}`}>
-                          <h3 className="text-[14px] font-bold leading-snug text-[#111] hover:text-navy transition-colors line-clamp-2">
-                            {a.title}
-                          </h3>
-                        </Link>
-                        <div className="mt-1 text-[11px] text-[#aaa]">
-                          {(a.author as any)?.full_name}
-                          {a.published_at && (
-                            <span className="ml-2">
-                              {new Date(a.published_at).toLocaleDateString('ko-KR', {
-                                year: 'numeric', month: '2-digit', day: '2-digit',
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-          </div>
-
-          {/* 우측 사이드바 (30%) */}
-          <aside className="flex-[3] min-w-0 hidden lg:block space-y-4">
-
-            {/* 많이 본 기사 */}
-            {mostViewed && mostViewed.length > 0 && (
-              <div className="bg-white border border-[#dddddd] p-3">
-                <h3 className="section-title-sm">많이 본 기사</h3>
-                <ol className="space-y-2.5">
-                  {mostViewed.map((a, i) => (
-                    <li key={a.id} className="flex gap-2.5 items-start">
-                      <span
-                        className={`flex-shrink-0 w-[18px] h-[18px] flex items-center justify-center text-[11px] font-bold rounded-sm ${
-                          i === 0 ? 'bg-accent text-white' :
-                          i === 1 ? 'bg-navy text-white' :
-                          i === 2 ? 'bg-[#555] text-white' :
-                          'bg-[#e0e0e0] text-[#555]'
-                        }`}
-                      >
-                        {i + 1}
-                      </span>
-                      <Link
-                        href={`/news/${a.id}`}
-                        className="text-[13px] text-[#222] leading-snug hover:text-navy hover:underline line-clamp-2 flex-1"
-                      >
-                        {a.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-
-            {/* 카테고리 바로가기 */}
-            {categories && categories.length > 0 && (
-              <div className="bg-white border border-[#dddddd] p-3">
-                <h3 className="section-title-sm">카테고리</h3>
-                <div className="grid grid-cols-2 gap-1.5 mt-1">
-                  <Link
-                    href="/"
-                    className={`text-center py-1.5 text-[12px] border rounded transition-colors ${
-                      !categorySlug
-                        ? 'bg-navy text-white border-navy'
-                        : 'text-[#555] border-[#ddd] hover:border-navy hover:text-navy'
-                    }`}
-                  >
-                    전체
                   </Link>
-                  {categories.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      href={`/?category=${cat.slug}`}
-                      className={`text-center py-1.5 text-[12px] border rounded transition-colors ${
-                        categorySlug === cat.slug
-                          ? 'bg-navy text-white border-navy'
-                          : 'text-[#555] border-[#ddd] hover:border-navy hover:text-navy'
-                      }`}
-                    >
-                      {cat.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
+                </li>
+              ))}
+            </ul>
+          </section>
 
-            {/* 광고 영역 */}
-            <div className="bg-white border border-[#dddddd] h-[250px] flex items-center justify-center">
-              <span className="text-[11px] text-[#ccc]">광고 영역</span>
+          <aside className="space-y-9">
+            <div className="lg:hidden">
+              <SectionHeading title="실시간 뉴스" as="h3" />
+              <RealtimeList items={realtime} />
             </div>
+            <MostViewed items={mostViewed} />
+            {isDemo && <AdSlot label="광고 영역 300×250" className="hidden h-[250px] lg:flex" />}
           </aside>
         </div>
       </div>
 
-      {/* ─── 푸터 ─── */}
-      <footer className="mt-8 bg-[#222222] text-white">
-        <div className="mx-auto max-w-[1200px] px-4 py-8">
-          <div className="flex flex-wrap items-start gap-8 mb-5 pb-5 border-b border-white/10">
+      {/* ── 케어 전문뉴스 ── */}
+      <section aria-labelledby="specialty-title" className="border-y border-rule bg-soft py-9">
+        <div className="mx-auto max-w-[1200px] px-4">
+          <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <p className="text-[18px] font-bold mb-1">{siteName}</p>
-              {outlet?.domain && <p className="text-[12px] text-gray-400">{outlet.domain}</p>}
+              <p className="font-serif text-[11px] tracking-[0.24em] text-gold-ink">{site.nameEn} SPECIAL</p>
+              <h2 id="specialty-title" className="mt-1 text-[24px] font-extrabold tracking-[-0.03em] text-brand">케어 전문뉴스</h2>
             </div>
-            {categories && categories.length > 0 && (
-              <div className="flex flex-wrap gap-x-5 gap-y-1">
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    href={`/?category=${cat.slug}`}
-                    className="text-[12px] text-gray-400 hover:text-white transition-colors"
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
-              </div>
-            )}
+            <p className="hidden text-[13px] text-sub lg:block">{site.description}</p>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-gray-600">
-            <p>© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
-            <Link href="/login" className="hover:text-gray-300 transition-colors">편집국 로그인</Link>
+
+          <div className="hidden grid-cols-4 gap-5 lg:grid">
+            {specialty.map((s) => {
+              const [lead, ...rest] = bySection[s.slug] ?? []
+              return (
+                <div key={s.slug} className="flex flex-col border-t-[3px] border-brand bg-white p-5">
+                  <h3 className="text-[17px] font-bold tracking-[-0.02em] text-brand">
+                    <Link href={`/section/${s.slug}`} className="hover:underline underline-offset-4">{s.name}</Link>
+                  </h3>
+                  <p className="mt-0.5 text-[12px] text-sub">{s.description}</p>
+                  {lead ? (
+                    <>
+                      <Link href={`/news/${lead.id}`} className="headline-link group mt-4 block">
+                        <Thumb src={lead.thumbnail_url} alt={lead.title} ratio="3 / 2" />
+                        <p className="headline-text mt-3 line-clamp-2 text-[15.5px] font-bold leading-[1.42]">{lead.title}</p>
+                      </Link>
+                      <TitleList items={rest.slice(0, 3)} className="mt-4 border-t border-rule pt-4" />
+                    </>
+                  ) : (
+                    <p className="py-10 text-center text-[13px] text-sub">아직 발행된 기사가 없습니다.</p>
+                  )}
+                  <Link href={`/section/${s.slug}`} className="mt-auto pt-4 text-[12.5px] text-sub hover:text-brand">
+                    {s.name} 더보기 +
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="lg:hidden">
+            <SpecialtyTabs
+              tabs={specialty.map((s) => ({ slug: s.slug, name: s.name, description: s.description, articles: bySection[s.slug] ?? [] }))}
+            />
           </div>
         </div>
-      </footer>
-    </div>
+      </section>
+
+      {/* ── 종합 섹션 ── */}
+      <div className="mx-auto grid max-w-[1200px] gap-10 px-4 pt-9 sm:grid-cols-2 lg:grid-cols-4 lg:gap-7">
+        {general.map((s) => {
+          const [lead, ...rest] = bySection[s.slug] ?? []
+          return (
+            <section key={s.slug}>
+              <SectionHeading title={s.name} href={`/section/${s.slug}`} />
+              {lead ? (
+                <>
+                  <Link href={`/news/${lead.id}`} className="headline-link group flex gap-3 lg:block">
+                    {lead.thumbnail_url && (
+                      <Thumb src={lead.thumbnail_url} alt={lead.title} ratio="3 / 2" className="w-[118px] flex-shrink-0 lg:w-full" />
+                    )}
+                    <p className="headline-text line-clamp-2 text-[15.5px] font-bold leading-[1.42] lg:mt-3">{lead.title}</p>
+                  </Link>
+                  <TitleList items={rest.slice(0, 4)} className="mt-4" />
+                </>
+              ) : (
+                <p className="py-6 text-[13px] text-sub">아직 발행된 기사가 없습니다.</p>
+              )}
+            </section>
+          )
+        })}
+      </div>
+    </SiteFrame>
+  )
+}
+
+function RealtimeList({ items }: { items: PublicArticle[] }) {
+  return (
+    <ul className="divide-y divide-rule">
+      {items.map((a) => (
+        <li key={a.id}>
+          <Link href={`/news/${a.id}`} className="group flex gap-3 py-3">
+            <div className="min-w-0 flex-1">
+              <time dateTime={a.published_at ?? undefined} className="text-[12px] font-semibold text-brand tabular-nums">
+                {formatShort(a.published_at)}
+              </time>
+              <p className="mt-0.5 line-clamp-2 text-[14.5px] leading-[1.45] group-hover:underline underline-offset-2">{a.title}</p>
+            </div>
+            {a.thumbnail_url && <Thumb src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[84px] flex-shrink-0" />}
+          </Link>
+        </li>
+      ))}
+    </ul>
   )
 }

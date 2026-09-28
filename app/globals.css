@@ -18,33 +18,19 @@ body {
 /* 기사 본문 렌더링 */
 .article-body { @apply text-sm leading-7 whitespace-pre-wrap; }
 
-/* NDsoft 스타일 섹션 타이틀 */
-.section-title {
-  @apply flex items-center gap-2 text-[15px] font-bold text-ink pb-2 mb-4 border-b-2 border-navy;
+/* 공개 신문 사이트 */
+.site {
+  @apply bg-white text-body;
+  word-break: keep-all;
 }
-.section-title::before {
-  content: '';
-  @apply block w-1 h-4 bg-accent flex-shrink-0;
+.site :focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
-.section-title-sm {
-  @apply text-[13px] font-bold text-ink pb-1.5 mb-3 border-b border-navy/30;
-}
-.section-title-blue {
-  @apply section-title;
-  border-color: theme('colors.review');
-}
-
-/* 속보 티커 스크롤 */
-@keyframes ticker {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.ticker-scroll {
-  animation: ticker 30s linear infinite;
-}
-.ticker-scroll:hover {
-  animation-play-state: paused;
-}
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.headline-link:hover .headline-text { @apply underline decoration-1 underline-offset-4; }
+.article-content p { @apply mb-6; }
 
 /* 입력 공통 */
 .field-input {

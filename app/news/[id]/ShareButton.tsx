@@ -14,8 +14,8 @@ export default function ShareButton({ title }: { title: string }) {
   return (
     <button
       onClick={share}
-      className="border border-line rounded px-2.5 py-1 text-[11px] hover:bg-line/40 transition-colors"
-      aria-label="공유"
+      type="button"
+      className="rounded-full border border-rule px-3.5 py-1.5 text-[12.5px] text-sub transition-colors hover:border-brand hover:text-brand"
     >
       공유
     </button>

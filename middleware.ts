@@ -1,19 +1,22 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // 로그인 없이 볼 수 있는 공개 경로
-const PUBLIC_PATHS = ['/', '/news', '/login']
-
 function isPublicPath(pathname: string) {
   return (
     pathname === '/' ||
     pathname.startsWith('/news/') ||
+    pathname.startsWith('/section/') ||
+    pathname === '/search' ||
     pathname.startsWith('/login')
   )
 }
 
 export async function middleware(request: NextRequest) {
+  // Supabase 미연결(미리보기) 상태에서는 공개 페이지만 샘플 데이터로 보여준다
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.next()
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -22,7 +25,7 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
