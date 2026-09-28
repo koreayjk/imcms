@@ -177,6 +177,14 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             )}
           </div>
 
+          {article?.ai_notes && (
+            <div className="rounded border border-draft/40 bg-draft/10 px-4 py-3 text-[13px] leading-relaxed">
+              <p className="font-semibold text-draft">AI 초안 — 발행 전에 확인하세요</p>
+              <p className="mt-1 whitespace-pre-line text-ink">{article.ai_notes}</p>
+              <p className="mt-1.5 text-[12px] text-muted">이 메모는 편집 화면에만 보이고 홈페이지에는 나가지 않습니다. 원문과 사실관계를 대조한 뒤 발행해 주세요.</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-[64px_1fr] items-center gap-x-3 gap-y-3">
             <label htmlFor="section" className="text-[13px] font-semibold">섹션</label>
             <select id="section" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="field-input max-w-xs">

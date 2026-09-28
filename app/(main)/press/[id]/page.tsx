@@ -5,12 +5,14 @@ import { ensureFullBody, sourceLabel, type PressRelease } from '@/lib/press'
 import { sanitizeBody } from '@/lib/article-html'
 import { formatDateTime } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
+import { aiReady } from '@/lib/ai-draft'
 import { createArticleFromPress } from '../actions'
 
 export const preferredRegion = 'icn1'
-export const maxDuration = 30
+// AI 초안은 최대 50초까지 기다린다
+export const maxDuration = 60
 
-export default async function PressDetailPage({ params }: { params: { id: string } }) {
+export default async function PressDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
   const { supabase, outletId } = await getCmsContext()
 
   const { data } = await supabase.from('press_releases').select('*').eq('id', params.id).maybeSingle()
@@ -21,6 +23,8 @@ export default async function PressDetailPage({ params }: { params: { id: string
     ? await supabase.from('articles').select('id, title, status').eq('outlet_id', outletId).eq('press_release_id', r.id)
     : { data: [] as { id: string; title: string; status: string }[] }
 
+  const ai = aiReady()
+
   return (
     <div className="mx-auto max-w-[900px] px-8 py-8 pb-28">
       <nav className="mb-5 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label="현재 위치">
@@ -28,6 +32,10 @@ export default async function PressDetailPage({ params }: { params: { id: string
         <span>›</span>
         <span className="max-w-md truncate text-ink">{r.title}</span>
       </nav>
+
+      {searchParams.error && (
+        <p role="alert" className="mb-5 rounded-lg border border-danger/30 bg-danger/5 px-5 py-3.5 text-[13.5px] text-danger">{searchParams.error}</p>
+      )}
 
       {made && made.length > 0 && (
         <div className="mb-5 rounded-lg border border-published/30 bg-published/5 px-5 py-3.5 text-[13.5px]">
@@ -57,12 +65,18 @@ export default async function PressDetailPage({ params }: { params: { id: string
 
       <div className="fixed bottom-0 right-0 z-20 border-t border-line bg-white/95 backdrop-blur" style={{ left: 76 }}>
         <div className="mx-auto flex max-w-[900px] items-center gap-3 px-8 py-3">
-          <p className="flex-1 text-[12.5px] text-muted">
-            기사 초안이 만들어지고 사진은 우리 저장소로 옮겨집니다. 끝에 “{sourceLabel(r.source_key)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
+          <p className="flex-1 text-[12.5px] leading-relaxed text-muted">
+            {ai
+              ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.'
+              : 'AI 초안은 ANTHROPIC_API_KEY를 설정하면 쓸 수 있습니다.'}{' '}
+            사진은 우리 저장소로 옮겨지고, 끝에 “{sourceLabel(r.source_key)} 보도자료를 바탕으로 작성” 문구가 붙습니다.
           </p>
           <Link href="/press" className="btn-secondary">목록</Link>
-          <form action={createArticleFromPress.bind(null, r.id)}>
-            <PendingButton pending="만드는 중…" className="btn-publish px-5">기사로 만들기</PendingButton>
+          <form action={createArticleFromPress.bind(null, r.id, 'raw')}>
+            <PendingButton pending="만드는 중…" className="btn-secondary">원문 그대로 기사로</PendingButton>
+          </form>
+          <form action={createArticleFromPress.bind(null, r.id, 'ai')}>
+            <PendingButton pending="AI가 쓰는 중… (최대 1분)" className="btn-publish px-5" disabled={!ai}>AI 초안으로 기사 만들기</PendingButton>
           </form>
         </div>
       </div>

@@ -47,6 +47,8 @@ export interface Article {
   is_featured: boolean
   source_article_id?: string | null
   syndicate_to?: string[]
+  press_release_id?: string | null
+  ai_notes?: string | null
   author?: Pick<Profile, 'id' | 'full_name' | 'role'>
   category?: Pick<Category, 'id' | 'name' | 'slug'>
   outlet?: Pick<Outlet, 'id' | 'name'>

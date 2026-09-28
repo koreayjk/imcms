@@ -148,6 +148,21 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease):
   }
 }
 
+// AI에 보낼 본문: 사진·태그는 빼고 문단만 남긴다
+export function htmlToText(html: string) {
+  return decode(
+    html
+      .replace(/<img[^>]*>/gi, '')
+      .replace(/<p><em>▲[\s\S]*?<\/em><\/p>/g, '')
+      .replace(/<\/(p|h\d|li|blockquote)>|<br\s*\/?>/gi, '\n\n')
+      .replace(/<[^>]+>/g, '')
+  )
+    .split(/\n\s*\n/)
+    .map((p) => p.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n\n')
+}
+
 export function sourceLabel(key: string) {
   return key.startsWith('nw-') ? '뉴스와이어' : key.startsWith('kr-') ? '정책브리핑' : '보도자료'
 }
