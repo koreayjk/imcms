@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${title} | ${site.name}`,
     description,
     icons: { icon: site.logoMark },
+    robots: site.indexable ? { index: true, follow: true } : undefined,
     alternates: data.source?.url ? { canonical: data.source.url } : undefined,
     openGraph: {
       title,

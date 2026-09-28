@@ -15,13 +15,14 @@ export function generateMetadata(): Metadata {
     title: `${site.name} | ${site.nameEn}`,
     description: site.description,
     icons: { icon: site.logoMark },
+    robots: site.indexable ? { index: true, follow: true } : undefined,
     openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website' },
   }
 }
 
 export default async function HomePage() {
   const site = currentSite()
-  const { latest, mostViewed, bySection } = await getHomeData(site)
+  const { latest, mostViewed, bySection, pinned } = await getHomeData(site)
 
   if (!latest.length) {
     return (
@@ -47,12 +48,17 @@ export default async function HomePage() {
   }
   const hasImage = (a: PublicArticle) => !!a.thumbnail_url
 
-  const headline = take(1, (a) => a.is_featured && hasImage(a))[0] ?? take(1, hasImage)[0] ?? take(1)[0]
-  const subTops = take(2, hasImage)
-  subTops.push(...take(2 - subTops.length))
+  // 편집판에서 고정한 기사가 먼저, 빈 자리는 최신 기사로 자동 배치
+  Object.values(pinned).flat().forEach((a) => a && used.add(a.id))
+  const fill = (slots: (PublicArticle | null)[], pred: (a: PublicArticle) => boolean) =>
+    slots.map((a) => a ?? take(1, pred)[0] ?? take(1)[0] ?? null).filter((a): a is PublicArticle => !!a)
+
+  const headline =
+    pinned.headline[0] ?? take(1, (a) => a.is_featured && hasImage(a))[0] ?? take(1, hasImage)[0] ?? take(1)[0]
+  const subTops = fill(pinned.top, hasImage)
   const realtime = take(5)
-  const major = take(6, hasImage)
-  major.push(...take(6 - major.length))
+  const major = fill(pinned.major, hasImage)
+  const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
 
   const specialty = site.sections.filter((s) => s.specialty)
   const general = site.sections.filter((s) => !s.specialty)
@@ -139,6 +145,25 @@ export default async function HomePage() {
           </aside>
         </div>
       </div>
+
+      {/* ── 이슈 PICK (편집판에서 채운 경우만) ── */}
+      {picks.length > 0 && (
+        <section aria-labelledby="pick-title" className="mx-auto mb-9 max-w-[1200px] px-4">
+          <div className="border-t-[3px] border-gold pt-4">
+            <h2 id="pick-title" className="mb-4 text-[18px] font-bold tracking-[-0.02em] text-gold-ink">이슈 PICK</h2>
+            <ul className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+              {picks.map((a) => (
+                <li key={a.id}>
+                  <Link href={`/news/${a.id}`} className="headline-link group block border-l-2 border-rule pl-3 hover:border-gold">
+                    <CategoryLabel article={a} />
+                    <p className="headline-text mt-0.5 line-clamp-2 text-[15px] font-semibold leading-[1.45]">{a.title}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
 
       {/* ── 케어 전문뉴스 ── */}
       <section aria-labelledby="specialty-title" className="border-y border-rule bg-soft py-9">

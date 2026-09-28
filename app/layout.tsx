@@ -1,8 +1,12 @@
 import './globals.css'
 
-export const metadata = {
+import type { Metadata } from 'next'
+
+// 기본은 검색엔진 수집 금지. 오픈한 매체만 sites.ts의 indexable로 허용한다
+export const metadata: Metadata = {
   title: 'IM CMS',
   description: '언론사용 기사 관리 시스템',
+  robots: { index: false, follow: false },
 }
 
 export default function RootLayout({

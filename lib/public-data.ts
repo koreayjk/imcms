@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { headers } from 'next/headers'
 import { demoArticles } from './demo-articles'
 import { resolveSite, type SiteConfig } from './sites'
+import { normalizeLayout, type SlotKey } from './home-layout'
 
 export type PublicArticle = {
   id: string
@@ -73,6 +74,22 @@ export type HomeData = {
   latest: PublicArticle[]
   mostViewed: PublicArticle[]
   bySection: Record<string, PublicArticle[]>
+  pinned: Record<SlotKey, (PublicArticle | null)[]>
+}
+
+const emptyPinned = () => normalizeLayout({}) as unknown as Record<SlotKey, (PublicArticle | null)[]>
+
+// 편집판에서 고정한 기사들 (home_layouts 표가 아직 없으면 전부 빈 자리)
+async function pinnedArticles(scope: NonNullable<Awaited<ReturnType<typeof outletScope>>>) {
+  const { data } = await scope.supabase.from('home_layouts').select('layout').eq('outlet_id', scope.outletId).maybeSingle()
+  const layout = normalizeLayout(data?.layout)
+  const ids = Array.from(new Set(Object.values(layout).flat().filter((x): x is string => !!x)))
+  if (!ids.length) return emptyPinned()
+  const { data: rows } = await published(scope).in('id', ids)
+  const byId = new Map((rows ?? []).map((r) => [r.id as string, toPublic(r)]))
+  return Object.fromEntries(
+    Object.entries(layout).map(([k, list]) => [k, list.map((id) => (id ? byId.get(id) ?? null : null))])
+  ) as Record<SlotKey, (PublicArticle | null)[]>
 }
 
 export async function getHomeData(site: SiteConfig): Promise<HomeData> {
@@ -85,13 +102,15 @@ export async function getHomeData(site: SiteConfig): Promise<HomeData> {
       latest: all.slice(0, 24),
       mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 8),
       bySection,
+      pinned: emptyPinned(),
     }
   }
 
   const scope = await outletScope(site)
-  if (!scope) return { latest: [], mostViewed: [], bySection: {} }
+  if (!scope) return { latest: [], mostViewed: [], bySection: {}, pinned: emptyPinned() }
 
-  const [latest, mostViewed, ...sections] = await Promise.all([
+  const [pinned, latest, mostViewed, ...sections] = await Promise.all([
+    pinnedArticles(scope),
     published(scope).order('published_at', { ascending: false }).limit(24),
     published(scope).order('view_count', { ascending: false }).limit(8),
     ...site.sections.map((s) =>
@@ -102,6 +121,7 @@ export async function getHomeData(site: SiteConfig): Promise<HomeData> {
   ])
 
   return {
+    pinned,
     latest: (latest.data ?? []).map(toPublic),
     mostViewed: (mostViewed.data ?? []).map(toPublic),
     bySection: Object.fromEntries(site.sections.map((s, i) => [s.slug, (sections[i].data ?? []).map(toPublic)])),

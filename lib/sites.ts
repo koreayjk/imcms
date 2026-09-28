@@ -8,6 +8,8 @@ export type SectionConfig = {
 export type SiteConfig = {
   key: string
   domains: string[]
+  // 정식 오픈 전(테스트 기사가 있는 동안)에는 false로 두어 검색엔진 수집을 막는다
+  indexable: boolean
   name: string
   nameEn: string
   slogan: string
@@ -36,6 +38,7 @@ export const SITES: SiteConfig[] = [
   {
     key: 'thecaretimes',
     domains: ['thecaretimes.com', 'www.thecaretimes.com'],
+    indexable: false,
     name: '더케어타임즈',
     nameEn: 'THE CARE TIMES',
     slogan: '세상을 더 깊이, 사람을 더 가까이',

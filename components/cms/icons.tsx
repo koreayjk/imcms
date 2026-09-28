@@ -12,6 +12,9 @@ export const WriteIcon = () => (
 export const ListIcon = () => (
   <svg {...base}><path d="M9 6h11M9 12h11M9 18h11" /><circle cx="4.5" cy="6" r="1" /><circle cx="4.5" cy="12" r="1" /><circle cx="4.5" cy="18" r="1" /></svg>
 )
+export const LayoutIcon = () => (
+  <svg {...base}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M10 10v10" /></svg>
+)
 export const FolderIcon = () => (
   <svg {...base}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
 )
