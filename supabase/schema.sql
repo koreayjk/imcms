@@ -104,6 +104,26 @@ alter table media_assets enable row level security;
 -- profiles
 create policy "profiles_select" on profiles for select to authenticated using (true);
 create policy "profiles_update_own" on profiles for update to authenticated using (id = auth.uid());
+create policy "profiles_update_admin" on profiles for update to authenticated
+  using (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+-- 권한(role)·소속(outlet_id)은 관리자만 변경 가능 (SQL 에디터에서는 auth.uid()가 없어 허용)
+create or replace function protect_profile_fields()
+returns trigger as $$
+begin
+  if (new.role is distinct from old.role or new.outlet_id is distinct from old.outlet_id)
+     and auth.uid() is not null
+     and not exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+  then
+    raise exception '권한 또는 소속은 관리자만 변경할 수 있습니다.';
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+create trigger profiles_protect_fields
+  before update on profiles
+  for each row execute function protect_profile_fields();
 
 -- outlets
 create policy "outlets_select" on outlets for select to authenticated using (true);
