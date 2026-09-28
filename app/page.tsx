@@ -15,7 +15,7 @@ export function generateMetadata(): Metadata {
     title: `${site.name} | ${site.nameEn}`,
     description: site.description,
     icons: { icon: site.logoMark },
-    robots: site.indexable ? { index: true, follow: true } : undefined,
+    ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
     openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website' },
   }
 }

@@ -16,7 +16,7 @@ export function generateMetadata({ params }: Props): Metadata {
     title: section ? `${section.name} | ${site.name}` : site.name,
     description: section?.description ?? site.description,
     icons: { icon: site.logoMark },
-    robots: site.indexable ? { index: true, follow: true } : undefined,
+    ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
   }
 }
 
