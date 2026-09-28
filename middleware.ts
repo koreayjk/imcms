@@ -9,7 +9,9 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/news/') ||
     pathname.startsWith('/section/') ||
     pathname === '/search' ||
-    pathname.startsWith('/login')
+    pathname.startsWith('/login') ||
+    // 예약 수집: 로그인 대신 DB 비밀 열쇠로 확인한다
+    pathname.startsWith('/api/cron/')
   )
 }
 

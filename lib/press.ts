@@ -1,11 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { PRESS_SOURCES, findPressSource } from './press-sources'
+import { PRESS_SOURCES, findPressSource, type PressSource } from './press-sources'
 
 const UA = 'Mozilla/5.0 (compatible; IMCMS-PressReader/1.0)'
 const STALE_MS = 10 * 60 * 1000
 
 export type PressRelease = {
   id: string
+  created_by?: string | null
   source_key: string
   source_name: string
   title: string
@@ -24,7 +25,7 @@ function decode(s: string) {
     .replace(/&nbsp;/g, ' ').replace(/&middot;/g, '·').replace(/&amp;/g, '&')
 }
 
-function escapeHtml(s: string) {
+export function escapeHtml(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
@@ -64,6 +65,40 @@ async function fetchText(url: string, ms = 7000) {
   }
 }
 
+export type PressRow = {
+  source_key: string
+  source_name: string
+  guid: string
+  title: string
+  link: string
+  summary: string | null
+  body_html: string | null
+  published_at: string | null
+}
+
+export type CollectResult = { key: string; ok: boolean; message: string | null; rows: PressRow[] }
+
+// 출처 하나의 RSS를 읽어 저장할 행으로 바꾼다 (저장은 호출한 쪽에서)
+export async function collectSource(s: PressSource): Promise<CollectResult> {
+  try {
+    const items = parseRss(await fetchText(s.url)).slice(0, 40)
+    const rows = items.map((i) => ({
+      source_key: s.key,
+      source_name: s.name,
+      guid: i.guid,
+      title: i.title,
+      link: i.link,
+      summary: stripTags(i.description).replace(/^.{0,30}?--\s*\(?뉴스와이어\)?\s*--\s*/, '').slice(0, 400) || null,
+      body_html: s.kind === 'rss' ? i.description || null : null,
+      published_at: i.pubDate && !Number.isNaN(Date.parse(i.pubDate)) ? new Date(i.pubDate).toISOString() : null,
+    }))
+    return { key: s.key, ok: true, message: null, rows }
+  } catch (e) {
+    const message = e instanceof Error ? (e.name === 'AbortError' ? '응답 시간 초과' : e.message) : '알 수 없는 오류'
+    return { key: s.key, ok: false, message, rows: [] }
+  }
+}
+
 // 오래된(10분) 출처만 다시 가져온다. 새 항목은 guid 기준으로 중복 없이 쌓인다
 export async function refreshPress(supabase: SupabaseClient, force = false) {
   const { data: logs } = await supabase.from('press_fetch_log').select('source_key, fetched_at')
@@ -72,27 +107,12 @@ export async function refreshPress(supabase: SupabaseClient, force = false) {
 
   await Promise.all(
     due.map(async (s) => {
-      try {
-        const items = parseRss(await fetchText(s.url)).slice(0, 40)
-        const rows = items.map((i) => ({
-          source_key: s.key,
-          source_name: s.name,
-          guid: i.guid,
-          title: i.title,
-          link: i.link,
-          summary: stripTags(i.description).replace(/^.{0,30}?--\s*\(?뉴스와이어\)?\s*--\s*/, '').slice(0, 400) || null,
-          body_html: s.kind === 'rss' ? i.description || null : null,
-          published_at: i.pubDate && !Number.isNaN(Date.parse(i.pubDate)) ? new Date(i.pubDate).toISOString() : null,
-        }))
-        if (rows.length) {
-          const { error } = await supabase.from('press_releases').upsert(rows, { onConflict: 'guid', ignoreDuplicates: true })
-          if (error) throw new Error(error.message)
-        }
-        await supabase.from('press_fetch_log').upsert({ source_key: s.key, fetched_at: new Date().toISOString(), ok: true, message: null, item_count: rows.length })
-      } catch (e) {
-        const message = e instanceof Error ? (e.name === 'AbortError' ? '응답 시간 초과' : e.message) : '알 수 없는 오류'
-        await supabase.from('press_fetch_log').upsert({ source_key: s.key, fetched_at: new Date().toISOString(), ok: false, message, item_count: 0 })
+      let r = await collectSource(s)
+      if (r.rows.length) {
+        const { error } = await supabase.from('press_releases').upsert(r.rows, { onConflict: 'guid', ignoreDuplicates: true })
+        if (error) r = { ...r, ok: false, message: error.message }
       }
+      await supabase.from('press_fetch_log').upsert({ source_key: s.key, fetched_at: new Date().toISOString(), ok: r.ok, message: r.message, item_count: r.ok ? r.rows.length : 0 })
     })
   )
 }
@@ -163,6 +183,19 @@ export function htmlToText(html: string) {
     .join('\n\n')
 }
 
-export function sourceLabel(key: string) {
-  return key.startsWith('nw-') ? '뉴스와이어' : key.startsWith('kr-') ? '정책브리핑' : '보도자료'
+// 기사 끝 "○○에서 배포한 보도자료" 문구에 들어갈 이름
+export function sourceLabel(r: Pick<PressRelease, 'source_key' | 'source_name'>) {
+  if (r.source_key.startsWith('nw-')) return '뉴스와이어'
+  if (r.source_key.startsWith('kr-')) return '정책브리핑'
+  return r.source_name
 }
+
+// 붙여넣은 글을 문단 HTML로 (빈 줄로 나뉘어 있으면 빈 줄, 아니면 줄바꿈 기준)
+export function textToParagraphs(text: string) {
+  const clean = text.replace(/\r\n?/g, '\n').trim()
+  const parts = /\n\s*\n/.test(clean) ? clean.split(/\n\s*\n/) : clean.split('\n')
+  return parts.map((p) => p.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean)
+}
+
+export const MANUAL_SOURCE = 'manual'
+
