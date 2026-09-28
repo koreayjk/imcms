@@ -1,17 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { SiteConfig } from '@/lib/sites'
 import Logo from './Logo'
-import { CloseIcon, MenuIcon, SearchIcon } from './icons'
+import { ChartTile, ClockTile, CloseIcon, CrownTile, MegaphoneTile, MenuIcon, PenTile, SearchIcon, UserIcon } from './icons'
 
 type Props = { site: SiteConfig; current?: string }
 
 export default function MobileHeader({ site, current }: Props) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const mail = `mailto:${site.legal.email}`
 
   useEffect(() => {
@@ -19,7 +20,20 @@ export default function MobileHeader({ site, current }: Props) {
     document
       .querySelector('[data-mobile-nav] [aria-current="page"]')
       ?.scrollIntoView({ inline: 'center', block: 'nearest' })
+    const hash = window.location.hash.slice(1)
+    if (hash) requestAnimationFrame(() => document.getElementById(hash)?.scrollIntoView())
   }, [pathname])
+
+  // 홈 화면의 특정 블록(실시간·많이 본·주요 뉴스)으로 이동
+  function jumpTo(id: string) {
+    setOpen(false)
+    if (pathname === '/') {
+      history.replaceState(null, '', `/#${id}`)
+      requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }))
+    } else {
+      router.push(`/#${id}`)
+    }
+  }
 
   useEffect(() => {
     if (!open) return
@@ -31,9 +45,6 @@ export default function MobileHeader({ site, current }: Props) {
       window.removeEventListener('keydown', onKey)
     }
   }, [open])
-
-  const general = site.sections.filter((s) => !s.specialty)
-  const specialty = site.sections.filter((s) => s.specialty)
 
   return (
     <div className="sticky top-0 z-40 bg-white lg:hidden">
@@ -85,36 +96,41 @@ export default function MobileHeader({ site, current }: Props) {
 
       {open && (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="전체 메뉴">
-          <button type="button" aria-label="메뉴 닫기" onClick={() => setOpen(false)} className="absolute inset-0 bg-black/45" />
-          <div className="absolute inset-y-0 left-0 flex w-[84%] max-w-[340px] flex-col overflow-y-auto bg-white">
-            <div className="flex items-center justify-between border-b border-rule px-4 py-4">
-              <Logo site={site} size="md" />
-              <button type="button" onClick={() => setOpen(false)} aria-label="메뉴 닫기" className="grid h-10 w-10 place-items-center text-body">
-                <CloseIcon />
-              </button>
+          <button type="button" aria-label="메뉴 닫기" onClick={() => setOpen(false)} className="drawer-fade absolute inset-0 bg-black/50" />
+          <div
+            className="drawer-in absolute inset-y-0 left-0 flex w-[82%] max-w-[360px] flex-col overflow-y-auto bg-[#EFF1F0]"
+            onClick={(e) => (e.target as HTMLElement).closest('a') && setOpen(false)}
+          >
+            <div className="flex items-center justify-between bg-white py-3 pl-4 pr-2">
+              <Logo site={site} size="sm" />
+              <div className="flex items-center">
+                <Link href="/login" aria-label="편집국 로그인" className="grid h-11 w-11 place-items-center text-body"><UserIcon /></Link>
+                <button type="button" onClick={() => setOpen(false)} aria-label="메뉴 닫기" className="grid h-11 w-11 place-items-center text-body">
+                  <CloseIcon />
+                </button>
+              </div>
             </div>
 
-            <div className="px-5 py-5">
-              <p className="mb-2 text-[12px] font-semibold tracking-[0.08em] text-gold-ink">케어 전문뉴스</p>
-              <ul className="mb-6 divide-y divide-rule border-y border-rule">
-                {specialty.map((s) => (
-                  <li key={s.slug}>
-                    <Link href={`/section/${s.slug}`} className="block py-3">
-                      <span className={`block text-[16px] font-bold ${current === s.slug ? 'text-brand' : 'text-body'}`}>{s.name}</span>
-                      {s.description && <span className="mt-0.5 block text-[12.5px] text-sub">{s.description}</span>}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            <form action="/search" className="flex bg-[#2F3431]">
+              <label htmlFor="drawer-q" className="sr-only">기사 검색</label>
+              <input
+                id="drawer-q"
+                name="q"
+                placeholder="검색어를 입력하세요"
+                className="min-w-0 flex-1 bg-transparent px-5 py-4 text-[16px] text-white outline-none placeholder:text-white/40"
+              />
+              <button type="submit" aria-label="검색" className="grid w-14 place-items-center bg-[#262A27] text-white"><SearchIcon /></button>
+            </form>
 
-              <p className="mb-2 text-[12px] font-semibold tracking-[0.08em] text-gold-ink">종합</p>
-              <ul className="grid grid-cols-2 gap-2">
-                {general.map((s) => (
+            <nav aria-label="전체 섹션" className="bg-white px-5 pb-6 pt-4">
+              <ul className="grid grid-cols-2 gap-x-4">
+                {site.sections.map((s) => (
                   <li key={s.slug}>
                     <Link
                       href={`/section/${s.slug}`}
-                      className={`block rounded border px-3 py-2.5 text-center text-[15px] font-semibold ${
-                        current === s.slug ? 'border-brand text-brand' : 'border-rule text-body'
+                      aria-current={current === s.slug ? 'page' : undefined}
+                      className={`block py-3 text-[18px] tracking-[-0.02em] ${
+                        current === s.slug ? 'font-bold text-brand' : s.specialty ? 'font-semibold text-brand' : 'text-body'
                       }`}
                     >
                       {s.name}
@@ -122,15 +138,35 @@ export default function MobileHeader({ site, current }: Props) {
                   </li>
                 ))}
               </ul>
-            </div>
+            </nav>
 
-            <div className="mt-auto border-t border-rule bg-soft px-5 py-5 text-[14px]">
-              <div className="flex gap-4 text-sub">
-                <a href={`${mail}?subject=${encodeURIComponent('[기사제보]')}`}>기사제보</a>
-                <a href={`${mail}?subject=${encodeURIComponent('[광고문의]')}`}>광고문의</a>
-                <Link href="/login">편집국 로그인</Link>
-              </div>
-              <p className="mt-4 text-[12.5px] text-sub">{site.slogan}</p>
+            <ul className="mt-2 grid grid-cols-3 gap-px bg-[#E2E5E3]">
+              {[
+                { href: '/#realtime', label: '실시간 뉴스', icon: <ClockTile />, color: 'text-brand' },
+                { href: '/#popular', label: '많이 본 뉴스', icon: <ChartTile />, color: 'text-[#3AA79B]' },
+                { href: '/#major', label: '주요 뉴스', icon: <CrownTile />, color: 'text-gold' },
+                { href: `${mail}?subject=${encodeURIComponent('[기사제보]')}`, label: '기사제보', icon: <PenTile />, color: 'text-[#7B5EA7]' },
+                { href: `${mail}?subject=${encodeURIComponent('[광고문의]')}`, label: '광고문의', icon: <MegaphoneTile />, color: 'text-[#3C423E]' },
+              ].map((t) => (
+                <li key={t.label} className="bg-white">
+                  {t.href.startsWith('/#') ? (
+                    <button type="button" onClick={() => jumpTo(t.href.slice(2))} className="flex w-full flex-col items-center gap-2 py-5 text-[14.5px] text-body active:bg-soft">
+                      <span className={t.color}>{t.icon}</span>
+                      {t.label}
+                    </button>
+                  ) : (
+                    <a href={t.href} className="flex flex-col items-center gap-2 py-5 text-[14.5px] text-body active:bg-soft">
+                      <span className={t.color}>{t.icon}</span>
+                      {t.label}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-auto px-5 pb-8 pt-8 text-center">
+              <p className="text-[13px] text-sub">{site.slogan}</p>
+              <p className="mt-1 text-[12px] text-[#8A918C]">© {new Date().getFullYear()} {site.name}</p>
             </div>
           </div>
         </div>

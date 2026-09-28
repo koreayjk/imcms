@@ -28,6 +28,11 @@ body {
   outline-offset: 2px;
 }
 .no-scrollbar { scrollbar-width: none; }
+@keyframes drawer-in { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes drawer-fade { from { opacity: 0; } to { opacity: 1; } }
+.drawer-in { animation: drawer-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.drawer-fade { animation: drawer-fade 0.24s ease-out; }
+@media (prefers-reduced-motion: reduce) { .drawer-in, .drawer-fade { animation: none; } }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .headline-link:hover .headline-text { @apply underline decoration-1 underline-offset-4; }
 

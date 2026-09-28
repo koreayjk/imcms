@@ -114,7 +114,7 @@ export default async function HomePage() {
 
         {/* ── 주요뉴스 + 많이 본 뉴스 ── */}
         <div className="grid gap-10 py-8 lg:grid-cols-[1fr_300px]">
-          <section>
+          <section id="major" className="scroll-mt-28">
             <SectionHeading title="주요뉴스" />
             <ul className="divide-y divide-rule lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-8 lg:divide-y-0">
               {major.map((a) => (
@@ -136,11 +136,13 @@ export default async function HomePage() {
           </section>
 
           <aside className="space-y-9">
-            <div className="lg:hidden">
+            <div id="realtime" className="scroll-mt-28 lg:hidden">
               <SectionHeading title="실시간 뉴스" as="h3" />
               <RealtimeList items={realtime} />
             </div>
-            <MostViewed items={mostViewed} />
+            <div id="popular" className="scroll-mt-28">
+              <MostViewed items={mostViewed} />
+            </div>
             {isDemo && <AdSlot label="광고 영역 300×250" className="hidden h-[250px] lg:flex" />}
           </aside>
         </div>
