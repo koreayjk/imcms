@@ -38,7 +38,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, i
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
-      save(false)
+      save('draft')
     }
   }, [title, body, excerpt, categoryId, thumbnailUrl, tags, metaTitle, metaDesc, isFeatured, scheduledAt])
 
@@ -47,7 +47,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, i
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  async function save(submitForReview: boolean) {
+  async function save(mode: 'draft' | 'review' | 'publish') {
     if (!title.trim()) { setError('제목을 입력해주세요.'); return }
     if (!body.trim())  { setError('본문을 입력해주세요.'); return }
     setError('')
@@ -69,11 +69,15 @@ export default function ArticleEditor({ article, categories, userId, outletId, i
       outlet_id: outletId,
     }
 
-    if (submitForReview) {
+    if (mode === 'review') {
       payload.status = 'in_review'
+    } else if (mode === 'publish') {
+      payload.status = 'published'
+      payload.published_at = new Date().toISOString()
+      payload.reviewed_by = userId
+      payload.reject_reason = null
     } else if (!article) {
       payload.status = 'draft'
-      payload.author_id = userId
     }
 
     let id = article?.id
@@ -88,23 +92,13 @@ export default function ArticleEditor({ article, categories, userId, outletId, i
     }
 
     setSaving(false)
-    if (submitForReview) {
-      router.push(`/articles/${id}`)
-    } else {
+    if (mode === 'draft') {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
       if (!article) router.push(`/articles/${id}/edit`)
+    } else {
+      router.push(`/articles/${id}`)
     }
-    router.refresh()
-  }
-
-  async function publish() {
-    if (!article) return
-    await supabase.from('articles').update({
-      status: 'published',
-      published_at: new Date().toISOString(),
-    }).eq('id', article.id)
-    router.push(`/articles/${article.id}`)
     router.refresh()
   }
 
@@ -281,7 +275,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, i
 
         <div className="flex gap-2">
           <button
-            onClick={() => save(false)}
+            onClick={() => save('draft')}
             disabled={saving}
             className="btn-secondary"
           >
@@ -290,7 +284,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, i
 
           {isDraft && (
             <button
-              onClick={() => save(true)}
+              onClick={() => save('review')}
               disabled={saving}
               className="btn-review"
             >
@@ -300,7 +294,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, i
 
           {isEditorPlus && article?.status !== 'published' && (
             <button
-              onClick={publish}
+              onClick={() => save('publish')}
               disabled={saving}
               className="btn-publish"
             >
