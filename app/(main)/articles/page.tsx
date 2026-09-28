@@ -1,220 +1,145 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { getCmsContext } from '@/lib/cms'
+import { formatDateTime } from '@/lib/format'
+import { ImageIcon } from '@/components/cms/icons'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 
-const TABS: { value: ArticleStatus | 'all'; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'draft', label: '초안' },
-  { value: 'in_review', label: '검토중' },
-  { value: 'published', label: '발행됨' },
-  { value: 'rejected', label: '반려' },
-]
+const TABS: (ArticleStatus | 'all')[] = ['all', 'draft', 'in_review', 'rejected', 'published']
+const PAGE_SIZE = 30
 
-type Props = { searchParams: { status?: string; q?: string; mine?: string } }
+type Props = { searchParams: { status?: string; q?: string; mine?: string; page?: string } }
 
 export default async function ArticlesPage({ searchParams }: Props) {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user, outletId, isEditorPlus } = await getCmsContext()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, full_name, role, outlet_id')
-    .eq('id', user.id)
-    .single()
-
-  const isEditorPlus = profile?.role === 'editor' || profile?.role === 'admin'
-  const statusFilter = searchParams.status as ArticleStatus | undefined
-  const searchQuery = searchParams.q?.trim()
+  const status = TABS.includes(searchParams.status as ArticleStatus) ? (searchParams.status as ArticleStatus) : undefined
+  const q = searchParams.q?.trim().slice(0, 100) || undefined
   const mineOnly = searchParams.mine === '1' || !isEditorPlus
+  const page = Math.max(1, Number(searchParams.page) || 1)
 
-  // 기사 조회
-  let query = supabase
-    .from('articles')
-    .select('id, title, status, created_at, updated_at, is_featured, reject_reason, author:profiles!articles_author_id_fkey(full_name), category:categories(name)')
-    .order('created_at', { ascending: false })
-
-  if (mineOnly) query = query.eq('author_id', user.id)
-  if (statusFilter) query = query.eq('status', statusFilter)
-  if (searchQuery) query = query.ilike('title', `%${searchQuery}%`)
-
-  const { data: articles } = await query
-
-  // 통계 (상태별 개수)
-  let countQuery = supabase.from('articles').select('status')
-  if (mineOnly) countQuery = countQuery.eq('author_id', user.id)
-  const { data: allForCount } = await countQuery
-
-  const counts = {
-    all: allForCount?.length || 0,
-    draft: allForCount?.filter(a => a.status === 'draft').length || 0,
-    in_review: allForCount?.filter(a => a.status === 'in_review').length || 0,
-    published: allForCount?.filter(a => a.status === 'published').length || 0,
-    rejected: allForCount?.filter(a => a.status === 'rejected').length || 0,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scoped = (query: any) => {
+    let out = query
+    if (mineOnly) out = out.eq('author_id', user.id)
+    if (outletId) out = out.eq('outlet_id', outletId)
+    return out
   }
 
-  const baseUrl = mineOnly && isEditorPlus ? '/articles?mine=1' : '/articles'
+  let listQuery = scoped(
+    supabase
+      .from('articles')
+      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', { count: 'exact' })
+  )
+  if (status) listQuery = listQuery.eq('status', status)
+  if (q) listQuery = listQuery.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
+
+  const [{ data, count }, ...tabCounts] = await Promise.all([
+    listQuery.order('updated_at', { ascending: false }).range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
+    ...TABS.map((t) => {
+      const c = scoped(supabase.from('articles').select('id', { count: 'exact', head: true }))
+      return t === 'all' ? c : c.eq('status', t)
+    }),
+  ])
+
+  const rows = (data ?? []) as any[]
+  const pages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
+  const href = (params: Record<string, string | undefined>) => {
+    const sp = new URLSearchParams()
+    const merged = { mine: mineOnly && isEditorPlus ? '1' : undefined, status, q, ...params }
+    Object.entries(merged).forEach(([k, v]) => v && sp.set(k, v))
+    const s = sp.toString()
+    return `/articles${s ? `?${s}` : ''}`
+  }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-[1280px] px-8 py-8">
+      <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-lg font-semibold">기사 목록</h1>
+          <h1 className="text-[22px] font-bold tracking-tight">기사목록</h1>
           {isEditorPlus && (
-            <div className="flex gap-3 mt-1 text-xs text-muted">
-              <Link
-                href="/articles"
-                className={!mineOnly ? 'text-ink font-medium' : 'hover:text-ink'}
-              >
-                전체 기사
-              </Link>
-              <Link
-                href="/articles?mine=1"
-                className={mineOnly && isEditorPlus ? 'text-ink font-medium' : 'hover:text-ink'}
-              >
-                내 기사
-              </Link>
+            <div className="mt-2 flex gap-1 text-[13px]">
+              <Link href={href({ mine: undefined, page: undefined })} className={`rounded px-2.5 py-1 ${!mineOnly ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>편집국 전체</Link>
+              <Link href={href({ mine: '1', page: undefined })} className={`rounded px-2.5 py-1 ${mineOnly ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>내 기사</Link>
             </div>
           )}
         </div>
-        <Link href="/articles/new" className="btn-primary">
-          + 새 기사
-        </Link>
+        <Link href="/articles/new" className="btn-primary px-5 py-2.5">+ 기사쓰기</Link>
       </div>
 
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-5 gap-2 mb-6">
-        {[
-          { key: 'all', label: '전체', color: 'text-ink' },
-          { key: 'draft', label: '초안', color: 'text-draft' },
-          { key: 'in_review', label: '검토중', color: 'text-review' },
-          { key: 'published', label: '발행됨', color: 'text-published' },
-          { key: 'rejected', label: '반려', color: 'text-danger' },
-        ].map(({ key, label, color }) => (
-          <div key={key} className="rounded border border-line px-3 py-3 text-center">
-            <div className={`text-xl font-semibold tabular-nums ${color}`}>
-              {counts[key as keyof typeof counts]}
-            </div>
-            <div className="text-[11px] text-muted mt-0.5">{label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* 검색 */}
-      <form method="get" action="/articles" className="mb-4 flex gap-2">
-        {mineOnly && <input type="hidden" name="mine" value="1" />}
-        {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
-        <input
-          name="q"
-          defaultValue={searchQuery}
-          placeholder="제목 검색..."
-          className="field-input max-w-xs"
-        />
-        <button type="submit" className="btn-secondary px-3 py-2 text-sm">검색</button>
-        {searchQuery && (
-          <Link href={baseUrl + (statusFilter ? `&status=${statusFilter}` : '')} className="btn-secondary px-3 py-2 text-sm">
-            초기화
-          </Link>
-        )}
-      </form>
-
-      {/* 상태 탭 */}
-      <div className="flex border-b border-line mb-0">
-        {TABS.map(({ value, label }) => {
-          const isActive = value === 'all' ? !statusFilter : statusFilter === value
-          const count = counts[value === 'all' ? 'all' : value as ArticleStatus]
-          const href = value === 'all'
-            ? (mineOnly && isEditorPlus ? '/articles?mine=1' : '/articles') + (searchQuery ? `&q=${searchQuery}` : '')
-            : `/articles?status=${value}` + (mineOnly && isEditorPlus ? '&mine=1' : '') + (searchQuery ? `&q=${searchQuery}` : '')
-          return (
-            <Link
-              key={value}
-              href={href}
-              className={`px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
-                isActive
-                  ? 'border-ink text-ink font-medium'
-                  : 'border-transparent text-muted hover:text-ink'
-              }`}
-            >
-              {label}
-              <span className="ml-1.5 text-xs tabular-nums opacity-60">{count}</span>
-            </Link>
-          )
-        })}
-      </div>
-
-      {/* 기사 테이블 */}
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-line text-left">
-            <th className="py-2.5 font-normal text-muted">제목</th>
-            <th className="py-2.5 font-normal text-muted w-24">카테고리</th>
-            {isEditorPlus && !mineOnly && (
-              <th className="py-2.5 font-normal text-muted w-20">기자</th>
-            )}
-            <th className="py-2.5 font-normal text-muted w-16">상태</th>
-            <th className="py-2.5 font-normal text-muted w-24">작성일</th>
-            <th className="py-2.5 w-14"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {articles?.map((a) => (
-            <tr key={a.id} className="border-b border-line/60 hover:bg-line/20 group">
-              <td className="py-3 pr-4">
-                <div className="flex items-center gap-1.5">
-                  {a.is_featured && (
-                    <span className="text-xs text-draft font-bold" title="주요 기사">★</span>
-                  )}
-                  <Link
-                    href={`/articles/${a.id}`}
-                    className="font-medium hover:underline line-clamp-1"
-                  >
-                    {a.title}
-                  </Link>
-                </div>
-                {a.status === 'rejected' && a.reject_reason && (
-                  <p className="text-xs text-danger mt-0.5 truncate max-w-md">
-                    반려: {a.reject_reason}
-                  </p>
-                )}
-              </td>
-              <td className="py-3 text-xs text-muted">{(a.category as any)?.name || '-'}</td>
-              {isEditorPlus && !mineOnly && (
-                <td className="py-3 text-xs text-muted">{(a.author as any)?.full_name || '-'}</td>
-              )}
-              <td className="py-3">
-                <span className={`status-badge status-${a.status}`}>
-                  {STATUS_LABEL[a.status as ArticleStatus]}
-                </span>
-              </td>
-              <td className="py-3 text-xs text-muted">
-                {new Date(a.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-              </td>
-              <td className="py-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Link href={`/articles/${a.id}/edit`} className="text-xs text-muted hover:text-ink">
-                  수정
+      <section className="rounded-lg border border-line bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5">
+          <nav className="flex" aria-label="기사 상태">
+            {TABS.map((t, i) => {
+              const active = t === 'all' ? !status : status === t
+              return (
+                <Link
+                  key={t}
+                  href={href({ status: t === 'all' ? undefined : t, page: undefined })}
+                  aria-current={active ? 'page' : undefined}
+                  className={`-mb-px border-b-2 px-4 py-3.5 text-[14px] ${active ? 'border-ink font-bold text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+                >
+                  {t === 'all' ? '전체' : STATUS_LABEL[t]}
+                  <span className="ml-1.5 text-[12px] tabular-nums opacity-60">{tabCounts[i].count ?? 0}</span>
                 </Link>
-              </td>
-            </tr>
-          ))}
-          {!articles?.length && (
-            <tr>
-              <td colSpan={isEditorPlus && !mineOnly ? 6 : 5} className="py-16 text-center text-muted text-sm">
-                {searchQuery
-                  ? `"${searchQuery}"에 해당하는 기사가 없습니다.`
-                  : statusFilter
-                  ? `${STATUS_LABEL[statusFilter as ArticleStatus]} 상태의 기사가 없습니다.`
-                  : '기사가 없습니다.'}
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+              )
+            })}
+          </nav>
+          <form action="/articles" className="flex items-center gap-2 py-2">
+            {mineOnly && isEditorPlus && <input type="hidden" name="mine" value="1" />}
+            {status && <input type="hidden" name="status" value={status} />}
+            <label htmlFor="list-q" className="sr-only">제목 검색</label>
+            <input id="list-q" name="q" defaultValue={q} placeholder="제목 검색" className="field-input h-9 w-56 py-1.5" />
+            <button type="submit" className="btn-secondary h-9 py-1.5">검색</button>
+            {q && <Link href={href({ q: undefined, page: undefined })} className="text-[12.5px] text-muted hover:text-ink">초기화</Link>}
+          </form>
+        </div>
 
-      <div className="mt-3 text-xs text-muted">
-        총 {articles?.length ?? 0}건
+        {rows.length ? (
+          <ul className="divide-y divide-line">
+            {rows.map((a) => (
+              <li key={a.id} className="group flex items-center gap-4 px-5 py-3.5 hover:bg-[#F8F9FA]">
+                <span className={`status-badge status-${a.status} w-[58px] shrink-0 justify-center`}>{STATUS_LABEL[a.status as ArticleStatus]}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    {a.is_featured && <span className="text-[12px] font-bold text-draft" title="주요 기사">★</span>}
+                    <Link href={`/articles/${a.id}`} className="truncate text-[14.5px] font-medium hover:underline">{a.title}</Link>
+                    {a.thumbnail_url && <span className="shrink-0 text-muted" title="사진 있음"><ImageIcon /></span>}
+                    {a.status === 'published' && <span className="shrink-0 text-[12px] tabular-nums text-muted">조회 {a.view_count ?? 0}</span>}
+                  </div>
+                  {a.status === 'rejected' && a.reject_reason && <p className="mt-0.5 truncate text-[12px] text-danger">반려 사유: {a.reject_reason}</p>}
+                </div>
+                <span className="w-24 shrink-0 truncate text-[12.5px] text-muted">{a.category?.name ?? '섹션 없음'}</span>
+                <span className="w-20 shrink-0 truncate text-[12.5px] text-muted">{a.author?.full_name} 기자</span>
+                <time className="w-[118px] shrink-0 text-right text-[12.5px] tabular-nums text-muted">
+                  {formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)}
+                </time>
+                <Link href={`/articles/${a.id}/edit`} className="w-10 shrink-0 text-right text-[12.5px] text-muted opacity-0 hover:text-ink group-hover:opacity-100 focus:opacity-100">수정</Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="py-20 text-center text-[14px] text-muted">
+            {q ? `‘${q}’에 해당하는 기사가 없습니다.` : status ? `${STATUS_LABEL[status]} 상태의 기사가 없습니다.` : '아직 작성한 기사가 없습니다.'}
+          </p>
+        )}
+      </section>
+
+      <div className="mt-4 flex items-center justify-between text-[12.5px] text-muted">
+        <span>총 <span className="tabular-nums">{(count ?? 0).toLocaleString()}</span>건</span>
+        {pages > 1 && (
+          <nav className="flex gap-1" aria-label="페이지">
+            {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+              <Link
+                key={p}
+                href={href({ page: p > 1 ? String(p) : undefined })}
+                aria-current={p === page ? 'page' : undefined}
+                className={`grid h-8 min-w-8 place-items-center rounded border px-2 tabular-nums ${p === page ? 'border-ink bg-ink text-white' : 'border-line bg-white hover:border-ink'}`}
+              >
+                {p}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
     </div>
   )

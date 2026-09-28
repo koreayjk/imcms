@@ -51,9 +51,9 @@ export interface Article {
 }
 
 export const STATUS_LABEL: Record<ArticleStatus, string> = {
-  draft: '초안',
-  in_review: '검토중',
-  published: '발행됨',
+  draft: '작성중',
+  in_review: '승인신청',
+  published: '발행',
   rejected: '반려',
 }
 

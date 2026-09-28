@@ -8,6 +8,7 @@ import SiteFrame from '@/components/site/SiteFrame'
 import SectionHeading from '@/components/site/SectionHeading'
 import MostViewed from '@/components/site/MostViewed'
 import Thumb from '@/components/site/Thumb'
+import { sanitizeBody } from '@/lib/article-html'
 import ShareButton from './ShareButton'
 
 type Props = { params: { id: string } }
@@ -39,7 +40,6 @@ export default async function ArticlePage({ params }: Props) {
   if (!data) notFound()
   const { article: a, related, mostViewed, latest } = data
   const section = a.category ? findSection(site, a.category.slug) : undefined
-  const paragraphs = (a.body ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
 
   return (
     <SiteFrame site={site} current={a.category?.slug}>
@@ -55,7 +55,7 @@ export default async function ArticlePage({ params }: Props) {
               {a.title}
             </h1>
             {a.excerpt && (
-              <p className="mt-4 border-l-[3px] border-gold pl-4 text-[15.5px] leading-[1.7] text-sub lg:text-[17px]">{a.excerpt}</p>
+              <p className="mt-4 whitespace-pre-line border-l-[3px] border-gold pl-4 text-[15.5px] leading-[1.7] text-sub lg:text-[17px]">{a.excerpt}</p>
             )}
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-[13px] text-sub">
               <p className="tabular-nums">
@@ -73,15 +73,16 @@ export default async function ArticlePage({ params }: Props) {
             </div>
           </header>
 
-          {a.thumbnail_url && (
+          {a.thumbnail_url && !/<img\s/i.test(a.body ?? '') && (
             <figure className="mt-7">
               <img src={a.thumbnail_url} alt={a.title} className="w-full" />
             </figure>
           )}
 
-          <div className="article-content mt-7 whitespace-pre-line text-[17px] leading-[1.95] text-body lg:text-[17.5px]">
-            {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-          </div>
+          <div
+            className="article-content mt-7 text-[17px] leading-[1.95] text-body lg:text-[17.5px]"
+            dangerouslySetInnerHTML={{ __html: sanitizeBody(a.body) }}
+          />
 
           {a.tags && a.tags.length > 0 && (
             <ul className="mt-8 flex flex-wrap gap-2">

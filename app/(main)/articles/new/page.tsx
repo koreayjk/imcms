@@ -1,34 +1,26 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
 import ArticleEditor from '@/components/ArticleEditor'
+import { getCmsContext } from '@/lib/cms'
 
 export default async function NewArticlePage() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user, profile, outletId, isEditorPlus } = await getCmsContext()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, role, outlet_id')
-    .eq('id', user.id)
-    .single()
-
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('*')
-    .order('sort_order')
-
-  const isEditorPlus = profile?.role === 'editor' || profile?.role === 'admin'
+  const [{ data: categories }, { data: outlet }] = await Promise.all([
+    outletId
+      ? supabase.from('categories').select('*').eq('outlet_id', outletId).order('sort_order')
+      : supabase.from('categories').select('*').order('sort_order'),
+    outletId ? supabase.from('outlets').select('name').eq('id', outletId).single() : Promise.resolve({ data: null }),
+  ])
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <header className="mb-6">
-        <h1 className="text-lg font-semibold">새 기사 작성</h1>
-      </header>
+    <div className="mx-auto max-w-[1280px] px-8 py-8">
+      <h1 className="mb-6 text-[22px] font-bold tracking-tight">기사쓰기</h1>
       <ArticleEditor
         categories={categories ?? []}
         userId={user.id}
-        outletId={profile?.outlet_id ?? null}
+        outletId={outletId}
+        outletName={outlet?.name ?? null}
+        authorName={profile?.full_name ?? ''}
+        authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}
       />
     </div>

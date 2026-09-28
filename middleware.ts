@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
   // 로그인 상태에서 /login 접근 → CMS로
   if (user && pathname === '/login') {
     const url = request.nextUrl.clone()
-    url.pathname = '/articles'
+    url.pathname = '/newsroom'
     return NextResponse.redirect(url)
   }
 

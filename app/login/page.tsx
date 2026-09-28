@@ -22,7 +22,7 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    router.push('/articles')
+    router.push('/newsroom')
     router.refresh()
   }
 

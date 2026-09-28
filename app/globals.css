@@ -30,7 +30,40 @@ body {
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .headline-link:hover .headline-text { @apply underline decoration-1 underline-offset-4; }
-.article-content p { @apply mb-6; }
+
+/* 기사 본문 — 편집기, 편집국 보기, 홈페이지가 같은 모양을 쓴다 */
+.article-content > * + * { margin-top: 1.25em; }
+.article-content h2 { font-size: 1.25em; font-weight: 800; line-height: 1.45; margin-top: 1.8em; }
+.article-content h3 { font-size: 1.08em; font-weight: 700; line-height: 1.5; margin-top: 1.5em; }
+.article-content blockquote {
+  border-left: 3px solid var(--gold, #C9A23A);
+  padding: 0.2em 0 0.2em 1em;
+  color: #4B524D;
+}
+.article-content ul { list-style: disc; padding-left: 1.4em; }
+.article-content ol { list-style: decimal; padding-left: 1.4em; }
+.article-content li + li { margin-top: 0.3em; }
+.article-content a { text-decoration: underline; text-underline-offset: 3px; }
+.article-content hr { border: 0; border-top: 1px solid #E3E7E4; margin: 2em 0; }
+.article-content img { display: block; max-width: 100%; height: auto; margin-left: auto; margin-right: auto; }
+.article-content img + p:has(> em:only-child) {
+  margin-top: 0.5em;
+  font-size: 0.85em;
+  color: #6B716D;
+  text-align: center;
+}
+.article-content div[data-youtube-video] { position: relative; aspect-ratio: 16 / 9; }
+.article-content div[data-youtube-video] iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* 편집기 */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: #AEB4B0;
+  pointer-events: none;
+}
+.ProseMirror img.ProseMirror-selectednode { outline: 3px solid #3D7BE0; }
 
 /* 입력 공통 */
 .field-input {
