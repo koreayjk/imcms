@@ -7,6 +7,8 @@ export interface Profile {
   role: UserRole
   outlet_id: string | null
   created_at: string
+  // signup.sql 실행 전에는 칸이 없다 (없으면 승인된 것으로 본다)
+  approved?: boolean
 }
 
 export interface Outlet {

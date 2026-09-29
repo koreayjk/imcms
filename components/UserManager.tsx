@@ -10,10 +10,12 @@ export default function UserManager({
   users,
   outlets,
   currentUserId,
+  emails = {},
 }: {
   users: Profile[]
   outlets: { id: string; name: string }[]
   currentUserId: string
+  emails?: Record<string, string>
 }) {
   const [profiles, setProfiles] = useState(users)
   const router = useRouter()
@@ -48,6 +50,7 @@ export default function UserManager({
               <td className="py-3 font-medium">
                 {u.full_name}
                 {u.id === currentUserId && <span className="ml-1.5 text-xs text-muted">(나)</span>}
+                {emails[u.id] && <span className="block text-xs font-normal text-muted">{emails[u.id]}</span>}
               </td>
               <td className="py-3">
                 {u.id === currentUserId ? (

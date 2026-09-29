@@ -19,7 +19,7 @@ const ITEMS: Item[] = [
   { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'admin' },
 ]
 
-export default function Rail({ role }: { role: UserRole | null }) {
+export default function Rail({ role, pendingCount = 0 }: { role: UserRole | null; pendingCount?: number }) {
   const pathname = usePathname()
   const allowed = (i: Item) =>
     !i.minRole || role === 'admin' || (i.minRole === 'editor' && role === 'editor')
@@ -44,6 +44,11 @@ export default function Rail({ role }: { role: UserRole | null }) {
                 {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-[#F2B544]" />}
                 {item.icon}
                 {item.label}
+                {item.href === '/admin/users' && pendingCount > 0 && (
+                  <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={`승인 대기 ${pendingCount}명`}>
+                    {pendingCount}
+                  </span>
+                )}
               </Link>
             </li>
           )

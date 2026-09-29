@@ -10,6 +10,8 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/section/') ||
     pathname === '/search' ||
     pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/auth/') ||
     // 예약 수집: 로그인 대신 DB 비밀 열쇠로 확인한다
     pathname.startsWith('/api/cron/')
   )
@@ -49,7 +51,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // 로그인 상태에서 /login 접근 → CMS로
-  if (user && pathname === '/login') {
+  if (user && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/newsroom'
     return NextResponse.redirect(url)
