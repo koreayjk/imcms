@@ -29,6 +29,16 @@ export function currentSite() {
 const LIST_FIELDS =
   'id, title, excerpt, thumbnail_url, published_at, view_count, is_featured, tags, author:profiles!articles_author_id_fkey(full_name), category:categories(name, slug)'
 
+// article-manage.sql 실행 전 DB에는 byline 칸이 없으므로, 있을 때만 가져온다 (5분마다 다시 확인)
+let bylineCheck: { at: number; ok: boolean } | null = null
+async function listFields(supabase: ReturnType<typeof client>) {
+  if (!bylineCheck || Date.now() - bylineCheck.at > 300_000) {
+    const { error } = await supabase.from('articles').select('byline').limit(1)
+    bylineCheck = { at: Date.now(), ok: !error }
+  }
+  return bylineCheck.ok ? `${LIST_FIELDS}, byline` : LIST_FIELDS
+}
+
 function client() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 }
@@ -43,7 +53,7 @@ function toPublic(row: any): PublicArticle {
     published_at: row.published_at,
     view_count: row.view_count ?? 0,
     is_featured: row.is_featured,
-    author_name: row.author?.full_name ?? null,
+    author_name: row.byline?.trim() || row.author?.full_name || null,
     category: row.category ?? null,
     tags: row.tags ?? null,
     meta_title: row.meta_title ?? null,
@@ -59,13 +69,14 @@ async function outletScope(site: SiteConfig) {
   const { data: cats } = await supabase
     .from('categories').select('id, slug').eq('outlet_id', outlet.id)
   const catIds = Object.fromEntries((cats ?? []).map((c) => [c.slug, c.id as string]))
-  return { supabase, outletId: outlet.id as string, catIds }
+  // 칸 목록이 실행 중에 정해지므로 타입 추론 대신 any 행으로 다룬다
+  return { supabase, outletId: outlet.id as string, catIds, fields: (await listFields(supabase)) as '*' }
 }
 
 function published(scope: NonNullable<Awaited<ReturnType<typeof outletScope>>>) {
   return scope.supabase
     .from('articles')
-    .select(LIST_FIELDS, { count: 'exact' })
+    .select(scope.fields, { count: 'exact' })
     .eq('outlet_id', scope.outletId)
     .eq('status', 'published')
 }
@@ -201,7 +212,7 @@ export async function getArticleData(site: SiteConfig, id: string) {
   if (!scope) return null
   const { data } = await scope.supabase
     .from('articles')
-    .select(`${LIST_FIELDS}, body, category_id, meta_title, meta_description`)
+    .select(`${scope.fields}, body, category_id, meta_title, meta_description`)
     .eq('id', id)
     .eq('outlet_id', scope.outletId)
     .eq('status', 'published')

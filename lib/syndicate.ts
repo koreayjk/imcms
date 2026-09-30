@@ -9,7 +9,7 @@ export async function syndicate(articleId: string): Promise<SyndicateResult> {
 
   const { data: src, error } = await supabase
     .from('articles')
-    .select('id, title, body, excerpt, thumbnail_url, tags, meta_title, meta_description, author_id, outlet_id, status, published_at, syndicate_to, source_article_id, category:categories(slug, name), outlet:outlets(name)')
+    .select('*, category:categories(slug, name), outlet:outlets(name)')
     .eq('id', articleId)
     .single()
   if (error || !src) throw new Error('원본 기사를 불러오지 못했습니다.')
@@ -35,7 +35,7 @@ export async function syndicate(articleId: string): Promise<SyndicateResult> {
     if (srcCategory && !cat) result.warnings.push(`${outlet.name}: '${srcCategory.name}' 섹션이 없어 섹션 없이 올렸습니다.`)
 
     const body = srcOutletName ? (src.body as string).replace(`[${srcOutletName}=`, `[${outlet.name}=`) : src.body
-    const content = {
+    const content: Record<string, unknown> = {
       title: src.title,
       body,
       excerpt: src.excerpt,
@@ -44,6 +44,7 @@ export async function syndicate(articleId: string): Promise<SyndicateResult> {
       meta_title: src.meta_title,
       meta_description: src.meta_description,
     }
+    if ('byline' in src) content.byline = src.byline
 
     const existing = (copies ?? []).find((c) => c.outlet_id === outlet.id)
     if (existing) {

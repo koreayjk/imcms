@@ -50,6 +50,8 @@ export interface Article {
   source_article_id?: string | null
   syndicate_to?: string[]
   press_release_id?: string | null
+  // article-manage.sql 실행 전에는 칸이 없다
+  byline?: string | null
   ai_notes?: string | null
   author?: Pick<Profile, 'id' | 'full_name' | 'role'>
   category?: Pick<Category, 'id' | 'name' | 'slug'>

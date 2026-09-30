@@ -27,6 +27,16 @@ export default function UserManager({
     router.refresh()
   }
 
+  async function updateName(id: string, value: string) {
+    const full_name = value.trim().replace(/\s+/g, ' ').slice(0, 30)
+    const before = profiles.find(u => u.id === id)?.full_name
+    if (!full_name || full_name === before) return
+    const { error } = await supabase.from('profiles').update({ full_name }).eq('id', id)
+    if (error) { window.alert(`이름을 바꾸지 못했습니다: ${error.message}`); return }
+    setProfiles(profiles.map(u => u.id === id ? { ...u, full_name } : u))
+    router.refresh()
+  }
+
   async function updateOutlet(id: string, outlet_id: string) {
     await supabase.from('profiles').update({ outlet_id: outlet_id || null }).eq('id', id)
     setProfiles(profiles.map(u => u.id === id ? { ...u, outlet_id: outlet_id || null } : u))
@@ -48,7 +58,16 @@ export default function UserManager({
           {profiles.map((u) => (
             <tr key={u.id} className="border-b border-line/60">
               <td className="py-3 font-medium">
-                {u.full_name}
+                <label htmlFor={`name-${u.id}`} className="sr-only">{u.full_name} 이름</label>
+                <input
+                  id={`name-${u.id}`}
+                  defaultValue={u.full_name}
+                  onBlur={(e) => updateName(u.id, e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+                  maxLength={30}
+                  title="이름을 고치고 Enter"
+                  className="w-28 rounded border border-transparent px-1.5 py-0.5 hover:border-line focus:border-ink focus:outline-none"
+                />
                 {u.id === currentUserId && <span className="ml-1.5 text-xs text-muted">(나)</span>}
                 {emails[u.id] && <span className="block text-xs font-normal text-muted">{emails[u.id]}</span>}
               </td>

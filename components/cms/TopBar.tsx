@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { ROLE_LABEL, type UserRole } from '@/lib/types'
@@ -45,7 +46,7 @@ export default function TopBar({ outletName, userName, role }: Props) {
       </form>
 
       <div className="flex items-center gap-3 text-[13px]">
-        <span className="font-semibold">{userName}</span>
+        <Link href="/account" className="font-semibold hover:underline" title="내 정보·이름 바꾸기">{userName}</Link>
         {role && <span className="rounded bg-line/70 px-1.5 py-0.5 text-[11px] text-muted">{ROLE_LABEL[role]}</span>}
         <button type="button" onClick={logout} className="text-[12px] text-muted hover:text-danger">
           로그아웃

@@ -3,11 +3,13 @@ import { getCmsContext } from '@/lib/cms'
 import { formatDateTime } from '@/lib/format'
 import { ImageIcon } from '@/components/cms/icons'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
+import PendingButton from '@/components/cms/PendingButton'
+import { deleteArticle } from './actions'
 
 const TABS: (ArticleStatus | 'all')[] = ['all', 'draft', 'in_review', 'rejected', 'published']
 const PAGE_SIZE = 30
 
-type Props = { searchParams: { status?: string; q?: string; mine?: string; page?: string } }
+type Props = { searchParams: { status?: string; q?: string; mine?: string; page?: string; deleted?: string } }
 
 export default async function ArticlesPage({ searchParams }: Props) {
   const { supabase, user, outletId, isEditorPlus } = await getCmsContext()
@@ -28,7 +30,7 @@ export default async function ArticlesPage({ searchParams }: Props) {
   let listQuery = scoped(
     supabase
       .from('articles')
-      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', { count: 'exact' })
+      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author_id, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', { count: 'exact' })
   )
   if (status) listQuery = listQuery.eq('status', status)
   if (q) listQuery = listQuery.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
@@ -65,6 +67,10 @@ export default async function ArticlesPage({ searchParams }: Props) {
         </div>
         <Link href="/articles/new" className="btn-primary px-5 py-2.5">+ 기사쓰기</Link>
       </div>
+
+      {searchParams.deleted && (
+        <p role="status" className="mb-4 rounded-lg border border-line bg-white px-5 py-3 text-[13.5px]">기사를 삭제했습니다.</p>
+      )}
 
       <section className="rounded-lg border border-line bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5">
@@ -113,7 +119,20 @@ export default async function ArticlesPage({ searchParams }: Props) {
                 <time className="w-[118px] shrink-0 text-right text-[12.5px] tabular-nums text-muted">
                   {formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)}
                 </time>
-                <Link href={`/articles/${a.id}/edit`} className="w-10 shrink-0 text-right text-[12.5px] text-muted opacity-0 hover:text-ink group-hover:opacity-100 focus:opacity-100">수정</Link>
+                <div className="flex w-[72px] shrink-0 justify-end gap-2.5 text-[12.5px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+                  <Link href={`/articles/${a.id}/edit`} className="text-muted hover:text-ink">수정</Link>
+                  {(a.author_id === user.id || isEditorPlus) && (
+                    <form action={deleteArticle.bind(null, a.id)}>
+                      <PendingButton
+                        pending="…"
+                        confirm={`“${a.title}” 기사를 삭제할까요?${a.status === 'published' ? '\n홈페이지에서도 바로 내려가고, 함께 송고된 다른 매체 사본도 삭제됩니다.' : ''}\n삭제하면 되돌릴 수 없습니다.`}
+                        className="text-muted hover:text-danger"
+                      >
+                        삭제
+                      </PendingButton>
+                    </form>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

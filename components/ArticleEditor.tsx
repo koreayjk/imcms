@@ -9,6 +9,8 @@ import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@
 import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
 import { describe, syndicate } from '@/lib/syndicate'
+import PendingButton from './cms/PendingButton'
+import { deleteArticle } from '@/app/(main)/articles/actions'
 
 type Props = {
   article?: Article
@@ -22,17 +24,24 @@ type Props = {
   outlets: { id: string; name: string }[]
   syndicatedOutletIds: string[]
   sourceOutletName: string | null
+  // 수정할 때 원 작성자의 회원 이름 (편집장이 다른 기자 글을 고칠 때)
+  articleAuthorName?: string | null
 }
 
 type Mode = 'draft' | 'review' | 'publish'
 
 const IMG_SRC = /<img[^>]+src="([^"]+)"[^>]*>/gi
 
+function saveError(message: string) {
+  if (/byline/.test(message)) return '기자명을 바꾸려면 관리자가 Supabase에서 article-manage.sql을 실행해야 합니다. 기자명을 원래대로 두면 저장됩니다.'
+  return `저장하지 못했습니다: ${message}`
+}
+
 function imagesIn(html: string): string[] {
   return Array.from(html.matchAll(IMG_SRC), (m) => m[1])
 }
 
-export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, outlets, syndicatedOutletIds, sourceOutletName }: Props) {
+export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName }: Props) {
   const router = useRouter()
   const editorRef = useRef<Editor | null>(null)
 
@@ -58,9 +67,12 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const [saving, setSaving] = useState<Mode | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const defaultName = (article ? articleAuthorName : authorName) ?? ''
+  const [byline, setByline] = useState(article?.byline?.trim() || defaultName)
+  const shownName = useRef(byline)
 
   const status: ArticleStatus = article?.status ?? 'draft'
-  const reporterName = article && article.author_id !== userId ? null : authorName
+  const isMine = !article || article.author_id === userId
   const isCopy = !!article?.source_article_id
   const ownOutlet = article?.outlet_id ?? outletId
   const otherOutlets = outlets.filter((o) => o.id !== ownOutlet)
@@ -87,6 +99,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     }
     // syndication.sql 실행 전 DB에는 이 칸이 없으므로, 기존 값이 있거나 매체를 고른 경우에만 보낸다
     if (!isCopy && (article?.syndicate_to !== undefined || syndicateTo.length)) payload.syndicate_to = syndicateTo
+    // 기자명이 회원 이름과 같으면 비워 둔다 (회원 이름을 바꾸면 기사에도 따라 바뀌도록)
+    const customByline = byline.trim() && byline.trim() !== defaultName ? byline.trim() : null
+    if (customByline || article?.byline !== undefined) payload.byline = customByline
 
     if (mode === 'review') {
       payload.status = 'in_review'
@@ -103,11 +118,11 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     let id = article?.id
     if (article) {
       const { error: err } = await supabase.from('articles').update(payload).eq('id', article.id)
-      if (err) { setError(`저장하지 못했습니다: ${err.message}`); setSaving(null); return }
+      if (err) { setError(saveError(err.message)); setSaving(null); return }
     } else {
       payload.author_id = userId
       const { data, error: err } = await supabase.from('articles').insert(payload).select('id').single()
-      if (err) { setError(`저장하지 못했습니다: ${err.message}`); setSaving(null); return }
+      if (err) { setError(saveError(err.message)); setSaving(null); return }
       id = data.id
     }
 
@@ -130,6 +145,20 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       router.push(`/articles/${id}`)
       router.refresh()
     }
+  }
+
+  // 기자명을 바꾸면 본문 첫머리 "[매체=이름 기자]"도 같이 바꾼다
+  function syncBylineInBody(value = byline) {
+    const next = value.trim() || defaultName
+    const prev = shownName.current
+    if (!next || next === prev) return
+    shownName.current = next
+    const editor = editorRef.current
+    const from = `${prev} 기자]`
+    if (!editor || !html.includes(from)) return
+    const updated = html.replace(from, `${next} 기자]`)
+    editor.commands.setContent(updated, true)
+    setHtml(updated)
   }
 
   const saveRef = useRef(save)
@@ -192,10 +221,26 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
 
-            <span className="text-[13px] font-semibold">기자명</span>
-            <div className="flex gap-2 text-[13.5px]">
-              <span className="rounded border border-line bg-[#F8F9FA] px-3 py-2">{reporterName ? `${reporterName} 기자` : '작성 기자'}</span>
-              {reporterName && authorEmail && <span className="rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">{authorEmail}</span>}
+            <label htmlFor="byline" className="text-[13px] font-semibold">기자명</label>
+            <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
+              <div className="flex items-center rounded border border-line focus-within:border-ink">
+                <input
+                  id="byline"
+                  value={byline}
+                  onChange={(e) => setByline(e.target.value)}
+                  onBlur={() => syncBylineInBody()}
+                  maxLength={30}
+                  placeholder={defaultName || '기자 이름'}
+                  className="w-36 bg-transparent px-3 py-2 outline-none"
+                />
+                <span className="pr-3 text-muted">기자</span>
+              </div>
+              {isMine && authorEmail && <span className="rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">{authorEmail}</span>}
+              {byline.trim() && byline.trim() !== defaultName && (
+                <button type="button" onClick={() => { setByline(defaultName); syncBylineInBody(defaultName) }} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">
+                  {defaultName}(으)로 되돌리기
+                </button>
+              )}
             </div>
           </div>
 
@@ -314,7 +359,20 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
           {error ? (
             <p role="alert" className="flex-1 truncate text-[13px] text-danger">{error}</p>
           ) : (
-            <button type="button" onClick={() => router.back()} className="text-[13px] text-muted hover:text-ink">← 취소</button>
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={() => router.back()} className="text-[13px] text-muted hover:text-ink">← 취소</button>
+              {article && (
+                <form action={deleteArticle.bind(null, article.id)}>
+                  <PendingButton
+                    pending="삭제 중…"
+                    confirm={`이 기사를 삭제할까요?${status === 'published' ? '\n홈페이지에서도 바로 내려가고, 함께 송고된 다른 매체 사본도 삭제됩니다.' : ''}\n삭제하면 되돌릴 수 없습니다.`}
+                    className="text-[13px] text-muted hover:text-danger"
+                  >
+                    기사 삭제
+                  </PendingButton>
+                </form>
+              )}
+            </div>
           )}
           <div className="ml-auto flex gap-2">
             <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary px-5">

@@ -5,8 +5,10 @@ import { getCmsContext } from '@/lib/cms'
 import { sanitizeBody } from '@/lib/article-html'
 import { formatDateTime } from '@/lib/format'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
+import PendingButton from '@/components/cms/PendingButton'
+import { deleteArticle } from '../actions'
 
-export default async function ArticleDetailPage({ params }: { params: { id: string } }) {
+export default async function ArticleDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
   const { supabase, user, isEditorPlus } = await getCmsContext()
 
   const { data: article } = await supabase
@@ -27,6 +29,10 @@ export default async function ArticleDetailPage({ params }: { params: { id: stri
         <span className="max-w-md truncate text-ink">{article.title}</span>
       </nav>
 
+      {searchParams.error && (
+        <p role="alert" className="mb-5 rounded-lg border border-danger/30 bg-danger/5 px-5 py-3.5 text-[13.5px] text-danger">{searchParams.error}</p>
+      )}
+
       {canReview && (
         <div className="mb-5 flex items-center justify-between gap-4 rounded-lg border border-review/30 bg-review/5 px-5 py-4">
           <p className="text-[14px] font-medium text-review">승인신청된 기사입니다. 내용을 확인하고 승인하거나 반려하세요.</p>
@@ -46,7 +52,7 @@ export default async function ArticleDetailPage({ params }: { params: { id: stri
             <p className="mt-3 whitespace-pre-line border-l-[3px] border-line pl-4 text-[15.5px] leading-relaxed text-muted">{article.excerpt}</p>
           )}
           <p className="mt-4 text-[12.5px] tabular-nums text-muted">
-            {(article.author as any)?.full_name} 기자
+            {article.byline?.trim() || (article.author as any)?.full_name} 기자
             <span className="mx-2 text-line">|</span>작성 {formatDateTime(article.created_at)}
             {article.published_at && <><span className="mx-2 text-line">|</span>발행 {formatDateTime(article.published_at)}</>}
           </p>
@@ -71,6 +77,17 @@ export default async function ArticleDetailPage({ params }: { params: { id: stri
         <div className="flex gap-2">
           {article.status === 'published' && (
             <a href={`/news/${article.id}`} target="_blank" rel="noopener" className="btn-secondary">홈페이지에서 보기 ↗</a>
+          )}
+          {canEdit && (
+            <form action={deleteArticle.bind(null, article.id)}>
+              <PendingButton
+                pending="삭제 중…"
+                confirm={`이 기사를 삭제할까요?${article.status === 'published' ? '\n홈페이지에서도 바로 내려가고, 함께 송고된 다른 매체 사본도 삭제됩니다.' : ''}\n삭제하면 되돌릴 수 없습니다.`}
+                className="btn-secondary text-danger"
+              >
+                삭제
+              </PendingButton>
+            </form>
           )}
           {canEdit && <Link href={`/articles/${article.id}/edit`} className="btn-primary">수정</Link>}
         </div>
