@@ -8,6 +8,7 @@ import { toHtml } from '@/lib/body-text'
 import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@/lib/types'
 import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
+import { uploadImage } from './editor/upload'
 import { describe, syndicate } from '@/lib/syndicate'
 import PendingButton from './cms/PendingButton'
 import { deleteArticle } from '@/app/(main)/articles/actions'
@@ -270,9 +271,19 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
           </div>
 
           <div>
-            <RichEditor initialHtml={initialHtml} onChange={onChange} onReady={onReady} />
+            <RichEditor
+              initialHtml={initialHtml}
+              onChange={onChange}
+              onReady={onReady}
+              onUploadImage={async (file) => {
+                const url = await uploadImage(file, outletId)
+                setImages((prev) => [...prev, { url, caption: '' }])
+                if (!thumbnailUrl) setThumbnailUrl(url)
+                return url
+              }}
+            />
             <div className="mt-1.5 flex justify-between text-[12px] text-muted">
-              <span>사진·영상은 오른쪽 라이브러리에서 넣으세요 · Ctrl+S 저장</span>
+              <span>사진을 누르면 크기(25~100%)·배치를 바꿀 수 있고, 파란 모서리를 끌어도 됩니다 · Ctrl+S 저장</span>
               <span className="tabular-nums">{charCount.toLocaleString()}자 (공백 제외)</span>
             </div>
           </div>

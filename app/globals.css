@@ -116,3 +116,24 @@ body {
   .pn-reveal { opacity: 1; transform: none; transition: none; }
   .pn-float, .pn-dash, .pn-marquee { animation: none; }
 }
+
+/* 편집기 확장: 작은제목·표·형광펜·첨자·사진 배치 (편집기와 홈페이지 기사에 같이 적용) */
+.article-content h4 { font-size: 1em; font-weight: 700; line-height: 1.55; margin-top: 1.3em; }
+.article-content mark { border-radius: 2px; padding: 0 1px; color: inherit; }
+.article-content sup, .article-content sub { font-size: 0.72em; line-height: 0; }
+.article-content table { width: 100%; border-collapse: collapse; font-size: 0.92em; line-height: 1.6; clear: both; }
+.article-content .tableWrapper { overflow-x: auto; clear: both; }
+.article-content h2, .article-content h3, .article-content hr { clear: both; }
+.article-content th, .article-content td { border: 1px solid #D5D9DD; padding: 0.45em 0.7em; vertical-align: top; min-width: 3em; }
+.article-content th { background: #F3F5F7; font-weight: 700; text-align: left; }
+.article-content th p, .article-content td p { margin: 0; }
+.article-content::after { content: ''; display: block; clear: both; }
+.article-content img[data-align='left'] { float: left; margin: 0.3em 1.25em 0.6em 0; }
+.article-content img[data-align='right'] { float: right; margin: 0.3em 0 0.6em 1.25em; }
+@media (max-width: 640px) {
+  .article-content img[data-align] { float: none; width: 100% !important; margin: 0; }
+  .article-content img[style*='width'] { width: 100% !important; }
+  .article-content table { display: block; overflow-x: auto; }
+}
+.ProseMirror .selectedCell::after { content: ''; position: absolute; inset: 0; background: rgba(61, 123, 224, 0.12); pointer-events: none; }
+.ProseMirror td, .ProseMirror th { position: relative; }
