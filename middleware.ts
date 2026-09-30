@@ -15,7 +15,9 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/auth/') ||
     pathname.startsWith(PRODUCT.path) ||
     // 예약 수집: 로그인 대신 DB 비밀 열쇠로 확인한다
-    pathname.startsWith('/api/cron/')
+    pathname.startsWith('/api/cron/') ||
+    // 메일 수신 서비스: DB 비밀 열쇠로 확인한다
+    pathname.startsWith('/api/inbound/')
   )
 }
 

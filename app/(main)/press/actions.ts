@@ -170,8 +170,9 @@ export async function createManualPress(_prev: ManualPressState, form: FormData)
 
 export async function deleteManualPress(id: string) {
   const { supabase } = await getCmsContext()
-  const { error } = await supabase.from('press_releases').delete().eq('id', id).eq('source_key', MANUAL_SOURCE)
-  if (error) redirect(`/press/${id}?error=${encodeURIComponent(`삭제하지 못했습니다: ${error.message}`)}`)
+  // 직접 등록하거나 메일로 받은 자료만, 올린 본인이 지울 수 있다 (DB 규칙도 같다)
+  const { data, error } = await supabase.from('press_releases').delete().eq('id', id).in('source_key', [MANUAL_SOURCE, 'email']).select('source_key')
+  if (error || !data?.length) redirect(`/press/${id}?error=${encodeURIComponent(`삭제하지 못했습니다: ${error?.message ?? '권한이 없습니다.'}`)}`)
   revalidatePath('/press')
-  redirect('/press?src=manual')
+  redirect(`/press?src=${data[0].source_key}`)
 }

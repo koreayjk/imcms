@@ -6,6 +6,7 @@ import { sanitizeBody } from '@/lib/article-html'
 import { formatDateTime } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
 import { aiReady } from '@/lib/ai-draft'
+import { ensureEmailImages } from '@/lib/press-attachments'
 import { createArticleFromPress, deleteManualPress } from '../actions'
 
 export const preferredRegion = 'icn1'
@@ -17,7 +18,8 @@ export default async function PressDetailPage({ params, searchParams }: { params
 
   const { data } = await supabase.from('press_releases').select('*').eq('id', params.id).maybeSingle()
   if (!data) notFound()
-  const r = await ensureFullBody(supabase, data as PressRelease)
+  const { release: r, attachments } = await ensureEmailImages(supabase, await ensureFullBody(supabase, data as PressRelease), outletId)
+  const files = attachments.filter((a) => !a.content_type.startsWith('image/') || !a.copied_url)
 
   const { data: made } = outletId
     ? await supabase.from('articles').select('id, title, status').eq('outlet_id', outletId).eq('press_release_id', r.id)
@@ -25,6 +27,7 @@ export default async function PressDetailPage({ params, searchParams }: { params
 
   const ai = aiReady()
   const manual = r.source_key === MANUAL_SOURCE
+  const emailed = r.source_key === 'email'
 
   return (
     <div className="mx-auto max-w-[900px] px-8 py-8 pb-28">
@@ -50,10 +53,11 @@ export default async function PressDetailPage({ params, searchParams }: { params
       <article className="rounded-lg border border-line bg-white px-10 py-9">
         <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
           {manual && <span className="rounded bg-ink px-1.5 py-0.5 text-white">직접 등록</span>}
+          {emailed && <span className="rounded bg-review px-1.5 py-0.5 text-white">메일로 받음</span>}
           <span className="rounded bg-line/70 px-1.5 py-0.5">{r.source_name}</span>
           <span className="tabular-nums">{formatDateTime(r.published_at)}</span>
           {r.link && <a href={r.link} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">원문 보기 ↗</a>}
-          {manual && r.created_by === user.id && !made?.length && (
+          {(manual || emailed) && r.created_by === user.id && !made?.length && (
             <form action={deleteManualPress.bind(null, r.id)} className="ml-auto">
               <PendingButton pending="삭제 중…" className="text-[12px] text-danger underline underline-offset-2">삭제</PendingButton>
             </form>
@@ -66,6 +70,21 @@ export default async function PressDetailPage({ params, searchParams }: { params
           <div className="mt-7 space-y-3 text-[15px] leading-relaxed">
             <p>{r.summary}</p>
             <p className="rounded bg-draft/10 px-3 py-2 text-[13px] text-draft">전문을 가져오지 못했습니다. 기사로 만들면 요약만 들어가니 원문을 확인해 보완해 주세요.</p>
+          </div>
+        )}
+        {files.length > 0 && (
+          <div className="mt-8 border-t border-line pt-5">
+            <p className="text-[13px] font-bold">첨부파일</p>
+            <ul className="mt-2 flex flex-wrap gap-2">
+              {files.map((f) => (
+                <li key={f.id}>
+                  <a href={`/press/attachment/${f.id}`} className="inline-flex items-center gap-1.5 rounded border border-line px-3 py-1.5 text-[13px] hover:border-ink">
+                    📎 {f.name} <span className="text-[11.5px] text-muted">{Math.max(1, Math.round(f.size / 1024))}KB</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[12px] text-muted">한글·PDF 파일 내용은 기사에 자동으로 들어가지 않습니다. 내려받아 확인한 뒤 필요한 부분을 옮겨 주세요.</p>
           </div>
         )}
       </article>

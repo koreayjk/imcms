@@ -40,7 +40,7 @@ export default async function PressPage({ searchParams }: Props) {
   const keywords = resolveSite(outlet?.domain).pressKeywords
 
   const tab = searchParams.tab === 'all' ? 'all' : 'rec'
-  const src = searchParams.src === MANUAL_SOURCE ? MANUAL_SOURCE : PRESS_SOURCES.find((s) => s.key === searchParams.src)?.key
+  const src = searchParams.src === MANUAL_SOURCE || searchParams.src === 'email' ? searchParams.src : PRESS_SOURCES.find((s) => s.key === searchParams.src)?.key
   const q = searchParams.q?.trim().slice(0, 50) || undefined
   const page = Math.max(1, Number(searchParams.page) || 1)
 
@@ -50,7 +50,7 @@ export default async function PressPage({ searchParams }: Props) {
     .order('published_at', { ascending: false, nullsFirst: false })
   if (src) query = query.eq('source_key', src)
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
-  if (tab === 'rec' && keywords.length) query = query.or([`source_key.eq.${MANUAL_SOURCE}`, ...keywords.map((k) => `title.ilike.*${k}*,summary.ilike.*${k}*`)].join(','))
+  if (tab === 'rec' && keywords.length) query = query.or([`source_key.eq.${MANUAL_SOURCE}`, 'source_key.eq.email', ...keywords.map((k) => `title.ilike.*${k}*,summary.ilike.*${k}*`)].join(','))
 
   const [{ data: rows, count }, { data: logs }, { data: todayUses }] = await Promise.all([
     query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
@@ -81,9 +81,12 @@ export default async function PressPage({ searchParams }: Props) {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[22px] font-bold tracking-tight">보도자료함</h1>
-          <p className="mt-1 text-[13px] text-muted">정부·기관·기업 보도자료를 30분마다 자동으로 모읍니다. 이메일로 받은 자료는 “직접 등록”으로 올리세요.</p>
+          <p className="mt-1 text-[13px] text-muted">정부·기관·기업 보도자료를 30분마다 자동으로 모읍니다. 내 메일로 온 보도자료도 “메일로 받기”를 설정하면 자동으로 들어옵니다.</p>
         </div>
-        <Link href="/press/new" className="btn-primary">+ 직접 등록</Link>
+        <div className="flex gap-2">
+          <Link href="/press/email" className="btn-secondary bg-white">✉ 메일로 받기 설정</Link>
+          <Link href="/press/new" className="btn-primary">+ 직접 등록</Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-[1fr_300px] items-start gap-6">
@@ -115,6 +118,7 @@ export default async function PressPage({ searchParams }: Props) {
 
           <div className="flex flex-wrap gap-1.5 border-b border-line px-5 py-3">
             <Link href={href({ src: undefined, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${!src ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>모든 출처</Link>
+            <Link href={href({ src: 'email', page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === 'email' ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>메일</Link>
             <Link href={href({ src: MANUAL_SOURCE, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === MANUAL_SOURCE ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>직접 등록</Link>
             {PRESS_SOURCES.map((s) => (
               <Link key={s.key} href={href({ src: s.key, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === s.key ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>
@@ -130,6 +134,7 @@ export default async function PressPage({ searchParams }: Props) {
                   <Link href={`/press/${r.id}`} className="block px-5 py-4 hover:bg-[#F8F9FA]">
                     <div className="flex items-center gap-2 text-[11.5px] text-muted">
                       {r.source_key === MANUAL_SOURCE && <span className="rounded bg-ink px-1.5 py-0.5 text-white">직접 등록</span>}
+                      {r.source_key === 'email' && <span className="rounded bg-review px-1.5 py-0.5 text-white">메일</span>}
                       <span className="rounded bg-line/70 px-1.5 py-0.5">{r.source_name}</span>
                       <time className="tabular-nums" dateTime={r.published_at ?? undefined}>{formatShort(r.published_at)}</time>
                       {usedSet.has(r.id) && <span className="rounded bg-published/10 px-1.5 py-0.5 font-semibold text-published">기사화됨</span>}
