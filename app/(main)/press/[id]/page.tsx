@@ -94,7 +94,7 @@ export default async function PressDetailPage({ params, searchParams }: { params
           <p className="flex-1 text-[12.5px] leading-relaxed text-muted">
             {ai
               ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.'
-              : 'AI 초안은 ANTHROPIC_API_KEY를 설정하면 쓸 수 있습니다.'}{' '}
+              : 'AI 초안은 관리자가 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)를 설정하면 쓸 수 있습니다.'}{' '}
             사진은 우리 저장소로 옮겨지고, 끝에 “{sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
           </p>
           <Link href="/press" className="btn-secondary">목록</Link>
