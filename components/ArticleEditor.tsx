@@ -275,6 +275,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               initialHtml={initialHtml}
               onChange={onChange}
               onReady={onReady}
+              advanced={isEditorPlus}
               onUploadImage={async (file) => {
                 const url = await uploadImage(file, outletId)
                 setImages((prev) => [...prev, { url, caption: '' }])
