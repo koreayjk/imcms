@@ -16,8 +16,7 @@ const TILES = [
 ]
 
 export default async function SupportHome() {
-  const { supabase, profile, isEditorPlus } = await getCmsContext()
-  const isStaff = profile?.role === 'admin'
+  const { supabase, isSuper: isStaff, isEditorPlus } = await getCmsContext()
 
   const [{ data: tickets }, { data: notices }, { count: openCount }] = await Promise.all([
     supabase.from('support_tickets').select('id, title, status, category, created_at, last_staff_reply_at, requester_read_at, outlet:outlets(name)').order('updated_at', { ascending: false }).limit(8),

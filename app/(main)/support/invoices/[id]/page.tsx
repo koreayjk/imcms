@@ -9,8 +9,7 @@ import PrintButton from '@/components/cms/PrintButton'
 import { setInvoicePaid } from '../../actions'
 
 export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const { supabase, profile } = await getCmsContext()
-  const isStaff = profile?.role === 'admin'
+  const { supabase, isSuper: isStaff } = await getCmsContext()
   const { data: inv } = await supabase.from('invoices').select('*, outlet:outlets(name)').eq('id', params.id).maybeSingle()
   if (!inv) notFound()
   const { data: billing } = await supabase.from('outlet_billing').select('*').eq('outlet_id', inv.outlet_id).maybeSingle()

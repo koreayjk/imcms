@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import type { UserRole } from '@/lib/types'
 import { BuildingIcon, HeadsetIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
 
-type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'admin' }
+type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'group' | 'super' }
 
 const ITEMS: Item[] = [
   { href: '/newsroom', label: '뉴스룸', icon: <NewsroomIcon />, match: (p) => p === '/newsroom' },
@@ -15,16 +15,22 @@ const ITEMS: Item[] = [
   { href: '/press', label: '보도자료', icon: <InboxIcon />, match: (p) => p.startsWith('/press') },
   { href: '/admin/home', label: '홈편집', icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'editor' },
   { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'editor' },
-  { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'admin' },
-  { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'admin' },
+  { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
+  { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'group' },
   { href: '/support', label: '고객센터', icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') },
-  { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'admin' },
+  { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'super' },
 ]
 
-export default function Rail({ role, pendingCount = 0, supportCount = 0 }: { role: UserRole | null; pendingCount?: number; supportCount?: number }) {
+type Props = { role: UserRole | null; isSuper?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number }
+
+export default function Rail({ role, isSuper = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0 }: Props) {
   const pathname = usePathname()
+  // 편집장 메뉴는 편집장·발행인·총관리자, 그룹 메뉴는 발행인·총관리자, 운영 메뉴는 총관리자만
   const allowed = (i: Item) =>
-    !i.minRole || role === 'admin' || (i.minRole === 'editor' && role === 'editor')
+    !i.minRole
+    || (i.minRole === 'editor' && (role === 'editor' || role === 'admin' || isSuper))
+    || (i.minRole === 'group' && isGroupAdmin)
+    || (i.minRole === 'super' && isSuper)
 
   return (
     <nav aria-label="편집국 메뉴" className="flex w-[76px] shrink-0 flex-col bg-[#262A33] text-[#AEB4C0]">
@@ -47,7 +53,7 @@ export default function Rail({ role, pendingCount = 0, supportCount = 0 }: { rol
                 {item.icon}
                 {item.label}
                 {item.href === '/support' && supportCount > 0 && (
-                  <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={role === 'admin' ? `새 요청 ${supportCount}건` : `새 답변 ${supportCount}건`}>
+                  <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={isSuper ? `새 요청 ${supportCount}건` : `새 답변 ${supportCount}건`}>
                     {supportCount}
                   </span>
                 )}

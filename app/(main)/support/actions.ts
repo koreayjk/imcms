@@ -9,7 +9,7 @@ const text = (form: FormData, k: string, max: number) => String(form.get(k) ?? '
 
 async function staffContext() {
   const ctx = await getCmsContext()
-  if (ctx.profile?.role !== 'admin') redirect('/support')
+  if (!ctx.isSuper) redirect('/support')
   return ctx
 }
 

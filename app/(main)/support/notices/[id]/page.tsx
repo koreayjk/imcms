@@ -7,7 +7,7 @@ import PendingButton from '@/components/cms/PendingButton'
 import { deleteNotice } from '../../actions'
 
 export default async function NoticePage({ params }: { params: { id: string } }) {
-  const { supabase, profile } = await getCmsContext()
+  const { supabase, isSuper } = await getCmsContext()
   const { data: n } = await supabase.from('support_notices').select('*').eq('id', params.id).maybeSingle()
   if (!n) notFound()
   const c = NOTICE_CATEGORIES[n.category as NoticeCategory]
@@ -20,7 +20,7 @@ export default async function NoticePage({ params }: { params: { id: string } })
         <p className="mt-2 text-[13px] text-muted">{STAFF_NAME} · {formatDateTime(n.created_at)}</p>
         <div className="mt-7 whitespace-pre-line border-t border-line pt-7 text-[15.5px] leading-[1.9]">{n.body}</div>
       </article>
-      {profile?.role === 'admin' && (
+      {isSuper && (
         <div className="mt-4 flex justify-end gap-2">
           <form action={deleteNotice.bind(null, n.id)}>
             <PendingButton pending="삭제 중…" confirm="이 공지를 삭제할까요?" className="btn-secondary text-danger">삭제</PendingButton>

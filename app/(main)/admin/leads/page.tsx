@@ -13,8 +13,8 @@ const NEXT: Record<string, { status: string; label: string }> = {
 }
 
 export default async function LeadsPage() {
-  const { supabase, profile } = await getCmsContext()
-  if (profile?.role !== 'admin') redirect('/newsroom')
+  const { supabase, isSuper } = await getCmsContext()
+  if (!isSuper) redirect('/newsroom')
 
   const { data, error } = await supabase.from('beta_requests').select('*').order('created_at', { ascending: false }).limit(200)
 

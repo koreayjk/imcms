@@ -15,17 +15,28 @@ export async function getCmsContext() {
 
   const role = (profile?.role ?? 'reporter') as UserRole
   if (!isApproved(profile)) redirect('/pending')
+
+  const outletId = (profile?.outlet_id as string | null) ?? null
+  // groups.sql 실행 전 DB에는 is_super·publisher_id 칸이 없다 → 예전처럼 관리자 = 총관리자로 본다
+  const legacy = profile && !('is_super' in profile)
+  const isSuper = legacy ? role === 'admin' : !!profile?.is_super
+  const isGroupAdmin = isSuper || (role === 'admin' && !!profile?.publisher_id)
+
   return {
     supabase,
     user,
     profile,
-    outletId: (profile?.outlet_id as string | null) ?? null,
-    isEditorPlus: role === 'editor' || role === 'admin',
+    outletId,
+    // 총관리자: 모든 그룹 / 발행인: 자기 그룹 / 편집장: 자기 매체
+    isSuper,
+    isGroupAdmin,
+    publisherId: (profile?.publisher_id as string | null) ?? null,
+    isEditorPlus: role === 'editor' || role === 'admin' || isSuper,
   }
 }
 
 // 관리자 승인 전 가입자는 편집국에 들어올 수 없다 (DB에서도 막혀 있음)
-export function isApproved(profile: { role?: string | null; approved?: boolean | null } | null) {
+export function isApproved(profile: { role?: string | null; approved?: boolean | null; is_super?: boolean | null } | null) {
   if (!profile) return false
-  return profile.role === 'admin' || profile.approved !== false
+  return !!profile.is_super || profile.role === 'admin' || profile.approved !== false
 }

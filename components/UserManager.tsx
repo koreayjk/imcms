@@ -1,119 +1,129 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useFormState } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { inviteMember, setMember, type FormState } from '@/app/(main)/admin/users/actions'
 import type { Profile, UserRole } from '@/lib/types'
 import { ROLE_LABEL } from '@/lib/types'
+import PendingButton from './cms/PendingButton'
 
-export default function UserManager({
-  users,
-  outlets,
-  currentUserId,
-  emails = {},
-}: {
-  users: Profile[]
-  outlets: { id: string; name: string }[]
-  currentUserId: string
-  emails?: Record<string, string>
-}) {
-  const [profiles, setProfiles] = useState(users)
+export type OutletOption = { id: string; name: string; group: string | null }
+
+function OutletSelect({ outlets, value, onChange, name, id }: { outlets: OutletOption[]; value?: string; onChange?: (v: string) => void; name?: string; id?: string }) {
+  const groups = Array.from(new Set(outlets.map((o) => o.group ?? '그룹 없음')))
+  return (
+    <select id={id} name={name} value={value} onChange={onChange ? (e) => onChange(e.target.value) : undefined} defaultValue={onChange ? undefined : ''} className="rounded border border-line bg-white px-2 py-1.5 text-[13px]">
+      <option value="">매체 선택</option>
+      {groups.map((g) => (
+        <optgroup key={g} label={g}>
+          {outlets.filter((o) => (o.group ?? '그룹 없음') === g).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </optgroup>
+      ))}
+    </select>
+  )
+}
+
+export function InviteForm({ outlets }: { outlets: OutletOption[] }) {
+  const [state, action] = useFormState<FormState, FormData>(inviteMember, {})
+  return (
+    <form action={action} className="rounded-lg border border-line bg-white p-5">
+      <h2 className="text-[15px] font-bold">회원 초대</h2>
+      <p className="mt-1 text-[12.5px] text-muted">이메일로 미리 역할과 매체를 정해 두면, 그 이메일로 가입(구글 가입 포함)하는 순간 승인까지 끝난 상태로 들어옵니다.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <input name="email" type="email" required placeholder="이메일" aria-label="이메일" className="field-input w-56" />
+        <input name="full_name" placeholder="이름 (선택)" aria-label="이름" className="field-input w-32" />
+        <select name="role" defaultValue="reporter" aria-label="역할" className="rounded border border-line bg-white px-2 py-1.5 text-[13px]">
+          <option value="reporter">기자</option>
+          <option value="editor">편집장</option>
+          <option value="admin">발행인 (그룹 전체 관리)</option>
+        </select>
+        <OutletSelect outlets={outlets} name="outlet_id" />
+        <PendingButton pending="보내는 중…" className="btn-primary">초대</PendingButton>
+      </div>
+      {state.error && <p role="alert" className="mt-2 text-[13px] text-danger">{state.error}</p>}
+      {state.ok && <p role="status" className="mt-2 text-[13px] text-published">{state.ok}</p>}
+    </form>
+  )
+}
+
+function MemberRow({ u, email, outlets, isMe, groupName }: { u: Profile; email?: string; outlets: OutletOption[]; isMe: boolean; groupName: string | null }) {
   const router = useRouter()
-  const supabase = createClient()
-
-  async function updateRole(id: string, role: UserRole) {
-    await supabase.from('profiles').update({ role }).eq('id', id)
-    setProfiles(profiles.map(u => u.id === id ? { ...u, role } : u))
-    router.refresh()
-  }
-
-  async function updateName(id: string, value: string) {
-    const full_name = value.trim().replace(/\s+/g, ' ').slice(0, 30)
-    const before = profiles.find(u => u.id === id)?.full_name
-    if (!full_name || full_name === before) return
-    const { error } = await supabase.from('profiles').update({ full_name }).eq('id', id)
-    if (error) { window.alert(`이름을 바꾸지 못했습니다: ${error.message}`); return }
-    setProfiles(profiles.map(u => u.id === id ? { ...u, full_name } : u))
-    router.refresh()
-  }
-
-  async function updateOutlet(id: string, outlet_id: string) {
-    await supabase.from('profiles').update({ outlet_id: outlet_id || null }).eq('id', id)
-    setProfiles(profiles.map(u => u.id === id ? { ...u, outlet_id: outlet_id || null } : u))
-    router.refresh()
-  }
+  const [role, setRole] = useState<UserRole>(u.role)
+  const [outlet, setOutlet] = useState(u.outlet_id ?? '')
+  const [name, setName] = useState(u.full_name)
+  const [msg, setMsg] = useState<{ ok?: string; error?: string }>({})
+  const [pending, start] = useTransition()
+  const dirty = role !== u.role || outlet !== (u.outlet_id ?? '') || name !== u.full_name
 
   return (
-    <div>
+    <tr className="border-b border-line/60 align-middle">
+      <td className="py-2.5 pr-2">
+        <input value={name} onChange={(e) => setName(e.target.value)} aria-label="이름" maxLength={30} className="w-28 rounded border border-transparent px-1.5 py-1 font-medium hover:border-line focus:border-ink focus:outline-none" />
+        {isMe && <span className="ml-1 text-xs text-muted">(나)</span>}
+        {u.is_super && <span className="ml-1 rounded bg-[#E5483A] px-1 text-[10.5px] font-bold text-white">총관리자</span>}
+        {email && <span className="block pl-1.5 text-xs text-muted">{email}</span>}
+      </td>
+      <td className="py-2.5 pr-2">
+        <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} disabled={isMe || u.is_super} aria-label="역할" className="rounded border border-line bg-white px-2 py-1.5 text-[13px] disabled:opacity-60">
+          {(Object.keys(ROLE_LABEL) as UserRole[]).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+        </select>
+      </td>
+      <td className="py-2.5 pr-2">
+        <OutletSelect outlets={outlets} value={outlet} onChange={setOutlet} />
+        {role === 'admin' && <span className="block pt-0.5 text-[11px] text-muted">그룹 전체: {groupName ?? '매체의 그룹'}</span>}
+      </td>
+      <td className="py-2.5 text-xs text-muted">{new Date(u.created_at).toLocaleDateString('ko-KR')}</td>
+      <td className="py-2.5 text-right">
+        {dirty && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => start(async () => {
+              const r = await setMember(u.id, { role, outletId: outlet || null, fullName: name })
+              setMsg(r)
+              if (!r.error) router.refresh()
+            })}
+            className="btn-primary px-3 py-1 text-[12.5px]"
+          >
+            {pending ? '저장 중…' : '저장'}
+          </button>
+        )}
+        {msg.error && <span role="alert" className="block text-[11.5px] text-danger">{msg.error}</span>}
+      </td>
+    </tr>
+  )
+}
+
+export default function UserManager({ users, outlets, currentUserId, emails = {}, groupOf = {} }: {
+  users: Profile[]
+  outlets: OutletOption[]
+  currentUserId: string
+  emails?: Record<string, string>
+  groupOf?: Record<string, string | null>
+}) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-line bg-white px-5">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-line text-left">
-            <th className="py-2.5 font-normal text-muted">이름</th>
-            <th className="py-2.5 font-normal text-muted w-28">역할</th>
-            <th className="py-2.5 font-normal text-muted w-36">소속 매체</th>
-            <th className="py-2.5 font-normal text-muted w-24">가입일</th>
+          <tr className="border-b border-line text-left text-[12.5px] text-muted">
+            <th className="py-2.5 font-normal">이름 · 이메일</th>
+            <th className="w-28 py-2.5 font-normal">역할</th>
+            <th className="w-52 py-2.5 font-normal">매체</th>
+            <th className="w-24 py-2.5 font-normal">가입일</th>
+            <th className="w-20" />
           </tr>
         </thead>
         <tbody>
-          {profiles.map((u) => (
-            <tr key={u.id} className="border-b border-line/60">
-              <td className="py-3 font-medium">
-                <label htmlFor={`name-${u.id}`} className="sr-only">{u.full_name} 이름</label>
-                <input
-                  id={`name-${u.id}`}
-                  defaultValue={u.full_name}
-                  onBlur={(e) => updateName(u.id, e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
-                  maxLength={30}
-                  title="이름을 고치고 Enter"
-                  className="w-28 rounded border border-transparent px-1.5 py-0.5 hover:border-line focus:border-ink focus:outline-none"
-                />
-                {u.id === currentUserId && <span className="ml-1.5 text-xs text-muted">(나)</span>}
-                {emails[u.id] && <span className="block text-xs font-normal text-muted">{emails[u.id]}</span>}
-              </td>
-              <td className="py-3">
-                {u.id === currentUserId ? (
-                  <span className="text-xs text-muted">{ROLE_LABEL[u.role]}</span>
-                ) : (
-                  <select
-                    value={u.role}
-                    onChange={(e) => updateRole(u.id, e.target.value as UserRole)}
-                    className="rounded border border-line px-2 py-1 text-xs focus:outline-none"
-                  >
-                    {(Object.keys(ROLE_LABEL) as UserRole[]).map(r => (
-                      <option key={r} value={r}>{ROLE_LABEL[r]}</option>
-                    ))}
-                  </select>
-                )}
-              </td>
-              <td className="py-3">
-                <select
-                  value={u.outlet_id ?? ''}
-                  onChange={(e) => updateOutlet(u.id, e.target.value)}
-                  className="rounded border border-line px-2 py-1 text-xs focus:outline-none w-full"
-                  disabled={u.id === currentUserId}
-                >
-                  <option value="">미배정</option>
-                  {outlets.map(o => (
-                    <option key={o.id} value={o.id}>{o.name}</option>
-                  ))}
-                </select>
-              </td>
-              <td className="py-3 text-xs text-muted">
-                {new Date(u.created_at).toLocaleDateString('ko-KR')}
-              </td>
-            </tr>
+          {users.map((u) => (
+            <MemberRow key={u.id} u={u} email={emails[u.id]} outlets={outlets} isMe={u.id === currentUserId} groupName={groupOf[u.id] ?? null} />
           ))}
-          {!profiles.length && (
-            <tr>
-              <td colSpan={4} className="py-10 text-center text-sm text-muted">
-                회원이 없습니다.
-              </td>
-            </tr>
+          {!users.length && (
+            <tr><td colSpan={5} className="py-10 text-center text-sm text-muted">회원이 없습니다.</td></tr>
           )}
         </tbody>
       </table>
-      <div className="mt-3 text-xs text-muted">총 {profiles.length}명</div>
+      <div className="py-3 text-xs text-muted">총 {users.length}명</div>
     </div>
   )
 }

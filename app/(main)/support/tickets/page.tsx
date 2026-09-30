@@ -6,8 +6,7 @@ import { TICKET_CATEGORIES, TICKET_STATUS, hasUnreadReply, type TicketCategory, 
 type Props = { searchParams: { tab?: string } }
 
 export default async function TicketsPage({ searchParams }: Props) {
-  const { supabase, profile } = await getCmsContext()
-  const isStaff = profile?.role === 'admin'
+  const { supabase, isSuper: isStaff } = await getCmsContext()
   const tab = ['open', 'unread'].includes(searchParams.tab ?? '') ? searchParams.tab : 'all'
 
   const { data } = await supabase

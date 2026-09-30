@@ -4,9 +4,9 @@ import { getCmsContext } from '@/lib/cms'
 import { monthLabel, won } from '@/lib/support'
 
 export default async function InvoicesPage() {
-  const { supabase, profile, isEditorPlus } = await getCmsContext()
+  const { supabase, isSuper, isEditorPlus } = await getCmsContext()
   if (!isEditorPlus) redirect('/support')
-  const isStaff = profile?.role === 'admin'
+  const isStaff = isSuper
   const { data } = await supabase.from('invoices').select('id, month, total, status, due_date, outlet:outlets(name)').order('month', { ascending: false }).limit(120)
 
   return (

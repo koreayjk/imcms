@@ -25,8 +25,7 @@ function Files({ files, urls }: { files: FileRow[]; urls: Map<string, string> })
 }
 
 export default async function TicketPage({ params }: { params: { id: string } }) {
-  const { supabase, profile } = await getCmsContext()
-  const isStaff = profile?.role === 'admin'
+  const { supabase, isSuper: isStaff } = await getCmsContext()
 
   const { data: t } = await supabase
     .from('support_tickets')

@@ -1,43 +1,51 @@
-import { redirect } from 'next/navigation'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import Rail from '@/components/cms/Rail'
 import TopBar from '@/components/cms/TopBar'
-import { isApproved } from '@/lib/cms'
+import { getCmsContext } from '@/lib/cms'
 import { hasUnreadReply } from '@/lib/support'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user, profile, outletId, isSuper, isGroupAdmin } = await getCmsContext()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-  if (!isApproved(profile)) redirect('/pending')
-
-  const { count: pendingCount } = profile?.role === 'admin'
+  // 승인 대기 가입자는 어느 그룹인지 모르므로 총관리자에게만 알린다
+  const { count: pendingCount } = isSuper
     ? await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('approved', false)
     : { count: 0 }
 
-  // 고객센터 알림: 운영팀은 새 요청 수, 회원사는 읽지 않은 답변 수 (support.sql 전이면 0)
-  const { data: tickets } = profile?.role === 'admin'
+  // 고객센터 알림: 운영팀(총관리자)은 새 요청 수, 회원사는 읽지 않은 답변 수 (support.sql 전이면 0)
+  const { data: tickets } = isSuper
     ? await supabase.from('support_tickets').select('id').eq('status', 'received').limit(99)
     : await supabase.from('support_tickets').select('last_staff_reply_at, requester_read_at').eq('requester_id', user.id).not('last_staff_reply_at', 'is', null).limit(99)
-  const supportCount = profile?.role === 'admin'
+  const supportCount = isSuper
     ? (tickets ?? []).length
     : ((tickets ?? []) as { last_staff_reply_at: string | null; requester_read_at: string | null }[]).filter(hasUnreadReply).length
 
-  const { data: outlet } = profile?.outlet_id
-    ? await supabase.from('outlets').select('name').eq('id', profile.outlet_id).single()
-    : { data: null }
+  // 발행인·총관리자는 관리하는 매체 사이를 오간다 (DB 권한이 보이는 매체만 돌려준다)
+  const outletQuery = (fields: string) => {
+    const q = supabase.from('outlets').select(fields).order('created_at')
+    return isGroupAdmin ? q : q.eq('id', outletId ?? '00000000-0000-0000-0000-000000000000')
+  }
+  let { data: outlets, error: outletErr } = await outletQuery('id, name, domain, publisher:publishers(name)')
+  // groups.sql 실행 전에는 그룹 연결이 없으므로 이름만
+  if (outletErr) ({ data: outlets } = await outletQuery('id, name, domain'))
+  const list = ((outlets ?? []) as any[]).map((o) => ({ id: o.id as string, name: o.name as string, domain: (o.domain as string | null) ?? null, group: (o.publisher?.name as string | undefined) ?? null }))
+  const current = list.find((o) => o.id === outletId) ?? null
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F4F5F7] print:block print:h-auto print:overflow-visible print:bg-white">
-      <div className="contents print:hidden"><Rail role={profile?.role ?? null} pendingCount={pendingCount ?? 0} supportCount={supportCount} /></div>
+      <div className="contents print:hidden">
+        <Rail role={profile?.role ?? null} isSuper={isSuper} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} />
+      </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar outletName={outlet?.name ?? null} userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} />
+        <TopBar
+          outletName={current?.name ?? null}
+          groupName={current?.group ?? null}
+          siteUrl={current?.domain ? `https://${current.domain}` : '/'}
+          outlets={isGroupAdmin ? list : []}
+          currentOutletId={outletId}
+          userName={profile?.full_name ?? user.email ?? ''}
+          role={profile?.role ?? null}
+          isSuper={isSuper}
+        />
         <main className="flex-1 overflow-y-auto print:overflow-visible">{children}</main>
       </div>
     </div>

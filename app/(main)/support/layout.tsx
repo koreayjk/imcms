@@ -3,8 +3,7 @@ import { getCmsContext } from '@/lib/cms'
 import SupportNav from '@/components/cms/SupportNav'
 
 export default async function SupportLayout({ children }: { children: React.ReactNode }) {
-  const { supabase, profile, outletId, isEditorPlus } = await getCmsContext()
-  const isStaff = profile?.role === 'admin'
+  const { supabase, outletId, isEditorPlus, isSuper: isStaff } = await getCmsContext()
   const canBilling = isEditorPlus && (isStaff || !!outletId)
 
   const { error: missing } = await supabase.from('support_tickets').select('id', { head: true, count: 'exact' }).limit(1)

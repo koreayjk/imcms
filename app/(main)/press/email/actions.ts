@@ -22,8 +22,8 @@ export async function getMyInbox(): Promise<{ inbox: MyInbox | null; error?: str
 export type AddressState = { ok?: boolean; error?: string }
 
 export async function saveMailAddress(_prev: AddressState, form: FormData): Promise<AddressState> {
-  const { supabase, profile } = await getCmsContext()
-  if (profile?.role !== 'admin') return { error: '관리자만 바꿀 수 있습니다.' }
+  const { supabase, isSuper } = await getCmsContext()
+  if (!isSuper) return { error: '총관리자만 바꿀 수 있습니다.' }
   const address = String(form.get('address') ?? '').trim()
   const { error } = await supabase.rpc('admin_set_press_mail_address', { p_address: address })
   if (error) return { error: error.message }

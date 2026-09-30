@@ -9,6 +9,9 @@ export interface Profile {
   created_at: string
   // signup.sql 실행 전에는 칸이 없다 (없으면 승인된 것으로 본다)
   approved?: boolean
+  // groups.sql: 총관리자 표시, 발행인의 그룹
+  is_super?: boolean
+  publisher_id?: string | null
 }
 
 export interface Outlet {
@@ -68,5 +71,5 @@ export const STATUS_LABEL: Record<ArticleStatus, string> = {
 export const ROLE_LABEL: Record<UserRole, string> = {
   reporter: '기자',
   editor: '편집장',
-  admin: '관리자',
+  admin: '발행인',
 }

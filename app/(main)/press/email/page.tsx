@@ -6,10 +6,10 @@ import MailServiceSettings from '@/components/cms/MailServiceSettings'
 import { getMyInbox } from './actions'
 
 export default async function PressEmailPage() {
-  const { supabase, profile } = await getCmsContext()
+  const { supabase, isSuper } = await getCmsContext()
   const { inbox, error } = await getMyInbox()
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = isSuper
   const { data: admin } = isAdmin ? await supabase.rpc('admin_press_mail_settings') : { data: null }
   const settings = (Array.isArray(admin) ? admin[0] : admin) as { secret: string | null; address: string | null } | null
   const host = headers().get('host') ?? 'imcms.vercel.app'
