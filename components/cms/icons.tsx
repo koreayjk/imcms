@@ -39,3 +39,6 @@ export const ImageIcon = () => (
 export const VideoIcon = () => (
   <svg {...base} width={18} height={18}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m10 9 5 3-5 3V9Z" /></svg>
 )
+export const MailIcon = () => (
+  <svg {...base}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></svg>
+)

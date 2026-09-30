@@ -84,3 +84,21 @@ body {
 .btn-review    { @apply btn bg-review text-white hover:opacity-90; }
 .btn-publish   { @apply btn bg-published text-white hover:opacity-90; }
 .btn-danger    { @apply btn bg-danger text-white hover:opacity-90; }
+
+/* IM 뉴스룸 제품 홈페이지 — 교정 펜이 홍보 문구를 지우는 시연 */
+.proof-del {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: #D6402B;
+  animation: proof-strike 0.45s ease-out both;
+}
+@keyframes proof-strike {
+  from { text-decoration-color: transparent; }
+  to   { text-decoration-color: #D6402B; color: #8C929B; }
+}
+.proof-rise { animation: proof-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes proof-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .proof-del { animation: none; color: #8C929B; }
+  .proof-rise { animation: none; }
+}

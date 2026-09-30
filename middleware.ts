@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { PRODUCT, isProductHost } from '@/lib/product'
 
 // 로그인 없이 볼 수 있는 공개 경로
 function isPublicPath(pathname: string) {
@@ -12,12 +13,20 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
     pathname.startsWith('/auth/') ||
+    pathname.startsWith(PRODUCT.path) ||
     // 예약 수집: 로그인 대신 DB 비밀 열쇠로 확인한다
     pathname.startsWith('/api/cron/')
   )
 }
 
 export async function middleware(request: NextRequest) {
+  // 제품 홈페이지 도메인으로 들어온 첫 화면은 IM 뉴스룸 소개 페이지로 보여준다
+  if (request.nextUrl.pathname === '/' && isProductHost(request.headers.get('host'))) {
+    const url = request.nextUrl.clone()
+    url.pathname = PRODUCT.path
+    return NextResponse.rewrite(url)
+  }
+
   // Supabase 미연결(미리보기) 상태에서는 공개 페이지만 샘플 데이터로 보여준다
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.next()
 

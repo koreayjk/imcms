@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import type { UserRole } from '@/lib/types'
-import { BuildingIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
+import { BuildingIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
 
 type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'admin' }
 
@@ -17,6 +17,7 @@ const ITEMS: Item[] = [
   { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'editor' },
   { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'admin' },
   { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'admin' },
+  { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'admin' },
 ]
 
 export default function Rail({ role, pendingCount = 0 }: { role: UserRole | null; pendingCount?: number }) {
