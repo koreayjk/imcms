@@ -39,8 +39,8 @@ export type SiteConfig = {
 export const SITES: SiteConfig[] = [
   {
     key: 'thecaretimes',
-    // 첫 번째가 대표 도메인. thecaretimes.com은 DB의 outlets.domain을 .net으로 바꾸기 전까지만 남겨둔다
-    domains: ['thecaretimes.net', 'www.thecaretimes.net', 'thecaretimes.com'],
+    // 첫 번째가 대표 도메인 (DB outlets.domain과 같아야 기사를 찾는다)
+    domains: ['thecaretimes.net', 'www.thecaretimes.net'],
     indexable: false,
     name: '더케어타임즈',
     nameEn: 'THE CARE TIMES',
