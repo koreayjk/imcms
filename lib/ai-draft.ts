@@ -115,36 +115,51 @@ async function withAnthropic(model: AiModel, input: DraftInput) {
 }
 
 // 제미나이: 공식 REST generateContent (구조화 출력 = generationConfig.responseFormat.text)
+// 503(구글 쪽 과부하)·500·429는 잠깐 기다렸다 다시 보낸다. 전체 50초 안에서만.
+const GEMINI_RETRY = [2_000, 5_000]
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 async function withGemini(model: AiModel, input: DraftInput) {
-  const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), 50_000)
+  const deadline = Date.now() + 50_000
+  const payload = JSON.stringify({
+    system_instruction: { parts: [{ text: SYSTEM }] },
+    contents: [{ role: 'user', parts: [{ text: userPrompt(input) }] }],
+    generationConfig: {
+      // REST에서는 enum 이름(대문자)으로 보내야 한다 (API 참조 문서의 ThinkingLevel·MimeType)
+      thinkingConfig: { thinkingLevel: 'LOW' },
+      responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: GEMINI_SCHEMA } },
+    },
+  })
   let res: Response
-  try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY! },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM }] },
-        contents: [{ role: 'user', parts: [{ text: userPrompt(input) }] }],
-        generationConfig: {
-          // REST에서는 enum 이름(대문자)으로 보내야 한다 (API 참조 문서의 ThinkingLevel·MimeType)
-          thinkingConfig: { thinkingLevel: 'LOW' },
-          responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: GEMINI_SCHEMA } },
-        },
-      }),
-      signal: ctrl.signal,
-      cache: 'no-store',
-    })
-  } catch (e) {
-    if (e instanceof Error && e.name === 'AbortError') throw new AiDraftError('AI 응답이 늦어 시간을 초과했습니다. 다시 시도해 주세요.')
-    throw new AiDraftError('제미나이에 연결하지 못했습니다.')
-  } finally {
-    clearTimeout(timer)
+  let body: any
+  for (let attempt = 0; ; attempt++) {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), Math.max(1_000, deadline - Date.now()))
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY! },
+        body: payload,
+        signal: ctrl.signal,
+        cache: 'no-store',
+      })
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') throw new AiDraftError('AI 응답이 늦어 시간을 초과했습니다. 다시 시도해 주세요.')
+      throw new AiDraftError('제미나이에 연결하지 못했습니다.')
+    } finally {
+      clearTimeout(timer)
+    }
+    body = await res.json().catch(() => null)
+    const retryable = res.status === 503 || res.status === 500 || res.status === 429
+    const wait = GEMINI_RETRY[attempt]
+    // 다시 보낼 시간(대기 + 응답 약 15초)이 남아 있을 때만
+    if (!retryable || wait === undefined || Date.now() + wait + 15_000 > deadline) break
+    await sleep(wait + Math.floor(Math.random() * 500))
   }
-  const body = (await res.json().catch(() => null)) as any
   if (!res.ok) {
     if (res.status === 400 && /API key/i.test(body?.error?.message ?? '')) throw new AiDraftError('제미나이 키가 올바르지 않습니다. GEMINI_API_KEY를 확인해 주세요.')
     if (res.status === 429) throw new AiDraftError('제미나이 요청이 몰려 잠시 제한되었습니다. 1분 뒤 다시 시도해 주세요.')
+    if (res.status === 503 || res.status === 500) throw new AiDraftError('구글 제미나이 서버가 지금 붐빕니다(일시적). 몇 분 뒤 다시 시도해 주세요.')
     throw new AiDraftError(`제미나이 요청이 실패했습니다 (${res.status}${body?.error?.message ? `: ${String(body.error.message).slice(0, 120)}` : ''}).`)
   }
   const cand = body?.candidates?.[0]

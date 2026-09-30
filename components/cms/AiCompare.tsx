@@ -45,8 +45,12 @@ export default function AiCompare({ models }: { models: Model[] }) {
     }
     const next: Run = { releases: prep.releases, models: picked, results: {}, at: new Date().toISOString() }
     setRun(next)
-    const jobs = prep.releases.flatMap((r) => picked.map((m) => ({ r, m })))
-    // 3개씩 동시에
+    await runJobs(prep.releases.flatMap((r) => picked.map((m) => ({ r, m }))))
+  }
+
+  // 3개씩 동시에
+  async function runJobs(jobs: { r: CompareRelease; m: string }[]) {
+    setBusy(true)
     let i = 0
     const worker = async () => {
       while (i < jobs.length) {
@@ -59,6 +63,10 @@ export default function AiCompare({ models }: { models: Model[] }) {
     await Promise.all([worker(), worker(), worker()])
     setBusy(false)
   }
+
+  const failedJobs = run
+    ? run.releases.flatMap((r) => run.models.filter((m) => { const x = run.results[key(r.id, m)]; return !x || (x !== 'running' && !x.ok) }).map((m) => ({ r, m })))
+    : []
 
   const summary = useMemo(() => {
     if (!run) return []
@@ -99,6 +107,11 @@ export default function AiCompare({ models }: { models: Model[] }) {
           <button type="button" onClick={start} disabled={busy || !picked.length} className="btn-publish px-5">
             {busy ? `비교 중… ${finished}/${total}` : '최근 보도자료 10건으로 비교 시작'}
           </button>
+          {!busy && failedJobs.length > 0 && (
+            <button type="button" onClick={() => { setError(''); runJobs(failedJobs) }} className="rounded-lg border border-line px-4 py-2 text-[13.5px] font-semibold hover:border-ink">
+              실패한 {failedJobs.length}건만 다시
+            </button>
+          )}
           {!busy && picked.length > 0 && <span className="text-[12.5px] text-muted">예상 비용 약 {won(estimate)} · 보통 2~4분 걸립니다</span>}
           {!ready.length && <span className="text-[12.5px] text-danger">Vercel에 AI 키를 넣고 다시 배포해야 비교할 수 있습니다.</span>}
         </div>
