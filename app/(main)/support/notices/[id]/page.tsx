@@ -12,7 +12,7 @@ export default async function NoticePage({ params }: { params: { id: string } })
   if (!n) notFound()
   const c = NOTICE_CATEGORIES[n.category as NoticeCategory]
   return (
-    <div className="mx-auto max-w-[860px] px-8 py-10">
+    <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
       <Link href="/support/notices" className="text-[13px] text-muted hover:text-ink">← 공지 목록</Link>
       <article className="mt-4 rounded-2xl bg-white p-9 ring-1 ring-black/5">
         <span className={`rounded px-1.5 py-0.5 text-[12px] font-semibold ${c.className}`}>{c.label}</span>

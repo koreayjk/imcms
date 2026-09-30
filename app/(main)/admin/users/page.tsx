@@ -21,7 +21,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
   ])
   if (outletsRes.error) {
     return (
-      <div className="mx-auto max-w-[900px] px-8 py-16">
+      <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">그룹별 회원 관리를 쓰려면 Supabase에서 <code>supabase/groups.sql</code>을 실행해 주세요.</p>
       </div>
     )
@@ -46,7 +46,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
     : [{ key: 'mine', title: '우리 그룹 회원', list: members }]
 
   return (
-    <div className="mx-auto max-w-[1000px] space-y-8 px-8 py-8">
+    <div className="mx-auto max-w-[1000px] space-y-8 px-4 py-5 md:px-8 md:py-8">
       <header>
         <h1 className="text-[22px] font-bold tracking-tight">회원 관리</h1>
         <p className="mt-1 text-[13px] text-muted">

@@ -194,8 +194,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
   return (
     <div className="pb-24">
-      <div className="grid grid-cols-[1fr_300px] items-start gap-6">
-        <div className="space-y-5 rounded-lg border border-line bg-white p-7">
+      <div className="grid items-start gap-4 md:gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="min-w-0 space-y-5 rounded-lg border border-line bg-white p-4 md:p-7">
           <div className="flex flex-wrap items-center gap-3 border-b border-line pb-5">
             <span className="w-16 text-[13px] font-semibold">기사상태</span>
             <span className={`status-badge status-${status} px-2.5 py-1 text-[12.5px]`}>{STATUS_LABEL[status]}</span>
@@ -236,7 +236,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                 />
                 <span className="pr-3 text-muted">기자</span>
               </div>
-              {isMine && authorEmail && <span className="rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">{authorEmail}</span>}
+              {isMine && authorEmail && <span className="max-w-full truncate rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">{authorEmail}</span>}
               {byline.trim() && byline.trim() !== defaultName && (
                 <button type="button" onClick={() => { setByline(defaultName); syncBylineInBody(defaultName) }} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">
                   {defaultName}(으)로 되돌리기
@@ -283,9 +283,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                 return url
               }}
             />
-            <div className="mt-1.5 flex justify-between text-[12px] text-muted">
-              <span>사진을 누르면 크기(25~100%)·배치를 바꿀 수 있고, 파란 모서리를 끌어도 됩니다 · Ctrl+S 저장</span>
-              <span className="tabular-nums">{charCount.toLocaleString()}자 (공백 제외)</span>
+            <div className="mt-1.5 flex justify-between gap-3 text-[12px] text-muted">
+              <span><span className="md:hidden">사진을 누르면 크기·배치를 바꿀 수 있습니다</span><span className="hidden md:inline">사진을 누르면 크기(25~100%)·배치를 바꿀 수 있고, 파란 모서리를 끌어도 됩니다 · Ctrl+S 저장</span></span>
+              <span className="shrink-0 tabular-nums">{charCount.toLocaleString()}자<span className="hidden md:inline"> (공백 제외)</span></span>
             </div>
           </div>
 
@@ -352,7 +352,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
           </div>
         </div>
 
-        <aside className="sticky top-6 rounded-lg border border-line bg-white p-5">
+        <aside className="min-w-0 rounded-lg border border-line bg-white p-4 md:p-5 lg:sticky lg:top-6">
           <h2 className="mb-4 text-[16px] font-bold">라이브러리</h2>
           <MediaPanel
             outletId={outletId}
@@ -366,15 +366,15 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
         </aside>
       </div>
 
-      <div className="fixed bottom-0 right-0 z-20 border-t border-line bg-white/95 backdrop-blur" style={{ left: 76 }}>
-        <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-8 py-3">
+      <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
           {error ? (
-            <p role="alert" className="flex-1 truncate text-[13px] text-danger">{error}</p>
+            <p role="alert" className="line-clamp-2 min-w-0 flex-1 text-[12.5px] text-danger md:truncate md:text-[13px]">{error}</p>
           ) : (
             <div className="flex items-center gap-4">
-              <button type="button" onClick={() => router.back()} className="text-[13px] text-muted hover:text-ink">← 취소</button>
+              <button type="button" onClick={() => router.back()} className="whitespace-nowrap text-[13px] text-muted hover:text-ink">← 취소</button>
               {article && (
-                <form action={deleteArticle.bind(null, article.id)}>
+                <form className="hidden md:block" action={deleteArticle.bind(null, article.id)}>
                   <PendingButton
                     pending="삭제 중…"
                     confirm={`이 기사를 삭제할까요?${status === 'published' ? '\n홈페이지에서도 바로 내려가고, 함께 송고된 다른 매체 사본도 삭제됩니다.' : ''}\n삭제하면 되돌릴 수 없습니다.`}
@@ -386,17 +386,17 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               )}
             </div>
           )}
-          <div className="ml-auto flex gap-2">
-            <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary px-5">
+          <div className="ml-auto flex shrink-0 gap-1.5 md:gap-2">
+            <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary px-3 md:px-5">
               {saving === 'draft' ? '저장 중…' : '저장'}
             </button>
             {status !== 'published' && status !== 'in_review' && (
-              <button type="button" onClick={() => save('review')} disabled={!!saving} className="btn-review px-5">
+              <button type="button" onClick={() => save('review')} disabled={!!saving} className="btn-review px-3 md:px-5">
                 {saving === 'review' ? '신청 중…' : '승인신청'}
               </button>
             )}
             {isEditorPlus && (
-              <button type="button" onClick={() => save('publish')} disabled={!!saving} className="btn-publish px-5">
+              <button type="button" onClick={() => save('publish')} disabled={!!saving} className="btn-publish px-3 md:px-5">
                 {saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : '바로 발행'}
               </button>
             )}

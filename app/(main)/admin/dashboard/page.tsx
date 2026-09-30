@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
   if (statsRes.error) {
     return (
-      <div className="mx-auto max-w-[900px] px-8 py-16">
+      <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">대시보드를 쓰려면 Supabase에서 <code>supabase/staff.sql</code>을 실행해 주세요.</p>
       </div>
     )
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
   const today = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())
 
   return (
-    <div className="mx-auto max-w-[1280px] px-8 py-8">
+    <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-[24px] font-extrabold tracking-tight">운영 대시보드</h1>
@@ -107,7 +107,7 @@ export default async function DashboardPage() {
               </div>
               {g.list.length ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[13px]">
+                  <table className="w-full min-w-[640px] text-[13px]">
                     <thead>
                       <tr className="border-b border-line text-left text-[11.5px] text-muted">
                         <th className="px-5 py-2 font-medium">매체</th>

@@ -13,7 +13,7 @@ export default async function OutletsPage() {
   ])
   if (error) {
     return (
-      <div className="mx-auto max-w-[900px] px-8 py-16">
+      <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">그룹 관리를 쓰려면 Supabase에서 <code>supabase/groups.sql</code>을 실행해 주세요.</p>
       </div>
     )
@@ -31,7 +31,7 @@ export default async function OutletsPage() {
   }))
 
   return (
-    <div className="mx-auto max-w-[960px] px-8 py-8">
+    <div className="mx-auto max-w-[960px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-6">
         <h1 className="text-[22px] font-bold tracking-tight">{isStaff ? '그룹·매체 관리' : '우리 그룹 매체'}</h1>
         <p className="mt-1 text-[13px] text-muted">

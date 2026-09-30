@@ -22,7 +22,7 @@ export default async function SupportLayout({ children }: { children: React.Reac
         </div>
       )}
       <div className="border-b border-line bg-white print:hidden">
-        <div className="mx-auto flex max-w-[1180px] items-center gap-6 px-8">
+        <div className="mx-auto flex max-w-[1180px] items-center gap-4 overflow-x-auto px-4 md:gap-6 md:px-8">
           <p className="shrink-0 py-3.5 text-[15px] font-extrabold tracking-tight">
             고객센터 {isStaff && <span className="ml-1 rounded bg-[#E5483A] px-1.5 py-0.5 align-middle text-[10.5px] font-bold text-white">운영팀</span>}
           </p>
@@ -30,7 +30,7 @@ export default async function SupportLayout({ children }: { children: React.Reac
         </div>
       </div>
       {missing ? (
-        <div className="mx-auto max-w-[900px] px-8 py-16">
+        <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
           <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">
             고객센터를 쓰려면 관리자가 Supabase에서 <code>supabase/support.sql</code>을 실행해야 합니다.
           </p>

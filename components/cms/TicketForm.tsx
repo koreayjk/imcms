@@ -39,11 +39,11 @@ export default function TicketForm({ requesterName }: { requesterName: string })
 
   return (
     <form onSubmit={submit} className="space-y-6 rounded-2xl bg-white p-8 ring-1 ring-black/5">
-      <div className="grid grid-cols-[88px_1fr] items-center gap-4">
+      <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center sm:gap-4">
         <span className="text-[14px] font-bold">요청인</span>
         <span className="w-fit rounded-full bg-ink px-4 py-1.5 text-[13.5px] font-semibold text-white">{requesterName}</span>
       </div>
-      <div className="grid grid-cols-[88px_1fr] items-start gap-4 border-t border-line pt-6">
+      <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-start sm:gap-4 border-t border-line pt-6">
         <span className="pt-1.5 text-[14px] font-bold">작업 유형</span>
         <div>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="작업 유형">
@@ -69,7 +69,7 @@ export default function TicketForm({ requesterName }: { requesterName: string })
         <label htmlFor="t-body" className="sr-only">요청 내용</label>
         <textarea id="t-body" value={body} onChange={(e) => setBody(e.target.value)} rows={12} placeholder="요청 내용을 자세히 적어주세요. 어느 화면인지, 원하는 결과가 무엇인지 적어주시면 더 빨리 처리됩니다." className="field-input resize-y text-[14.5px] leading-relaxed" />
       </div>
-      <div className="grid grid-cols-[88px_1fr] items-start gap-4">
+      <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-start sm:gap-4">
         <span className="pt-1.5 text-[14px] font-bold">파일 첨부</span>
         <FilePicker files={files} setFiles={setFiles} />
       </div>

@@ -19,7 +19,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
   )
 
   return (
-    <div className="mx-auto max-w-[860px] px-8 py-10">
+    <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href="/support/invoices" className="text-[13px] text-muted hover:text-ink">← 청구서 목록</Link>
         <div className="flex gap-2">
@@ -66,7 +66,8 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           </section>
         </div>
 
-        <table className="mt-8 w-full text-[14px]">
+        <div className="overflow-x-auto">
+        <table className="mt-8 w-full min-w-[480px] text-[14px]">
           <thead>
             <tr className="border-y border-ink/80 bg-[#F8F9FA] text-left text-[12.5px]">
               <th className="px-3 py-2.5 font-semibold">항목</th><th className="w-20 px-3 py-2.5 text-right font-semibold">수량</th><th className="w-32 px-3 py-2.5 text-right font-semibold">단가</th><th className="w-36 px-3 py-2.5 text-right font-semibold">금액</th>
@@ -80,6 +81,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
             ))}
           </tbody>
         </table>
+        </div>
 
         <dl className="ml-auto mt-5 w-72 space-y-1.5 text-[14px] tabular-nums">
           <div className="flex justify-between"><dt className="text-muted">공급가액</dt><dd>{won(inv.supply_amount)}</dd></div>

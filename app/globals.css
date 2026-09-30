@@ -137,3 +137,15 @@ body {
 }
 .ProseMirror .selectedCell::after { content: ''; position: absolute; inset: 0; background: rgba(61, 123, 224, 0.12); pointer-events: none; }
 .ProseMirror td, .ProseMirror th { position: relative; }
+
+/* CMS 아래 고정 버튼 줄: 휴대폰은 아래 탭(56px) 위에, PC는 왼쪽 메뉴(76px) 옆에 */
+.cms-actionbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(56px + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+@media (min-width: 768px) {
+  .cms-actionbar { left: 76px; bottom: 0; }
+}

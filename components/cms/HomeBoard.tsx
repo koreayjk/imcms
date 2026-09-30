@@ -13,8 +13,8 @@ type DragData = { id: string; from?: Pos }
 const GRID: Record<SlotKey, string> = {
   headline: 'grid-cols-1',
   top: 'grid-cols-2',
-  major: 'grid-cols-3',
-  pick: 'grid-cols-4',
+  major: 'grid-cols-2 md:grid-cols-3',
+  pick: 'grid-cols-2 md:grid-cols-4',
 }
 
 export default function HomeBoard({ outletId, initialLayout, articles, savedAt }: {
@@ -96,7 +96,7 @@ export default function HomeBoard({ outletId, initialLayout, articles, savedAt }
   }
 
   return (
-    <div className="grid grid-cols-[1fr_360px] items-start gap-6 pb-24">
+    <div className="grid items-start gap-6 pb-24 lg:grid-cols-[1fr_360px]">
       <div className="space-y-6">
         {SLOTS.map((s) => (
           <section key={s.key} className="rounded-lg border border-line bg-white p-5">
@@ -153,7 +153,7 @@ export default function HomeBoard({ outletId, initialLayout, articles, savedAt }
         ))}
       </div>
 
-      <aside className="sticky top-6 flex max-h-[calc(100vh-150px)] flex-col rounded-lg border border-line bg-white">
+      <aside className="flex max-h-[70vh] flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-150px)] rounded-lg border border-line bg-white">
         <div className="border-b border-line p-4">
           <h2 className="text-[15px] font-bold">발행된 기사</h2>
           <label htmlFor="board-q" className="sr-only">기사 제목 검색</label>
@@ -195,8 +195,8 @@ export default function HomeBoard({ outletId, initialLayout, articles, savedAt }
         </ul>
       </aside>
 
-      <div className="fixed bottom-0 right-0 z-20 border-t border-line bg-white/95 backdrop-blur" style={{ left: 76 }}>
-        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-8 py-3">
+      <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
           {message && <p role="status" className={`text-[13px] ${message.ok ? 'text-muted' : 'text-danger'}`}>{message.text}</p>}
           {dirty && <span className="text-[13px] font-semibold text-draft">저장하지 않은 변경이 있습니다</span>}
           <div className="ml-auto flex gap-2">

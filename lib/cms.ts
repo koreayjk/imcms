@@ -1,8 +1,10 @@
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from './supabase-server'
 import type { UserRole } from './types'
 
-export async function getCmsContext() {
+// 한 번의 요청 안에서는 레이아웃과 페이지가 같은 결과를 나눠 쓴다 (로그인 확인·회원 정보 조회를 두 번 하지 않도록)
+export const getCmsContext = cache(async function getCmsContext() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -36,7 +38,7 @@ export async function getCmsContext() {
     publisherId: (profile?.publisher_id as string | null) ?? null,
     isEditorPlus: role === 'editor' || role === 'admin' || isSuper,
   }
-}
+})
 
 // 관리자 승인 전 가입자는 편집국에 들어올 수 없다 (DB에서도 막혀 있음)
 export function isApproved(profile: { role?: string | null; approved?: boolean | null; is_super?: boolean | null } | null) {

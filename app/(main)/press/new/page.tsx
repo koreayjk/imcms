@@ -5,7 +5,7 @@ import PressForm from '@/components/cms/PressForm'
 export default async function NewPressPage() {
   const { outletId } = await getCmsContext()
   return (
-    <div className="mx-auto max-w-[900px] px-8 py-8 pb-28">
+    <div className="mx-auto max-w-[900px] px-4 py-5 md:px-8 md:py-8 pb-28 md:pb-28">
       <nav className="mb-5 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label="현재 위치">
         <Link href="/press" className="hover:text-ink">보도자료함</Link>
         <span>›</span>

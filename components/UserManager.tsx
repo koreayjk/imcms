@@ -104,7 +104,7 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-line bg-white px-5">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b border-line text-left text-[12.5px] text-muted">
             <th className="py-2.5 font-normal">이름 · 이메일</th>

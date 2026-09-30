@@ -22,7 +22,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
   const canReview = isEditorPlus && article.status === 'in_review'
 
   return (
-    <div className="mx-auto max-w-[860px] px-8 py-8">
+    <div className="mx-auto max-w-[860px] px-4 py-5 md:px-8 md:py-8">
       <nav className="mb-5 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label="현재 위치">
         <Link href="/articles" className="hover:text-ink">기사목록</Link>
         <span>›</span>
@@ -34,13 +34,13 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
       )}
 
       {canReview && (
-        <div className="mb-5 flex items-center justify-between gap-4 rounded-lg border border-review/30 bg-review/5 px-5 py-4">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg md:gap-4 border border-review/30 bg-review/5 px-5 py-4">
           <p className="text-[14px] font-medium text-review">승인신청된 기사입니다. 내용을 확인하고 승인하거나 반려하세요.</p>
           <ReviewActions articleId={article.id} />
         </div>
       )}
 
-      <article className="rounded-lg border border-line bg-white px-10 py-9">
+      <article className="rounded-lg border border-line bg-white px-5 py-6 md:px-10 md:py-9">
         <header className="border-b border-line pb-6">
           <div className="flex items-center gap-2 text-[12.5px]">
             <span className={`status-badge status-${article.status} px-2 py-1`}>{STATUS_LABEL[article.status as ArticleStatus]}</span>
@@ -72,7 +72,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
         )}
       </article>
 
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <Link href="/articles" className="text-[13px] text-muted hover:text-ink">← 목록으로</Link>
         <div className="flex gap-2">
           {article.status === 'published' && (

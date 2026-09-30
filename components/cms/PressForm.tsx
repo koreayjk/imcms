@@ -37,7 +37,7 @@ export default function PressForm({ outletId }: { outletId: string | null }) {
   return (
     <form action={action} className="space-y-6">
       <div className="space-y-5 rounded-lg border border-line bg-white p-7">
-        <div className="grid grid-cols-[120px_1fr] items-center gap-x-4 gap-y-4">
+        <div className="grid gap-x-4 gap-y-2 sm:grid-cols-[120px_1fr] sm:items-center sm:gap-y-4">
           <label htmlFor="source_name" className="text-[13px] font-semibold">보낸 곳 <span className="text-danger">*</span></label>
           <input id="source_name" name="source_name" required maxLength={80} placeholder="예: 서울시 복지정책과, ○○요양병원" className="field-input max-w-md" />
 
@@ -110,8 +110,8 @@ export default function PressForm({ outletId }: { outletId: string | null }) {
         {photoError && <p role="alert" className="mt-3 text-[13px] text-danger">{photoError}</p>}
       </div>
 
-      <div className="fixed bottom-0 right-0 z-20 border-t border-line bg-white/95 backdrop-blur" style={{ left: 76 }}>
-        <div className="mx-auto flex max-w-[900px] items-center gap-3 px-8 py-3">
+      <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[900px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
           <p role={state.error ? 'alert' : undefined} className={`flex-1 text-[12.5px] ${state.error ? 'font-semibold text-danger' : 'text-muted'}`}>
             {state.error ?? '등록하면 보도자료함에 들어가고, 바로 원문 그대로 또는 AI 초안으로 기사를 만들 수 있습니다.'}
           </p>

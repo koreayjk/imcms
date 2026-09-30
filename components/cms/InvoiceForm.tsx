@@ -34,7 +34,8 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         </div>
       </div>
 
-      <table className="w-full text-[14px]">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[560px] text-[14px]">
         <thead>
           <tr className="border-b border-line text-left text-[12.5px] text-muted">
             <th className="py-2 font-medium">항목</th><th className="w-20 py-2 font-medium">수량</th><th className="w-36 py-2 font-medium">단가(원)</th><th className="w-32 py-2 text-right font-medium">금액</th><th className="w-8" />
@@ -52,6 +53,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
           ))}
         </tbody>
       </table>
+      </div>
       <button type="button" onClick={() => setItems([...items, { name: '', qty: 1, unit_price: 0 }])} className="text-[13px] font-semibold text-[#2F6BF0]">+ 항목 추가</button>
 
       <dl className="ml-auto w-64 space-y-1 text-[14px] tabular-nums">

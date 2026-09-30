@@ -21,7 +21,7 @@ export default async function AiComparePage() {
     .limit(20)
 
   return (
-    <div className="mx-auto max-w-[1400px] px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-6">
         <h1 className="text-[22px] font-bold tracking-tight">AI 모델 비교</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">

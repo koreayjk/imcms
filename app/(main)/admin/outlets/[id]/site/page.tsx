@@ -15,7 +15,7 @@ export default async function SiteSettingsPage({ params }: { params: { id: strin
   if (!outlet) notFound()
   if (!('site' in outlet)) {
     return (
-      <div className="mx-auto max-w-[900px] px-8 py-16">
+      <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">홈페이지 설정을 쓰려면 총관리자가 Supabase에서 <code>supabase/outlet-sites.sql</code>을 실행해야 합니다.</p>
       </div>
     )
@@ -32,7 +32,7 @@ export default async function SiteSettingsPage({ params }: { params: { id: strin
     : { logoMode: 'text', legal: { company: outlet.name } }
 
   return (
-    <div className="mx-auto max-w-[960px] px-8 py-8">
+    <div className="mx-auto max-w-[960px] px-4 py-5 md:px-8 md:py-8">
       <nav className="mb-4 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label="현재 위치">
         <Link href="/admin/outlets" className="hover:text-ink">매체</Link>
         <span>›</span>

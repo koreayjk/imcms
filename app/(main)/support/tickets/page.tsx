@@ -30,7 +30,7 @@ export default async function TicketsPage({ searchParams }: Props) {
   ]
 
   return (
-    <div className="mx-auto max-w-[1180px] px-8 py-10">
+    <div className="mx-auto max-w-[1180px] px-4 py-6 md:px-8 md:py-10">
       <div className="flex items-center justify-between border-b-2 border-ink pb-4">
         <div className="flex items-center gap-1 text-[14.5px]">
           {tabs.map((t, i) => (
@@ -46,7 +46,8 @@ export default async function TicketsPage({ searchParams }: Props) {
         <Link href="/support/tickets/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[14px] font-bold text-white hover:opacity-90">+ 업무요청</Link>
       </div>
 
-      <table className="w-full text-[14px]">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[560px] text-[14px]">
         <thead>
           <tr className="border-b border-line text-left text-[13px] text-muted">
             <th className="w-20 py-3 font-medium">상태</th>
@@ -83,6 +84,7 @@ export default async function TicketsPage({ searchParams }: Props) {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

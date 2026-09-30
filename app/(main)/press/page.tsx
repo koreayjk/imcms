@@ -26,7 +26,7 @@ export default async function PressPage({ searchParams }: Props) {
   const probe = await supabase.from('press_fetch_log').select('source_key').limit(1)
   if (probe.error) {
     return (
-      <div className="mx-auto max-w-[900px] px-8 py-16">
+      <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
         <p className="rounded-lg border border-danger/30 bg-danger/5 px-5 py-4 text-[14px] text-danger">
           보도자료함 저장 공간이 아직 없습니다. Supabase에서 <code>supabase/press-releases.sql</code>을 실행해 주세요.
         </p>
@@ -78,8 +78,8 @@ export default async function PressPage({ searchParams }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-[1280px] px-8 py-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3 md:mb-6 md:gap-4">
         <div>
           <h1 className="text-[22px] font-bold tracking-tight">보도자료함</h1>
           <p className="mt-1 text-[13px] text-muted">정부·기관·기업 보도자료를 30분마다 자동으로 모읍니다. 내 메일로 온 보도자료도 “메일로 받기”를 설정하면 자동으로 들어옵니다.</p>
@@ -90,10 +90,10 @@ export default async function PressPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_300px] items-start gap-6">
-        <section className="rounded-lg border border-line bg-white">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5">
-            <nav className="flex" aria-label="보기">
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_300px]">
+        <section className="min-w-0 rounded-lg border border-line bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-line px-2 md:px-5">
+            <nav className="flex max-w-full overflow-x-auto" aria-label="보기">
               {[
                 { key: 'rec', label: `추천 (${outlet?.name ?? '매체'} 관련)` },
                 { key: 'all', label: '전체' },
@@ -102,22 +102,22 @@ export default async function PressPage({ searchParams }: Props) {
                   key={t.key}
                   href={href({ tab: t.key === 'all' ? 'all' : undefined, page: undefined })}
                   aria-current={tab === t.key ? 'page' : undefined}
-                  className={`-mb-px border-b-2 px-4 py-3.5 text-[14px] ${tab === t.key ? 'border-ink font-bold text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+                  className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 py-3.5 text-[14px] md:px-4 ${tab === t.key ? 'border-ink font-bold text-ink' : 'border-transparent text-muted hover:text-ink'}`}
                 >
                   {t.label}
                 </Link>
               ))}
             </nav>
-            <form action="/press" className="flex items-center gap-2 py-2">
+            <form action="/press" className="flex w-full items-center gap-2 px-2 py-2 md:w-auto md:px-0">
               {tab === 'all' && <input type="hidden" name="tab" value="all" />}
               {src && <input type="hidden" name="src" value={src} />}
               <label htmlFor="press-q" className="sr-only">제목 검색</label>
-              <input id="press-q" name="q" defaultValue={q} placeholder="제목 검색" className="field-input h-9 w-52 py-1.5" />
+              <input id="press-q" name="q" defaultValue={q} placeholder="제목 검색" className="field-input h-9 min-w-0 flex-1 py-1.5 md:w-52 md:flex-none" />
               <button type="submit" className="btn-secondary h-9 py-1.5">검색</button>
             </form>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 border-b border-line px-5 py-3">
+          <div className="flex gap-1.5 overflow-x-auto border-b border-line px-4 py-3 md:flex-wrap md:px-5 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
             <Link href={href({ src: undefined, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${!src ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>모든 출처</Link>
             <Link href={href({ src: 'email', page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === 'email' ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>메일</Link>
             <Link href={href({ src: MANUAL_SOURCE, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === MANUAL_SOURCE ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>직접 등록</Link>
@@ -132,8 +132,8 @@ export default async function PressPage({ searchParams }: Props) {
             <ul className="divide-y divide-line">
               {rows.map((r) => (
                 <li key={r.id}>
-                  <Link href={`/press/${r.id}`} className="block px-5 py-4 hover:bg-[#F8F9FA]">
-                    <div className="flex items-center gap-2 text-[11.5px] text-muted">
+                  <Link href={`/press/${r.id}`} className="block px-4 py-4 hover:bg-[#F8F9FA] md:px-5">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-muted">
                       {r.source_key === MANUAL_SOURCE && <span className="rounded bg-ink px-1.5 py-0.5 text-white">직접 등록</span>}
                       {r.source_key === 'email' && <span className="rounded bg-review px-1.5 py-0.5 text-white">메일</span>}
                       <span className="rounded bg-line/70 px-1.5 py-0.5">{r.source_name}</span>
@@ -153,7 +153,7 @@ export default async function PressPage({ searchParams }: Props) {
           )}
 
           {pages > 1 && (
-            <nav className="flex justify-center gap-1 border-t border-line px-5 py-4" aria-label="페이지">
+            <nav className="flex flex-wrap justify-center gap-1 border-t border-line px-5 py-4" aria-label="페이지">
               {Array.from({ length: Math.min(pages, 10) }, (_, i) => i + 1).map((p) => (
                 <Link key={p} href={href({ page: p > 1 ? String(p) : undefined })} aria-current={p === page ? 'page' : undefined}
                   className={`grid h-8 min-w-8 place-items-center rounded border px-2 text-[12.5px] tabular-nums ${p === page ? 'border-ink bg-ink text-white' : 'border-line hover:border-ink'}`}>

@@ -25,7 +25,7 @@ export default async function SupportHome() {
   ])
 
   return (
-    <div className="mx-auto max-w-[1180px] px-8 py-10">
+    <div className="mx-auto max-w-[1180px] px-4 py-6 md:px-8 md:py-10">
       <div className="grid grid-cols-4 gap-4 sm:grid-cols-8">
         {TILES.filter((t) => isEditorPlus || !t.billing).map((t) => (
           <Link key={t.label} href={t.href} className="group flex flex-col items-center gap-2.5">

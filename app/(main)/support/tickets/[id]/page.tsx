@@ -51,7 +51,7 @@ export default async function TicketPage({ params }: { params: { id: string } })
   const steps: TicketStatus[] = ['received', 'in_progress', 'done']
 
   return (
-    <div className="mx-auto max-w-[860px] px-8 py-10">
+    <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
       <Link href="/support/tickets" className="text-[13px] text-muted hover:text-ink">← 업무요청 목록</Link>
 
       <header className="mt-4 border-b border-line pb-6 text-center">

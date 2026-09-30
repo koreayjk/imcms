@@ -31,7 +31,7 @@ export default async function NewsroomPage({ searchParams }: Props) {
   const countOf = (status: ArticleStatus) =>
     scoped(supabase.from('articles').select('id', { count: 'exact', head: true })).eq('status', status)
 
-  const [counts, list, reviewQueue, popular] = await Promise.all([
+  const [counts, list, reviewQueue, popular, { data: notices }, { data: myTickets }] = await Promise.all([
     Promise.all(CARDS.map((c) => countOf(c.status))),
     scoped(
       supabase
@@ -44,50 +44,47 @@ export default async function NewsroomPage({ searchParams }: Props) {
       : Promise.resolve({ data: [] as any[] }),
     scoped(supabase.from('articles').select('id, title, view_count'))
       .eq('status', 'published').order('view_count', { ascending: false }).limit(5),
-  ])
-
-  const rows = (list.data ?? []) as any[]
-
-  // 고객센터 소식 (support.sql 전이면 비어 있다)
-  const [{ data: notices }, { data: myTickets }] = await Promise.all([
+    // 고객센터 소식 (support.sql 전이면 비어 있다)
     supabase.from('support_notices').select('id, title, category, created_at').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     supabase.from('support_tickets').select('id, title, status, last_staff_reply_at, requester_read_at').eq('requester_id', user.id).order('updated_at', { ascending: false }).limit(3),
   ])
 
+  const rows = (list.data ?? []) as any[]
+
   return (
-    <div className="mx-auto max-w-[1280px] px-8 py-8">
-      <div className="mb-6 flex items-end justify-between">
+    <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
+      <div className="mb-5 flex items-end justify-between gap-3 md:mb-6">
         <div>
           <h1 className="text-[22px] font-bold tracking-tight">뉴스룸</h1>
           <p className="mt-1 text-[13px] text-muted">{isEditorPlus ? '편집국 전체 기사 현황' : '내 기사 현황'}</p>
         </div>
-        <Link href="/articles/new" className="btn-primary px-5 py-2.5">+ 기사쓰기</Link>
+        <Link href="/articles/new" className="btn-primary shrink-0 px-4 py-2.5 md:px-5">+ 기사쓰기</Link>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {CARDS.map((c, i) => (
           <Link
             key={c.status}
             href={`/newsroom?tab=${c.status}`}
             aria-current={tab === c.status ? 'true' : undefined}
-            className={`rounded-lg px-6 py-5 transition-transform hover:-translate-y-0.5 ${c.tone} ${tab === c.status ? 'ring-2 ring-offset-2 ring-ink/70' : ''}`}
+            className={`rounded-lg px-4 py-4 transition-transform md:px-6 md:py-5 hover:-translate-y-0.5 ${c.tone} ${tab === c.status ? 'ring-2 ring-offset-2 ring-ink/70' : ''}`}
           >
-            <div className="text-[40px] font-bold leading-none tabular-nums">{counts[i].count ?? 0}</div>
+            <div className="text-[32px] font-bold leading-none tabular-nums md:text-[40px]">{counts[i].count ?? 0}</div>
             <div className="mt-2 text-[15px] font-semibold">{STATUS_LABEL[c.status]}</div>
-            <div className="mt-0.5 text-[12px] opacity-80">{c.note}</div>
+            <div className="mt-0.5 hidden text-[12px] opacity-80 sm:block">{c.note}</div>
           </Link>
         ))}
       </div>
 
-      <div className="mt-8 grid grid-cols-[1fr_340px] gap-6">
-        <section className="rounded-lg border border-line bg-white">
-          <div className="flex items-center justify-between border-b border-line px-5">
-            <div className="flex">
+      <div className="mt-6 grid gap-6 md:mt-8 lg:grid-cols-[1fr_340px]">
+        <section className="min-w-0 rounded-lg border border-line bg-white">
+          <div className="flex items-center justify-between gap-2 border-b border-line px-2 md:px-5">
+            <div className="flex overflow-x-auto">
               {CARDS.map((c, i) => (
                 <Link
                   key={c.status}
                   href={`/newsroom?tab=${c.status}`}
-                  className={`-mb-px border-b-2 px-4 py-3.5 text-[14px] ${
+                  className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 py-3.5 text-[14px] md:px-4 ${
                     tab === c.status ? 'border-ink font-bold text-ink' : 'border-transparent text-muted hover:text-ink'
                   }`}
                 >
@@ -96,26 +93,29 @@ export default async function NewsroomPage({ searchParams }: Props) {
                 </Link>
               ))}
             </div>
-            <Link href={`/articles?status=${tab}`} className="text-[12.5px] text-muted hover:text-ink">더보기 +</Link>
+            <Link href={`/articles?status=${tab}`} className="shrink-0 pr-2 text-[12.5px] text-muted hover:text-ink md:pr-0">더보기 +</Link>
           </div>
 
           {rows.length ? (
             <ul className="divide-y divide-line">
               {rows.map((a) => (
                 <li key={a.id}>
-                  <Link href={a.status === 'published' ? `/articles/${a.id}` : `/articles/${a.id}/edit`} className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#F8F9FA]">
+                  <Link href={a.status === 'published' ? `/articles/${a.id}` : `/articles/${a.id}/edit`} className="flex items-center gap-4 px-4 py-3.5 hover:bg-[#F8F9FA] md:px-5">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14.5px] font-medium">{a.title}</p>
+                      <p className="line-clamp-2 text-[14.5px] font-medium md:truncate">{a.title}</p>
+                      <p className="mt-0.5 truncate text-[12px] text-muted md:hidden">
+                        {[a.category?.name ?? '섹션 없음', isEditorPlus ? a.author?.full_name : null, a.status === 'published' ? `조회 ${a.view_count ?? 0}` : null, formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)].filter(Boolean).join(' · ')}
+                      </p>
                       {a.status === 'rejected' && a.reject_reason && (
                         <p className="mt-0.5 truncate text-[12px] text-danger">반려 사유: {a.reject_reason}</p>
                       )}
                     </div>
-                    <span className="w-24 shrink-0 truncate text-[12px] text-muted">{a.category?.name ?? '섹션 없음'}</span>
-                    {isEditorPlus && <span className="w-16 shrink-0 truncate text-[12px] text-muted">{a.author?.full_name}</span>}
+                    <span className="hidden w-24 shrink-0 truncate text-[12px] text-muted md:block">{a.category?.name ?? '섹션 없음'}</span>
+                    {isEditorPlus && <span className="hidden w-16 shrink-0 truncate text-[12px] text-muted md:block">{a.author?.full_name}</span>}
                     {a.status === 'published' && (
-                      <span className="w-14 shrink-0 text-right text-[12px] tabular-nums text-muted">조회 {a.view_count ?? 0}</span>
+                      <span className="hidden w-14 shrink-0 text-right text-[12px] tabular-nums text-muted md:block">조회 {a.view_count ?? 0}</span>
                     )}
-                    <time className="w-[118px] shrink-0 text-right text-[12px] tabular-nums text-muted">
+                    <time className="hidden w-[118px] shrink-0 text-right text-[12px] tabular-nums text-muted md:block">
                       {formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)}
                     </time>
                   </Link>

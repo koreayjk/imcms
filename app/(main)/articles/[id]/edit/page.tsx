@@ -25,7 +25,7 @@ export default async function EditArticlePage({ params }: { params: { id: string
   const outlet = outlets?.find((o) => o.id === scope)
 
   return (
-    <div className="mx-auto max-w-[1280px] px-8 py-8">
+    <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
       <div className="mb-6 flex items-center gap-4">
         <h1 className="text-[22px] font-bold tracking-tight">기사 수정</h1>
         <Link href={`/articles/${article.id}`} className="text-[13px] text-muted hover:text-ink">기사 보기 →</Link>

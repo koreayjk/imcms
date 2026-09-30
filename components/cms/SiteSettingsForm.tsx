@@ -267,8 +267,8 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </section>
 
-      <div className="fixed bottom-0 right-0 z-20 border-t border-line bg-white/95 backdrop-blur" style={{ left: 76 }}>
-        <div className="mx-auto flex max-w-[960px] items-center gap-3 px-8 py-3">
+      <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[960px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
           <p role={msg.error ? 'alert' : 'status'} className={`flex-1 text-[13px] ${msg.error ? 'font-semibold text-danger' : msg.ok ? 'text-published' : 'text-muted'}`}>
             {msg.error ?? msg.ok ?? '바꾼 내용은 저장해야 홈페이지에 반영됩니다.'}
           </p>

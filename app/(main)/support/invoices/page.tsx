@@ -9,7 +9,7 @@ export default async function InvoicesPage() {
   const { data } = await supabase.from('invoices').select('id, month, total, status, due_date, outlet:outlets(name)').order('month', { ascending: false }).limit(120)
 
   return (
-    <div className="mx-auto max-w-[1000px] px-8 py-10">
+    <div className="mx-auto max-w-[1000px] px-4 py-6 md:px-8 md:py-10">
       <div className="flex items-center justify-between border-b-2 border-ink pb-4">
         <div>
           <h1 className="text-[22px] font-extrabold tracking-tight">청구서</h1>

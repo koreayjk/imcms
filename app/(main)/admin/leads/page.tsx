@@ -30,7 +30,7 @@ export default async function LeadsPage({ searchParams }: Props) {
   ]
 
   return (
-    <div className="mx-auto max-w-[1080px] px-8 py-8">
+    <div className="mx-auto max-w-[1080px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-5">
         <h1 className="text-[22px] font-bold tracking-tight">고객 상담</h1>
         <p className="mt-1 text-[13px] text-muted">

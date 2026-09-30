@@ -30,11 +30,11 @@ export default async function PressDetailPage({ params, searchParams }: { params
   const emailed = r.source_key === 'email'
 
   return (
-    <div className="mx-auto max-w-[900px] px-8 py-8 pb-28">
+    <div className="mx-auto max-w-[900px] px-4 py-5 md:px-8 md:py-8 pb-28 md:pb-28">
       <nav className="mb-5 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label="현재 위치">
         <Link href="/press" className="hover:text-ink">보도자료함</Link>
         <span>›</span>
-        <span className="max-w-md truncate text-ink">{r.title}</span>
+        <span className="min-w-0 max-w-md truncate text-ink">{r.title}</span>
       </nav>
 
       {searchParams.error && (
@@ -50,7 +50,7 @@ export default async function PressDetailPage({ params, searchParams }: { params
         </div>
       )}
 
-      <article className="rounded-lg border border-line bg-white px-10 py-9">
+      <article className="rounded-lg border border-line bg-white px-5 py-6 md:px-10 md:py-9">
         <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
           {manual && <span className="rounded bg-ink px-1.5 py-0.5 text-white">직접 등록</span>}
           {emailed && <span className="rounded bg-review px-1.5 py-0.5 text-white">메일로 받음</span>}
@@ -63,9 +63,9 @@ export default async function PressDetailPage({ params, searchParams }: { params
             </form>
           )}
         </p>
-        <h1 className="mt-3 text-[26px] font-extrabold leading-snug tracking-tight">{r.title}</h1>
+        <h1 className="mt-3 text-[22px] font-extrabold md:text-[26px] leading-snug tracking-tight">{r.title}</h1>
         {r.body_html ? (
-          <div className="article-content mt-7 text-[16px] leading-[1.9]" dangerouslySetInnerHTML={{ __html: sanitizeBody(r.body_html) }} />
+          <div className="article-content mt-5 text-[16px] leading-[1.85] md:mt-7 md:leading-[1.9]" dangerouslySetInnerHTML={{ __html: sanitizeBody(r.body_html) }} />
         ) : (
           <div className="mt-7 space-y-3 text-[15px] leading-relaxed">
             <p>{r.summary}</p>
@@ -89,20 +89,25 @@ export default async function PressDetailPage({ params, searchParams }: { params
         )}
       </article>
 
-      <div className="fixed bottom-0 right-0 z-20 border-t border-line bg-white/95 backdrop-blur" style={{ left: 76 }}>
-        <div className="mx-auto flex max-w-[900px] items-center gap-3 px-8 py-3">
-          <p className="flex-1 text-[12.5px] leading-relaxed text-muted">
+      <p className="mt-4 text-[12px] leading-relaxed text-muted md:hidden">
+        {ai ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.' : 'AI 초안은 관리자가 AI 키를 설정하면 쓸 수 있습니다.'}{' '}
+        끝에 “{sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
+      </p>
+
+      <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[900px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
+          <p className="hidden flex-1 text-[12.5px] leading-relaxed text-muted md:block">
             {ai
               ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.'
               : 'AI 초안은 관리자가 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)를 설정하면 쓸 수 있습니다.'}{' '}
             사진은 우리 저장소로 옮겨지고, 끝에 “{sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
           </p>
-          <Link href="/press" className="btn-secondary">목록</Link>
-          <form action={createArticleFromPress.bind(null, r.id, 'raw')}>
-            <PendingButton pending="만드는 중…" className="btn-secondary">원문 그대로 기사로</PendingButton>
+          <Link href="/press" className="btn-secondary hidden md:inline-flex">목록</Link>
+          <form action={createArticleFromPress.bind(null, r.id, 'raw')} className="flex-1 md:flex-none">
+            <PendingButton pending="만드는 중…" className="btn-secondary w-full whitespace-nowrap px-3 md:w-auto">원문 그대로<span className="hidden md:inline"> 기사로</span></PendingButton>
           </form>
-          <form action={createArticleFromPress.bind(null, r.id, 'ai')}>
-            <PendingButton pending="AI가 쓰는 중… (최대 1분)" className="btn-publish px-5" disabled={!ai}>AI 초안으로 기사 만들기</PendingButton>
+          <form action={createArticleFromPress.bind(null, r.id, 'ai')} className="flex-[1.4] md:flex-none">
+            <PendingButton pending="AI가 쓰는 중…" className="btn-publish w-full whitespace-nowrap px-3 md:w-auto md:px-5" disabled={!ai}>AI 초안<span className="hidden md:inline">으로 기사</span> 만들기</PendingButton>
           </form>
         </div>
       </div>

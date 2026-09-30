@@ -7,7 +7,7 @@ export default async function AccountPage() {
   const { data: outlet } = outletId ? await supabase.from('outlets').select('name').eq('id', outletId).single() : { data: null }
 
   return (
-    <div className="mx-auto max-w-[720px] px-8 py-8">
+    <div className="mx-auto max-w-[720px] px-4 py-5 md:px-8 md:py-8">
       <h1 className="mb-6 text-[22px] font-bold tracking-tight">내 정보</h1>
       <div className="space-y-6 rounded-lg border border-line bg-white p-7">
         <NameForm name={profile?.full_name ?? ''} />

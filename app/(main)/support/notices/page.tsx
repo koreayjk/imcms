@@ -8,7 +8,7 @@ export default async function NoticesPage() {
   const { data } = await supabase.from('support_notices').select('id, title, category, pinned, created_at')
     .order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(200)
   return (
-    <div className="mx-auto max-w-[1000px] px-8 py-10">
+    <div className="mx-auto max-w-[1000px] px-4 py-6 md:px-8 md:py-10">
       <div className="flex items-center justify-between border-b-2 border-ink pb-4">
         <h1 className="text-[22px] font-extrabold tracking-tight">공지</h1>
         {isStaff && <Link href="/support/notices/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[14px] font-bold text-white hover:opacity-90">+ 공지 쓰기</Link>}

@@ -13,7 +13,7 @@ export default async function NewArticlePage() {
   const outlet = outlets?.find((o) => o.id === outletId)
 
   return (
-    <div className="mx-auto max-w-[1280px] px-8 py-8">
+    <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
       <h1 className="mb-6 text-[22px] font-bold tracking-tight">기사쓰기</h1>
       <ArticleEditor
         categories={categories ?? []}

@@ -64,12 +64,12 @@ export default function ImageView({ node, updateAttributes, selected, deleteNode
           <>
             <span
               onPointerDown={startResize}
-              className="absolute -bottom-1.5 -right-1.5 h-4 w-4 cursor-nwse-resize rounded-sm border-2 border-white bg-[#3D7BE0] shadow"
+              className="absolute -bottom-2 -right-2 h-5 w-5 cursor-nwse-resize touch-none md:-bottom-1.5 md:-right-1.5 md:h-4 md:w-4 rounded-sm border-2 border-white bg-[#3D7BE0] shadow"
               aria-hidden
             />
             <span className="absolute left-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-white">{shown}</span>
             <div
-              className="absolute -top-11 left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 whitespace-nowrap rounded-lg bg-[#1C1F26] p-1 text-[12px] text-white shadow-lg"
+              className="absolute bottom-full left-1/2 z-20 mb-2 flex w-max max-w-[calc(100vw-40px)] -translate-x-1/2 flex-wrap items-center justify-center gap-0.5 rounded-lg bg-[#1C1F26] p-1 text-[12px] text-white shadow-lg"
               onMouseDown={(e) => e.preventDefault()}
             >
               {SIZES.map((s) => (

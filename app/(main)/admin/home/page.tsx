@@ -12,7 +12,7 @@ export default async function HomeEditPage() {
   const { data: outlets } = await supabase.from('outlets').select('id, name').order('created_at')
   const outlet = outlets?.find((o) => o.id === outletId) ?? outlets?.[0]
   if (!outlet) {
-    return <p className="px-8 py-16 text-center text-muted">등록된 매체가 없습니다. 매체 관리에서 먼저 매체를 등록하세요.</p>
+    return <p className="px-4 py-10 md:px-8 md:py-16 text-center text-muted">등록된 매체가 없습니다. 매체 관리에서 먼저 매체를 등록하세요.</p>
   }
 
   const [{ data: saved, error: layoutError }, { data: recent }] = await Promise.all([
@@ -36,7 +36,7 @@ export default async function HomeEditPage() {
   }))
 
   return (
-    <div className="mx-auto max-w-[1400px] px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-4 py-5 md:px-8 md:py-8">
       <div className="mb-6">
         <h1 className="text-[22px] font-bold tracking-tight">홈 편집판 <span className="ml-1 text-[15px] font-medium text-muted">{outlet.name}</span></h1>
         <p className="mt-1 text-[13px] text-muted">
