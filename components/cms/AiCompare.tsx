@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { prepareReleases, runDraft, type CompareRelease, type CompareResult } from '@/app/(main)/admin/ai-compare/actions'
+import { createShare, prepareReleases, runDraft, type CompareRelease, type CompareResult } from '@/app/(main)/admin/ai-compare/actions'
 
 type Model = { id: string; label: string; input: number; output: number; ready: boolean; note?: string }
 type Run = { releases: CompareRelease[]; models: string[]; results: Record<string, CompareResult | 'running'>; at: string }
@@ -17,6 +17,12 @@ export default function AiCompare({ models }: { models: Model[] }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [open, setOpen] = useState<string | null>(null)
+  const [shareTitle, setShareTitle] = useState('')
+  const [blind, setBlind] = useState(true)
+  const [sharing, setSharing] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
+  const [shareError, setShareError] = useState('')
+  const [copied, setCopied] = useState(false)
 
   // 지난 비교 결과는 이 브라우저에만 남겨 둔다
   useEffect(() => {
@@ -62,6 +68,23 @@ export default function AiCompare({ models }: { models: Model[] }) {
     }
     await Promise.all([worker(), worker(), worker()])
     setBusy(false)
+  }
+
+  async function share() {
+    if (!run) return
+    setShareError('')
+    setSharing(true)
+    const results: Record<string, { draft: Extract<CompareResult, { ok: true }>['draft']; ms: number; costUsd: number; issues: Extract<CompareResult, { ok: true }>['issues'] }> = {}
+    for (const [k, v] of Object.entries(run.results)) if (v !== 'running' && v.ok) results[k] = { draft: v.draft, ms: v.ms, costUsd: v.costUsd, issues: v.issues }
+    const res = await createShare({
+      title: shareTitle.trim() || `AI 초안 비교 (${new Date(run.at).toLocaleDateString('ko-KR')})`,
+      blind,
+      data: { at: run.at, releases: run.releases, models: run.models.map((id) => ({ id, label: models.find((m) => m.id === id)?.label ?? id })), results },
+    }).catch(() => ({ error: '링크를 만들지 못했습니다. 다시 눌러 주세요.' } as { token?: string; error?: string }))
+    setSharing(false)
+    if (res.error || !res.token) { setShareError(res.error ?? '링크를 만들지 못했습니다.'); return }
+    setShareUrl(`${window.location.origin}/ai-review/${res.token}`)
+    setCopied(false)
   }
 
   const failedJobs = run
@@ -151,6 +174,46 @@ export default function AiCompare({ models }: { models: Model[] }) {
               비용은 실제 사용 토큰 × 공시 가격(1달러 {WON}원)으로 계산했습니다. “원문에 없는 숫자·인용”은 자동 점검이라 표현만 바뀐 경우도 잡힐 수 있으니, 아래에서 직접 확인하세요.
             </p>
           </section>
+
+          {!busy && finished > 0 && (
+            <section className="rounded-lg border border-line bg-white p-5">
+              <h2 className="text-[15px] font-bold">다른 기자에게 검토받기</h2>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+                링크를 보내면 로그인 없이 초안을 보고 자료마다 가장 좋은 초안을 골라 의견을 남길 수 있습니다. 결과는 아래 “받은 검토”에 모입니다. 링크는 30일 동안 쓸 수 있습니다.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <input
+                  value={shareTitle}
+                  onChange={(e) => setShareTitle(e.target.value)}
+                  maxLength={80}
+                  placeholder={`제목 (예: AI 초안 비교 ${new Date(run.at).toLocaleDateString('ko-KR')})`}
+                  className="min-w-[260px] flex-1 rounded-md border border-line px-3 py-2 text-[13.5px] outline-none focus:border-ink"
+                />
+                <label className="flex items-center gap-2 text-[13px]">
+                  <input type="checkbox" checked={blind} onChange={(e) => setBlind(e.target.checked)} />
+                  AI 이름 가리기(블라인드)
+                </label>
+                <button type="button" onClick={share} disabled={sharing} className="btn-publish px-5">
+                  {sharing ? '만드는 중…' : '검토 링크 만들기'}
+                </button>
+              </div>
+              {blind && <p className="mt-1.5 text-[11.5px] text-muted">블라인드: 초안이 A·B·C로만 보이고 자료마다 순서가 섞입니다. 시간·비용도 가립니다. 검토를 보낸 뒤에 공개됩니다.</p>}
+              {shareError && <p role="alert" className="mt-2 text-[13px] text-danger">{shareError}</p>}
+              {shareUrl && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-published/5 p-3">
+                  <input readOnly value={shareUrl} onFocus={(e) => e.target.select()} className="min-w-0 flex-1 rounded-md border border-line bg-white px-3 py-2 text-[13px]" />
+                  <button
+                    type="button"
+                    onClick={async () => { try { await navigator.clipboard.writeText(shareUrl); setCopied(true) } catch {} }}
+                    className="rounded-lg border border-published px-4 py-2 text-[13px] font-semibold text-published"
+                  >
+                    {copied ? '복사됨 ✓' : '링크 복사'}
+                  </button>
+                  <a href={shareUrl} target="_blank" rel="noreferrer" className="text-[13px] text-review underline underline-offset-2">미리 보기</a>
+                </div>
+              )}
+            </section>
+          )}
 
           <div className="space-y-4">
             {run.releases.map((r, idx) => (

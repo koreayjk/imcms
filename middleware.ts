@@ -14,6 +14,8 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/signup') ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith(PRODUCT.path) ||
+    // AI 초안 검토 링크: 토큰을 아는 사람만 (DB 함수로 확인)
+    pathname.startsWith('/ai-review/') ||
     // 예약 수집: 로그인 대신 DB 비밀 열쇠로 확인한다
     pathname.startsWith('/api/cron/') ||
     // 메일 수신 서비스: DB 비밀 열쇠로 확인한다

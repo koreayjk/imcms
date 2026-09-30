@@ -2,16 +2,23 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { AI_MODELS, activeModel, providerReady } from '@/lib/ai-draft'
 import AiCompare from '@/components/cms/AiCompare'
+import AiShares, { type ShareRow } from '@/components/cms/AiShares'
 
 // 보도자료 전문(정책브리핑 포함)을 서울 리전에서 가져오고, 모델 한 번 호출에 최대 50초
 export const preferredRegion = 'icn1'
 export const maxDuration = 60
 
 export default async function AiComparePage() {
-  const { isStaff } = await getCmsContext()
+  const { supabase, isStaff } = await getCmsContext()
   if (!isStaff) redirect('/newsroom')
   const models = AI_MODELS.map((m) => ({ ...m, ready: providerReady(m.provider) }))
   const active = activeModel()
+  // 보낸 검토 링크와 받은 검토 (DB 준비 전이면 조용히 건너뛴다)
+  const { data: shares } = await supabase
+    .from('ai_compare_shares')
+    .select('id, token, title, blind, created_at, expires_at, meta, reviews:ai_compare_reviews(id, reviewer, picks, notes, comment, created_at)')
+    .order('created_at', { ascending: false })
+    .limit(20)
 
   return (
     <div className="mx-auto max-w-[1400px] px-8 py-8">
@@ -22,7 +29,10 @@ export default async function AiComparePage() {
           지금 AI 초안에 쓰는 모델: <strong className="text-ink">{active ? active.label : '없음 (키 미설정)'}</strong>
         </p>
       </header>
-      <AiCompare models={models} />
+      <div className="space-y-6">
+        <AiShares shares={(shares ?? []) as ShareRow[]} />
+        <AiCompare models={models} />
+      </div>
     </div>
   )
 }
