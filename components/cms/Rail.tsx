@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import type { UserRole } from '@/lib/types'
-import { BuildingIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
+import { BuildingIcon, HeadsetIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
 
 type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'admin' }
 
@@ -17,10 +17,11 @@ const ITEMS: Item[] = [
   { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'editor' },
   { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'admin' },
   { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'admin' },
+  { href: '/support', label: '고객센터', icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') },
   { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'admin' },
 ]
 
-export default function Rail({ role, pendingCount = 0 }: { role: UserRole | null; pendingCount?: number }) {
+export default function Rail({ role, pendingCount = 0, supportCount = 0 }: { role: UserRole | null; pendingCount?: number; supportCount?: number }) {
   const pathname = usePathname()
   const allowed = (i: Item) =>
     !i.minRole || role === 'admin' || (i.minRole === 'editor' && role === 'editor')
@@ -45,6 +46,11 @@ export default function Rail({ role, pendingCount = 0 }: { role: UserRole | null
                 {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-[#F2B544]" />}
                 {item.icon}
                 {item.label}
+                {item.href === '/support' && supportCount > 0 && (
+                  <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={role === 'admin' ? `새 요청 ${supportCount}건` : `새 답변 ${supportCount}건`}>
+                    {supportCount}
+                  </span>
+                )}
                 {item.href === '/admin/users' && pendingCount > 0 && (
                   <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={`승인 대기 ${pendingCount}명`}>
                     {pendingCount}

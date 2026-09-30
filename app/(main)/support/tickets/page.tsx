@@ -1,0 +1,86 @@
+import Link from 'next/link'
+import { getCmsContext } from '@/lib/cms'
+import { formatShort } from '@/lib/format'
+import { TICKET_CATEGORIES, TICKET_STATUS, hasUnreadReply, type TicketCategory, type TicketStatus } from '@/lib/support'
+
+type Props = { searchParams: { tab?: string } }
+
+export default async function TicketsPage({ searchParams }: Props) {
+  const { supabase, profile } = await getCmsContext()
+  const isStaff = profile?.role === 'admin'
+  const tab = ['open', 'unread'].includes(searchParams.tab ?? '') ? searchParams.tab : 'all'
+
+  const { data } = await supabase
+    .from('support_tickets')
+    .select('id, title, status, category, created_at, done_at, last_staff_reply_at, requester_read_at, requester:profiles!support_tickets_requester_id_fkey(full_name), outlet:outlets(name)')
+    .order('created_at', { ascending: false })
+    .limit(300)
+  const all = (data ?? []) as any[]
+  const open = all.filter((t) => t.status !== 'done')
+  // 운영팀: 아직 답하지 않은 요청 / 회원사: 아직 읽지 않은 답변
+  const unread = isStaff ? all.filter((t) => t.status === 'received') : all.filter(hasUnreadReply)
+  const rows = tab === 'open' ? open : tab === 'unread' ? unread : all
+
+  const tabs = [
+    { key: 'all', label: '전체', n: null },
+    { key: 'open', label: '미완료', n: open.length },
+    { key: 'unread', label: isStaff ? '새 요청' : '미확인 답변', n: unread.length },
+  ]
+
+  return (
+    <div className="mx-auto max-w-[1180px] px-8 py-10">
+      <div className="flex items-center justify-between border-b-2 border-ink pb-4">
+        <div className="flex items-center gap-1 text-[14.5px]">
+          {tabs.map((t, i) => (
+            <span key={t.key} className="flex items-center">
+              {i > 0 && <span className="mx-3 text-line">|</span>}
+              <Link href={t.key === 'all' ? '/support/tickets' : `/support/tickets?tab=${t.key}`} className={tab === t.key ? 'font-bold text-[#2F6BF0]' : 'text-[#3B4048] hover:text-ink'}>
+                {t.label}
+                {t.n !== null && <span className={`ml-1.5 rounded-full px-1.5 text-[11.5px] tabular-nums text-white ${t.n ? 'bg-[#E5483A]' : 'bg-muted/60'}`}>{t.n}</span>}
+              </Link>
+            </span>
+          ))}
+        </div>
+        <Link href="/support/tickets/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[14px] font-bold text-white hover:opacity-90">+ 업무요청</Link>
+      </div>
+
+      <table className="w-full text-[14px]">
+        <thead>
+          <tr className="border-b border-line text-left text-[13px] text-muted">
+            <th className="w-20 py-3 font-medium">상태</th>
+            <th className="py-3 font-medium">제목</th>
+            {isStaff && <th className="w-32 py-3 font-medium">매체</th>}
+            <th className="w-24 py-3 font-medium">요청인</th>
+            <th className="w-28 py-3 text-center font-medium">요청 / 완료</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((t) => {
+            const s = TICKET_STATUS[t.status as TicketStatus]
+            return (
+              <tr key={t.id} className="border-b border-line/70 hover:bg-white">
+                <td className="py-4"><span className={`rounded px-2 py-1 text-[12px] font-semibold ${s.className}`}>{s.label}</span></td>
+                <td className="py-4">
+                  <Link href={`/support/tickets/${t.id}`} className="font-medium hover:underline">
+                    <span className="mr-1.5 text-[12.5px] text-muted">[{TICKET_CATEGORIES[t.category as TicketCategory]}]</span>
+                    {t.title}
+                  </Link>
+                  {!isStaff && hasUnreadReply(t) && <span className="ml-2 rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">새 답변</span>}
+                </td>
+                {isStaff && <td className="py-4 text-[13px] text-muted">{t.outlet?.name ?? '미배정'}</td>}
+                <td className="py-4 text-[13px]">{t.requester?.full_name}</td>
+                <td className="py-4 text-center text-[12.5px] tabular-nums text-muted">
+                  {formatShort(t.created_at)}
+                  {t.done_at && <><br />{formatShort(t.done_at)}</>}
+                </td>
+              </tr>
+            )
+          })}
+          {!rows.length && (
+            <tr><td colSpan={isStaff ? 5 : 4} className="py-16 text-center text-muted">해당하는 업무요청이 없습니다.</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}

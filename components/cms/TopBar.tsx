@@ -18,7 +18,7 @@ export default function TopBar({ outletName, userName, role }: Props) {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-6 border-b border-line bg-white px-6">
+    <header className="flex h-16 shrink-0 print:hidden items-center gap-6 border-b border-line bg-white px-6">
       <div className="min-w-0">
         {outletName ? (
           <div className="flex items-center gap-2.5">

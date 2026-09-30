@@ -13,3 +13,12 @@ export function isProductHost(host: string | null | undefined) {
   const h = (host ?? '').split(':')[0].toLowerCase()
   return PRODUCT.domains.includes(h)
 }
+
+// 청구서의 공급자(운영사) 정보 — 사업자 등록 후 채운다
+export const ISSUER = {
+  company: null as string | null,
+  bizNo: null as string | null,
+  ceo: null as string | null,
+  address: null as string | null,
+  contact: null as string | null,
+}

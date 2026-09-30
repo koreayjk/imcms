@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime } from '@/lib/format'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
+import { NOTICE_CATEGORIES, TICKET_STATUS, hasUnreadReply, type NoticeCategory, type TicketStatus } from '@/lib/support'
 
 const CARDS: { status: ArticleStatus; tone: string; note: string }[] = [
   { status: 'draft', tone: 'bg-[#F2B544] text-[#3B2A00]', note: '저장만 하고 아직 제출하지 않은 기사' },
@@ -43,6 +44,12 @@ export default async function NewsroomPage({ searchParams }: Props) {
   ])
 
   const rows = (list.data ?? []) as any[]
+
+  // 고객센터 소식 (support.sql 전이면 비어 있다)
+  const [{ data: notices }, { data: myTickets }] = await Promise.all([
+    supabase.from('support_notices').select('id, title, category, created_at').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
+    supabase.from('support_tickets').select('id, title, status, last_staff_reply_at, requester_read_at').eq('requester_id', user.id).order('updated_at', { ascending: false }).limit(3),
+  ])
 
   return (
     <div className="mx-auto max-w-[1280px] px-8 py-8">
@@ -140,6 +147,37 @@ export default async function NewsroomPage({ searchParams }: Props) {
               )}
             </section>
           )}
+
+          <section className="rounded-lg border border-line bg-white">
+            <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+              <h2 className="text-[14px] font-bold">고객센터 소식</h2>
+              <Link href="/support" className="text-[12px] text-muted hover:text-ink">고객센터 ›</Link>
+            </div>
+            <ul className="divide-y divide-line">
+              {(notices ?? []).map((n) => (
+                <li key={n.id}>
+                  <Link href={`/support/notices/${n.id}`} className="flex items-center gap-2 px-5 py-2.5 hover:bg-[#F8F9FA]">
+                    <span className={`shrink-0 rounded px-1.5 py-px text-[10.5px] font-semibold ${NOTICE_CATEGORIES[n.category as NoticeCategory].className}`}>{NOTICE_CATEGORIES[n.category as NoticeCategory].label}</span>
+                    <span className="min-w-0 flex-1 truncate text-[13px]">{n.title}</span>
+                  </Link>
+                </li>
+              ))}
+              {(myTickets ?? []).map((t) => (
+                <li key={t.id}>
+                  <Link href={`/support/tickets/${t.id}`} className="flex items-center gap-2 px-5 py-2.5 hover:bg-[#F8F9FA]">
+                    <span className={`shrink-0 rounded px-1.5 py-px text-[10.5px] font-semibold ${TICKET_STATUS[t.status as TicketStatus].className}`}>{TICKET_STATUS[t.status as TicketStatus].label}</span>
+                    <span className="min-w-0 flex-1 truncate text-[13px]">{t.title}</span>
+                    {hasUnreadReply(t) && <span className="shrink-0 rounded bg-danger px-1 text-[10px] font-bold text-white">새 답변</span>}
+                  </Link>
+                </li>
+              ))}
+              {!notices?.length && !myTickets?.length && (
+                <li className="px-5 py-5 text-center text-[12.5px] text-muted">
+                  필요한 일이 있으면 <Link href="/support/tickets/new" className="font-semibold text-ink underline underline-offset-2">업무요청</Link>을 남겨 주세요.
+                </li>
+              )}
+            </ul>
+          </section>
 
           <section className="rounded-lg border border-line bg-white">
             <h2 className="border-b border-line px-5 py-3.5 text-[14px] font-bold">많이 본 기사</h2>
