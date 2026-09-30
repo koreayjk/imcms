@@ -127,8 +127,9 @@ async function withGemini(model: AiModel, input: DraftInput) {
         system_instruction: { parts: [{ text: SYSTEM }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt(input) }] }],
         generationConfig: {
-          thinkingConfig: { thinkingLevel: 'low' },
-          responseFormat: { text: { mimeType: 'application/json', schema: GEMINI_SCHEMA } },
+          // REST에서는 enum 이름(대문자)으로 보내야 한다 (API 참조 문서의 ThinkingLevel·MimeType)
+          thinkingConfig: { thinkingLevel: 'LOW' },
+          responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: GEMINI_SCHEMA } },
         },
       }),
       signal: ctrl.signal,
