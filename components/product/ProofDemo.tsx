@@ -9,7 +9,7 @@ function Del({ children, delay }: { children: React.ReactNode; delay: number }) 
 
 export default function ProofDemo() {
   return (
-    <div className="relative" aria-label="예시: 보도자료가 기사 초안으로 바뀌는 모습">
+    <div className="relative text-[#14171C]" aria-label="예시: 보도자료가 기사 초안으로 바뀌는 모습">
       {/* 보도자료 원문 */}
       <div className="rounded-lg border border-[#E4E6EA] bg-white p-5 shadow-[0_1px_0_#E4E6EA] sm:p-6">
         <p className="flex items-center justify-between text-[11.5px] font-semibold tracking-[0.06em] text-[#5B616B]">
@@ -30,8 +30,8 @@ export default function ProofDemo() {
 
       {/* 화살표 */}
       <div className="flex justify-center py-2.5" aria-hidden>
-        <span className="proof-rise flex items-center gap-2 rounded-full bg-[#14171C] px-3 py-1 text-[11.5px] font-semibold text-white" style={{ animationDelay: '1700ms' }}>
-          <span className="h-1.5 w-1.5 rounded-full bg-[#F2B544]" />
+        <span className="proof-rise flex items-center gap-2 rounded-full bg-gradient-to-r from-[#8B5CF6] to-[#E5483A] px-3 py-1 text-[11.5px] font-semibold text-white shadow-[0_6px_18px_-6px_rgba(139,92,246,0.8)]" style={{ animationDelay: '1700ms' }}>
+          <span className="h-1.5 w-1.5 rounded-full bg-white" />
           AI가 기사체로 다시 씀
         </span>
       </div>

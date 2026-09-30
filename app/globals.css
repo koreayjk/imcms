@@ -102,3 +102,17 @@ body {
   .proof-del { animation: none; color: #8C929B; }
   .proof-rise { animation: none; }
 }
+
+/* IM 뉴스룸: 스크롤하면 떠오르는 요소, 둥실 뜨는 알림, 흐르는 연결선 */
+.pn-reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.pn-reveal.is-shown { opacity: 1; transform: none; }
+.pn-float { animation: pn-float 5s ease-in-out infinite; }
+@keyframes pn-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.pn-dash { stroke-dasharray: 6 8; animation: pn-dash 1.2s linear infinite; }
+@keyframes pn-dash { to { stroke-dashoffset: -28; } }
+.pn-marquee { animation: pn-marquee 40s linear infinite; }
+@keyframes pn-marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .pn-reveal { opacity: 1; transform: none; transition: none; }
+  .pn-float, .pn-dash, .pn-marquee { animation: none; }
+}

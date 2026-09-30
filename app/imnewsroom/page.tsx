@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { PRODUCT, isProductHost } from '@/lib/product'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
+import { Browser, Phone } from '@/components/product/Devices'
+import { ApprovalFlow, HomeBoardMock, PressInboxMock, SyndicateVisual } from '@/components/product/Mockups'
+import { CountUp, Reveal } from '@/components/product/Motion'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,22 +19,48 @@ export function generateMetadata(): Metadata {
   }
 }
 
+const IMG = '/imnewsroom'
+
 // 기사가 나가기까지의 실제 순서 — 번호가 곧 작업 순서다
 const STEPS = [
-  { title: '모은다', body: '뉴스와이어·정책브리핑 보도자료를 30분마다 자동으로 가져옵니다. 이메일로 받은 자료는 붙여넣기 한 번이면 같은 함에 들어갑니다.' },
-  { title: '고른다', body: '매체 분야에 맞는 보도자료만 추천 탭에 모아 보여줍니다. 이미 기사로 쓴 자료는 표시가 붙어 중복을 막습니다.' },
-  { title: '쓴다', body: 'AI가 원문에 있는 사실만으로 기사체 초안을 씁니다. 홍보 문구와 연락처는 빼고, 확인이 필요한 부분은 메모로 남깁니다.' },
-  { title: '확인한다', body: '초안은 항상 ‘작성중’으로 저장됩니다. 기자가 다듬어 승인을 신청하고, 편집장이 확인해 발행합니다.' },
-  { title: '내보낸다', body: '홈페이지 톱·주요 기사 자리를 편집장이 직접 정하고, 필요하면 운영 중인 다른 매체에도 한 번에 송고합니다.' },
+  { title: '모은다', body: '보도자료를 30분마다 자동 수집. 이메일 자료는 붙여넣기 한 번.', color: '#E5483A' },
+  { title: '고른다', body: '매체 분야에 맞는 자료만 추천. 이미 쓴 자료는 표시.', color: '#F5A524' },
+  { title: '쓴다', body: 'AI가 원문 사실만으로 기사체 초안과 확인 메모 작성.', color: '#8B5CF6' },
+  { title: '확인한다', body: '기자가 다듬고, 편집장이 승인해 발행.', color: '#3B82F6' },
+  { title: '내보낸다', body: '홈 편집판에 배치하고 다른 매체에도 한 번에 송고.', color: '#10B981' },
 ]
 
-const FEATURES = [
-  { title: '여러 매체를 한 계정으로', body: '기사 한 건을 골라서 다른 매체에 함께 송고합니다. 사본에는 원본 표시가 붙어 검색엔진 중복 문서로 잡히지 않습니다.' },
-  { title: '기자 → 편집장 승인', body: '작성중, 승인신청, 반려, 발행 상태를 한눈에 봅니다. 반려할 때는 사유를 남깁니다.' },
-  { title: '홈 편집판', body: '헤드라인, 톱, 주요 기사, 추천 자리에 어떤 기사를 둘지 편집장이 고릅니다. 비워 두면 최신 기사로 채워집니다.' },
-  { title: '모바일에 맞춘 신문 사이트', body: 'PC와 휴대폰 화면을 따로 만들 필요가 없습니다. 휴대폰에서는 왼쪽에서 열리는 메뉴로 섹션을 오갑니다.' },
-  { title: '검색 노출 설정', body: '기사마다 검색 결과 제목과 설명을 따로 적을 수 있습니다. 공유할 때 나오는 사진도 자동으로 정해집니다.' },
-  { title: '가입과 권한 관리', body: '구글 계정으로 가입하고, 관리자가 승인해야 기사를 쓸 수 있습니다. 역할과 소속 매체는 관리자가 정합니다.' },
+type Icon = keyof typeof ICONS
+const ICONS = {
+  inbox: <path d="M3 13h5l1.5 3h5L16 13h5M5.5 5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5l2.5-8Z" />,
+  spark: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" />,
+  share: <><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="18" cy="18" r="2.5" /><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6" /></>,
+  layout: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M10 10v10" /></>,
+  check: <><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></>,
+  phone: <><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M11 18.5h2" /></>,
+  search: <><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></>,
+  users: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6" /></>,
+  photo: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.5" /><path d="m21 16-5-5-8 8" /></>,
+  cloud: <path d="M7 18a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.5 1.5A3.8 3.8 0 0 1 17.5 18H7Z" />,
+}
+
+function Glyph({ name, className = '' }: { name: Icon; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      {ICONS[name]}
+    </svg>
+  )
+}
+
+const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
+  { icon: 'inbox', title: '보도자료 자동 수집', body: '뉴스와이어 8개 분야와 정책브리핑을 30분마다', color: '#E5483A' },
+  { icon: 'spark', title: 'AI 기사 초안', body: '홍보 문구는 빼고, 확인할 점은 메모로', color: '#8B5CF6' },
+  { icon: 'share', title: '여러 매체 함께 송고', body: '원본 표시로 검색엔진 중복 문서 방지', color: '#F5A524' },
+  { icon: 'layout', title: '홈 편집판', body: '헤드라인·톱·주요 자리를 편집장이 직접', color: '#3B82F6' },
+  { icon: 'check', title: '기자 → 편집장 승인', body: '작성중·승인신청·반려·발행 상태 관리', color: '#10B981' },
+  { icon: 'phone', title: '모바일 신문 사이트', body: 'PC·휴대폰 화면을 따로 만들 필요 없이', color: '#EC4899' },
+  { icon: 'search', title: '검색 노출 설정', body: '기사별 검색 제목·설명, 공유 이미지', color: '#06B6D4' },
+  { icon: 'users', title: '가입·권한 관리', body: '구글 계정 가입, 관리자 승인 후 사용', color: '#6366F1' },
 ]
 
 const FAQ = [
@@ -43,191 +72,394 @@ const FAQ = [
   { q: '정식 요금은 얼마인가요?', a: '베타 기간이 끝나기 전에 안내하고, 베타 고객사에 가장 먼저 알려 드립니다.' },
 ]
 
-function Logo() {
+const MARQUEE = ['보도자료 자동 수집', 'AI 기사 초안', '기자 확인 메모', '여러 매체 함께 송고', '홈 편집판', '모바일 신문', '검색 노출 설정', '승인 흐름', '사진 자동 정리', '구글 로그인']
+
+function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <span className="grid h-7 w-7 place-items-center rounded-[5px] bg-[#14171C] text-[11px] font-black tracking-tight text-[#F2B544]">IM</span>
-      <span className="text-[17px] font-extrabold tracking-[-0.02em]">뉴스룸</span>
+      <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[#F5B83D] to-[#E5483A] text-[11px] font-black tracking-tight text-white shadow-[0_4px_14px_-4px_rgba(229,72,58,0.7)]">IM</span>
+      <span className={`text-[18px] font-extrabold tracking-[-0.02em] ${dark ? 'text-white' : ''}`}>뉴스룸</span>
     </span>
   )
 }
 
+function Eyebrow({ icon, color, children }: { icon: Icon; color: string; children: React.ReactNode }) {
+  return (
+    <p className="inline-flex items-center gap-2 text-[13.5px] font-bold" style={{ color }}>
+      <span className="grid h-8 w-8 place-items-center rounded-lg text-white" style={{ background: color }}><Glyph name={icon} className="h-[18px] w-[18px]" /></span>
+      {children}
+    </p>
+  )
+}
+
+function Check({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
+  return (
+    <li className={`flex gap-3 text-[15.5px] leading-relaxed ${dark ? 'text-white/80' : 'text-[#3B4048]'}`}>
+      <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#10B981] text-[11px] font-bold text-white">✓</span>
+      <span>{children}</span>
+    </li>
+  )
+}
+
+const H2 = 'text-[30px] font-extrabold leading-[1.25] tracking-[-0.03em] [text-wrap:balance] sm:text-[40px]'
+
 export default function ProductHome() {
   return (
-    <div className="min-h-screen bg-white text-[#14171C] [word-break:keep-all]" style={{ ['--serif' as string]: "'Noto Serif KR', Georgia, serif" }}>
+    <div className="min-h-screen overflow-x-hidden bg-white text-[#14171C] [word-break:keep-all]" style={{ ['--serif' as string]: "'Noto Serif KR', Georgia, serif" }}>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&display=swap" />
 
-      <header className="sticky top-0 z-30 border-b border-[#E4E6EA] bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1160px] items-center gap-6 px-4 sm:px-6">
-          <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo /></a>
-          <nav className="ml-auto hidden items-center gap-7 text-[14px] text-[#3B4048] md:flex" aria-label="소개 메뉴">
-            <a href="#how" className="hover:text-[#14171C]">작동 방식</a>
-            <a href="#features" className="hover:text-[#14171C]">기능</a>
-            <a href="#beta" className="hover:text-[#14171C]">베타 모집</a>
-            <a href="#faq" className="hover:text-[#14171C]">자주 묻는 질문</a>
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#0B1020]/75 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-4 sm:px-6">
+          <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo dark /></a>
+          <nav className="ml-auto hidden items-center gap-7 text-[14px] text-white/70 md:flex" aria-label="소개 메뉴">
+            <a href="#press" className="hover:text-white">보도자료</a>
+            <a href="#ai" className="hover:text-white">AI 초안</a>
+            <a href="#showcase" className="hover:text-white">디자인</a>
+            <a href="#beta" className="hover:text-white">베타 모집</a>
+            <a href="#faq" className="hover:text-white">FAQ</a>
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
-            <Link href="/login" className="rounded-md px-3 py-2 text-[13.5px] text-[#3B4048] hover:text-[#14171C]">편집국 로그인</Link>
-            <a href="#apply" className="rounded-md bg-[#14171C] px-3.5 py-2 text-[13.5px] font-semibold text-white hover:opacity-90">베타 신청</a>
+            <Link href="/login" className="hidden rounded-md px-3 py-2 text-[13.5px] text-white/70 hover:text-white sm:block">편집국 로그인</Link>
+            <a href="#apply" className="rounded-lg bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-4 py-2 text-[13.5px] font-bold text-white shadow-[0_6px_20px_-6px_rgba(229,72,58,0.8)] hover:brightness-110">베타 신청</a>
           </div>
         </div>
       </header>
 
       <main id="top">
-        {/* 첫 화면: 무엇을 해주는지를 시연으로 보여준다 */}
-        <section className="mx-auto grid max-w-[1160px] items-center gap-12 px-4 pb-20 pt-14 sm:px-6 md:grid-cols-[1.05fr_1fr] md:pt-20">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#E4E6EA] px-3 py-1 text-[12.5px] font-semibold text-[#3B4048]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#D6402B]" />
-              인터넷신문을 위한 AI 편집국 · 베타 고객사 모집 중
-            </p>
-            <h1 className="mt-6 text-[40px] font-extrabold leading-[1.15] tracking-[-0.035em] [text-wrap:balance] sm:text-[54px]">
-              1인 언론사에도
-              <br />
-              뉴스룸이 생깁니다.
-            </h1>
-            <p className="mt-6 max-w-[34em] text-[17px] leading-[1.75] text-[#3B4048]">
-              보도자료 수집부터 AI 기사 초안, 승인, 발행, 여러 매체 동시 송고까지.
-              반복 업무는 {PRODUCT.name}이 맡고, 기자는 취재와 확인에 집중합니다.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#apply" className="rounded-md bg-[#D6402B] px-6 py-3.5 text-[15px] font-bold text-white hover:opacity-90">베타 고객사 신청</a>
-              <a href="#how" className="rounded-md border border-[#D5D8DD] px-6 py-3.5 text-[15px] font-semibold hover:border-[#14171C]">작동 방식 보기</a>
-            </div>
-            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-1.5 text-[13.5px] text-[#5B616B]">
-              <li>✓ 설치 없이 웹에서</li>
-              <li>✓ 쓰던 도메인 그대로</li>
-              <li>✓ 기존 기사 이전 지원</li>
-            </ul>
+        {/* ─── 첫 화면 ─── */}
+        <section className="relative isolate overflow-hidden bg-[#0B1020] pb-40 pt-32 text-white sm:pt-36">
+          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+            <div className="absolute -left-40 -top-40 h-[560px] w-[560px] rounded-full bg-[#E5483A]/30 blur-[120px]" />
+            <div className="absolute right-[-10%] top-10 h-[520px] w-[520px] rounded-full bg-[#6366F1]/30 blur-[120px]" />
+            <div className="absolute bottom-[-20%] left-1/3 h-[480px] w-[480px] rounded-full bg-[#F5A524]/20 blur-[120px]" />
+            <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
           </div>
-          <ProofDemo />
+
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.15fr]">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[12.5px] font-semibold text-white/85 backdrop-blur">
+                <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E5483A] opacity-75" /><span className="relative h-2 w-2 rounded-full bg-[#E5483A]" /></span>
+                인터넷신문을 위한 AI 편집국 · 베타 고객사 모집 중
+              </p>
+              <h1 className="mt-7 text-[42px] font-extrabold leading-[1.14] tracking-[-0.04em] sm:text-[56px] xl:text-[60px]">
+                1인 언론사에도
+                <br />
+                <span className="bg-gradient-to-r from-[#FFD27A] via-[#F5A524] to-[#FF6B5B] bg-clip-text text-transparent sm:whitespace-nowrap">뉴스룸이 생깁니다.</span>
+              </h1>
+              <p className="mt-6 max-w-[32em] text-[17.5px] leading-[1.75] text-white/70">
+                보도자료 수집부터 AI 기사 초안, 승인, 발행, 여러 매체 동시 송고까지.
+                반복 업무는 {PRODUCT.name}이 맡고, 기자는 취재와 확인에 집중합니다.
+              </p>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <a href="#apply" className="rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-7 py-4 text-[16px] font-bold text-white shadow-[0_12px_30px_-8px_rgba(229,72,58,0.8)] transition hover:-translate-y-0.5 hover:brightness-110">
+                  베타 고객사 신청 →
+                </a>
+                <a href="#showcase" className="rounded-xl border border-white/20 bg-white/5 px-7 py-4 text-[16px] font-semibold text-white backdrop-blur transition hover:bg-white/10">
+                  완성 화면 보기
+                </a>
+              </div>
+              <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] text-white/60">
+                <li>✓ 설치 없이 웹에서</li>
+                <li>✓ 쓰던 도메인 그대로</li>
+                <li>✓ 기존 기사 이전 지원</li>
+              </ul>
+            </div>
+
+            {/* 기기 구성: 실제 신문 사이트 화면 */}
+            <div className="relative mx-auto w-full max-w-[640px] pb-10 lg:pb-0">
+              <Browser src={`${IMG}/site-pc.jpg`} alt="IM 뉴스룸으로 만든 신문 사이트 PC 화면 (샘플 기사)" eager className="relative" />
+              <Phone src={`${IMG}/site-mobile.jpg`} alt="같은 신문 사이트의 휴대폰 화면" eager className="absolute -bottom-10 -left-4 w-[30%] sm:-left-10 lg:-bottom-16" />
+              <div className="pn-float absolute -right-2 -top-6 rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] sm:-right-8">
+                <p className="flex items-center gap-2 text-[12px] font-bold"><span className="h-2 w-2 rounded-full bg-[#E5483A]" />새 보도자료</p>
+                <p className="mt-0.5 text-[22px] font-extrabold tabular-nums">23<span className="text-[13px] font-semibold text-[#8C929B]">건</span></p>
+              </div>
+              <div className="pn-float absolute -right-3 bottom-8 rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] sm:-right-10" style={{ animationDelay: '1.2s' }}>
+                <p className="flex items-center gap-2 text-[12.5px] font-bold"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#8B5CF6] text-[10px] text-white">AI</span>기사 초안 완성</p>
+                <p className="mt-0.5 text-[11.5px] text-[#5B616B]">확인 메모 2건</p>
+              </div>
+              <div className="pn-float absolute left-[28%] top-[42%] hidden rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] sm:block" style={{ animationDelay: '2.4s' }}>
+                <p className="flex items-center gap-2 text-[12.5px] font-bold"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#10B981] text-[10px] text-white">✓</span>3개 매체 송고 완료</p>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* 작동 방식: 실제 작업 순서 */}
-        <section id="how" className="scroll-mt-16 border-t border-[#E4E6EA] bg-[#F4F5F7]">
-          <div className="mx-auto max-w-[1160px] px-4 py-20 sm:px-6">
-            <h2 className="text-[30px] font-extrabold tracking-[-0.03em] sm:text-[36px]">보도자료 한 건이 기사가 되는 길</h2>
-            <p className="mt-3 max-w-[40em] text-[16px] leading-relaxed text-[#3B4048]">
-              기자가 하던 일 중 옮겨 적기, 홍보 문구 걷어내기, 사진 정리는 {PRODUCT.name}이 합니다. 판단과 확인은 사람이 합니다.
-            </p>
-            <ol className="mt-12 grid gap-px overflow-hidden rounded-lg border border-[#E4E6EA] bg-[#E4E6EA] md:grid-cols-5">
+        {/* ─── 숫자 띠 ─── */}
+        <section className="relative z-10 -mt-24 px-4 sm:px-6">
+          <div className="mx-auto grid max-w-[1100px] grid-cols-2 overflow-hidden rounded-2xl bg-white shadow-[0_30px_60px_-20px_rgba(11,16,32,0.35)] ring-1 ring-black/5 md:grid-cols-4">
+            {[
+              { n: 9, s: '곳', label: '보도자료 출처 자동 연결', color: '#E5483A' },
+              { n: 30, s: '분', label: '마다 새 보도자료 수집', color: '#F5A524' },
+              { n: 0, s: '원', label: '설치비', color: '#8B5CF6' },
+              { n: 1, s: '개', label: '계정으로 여러 매체 운영', color: '#10B981' },
+            ].map((x, i) => (
+              <div key={x.label} className={`px-6 py-7 text-center ${i % 2 ? '' : 'border-r'} border-[#EEF0F3] md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
+                <p className="text-[38px] font-black tracking-[-0.03em] sm:text-[46px]" style={{ color: x.color }}><CountUp to={x.n} suffix={x.s} /></p>
+                <p className="mt-1 text-[13.5px] font-medium text-[#5B616B]">{x.label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── 흐르는 기능 띠 ─── */}
+        <div className="mt-16 overflow-hidden border-y border-[#EEF0F3] py-4" aria-hidden>
+          <div className="pn-marquee flex w-max gap-10 text-[15px] font-bold text-[#8C929B]">
+            {[...MARQUEE, ...MARQUEE].map((m, i) => (
+              <span key={i} className="flex items-center gap-10">{m}<span className="text-[#F5A524]">✦</span></span>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── 보도자료함 ─── */}
+        <section id="press" className="scroll-mt-16">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
+            <Reveal>
+              <Eyebrow icon="inbox" color="#E5483A">보도자료함</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>보도자료를 찾으러 다니지 마세요.<br />알아서 모입니다.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">뉴스와이어와 정책브리핑의 보도자료가 30분마다 들어오고, 우리 매체 분야에 맞는 것만 추천 탭에 뜹니다.</p>
+              <ul className="mt-7 space-y-3">
+                <Check>이메일·카카오톡으로 받은 자료도 붙여넣으면 같은 함으로</Check>
+                <Check>이미 기사로 쓴 자료는 “기사화됨” 표시로 중복 방지</Check>
+                <Check>배포처 약관(하루 사용 건수)까지 화면에서 확인</Check>
+              </ul>
+            </Reveal>
+            <Reveal delay={150}><PressInboxMock /></Reveal>
+          </div>
+        </section>
+
+        {/* ─── AI 초안 ─── */}
+        <section id="ai" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0B1020] text-white">
+          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+            <div className="absolute right-0 top-0 h-[480px] w-[480px] rounded-full bg-[#8B5CF6]/30 blur-[120px]" />
+            <div className="absolute bottom-0 left-0 h-[420px] w-[420px] rounded-full bg-[#E5483A]/20 blur-[120px]" />
+          </div>
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <Reveal className="order-2 lg:order-1"><ProofDemo /></Reveal>
+            <Reveal delay={150} className="order-1 lg:order-2">
+              <Eyebrow icon="spark" color="#A78BFA">AI 기사 초안</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>홍보 문구는 지우고,<br /><span className="bg-gradient-to-r from-[#C4B5FD] to-[#F9A8D4] bg-clip-text text-transparent">사실만 기사로.</span></h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-white/70">버튼 한 번이면 AI가 보도자료를 기사체로 다시 씁니다. 원문에 없는 내용은 만들지 않고, 기자가 확인해야 할 점을 메모로 남깁니다.</p>
+              <ul className="mt-7 space-y-3">
+                <Check dark>“업계 최초”, “획기적인” 같은 근거 없는 수식어 제거</Check>
+                <Check dark>문의처·회사 소개 단락은 빼고 역피라미드 구조로</Check>
+                <Check dark>초안은 항상 ‘작성중’으로 저장, 사람이 확인 후 발행</Check>
+              </ul>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ─── 함께 송고 ─── */}
+        <section className="relative isolate overflow-hidden bg-gradient-to-br from-[#111831] via-[#1B1440] to-[#2A1230] text-white">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-2">
+            <Reveal>
+              <Eyebrow icon="share" color="#F5A524">여러 매체 함께 송고</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>매체가 몇 개든,<br />로그인은 한 번.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-white/70">여러 매체를 운영한다면 기사 한 건을 골라서 다른 매체에도 한 번에 올립니다. 사본에는 원본 표시가 붙어 검색엔진이 중복 문서로 보지 않습니다.</p>
+              <ul className="mt-7 space-y-3">
+                <Check dark>매체마다 섹션이 달라도 자동으로 맞춰 송고</Check>
+                <Check dark>원본을 고치면 사본에도 반영</Check>
+                <Check dark>본문 바이라인의 매체 이름까지 자동 변경</Check>
+              </ul>
+            </Reveal>
+            <Reveal delay={150}><SyndicateVisual /></Reveal>
+          </div>
+        </section>
+
+        {/* ─── 홈 편집판 + 승인 ─── */}
+        <section className="bg-[#F4F5F7]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <Reveal className="order-2 lg:order-1"><HomeBoardMock /></Reveal>
+            <Reveal delay={150} className="order-1 lg:order-2">
+              <Eyebrow icon="layout" color="#3B82F6">홈 편집판 · 승인 흐름</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>첫 화면은<br />편집장이 정합니다.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">헤드라인, 톱, 주요 기사, 추천 자리에 어떤 기사를 둘지 고르고 “반영”을 누르면 끝. 비워 둔 자리는 최신 기사로 채워집니다.</p>
+              <div className="mt-7 rounded-xl border border-[#E4E6EA] bg-white p-5">
+                <p className="text-[13px] font-bold text-[#5B616B]">기자가 쓰고, 편집장이 승인하고</p>
+                <div className="mt-3"><ApprovalFlow /></div>
+                <p className="mt-3 text-[13.5px] text-[#5B616B]">반려할 때는 사유가 기자에게 그대로 전달됩니다.</p>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ─── 완성 화면 ─── */}
+        <section id="showcase" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0B1020] text-white">
+          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+            <div className="absolute left-1/2 top-1/3 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-[#02472F]/50 blur-[140px]" />
+          </div>
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+            <Reveal className="text-center">
+              <p className="text-[13.5px] font-bold tracking-[0.08em] text-[#F5B83D]">완성 화면</p>
+              <h2 className={`mt-3 ${H2}`}>이런 신문이 만들어집니다</h2>
+              <p className="mx-auto mt-4 max-w-[36em] text-[17px] leading-[1.8] text-white/70">
+                저희가 운영하는 보건·복지·요양 전문지 <strong className="text-white">더케어타임즈</strong>의 실제 디자인입니다. 매체 로고와 색을 입혀 우리 신문만의 모습으로 바꿉니다.
+              </p>
+            </Reveal>
+            <Reveal delay={150} className="relative mx-auto mt-14 max-w-[980px]">
+              <Browser src={`${IMG}/site-article.jpg`} alt="기사 화면 (샘플 기사)" url="thecaretimes.net/news/…" />
+              <Phone src={`${IMG}/site-mobile-menu.jpg`} alt="휴대폰에서 왼쪽에서 열리는 전체 메뉴" className="absolute -bottom-12 -right-2 w-[26%] sm:-right-10" />
+            </Reveal>
+            <div className="mt-24 grid gap-4 sm:grid-cols-3">
+              {[
+                { t: 'PC · 휴대폰 자동 대응', d: '한 번 쓰면 두 화면에 맞게' },
+                { t: '실시간·많이 본 뉴스', d: '자동으로 채워지는 사이드 영역' },
+                { t: '매체 색상·로고 적용', d: '같은 틀, 우리 신문만의 모습' },
+              ].map((x, i) => (
+                <Reveal key={x.t} delay={i * 100}>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur">
+                    <p className="text-[16.5px] font-bold">{x.t}</p>
+                    <p className="mt-1 text-[14px] text-white/60">{x.d}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+            <p className="mt-6 text-center text-[12px] text-white/40">화면 속 기사와 사진은 레이아웃 확인용 샘플입니다.</p>
+          </div>
+        </section>
+
+        {/* ─── 작업 순서 ─── */}
+        <section>
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+            <Reveal className="text-center">
+              <h2 className={H2}>보도자료 한 건이 기사가 되는 길</h2>
+              <p className="mx-auto mt-4 max-w-[36em] text-[17px] leading-[1.8] text-[#3B4048]">옮겨 적기, 홍보 문구 걷어내기, 사진 정리는 {PRODUCT.name}이. 판단과 확인은 사람이.</p>
+            </Reveal>
+            <ol className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {STEPS.map((s, i) => (
-                <li key={s.title} className="bg-white p-6">
-                  <p className="text-[13px] font-bold tabular-nums text-[#D6402B]">{String(i + 1).padStart(2, '0')}</p>
-                  <p className="mt-2 text-[20px] font-extrabold tracking-[-0.02em]">{s.title}</p>
-                  <p className="mt-2.5 text-[14px] leading-[1.7] text-[#3B4048]">{s.body}</p>
-                </li>
+                <Reveal key={s.title} delay={i * 90}>
+                  <li className="relative h-full overflow-hidden rounded-2xl border border-[#EEF0F3] bg-white p-6 shadow-[0_10px_30px_-15px_rgba(11,16,32,0.25)]">
+                    <span className="absolute inset-x-0 top-0 h-1.5" style={{ background: s.color }} />
+                    <p className="text-[42px] font-black leading-none tabular-nums" style={{ color: s.color }}>{i + 1}</p>
+                    <p className="mt-4 text-[21px] font-extrabold tracking-[-0.02em]">{s.title}</p>
+                    <p className="mt-2 text-[14px] leading-[1.7] text-[#5B616B]">{s.body}</p>
+                  </li>
+                </Reveal>
               ))}
             </ol>
           </div>
         </section>
 
-        {/* 기능 */}
-        <section id="features" className="scroll-mt-16">
-          <div className="mx-auto max-w-[1160px] px-4 py-20 sm:px-6">
-            <h2 className="text-[30px] font-extrabold tracking-[-0.03em] sm:text-[36px]">편집국에 필요한 것은 다 있습니다</h2>
-            <div className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURES.map((f) => (
-                <div key={f.title} className="border-t-2 border-[#14171C] pt-4">
-                  <h3 className="text-[17px] font-bold tracking-[-0.01em]">{f.title}</h3>
-                  <p className="mt-2 text-[14.5px] leading-[1.75] text-[#3B4048]">{f.body}</p>
-                </div>
+        {/* ─── 기능 모음 ─── */}
+        <section className="bg-[#F4F5F7]">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+            <Reveal className="text-center"><h2 className={H2}>편집국에 필요한 것은 다 있습니다</h2></Reveal>
+            <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {FEATURES.map((f, i) => (
+                <Reveal key={f.title} delay={(i % 4) * 80}>
+                  <div className="group h-full rounded-2xl bg-white p-6 shadow-[0_10px_30px_-18px_rgba(11,16,32,0.3)] ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-[0_20px_40px_-18px_rgba(11,16,32,0.35)]">
+                    <span className="grid h-12 w-12 place-items-center rounded-xl text-white shadow-[0_8px_20px_-8px_currentColor]" style={{ background: f.color, color: f.color }}>
+                      <Glyph name={f.icon} className="text-white" />
+                    </span>
+                    <p className="mt-5 text-[17px] font-bold">{f.title}</p>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-[#5B616B]">{f.body}</p>
+                  </div>
+                </Reveal>
               ))}
             </div>
           </div>
         </section>
 
-        {/* 우리가 먼저 쓴다 */}
-        <section className="bg-[#14171C] text-white">
-          <div className="mx-auto grid max-w-[1160px] gap-8 px-4 py-16 sm:px-6 md:grid-cols-[1fr_1.2fr] md:items-center">
-            <h2 className="text-[26px] font-extrabold leading-snug tracking-[-0.03em] sm:text-[32px]">
-              저희 매체가
-              <br />
-              먼저 씁니다.
-            </h2>
-            <p className="text-[16px] leading-[1.8] text-[#C9CDD3]">
-              {PRODUCT.name}은 저희가 직접 운영하는 인터넷신문을 위해 만들었습니다.
-              보건·복지·요양 전문지 <strong className="font-semibold text-white">더케어타임즈</strong>를 시작으로 운영 매체를 차례로 옮기고 있습니다.
-              매일 쓰면서 불편한 점을 먼저 고치니, 현장에서 필요한 기능이 먼저 들어갑니다.
-            </p>
+        {/* ─── 저희가 먼저 씁니다 ─── */}
+        <section>
+          <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 py-24 sm:px-6 md:grid-cols-[1fr_1.2fr]">
+            <Reveal>
+              <Eyebrow icon="cloud" color="#10B981">직접 운영하며 만듭니다</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>저희 매체가<br />먼저 씁니다.</h2>
+            </Reveal>
+            <Reveal delay={150}>
+              <p className="text-[17px] leading-[1.9] text-[#3B4048]">
+                {PRODUCT.name}은 저희가 직접 운영하는 인터넷신문을 위해 만들었습니다. 보건·복지·요양 전문지 <strong>더케어타임즈</strong>를 시작으로 운영 매체를 차례로 옮기고 있습니다.
+                매일 쓰면서 불편한 점을 먼저 고치니, 현장에서 필요한 기능이 먼저 들어갑니다.
+              </p>
+            </Reveal>
           </div>
         </section>
 
-        {/* 베타 조건 */}
-        <section id="beta" className="scroll-mt-16">
-          <div className="mx-auto max-w-[1160px] px-4 py-20 sm:px-6">
-            <p className="text-[13px] font-bold tracking-[0.06em] text-[#D6402B]">베타 고객사 모집</p>
-            <h2 className="mt-2 text-[30px] font-extrabold tracking-[-0.03em] sm:text-[36px]">함께 만들 언론사를 먼저 모십니다</h2>
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
-              <div className="rounded-lg border border-[#E4E6EA] p-7">
-                <h3 className="text-[17px] font-bold">베타 고객사 혜택</h3>
-                <ul className="mt-4 space-y-3 text-[15px] leading-relaxed text-[#3B4048]">
-                  <li className="flex gap-3"><span className="font-bold text-[#D6402B]">·</span>베타 기간 이용료 없음</li>
-                  <li className="flex gap-3"><span className="font-bold text-[#D6402B]">·</span>기존 기사·사진 이전을 저희가 직접 진행</li>
-                  <li className="flex gap-3"><span className="font-bold text-[#D6402B]">·</span>필요한 기능을 개발 순서에 먼저 반영</li>
-                  <li className="flex gap-3"><span className="font-bold text-[#D6402B]">·</span>담당자가 개통부터 운영까지 1:1로 지원</li>
-                </ul>
+        {/* ─── 베타 모집 ─── */}
+        <section id="beta" className="scroll-mt-16 px-4 sm:px-6">
+          <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F5A524] via-[#EF6B3A] to-[#D93B4A] px-6 py-16 text-white shadow-[0_40px_80px_-30px_rgba(217,59,74,0.7)] sm:px-14">
+            <div className="pointer-events-none absolute -right-20 -top-20 -z-10 h-[360px] w-[360px] rounded-full bg-white/15 blur-2xl" aria-hidden />
+            <div className="grid gap-10 md:grid-cols-[1fr_1fr] md:items-center">
+              <div>
+                <p className="text-[13.5px] font-bold tracking-[0.08em] text-white/85">베타 고객사 모집</p>
+                <h2 className="mt-3 text-[32px] font-extrabold leading-[1.25] tracking-[-0.03em] sm:text-[44px]">함께 만들 언론사를<br />먼저 모십니다</h2>
+                <a href="#apply" className="mt-8 inline-block rounded-xl bg-white px-7 py-4 text-[16px] font-bold text-[#D93B4A] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5">지금 신청하기 →</a>
               </div>
-              <div className="rounded-lg border border-[#E4E6EA] p-7">
-                <h3 className="text-[17px] font-bold">이런 곳에 잘 맞습니다</h3>
-                <ul className="mt-4 space-y-3 text-[15px] leading-relaxed text-[#3B4048]">
-                  <li className="flex gap-3"><span className="font-bold text-[#D6402B]">·</span>기자 1~5명이 매일 기사를 내는 인터넷신문</li>
-                  <li className="flex gap-3"><span className="font-bold text-[#D6402B]">·</span>매체를 두 개 이상 운영하는 발행인</li>
-                  <li className="flex gap-3"><span className="font-bold text-[#D6402B]">·</span>창간을 준비하며 프로그램을 고르는 중인 곳</li>
-                </ul>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  { t: '이용료 없음', d: '베타 기간 동안' },
+                  { t: '기사 이전 대행', d: '기존 기사·사진을 저희가' },
+                  { t: '기능 우선 반영', d: '필요한 기능을 먼저 개발' },
+                  { t: '1:1 전담 지원', d: '개통부터 운영까지' },
+                ].map((b) => (
+                  <div key={b.t} className="rounded-2xl bg-white/15 p-5 ring-1 ring-white/25 backdrop-blur">
+                    <p className="text-[18px] font-extrabold">{b.t}</p>
+                    <p className="mt-1 text-[14px] text-white/85">{b.d}</p>
+                  </div>
+                ))}
               </div>
             </div>
+          </Reveal>
+          <div className="mx-auto mt-10 grid max-w-[1200px] gap-3 text-center text-[14.5px] text-[#3B4048] sm:grid-cols-3">
+            {['기자 1~5명이 매일 기사를 내는 인터넷신문', '매체를 두 개 이상 운영하는 발행인', '창간을 준비하며 프로그램을 고르는 곳'].map((t) => (
+              <p key={t} className="rounded-xl border border-[#EEF0F3] px-4 py-3.5">👉 {t}</p>
+            ))}
           </div>
         </section>
 
-        {/* 자주 묻는 질문 */}
-        <section id="faq" className="scroll-mt-16 border-t border-[#E4E6EA] bg-[#F4F5F7]">
-          <div className="mx-auto max-w-[860px] px-4 py-20 sm:px-6">
-            <h2 className="text-[30px] font-extrabold tracking-[-0.03em] sm:text-[36px]">자주 묻는 질문</h2>
-            <div className="mt-8 divide-y divide-[#E4E6EA] rounded-lg border border-[#E4E6EA] bg-white">
+        {/* ─── 자주 묻는 질문 ─── */}
+        <section id="faq" className="scroll-mt-16">
+          <div className="mx-auto max-w-[860px] px-4 py-24 sm:px-6">
+            <Reveal className="text-center"><h2 className={H2}>자주 묻는 질문</h2></Reveal>
+            <div className="mt-10 space-y-3">
               {FAQ.map((f) => (
-                <details key={f.q} className="group px-6 py-5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] font-bold [&::-webkit-details-marker]:hidden">
-                    {f.q}
-                    <span className="text-[20px] font-normal text-[#8C929B] transition-transform group-open:rotate-45" aria-hidden>+</span>
+                <details key={f.q} className="group rounded-2xl border border-[#EEF0F3] bg-white px-6 py-5 shadow-[0_6px_20px_-14px_rgba(11,16,32,0.3)] open:ring-2 open:ring-[#F5A524]/40">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16.5px] font-bold [&::-webkit-details-marker]:hidden">
+                    <span><span className="mr-2 text-[#E5483A]">Q.</span>{f.q}</span>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#F4F5F7] text-[18px] font-normal text-[#5B616B] transition-transform group-open:rotate-45" aria-hidden>+</span>
                   </summary>
-                  <p className="mt-3 text-[15px] leading-[1.8] text-[#3B4048]">{f.a}</p>
+                  <p className="mt-3 pl-7 text-[15px] leading-[1.8] text-[#3B4048]">{f.a}</p>
                 </details>
               ))}
             </div>
           </div>
         </section>
 
-        {/* 신청 */}
-        <section id="apply" className="scroll-mt-16">
-          <div className="mx-auto grid max-w-[1160px] gap-10 px-4 py-20 sm:px-6 md:grid-cols-[0.8fr_1.2fr]">
+        {/* ─── 신청 ─── */}
+        <section id="apply" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0B1020] text-white">
+          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+            <div className="absolute -left-20 top-20 h-[420px] w-[420px] rounded-full bg-[#E5483A]/25 blur-[120px]" />
+            <div className="absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-[#6366F1]/25 blur-[120px]" />
+          </div>
+          <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-24 sm:px-6 md:grid-cols-[0.8fr_1.2fr]">
             <div>
-              <h2 className="text-[30px] font-extrabold leading-snug tracking-[-0.03em] sm:text-[36px]">
-                베타 고객사
-                <br />
-                신청
-              </h2>
-              <p className="mt-4 text-[16px] leading-[1.8] text-[#3B4048]">
+              <h2 className={H2}>베타 고객사 신청</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-white/70">
                 신청서를 보내주시면 담당자가 연락드려 운영 중인 매체와 필요한 기능을 여쭤봅니다. 신청했다고 비용이 생기지 않습니다.
               </p>
+              <ul className="mt-8 space-y-3">
+                <Check dark>설치비·약정 없음</Check>
+                <Check dark>쓰던 도메인 그대로</Check>
+                <Check dark>기존 기사 이전 지원</Check>
+              </ul>
             </div>
-            <ApplyForm />
+            <div className="text-[#14171C]"><ApplyForm /></div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-[#E4E6EA]">
-        <div className="mx-auto flex max-w-[1160px] flex-wrap items-center justify-between gap-4 px-4 py-8 text-[13px] text-[#5B616B] sm:px-6">
+      <footer className="border-t border-white/10 bg-[#070A14] text-white/60">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-4 py-10 text-[13px] sm:px-6">
           <div className="flex items-center gap-3">
-            <Logo />
+            <Logo dark />
             <span>인터넷신문을 위한 AI 편집국</span>
           </div>
           <div className="flex gap-5">
-            <Link href="/login" className="hover:text-[#14171C]">편집국 로그인</Link>
-            <a href="#apply" className="hover:text-[#14171C]">상담 신청</a>
+            <Link href="/login" className="hover:text-white">편집국 로그인</Link>
+            <a href="#apply" className="hover:text-white">상담 신청</a>
           </div>
-          <p className="w-full text-[12px]">© {new Date().getFullYear()} {PRODUCT.nameEn}</p>
+          <p className="w-full text-[12px] text-white/40">© {new Date().getFullYear()} {PRODUCT.nameEn}</p>
         </div>
       </footer>
     </div>
