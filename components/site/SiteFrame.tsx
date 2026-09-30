@@ -21,6 +21,12 @@ export default function SiteFrame({ site, current, children }: Props) {
           미리보기 화면입니다 — 표시된 기사는 레이아웃 확인용 샘플이며 실제 기사가 아닙니다.
         </div>
       )}
+      {site.preview && (
+        <div className="flex items-center justify-center gap-3 bg-[#1C1F26] px-4 py-2 text-[12.5px] text-white">
+          <span><strong>{site.name}</strong> 미리보기 — 도메인을 연결하기 전 화면입니다.</span>
+          <a href="/?preview_outlet=clear" className="rounded bg-white/15 px-2 py-0.5 hover:bg-white/25">미리보기 끝내기</a>
+        </div>
+      )}
       <SiteHeader site={site} current={current} />
       <main id="content">{children}</main>
       <SiteFooter site={site} />

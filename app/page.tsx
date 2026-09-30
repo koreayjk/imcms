@@ -9,8 +9,8 @@ import SpecialtyTabs from '@/components/site/SpecialtyTabs'
 import Thumb from '@/components/site/Thumb'
 import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
 
-export function generateMetadata(): Metadata {
-  const site = currentSite()
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await currentSite()
   return {
     title: `${site.name} | ${site.nameEn}`,
     description: site.description,
@@ -21,7 +21,7 @@ export function generateMetadata(): Metadata {
 }
 
 export default async function HomePage() {
-  const site = currentSite()
+  const site = await currentSite()
   const { latest, mostViewed, bySection, pinned } = await getHomeData(site)
 
   if (!latest.length) {

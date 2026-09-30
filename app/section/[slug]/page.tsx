@@ -9,8 +9,8 @@ import ArticleRow from '@/components/site/ArticleRow'
 
 type Props = { params: { slug: string }; searchParams: { page?: string } }
 
-export function generateMetadata({ params }: Props): Metadata {
-  const site = currentSite()
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const site = await currentSite()
   const section = findSection(site, params.slug)
   return {
     title: section ? `${section.name} | ${site.name}` : site.name,
@@ -21,7 +21,7 @@ export function generateMetadata({ params }: Props): Metadata {
 }
 
 export default async function SectionPage({ params, searchParams }: Props) {
-  const site = currentSite()
+  const site = await currentSite()
   const section = findSection(site, params.slug)
   if (!section) notFound()
 

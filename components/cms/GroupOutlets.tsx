@@ -54,6 +54,7 @@ function OutletRow({ o, groups, isSuper, current }: { o: Outlet; groups: Group[]
               {o.domain ?? '도메인 미연결'} · 회원 {o.members}명 · 기사 {o.articles.toLocaleString()}건
             </p>
           </div>
+          <a href={`/admin/outlets/${o.id}/site`} className="btn-primary px-3 py-1.5 text-[12.5px]">홈페이지 설정</a>
           {!current && <button type="button" onClick={work} disabled={pending} className="btn-secondary px-3 py-1.5 text-[12.5px]">이 매체로 작업</button>}
           <button type="button" onClick={() => setEdit(true)} className="text-[12.5px] text-muted underline underline-offset-2 hover:text-ink">수정</button>
         </div>

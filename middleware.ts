@@ -22,6 +22,17 @@ function isPublicPath(pathname: string) {
 }
 
 export async function middleware(request: NextRequest) {
+  // 매체 홈페이지 미리보기: ?preview_outlet=매체ID 로 들어오면 쿠키에 기억 (clear면 끝내기)
+  const previewParam = request.nextUrl.searchParams.get('preview_outlet')
+  if (previewParam) {
+    const url = request.nextUrl.clone()
+    url.searchParams.delete('preview_outlet')
+    const res = NextResponse.redirect(url)
+    if (previewParam === 'clear' || !/^[0-9a-f-]{36}$/.test(previewParam)) res.cookies.delete('im_site_preview')
+    else res.cookies.set('im_site_preview', previewParam, { path: '/', maxAge: 60 * 60 * 24, sameSite: 'lax' })
+    return res
+  }
+
   // 제품 홈페이지 도메인으로 들어온 첫 화면은 IM 뉴스룸 소개 페이지로 보여준다
   if (request.nextUrl.pathname === '/' && isProductHost(request.headers.get('host'))) {
     const url = request.nextUrl.clone()

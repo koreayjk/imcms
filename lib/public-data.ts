@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
+import { unstable_cache } from 'next/cache'
 import { demoArticles } from './demo-articles'
-import { resolveSite, type SiteConfig } from './sites'
+import { SITES, buildSite, resolveSite, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
 import { normalizeLayout, type SlotKey } from './home-layout'
 
 export type PublicArticle = {
@@ -22,8 +23,39 @@ export type PublicArticle = {
 
 export const isDemo = !process.env.NEXT_PUBLIC_SUPABASE_URL
 
-export function currentSite() {
-  return resolveSite(headers().get('host'))
+// 도메인이 연결되지 않은 주소(imcms.vercel.app 등)에서 기본으로 보여줄 매체
+const DEFAULT_DOMAIN = 'thecaretimes.net'
+export const PREVIEW_COOKIE = 'im_site_preview'
+
+// 매체 설정은 5분 동안 기억한다 (홈페이지 설정을 저장하면 바로 새로 읽는다)
+const loadSite = unstable_cache(
+  async (host: string, previewId: string | null): Promise<SiteConfig | null> => {
+    const supabase = client()
+    const bare = host.replace(/^www\./, '')
+    let { data: outlet } = await supabase.from('outlets').select('*').eq('domain', bare).limit(1).maybeSingle()
+    let preview = false
+    if (!outlet && previewId) {
+      ;({ data: outlet } = await supabase.from('outlets').select('*').eq('id', previewId).maybeSingle())
+      preview = !!outlet
+    }
+    if (!outlet) ({ data: outlet } = await supabase.from('outlets').select('*').eq('domain', DEFAULT_DOMAIN).limit(1).maybeSingle())
+    if (!outlet) return null
+    const { data: cats } = await supabase.from('categories').select('*').eq('outlet_id', outlet.id)
+    return buildSite(outlet as OutletRow, (cats ?? []) as CategoryRow[], preview)
+  },
+  ['public-site'],
+  { revalidate: 300, tags: ['sites'] }
+)
+
+export async function currentSite(): Promise<SiteConfig> {
+  if (isDemo) return SITES[0]
+  const host = (headers().get('host') ?? '').split(':')[0].toLowerCase()
+  const previewId = cookies().get(PREVIEW_COOKIE)?.value ?? null
+  try {
+    return (await loadSite(host, /^[0-9a-f-]{36}$/.test(previewId ?? '') ? previewId : null)) ?? resolveSite(host)
+  } catch {
+    return resolveSite(host)
+  }
 }
 
 const LIST_FIELDS =
@@ -63,8 +95,9 @@ function toPublic(row: any): PublicArticle {
 
 async function outletScope(site: SiteConfig) {
   const supabase = client()
-  const { data: outlet } = await supabase
-    .from('outlets').select('id').in('domain', site.domains).limit(1).maybeSingle()
+  const { data: outlet } = site.outletId
+    ? { data: { id: site.outletId } }
+    : await supabase.from('outlets').select('id').in('domain', site.domains).limit(1).maybeSingle()
   if (!outlet) return null
   const { data: cats } = await supabase
     .from('categories').select('id, slug').eq('outlet_id', outlet.id)

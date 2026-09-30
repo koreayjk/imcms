@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
 import { NEWSWIRE_DAILY_FREE, PRESS_SOURCES } from '@/lib/press-sources'
-import { resolveSite } from '@/lib/sites'
+import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
 import { refreshNow } from './actions'
@@ -36,8 +36,9 @@ export default async function PressPage({ searchParams }: Props) {
 
   await refreshPress(supabase)
 
-  const { data: outlet } = outletId ? await supabase.from('outlets').select('name, domain').eq('id', outletId).single() : { data: null }
-  const keywords = resolveSite(outlet?.domain).pressKeywords
+  const { data: outlet } = outletId ? await supabase.from('outlets').select('*').eq('id', outletId).single() : { data: null }
+  // 매체 홈페이지 설정의 '보도자료 추천 키워드' (없으면 추천 탭은 직접 등록·메일 자료만)
+  const keywords = outlet ? buildSite(outlet as OutletRow, []).pressKeywords : []
 
   const tab = searchParams.tab === 'all' ? 'all' : 'rec'
   const src = searchParams.src === MANUAL_SOURCE || searchParams.src === 'email' ? searchParams.src : PRESS_SOURCES.find((s) => s.key === searchParams.src)?.key

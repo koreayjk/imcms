@@ -5,13 +5,13 @@ import ArticleRow from '@/components/site/ArticleRow'
 
 type Props = { searchParams: { q?: string } }
 
-export function generateMetadata(): Metadata {
-  const site = currentSite()
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await currentSite()
   return { title: `기사 검색 | ${site.name}`, icons: { icon: site.logoMark }, robots: { index: false } }
 }
 
 export default async function SearchPage({ searchParams }: Props) {
-  const site = currentSite()
+  const site = await currentSite()
   const q = (searchParams.q ?? '').slice(0, 100)
   const results = await searchArticles(site, q)
 

@@ -14,7 +14,7 @@ import ShareButton from './ShareButton'
 type Props = { params: { id: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const site = currentSite()
+  const site = await currentSite()
   const data = await getArticleData(site, params.id)
   if (!data) return { title: `기사를 찾을 수 없습니다 | ${site.name}` }
   const a = data.article
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArticlePage({ params }: Props) {
-  const site = currentSite()
+  const site = await currentSite()
   const data = await getArticleData(site, params.id)
   if (!data) notFound()
   const { article: a, related, mostViewed, latest, source } = data
