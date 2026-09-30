@@ -170,3 +170,79 @@ export function ApprovalFlow() {
     </div>
   )
 }
+
+// 기자 메일 → 전용 주소 → 보도자료함으로 흘러가는 그림
+export function MailForwardVisual() {
+  const Node = ({ title, sub, color, children }: { title: string; sub: string; color: string; children: React.ReactNode }) => (
+    <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_12px_30px_-14px_rgba(11,16,32,0.35)] ring-1 ring-black/5">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-white" style={{ background: color }}>{children}</span>
+      <span className="min-w-0">
+        <span className="block text-[13.5px] font-bold">{title}</span>
+        <span className="block truncate text-[11.5px] text-[#5B616B]">{sub}</span>
+      </span>
+    </div>
+  )
+  const Arrow = ({ label }: { label: string }) => (
+    <div className="flex items-center gap-2 py-1.5 pl-8 text-[11px] font-semibold text-[#8C929B]">
+      <svg width="14" height="26" viewBox="0 0 14 26" aria-hidden><path d="M7 0v22M2 17l5 6 5-6" fill="none" stroke="#F5A524" strokeWidth="2" className="pn-dash" /></svg>
+      {label}
+    </div>
+  )
+  const mail = <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></svg>
+  return (
+    <div className="mt-8 max-w-[420px]">
+      <Node title="기자 지메일" sub="[보도자료] ○○군, 경로당 냉난방비 지원 확대" color="#EA4335">{mail}</Node>
+      <Arrow label="필터: 제목에 ‘보도자료’ → 자동 전달" />
+      <Node title="내 전용 주소" sub="press+hong…@imnewsroom" color="#8B5CF6">
+        <span className="text-[12px] font-black">IM</span>
+      </Node>
+      <Arrow label="보낸 기관·제목 자동 정리, 사진 첨부 저장" />
+      <Node title="보도자료함" sub="메일 · ○○군청 기획홍보실 · 방금" color="#10B981">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden><path d="M3 13h5l1.5 3h5L16 13h5M5.5 5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5l2.5-8Z" /></svg>
+      </Node>
+    </div>
+  )
+}
+
+// 고객센터 화면 모형: 업무요청 카드와 답변
+export function SupportMock() {
+  const tickets = [
+    { s: '완료', cls: 'bg-[#E4E6EA] text-[#5B616B]', cat: '디자인', title: '메인 상단 배너 자리를 만들어 주세요' },
+    { s: '진행', cls: 'bg-[#2d6ca8]/10 text-[#2d6ca8]', cat: '기능·개발', title: '기사 목록에 조회수 정렬을 추가해 주세요', reply: true },
+    { s: '접수', cls: 'bg-[#E5483A]/10 text-[#E5483A]', cat: '오류·장애', title: '사진 설명이 모바일에서 잘려 보입니다' },
+  ]
+  return (
+    <div className="overflow-hidden rounded-xl border border-black/10 bg-[#F4F5F7] text-[#14171C] shadow-[0_30px_80px_-25px_rgba(11,16,32,0.45)]">
+      <div className="flex items-center gap-5 border-b border-[#E4E6EA] bg-white px-5 text-[12.5px]">
+        <strong className="py-3 text-[13.5px]">고객센터</strong>
+        {['업무요청', '공지', '청구서', '결제 정보'].map((t, i) => (
+          <span key={t} className={`py-3 ${i === 0 ? '-mb-px border-b-2 border-[#E5483A] font-bold' : 'text-[#8C929B]'}`}>{t}</span>
+        ))}
+      </div>
+      <div className="grid gap-2.5 p-4 sm:grid-cols-3">
+        {tickets.map((t) => (
+          <div key={t.title} className="flex flex-col sm:min-h-[112px] rounded-xl bg-white p-3 shadow-[0_6px_18px_-12px_rgba(11,16,32,0.35)]">
+            <div className="flex items-center gap-1 text-[10px]">
+              <span className={`rounded px-1.5 py-px font-bold ${t.cls}`}>{t.s}</span>
+              <span className="text-[#8C929B]">{t.cat}</span>
+              {t.reply && <span className="ml-auto rounded bg-[#E5483A] px-1 py-px font-bold text-white">새 답변</span>}
+            </div>
+            <p className="mt-2 text-[12.5px] font-bold leading-snug">{t.title}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mx-4 mb-4 rounded-xl bg-[#EEF2F8] p-3.5">
+        <p className="flex items-center gap-2 text-[11.5px]">
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-[#F5B83D] to-[#E5483A] text-[9px] font-bold text-white">IM</span>
+          <strong>IM 뉴스룸 운영팀</strong>
+          <span className="ml-auto text-[#8C929B]">방금</span>
+        </p>
+        <p className="mt-2 rounded-lg bg-white px-3 py-2 text-[12px] leading-relaxed">요청하신 조회수 정렬을 기사목록에 추가했습니다. 확인 부탁드립니다.</p>
+      </div>
+      <div className="flex items-center justify-between border-t border-[#E4E6EA] bg-white px-5 py-3 text-[12px]">
+        <span className="font-bold">2026년 10월 청구서</span>
+        <span className="flex items-center gap-2"><span className="rounded bg-[#1E7D4D]/10 px-1.5 py-px text-[10.5px] font-bold text-[#1E7D4D]">납부 완료</span><span className="rounded border border-[#E4E6EA] px-2 py-0.5 text-[10.5px]">PDF 저장</span></span>
+      </div>
+    </div>
+  )
+}

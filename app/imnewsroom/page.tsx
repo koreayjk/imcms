@@ -5,7 +5,7 @@ import { PRODUCT, isProductHost } from '@/lib/product'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
-import { ApprovalFlow, HomeBoardMock, PressInboxMock, SyndicateVisual } from '@/components/product/Mockups'
+import { ApprovalFlow, HomeBoardMock, MailForwardVisual, PressInboxMock, SupportMock, SyndicateVisual } from '@/components/product/Mockups'
 import { CountUp, Reveal } from '@/components/product/Motion'
 
 export const dynamic = 'force-dynamic'
@@ -23,7 +23,7 @@ const IMG = '/imnewsroom'
 
 // 기사가 나가기까지의 실제 순서 — 번호가 곧 작업 순서다
 const STEPS = [
-  { title: '모은다', body: '보도자료를 30분마다 자동 수집. 이메일 자료는 붙여넣기 한 번.', color: '#E5483A' },
+  { title: '모은다', body: '보도자료를 30분마다 자동 수집. 기자 메일로 온 자료도 자동으로.', color: '#E5483A' },
   { title: '고른다', body: '매체 분야에 맞는 자료만 추천. 이미 쓴 자료는 표시.', color: '#F5A524' },
   { title: '쓴다', body: 'AI가 원문 사실만으로 기사체 초안과 확인 메모 작성.', color: '#8B5CF6' },
   { title: '확인한다', body: '기자가 다듬고, 편집장이 승인해 발행.', color: '#3B82F6' },
@@ -42,6 +42,10 @@ const ICONS = {
   users: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6" /></>,
   photo: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.5" /><path d="m21 16-5-5-8 8" /></>,
   cloud: <path d="M7 18a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.5 1.5A3.8 3.8 0 0 1 17.5 18H7Z" />,
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></>,
+  headset: <><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="13" width="4" height="6" rx="1.5" /><rect x="17" y="13" width="4" height="6" rx="1.5" /></>,
+  receipt: <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3ZM9 8h6M9 12h6" />,
+  pen: <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />,
 }
 
 function Glyph({ name, className = '' }: { name: Icon; className?: string }) {
@@ -61,6 +65,10 @@ const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
   { icon: 'phone', title: '모바일 신문 사이트', body: 'PC·휴대폰 화면을 따로 만들 필요 없이', color: '#EC4899' },
   { icon: 'search', title: '검색 노출 설정', body: '기사별 검색 제목·설명, 공유 이미지', color: '#06B6D4' },
   { icon: 'users', title: '가입·권한 관리', body: '구글 계정 가입, 관리자 승인 후 사용', color: '#6366F1' },
+  { icon: 'mail', title: '메일로 받은 보도자료', body: '지메일 필터로 보도자료 메일만 자동 수집', color: '#EA4335' },
+  { icon: 'headset', title: '고객센터 내장', body: '업무요청·공지를 편집국 화면 안에서', color: '#14B8A6' },
+  { icon: 'receipt', title: '청구서·결제 정보', body: '월별 청구서 PDF, 세금계산서 담당자 관리', color: '#A855F7' },
+  { icon: 'pen', title: '기자명·기사 관리', body: '기사별 기자명 변경, 본인 기사 삭제', color: '#F97316' },
 ]
 
 const FAQ = [
@@ -69,10 +77,12 @@ const FAQ = [
   { q: '기존 프로그램에 있는 기사를 옮길 수 있나요?', a: '베타 고객사는 저희가 직접 옮겨 드립니다. 기존 프로그램에서 내보낼 수 있는 형식에 따라 방법이 달라서, 상담할 때 함께 확인합니다.' },
   { q: '서버나 프로그램을 설치해야 하나요?', a: '아니요. 웹브라우저에서 로그인해 바로 씁니다. 서버, 백업, 보안 업데이트는 저희가 관리합니다.' },
   { q: '보도자료를 자유롭게 기사로 써도 되나요?', a: '배포처 약관을 따라야 합니다. 예를 들어 뉴스와이어는 언론사가 하루 5건을 넘게 쓰려면 사전 허락이 필요합니다. 보도자료함에 오늘 사용한 건수가 표시됩니다.' },
+  { q: '기자 메일로 받은 보도자료도 모을 수 있나요?', a: '네. 기자마다 전용 전달 주소가 생기고, 지메일에서 “보도자료” 메일만 그 주소로 자동 전달하도록 한 번 설정하면 됩니다. 네이버·다음 메일은 자동 전달 기능이 없어 “전달” 버튼으로 보내면 됩니다. 설정 방법은 화면에서 단계별로 안내합니다.' },
+  { q: '문의나 수정 요청은 어떻게 하나요?', a: '편집국 화면의 “고객센터”에서 업무요청을 남기면 운영팀이 답변합니다. 따로 된 사이트에 로그인할 필요가 없고, 답변이 오면 메뉴에 숫자로 표시됩니다.' },
   { q: '정식 요금은 얼마인가요?', a: '베타 기간이 끝나기 전에 안내하고, 베타 고객사에 가장 먼저 알려 드립니다.' },
 ]
 
-const MARQUEE = ['보도자료 자동 수집', 'AI 기사 초안', '기자 확인 메모', '여러 매체 함께 송고', '홈 편집판', '모바일 신문', '검색 노출 설정', '승인 흐름', '사진 자동 정리', '구글 로그인']
+const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', '기자 확인 메모', '고객센터 내장', '월별 청구서', '홈 편집판', '모바일 신문', '검색 노출 설정', '승인 흐름', '사진 자동 정리', '구글 로그인']
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
@@ -113,11 +123,12 @@ export default function ProductHome() {
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-4 sm:px-6">
           <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo dark /></a>
           <nav className="ml-auto hidden items-center gap-7 text-[14px] text-white/70 md:flex" aria-label="소개 메뉴">
-            <a href="#press" className="hover:text-white">보도자료</a>
+            <a href="#multi" className="hover:text-white">여러 매체</a>
             <a href="#ai" className="hover:text-white">AI 초안</a>
+            <a href="#press" className="hover:text-white">보도자료</a>
+            <a href="#support" className="hover:text-white">고객센터</a>
             <a href="#showcase" className="hover:text-white">디자인</a>
             <a href="#beta" className="hover:text-white">베타 모집</a>
-            <a href="#faq" className="hover:text-white">FAQ</a>
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link href="/login" className="hidden rounded-md px-3 py-2 text-[13.5px] text-white/70 hover:text-white sm:block">편집국 로그인</Link>
@@ -211,20 +222,20 @@ export default function ProductHome() {
           </div>
         </div>
 
-        {/* ─── 보도자료함 ─── */}
-        <section id="press" className="scroll-mt-16">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
+        {/* ─── 함께 송고 ─── */}
+        <section id="multi" className="relative isolate scroll-mt-16 overflow-hidden bg-gradient-to-br from-[#111831] via-[#1B1440] to-[#2A1230] text-white">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-2">
             <Reveal>
-              <Eyebrow icon="inbox" color="#E5483A">보도자료함</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>보도자료를 찾으러 다니지 마세요.<br />알아서 모입니다.</h2>
-              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">뉴스와이어와 정책브리핑의 보도자료가 30분마다 들어오고, 우리 매체 분야에 맞는 것만 추천 탭에 뜹니다.</p>
+              <Eyebrow icon="share" color="#F5A524">여러 매체 함께 송고</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>매체가 몇 개든,<br />로그인은 한 번.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-white/70">매체마다 CMS를 따로 계약하고 따로 로그인할 필요가 없습니다. 여러 매체를 운영한다면 기사 한 건을 골라서 다른 매체에도 한 번에 올립니다. 사본에는 원본 표시가 붙어 검색엔진이 중복 문서로 보지 않습니다.</p>
               <ul className="mt-7 space-y-3">
-                <Check>이메일·카카오톡으로 받은 자료도 붙여넣으면 같은 함으로</Check>
-                <Check>이미 기사로 쓴 자료는 “기사화됨” 표시로 중복 방지</Check>
-                <Check>배포처 약관(하루 사용 건수)까지 화면에서 확인</Check>
+                <Check dark>매체마다 섹션이 달라도 자동으로 맞춰 송고</Check>
+                <Check dark>원본을 고치면 사본에도 반영</Check>
+                <Check dark>본문 바이라인의 매체 이름까지 자동 변경</Check>
               </ul>
             </Reveal>
-            <Reveal delay={150}><PressInboxMock /></Reveal>
+            <Reveal delay={150}><SyndicateVisual /></Reveal>
           </div>
         </section>
 
@@ -238,31 +249,34 @@ export default function ProductHome() {
             <Reveal className="order-2 lg:order-1"><ProofDemo /></Reveal>
             <Reveal delay={150} className="order-1 lg:order-2">
               <Eyebrow icon="spark" color="#A78BFA">AI 기사 초안</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>홍보 문구는 지우고,<br /><span className="bg-gradient-to-r from-[#C4B5FD] to-[#F9A8D4] bg-clip-text text-transparent">사실만 기사로.</span></h2>
-              <p className="mt-5 text-[17px] leading-[1.8] text-white/70">버튼 한 번이면 AI가 보도자료를 기사체로 다시 씁니다. 원문에 없는 내용은 만들지 않고, 기자가 확인해야 할 점을 메모로 남깁니다.</p>
+              <h2 className={`mt-5 ${H2}`}>AI가 다듬되,<br /><span className="bg-gradient-to-r from-[#C4B5FD] to-[#F9A8D4] bg-clip-text text-transparent">없는 사실은 만들지 않습니다.</span></h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-white/70">버튼 한 번이면 AI가 보도자료를 기사체로 다시 씁니다. 그럴듯하게 “고급스럽게 다듬기”보다 중요한 건 오보를 내지 않는 것. 원문에 없는 숫자·인용·인물은 쓰지 않고, 과장이 의심되는 곳은 기자에게 메모로 알려줍니다.</p>
               <ul className="mt-7 space-y-3">
+                <Check dark>원문에 없는 숫자·인용문·인물은 만들지 않음</Check>
                 <Check dark>“업계 최초”, “획기적인” 같은 근거 없는 수식어 제거</Check>
-                <Check dark>문의처·회사 소개 단락은 빼고 역피라미드 구조로</Check>
+                <Check dark>확인이 필요한 수치·주장은 “기자 확인 메모”로 표시</Check>
                 <Check dark>초안은 항상 ‘작성중’으로 저장, 사람이 확인 후 발행</Check>
               </ul>
             </Reveal>
           </div>
         </section>
 
-        {/* ─── 함께 송고 ─── */}
-        <section className="relative isolate overflow-hidden bg-gradient-to-br from-[#111831] via-[#1B1440] to-[#2A1230] text-white">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-2">
+        {/* ─── 보도자료함 ─── */}
+        <section id="press" className="scroll-mt-16">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
             <Reveal>
-              <Eyebrow icon="share" color="#F5A524">여러 매체 함께 송고</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>매체가 몇 개든,<br />로그인은 한 번.</h2>
-              <p className="mt-5 text-[17px] leading-[1.8] text-white/70">여러 매체를 운영한다면 기사 한 건을 골라서 다른 매체에도 한 번에 올립니다. 사본에는 원본 표시가 붙어 검색엔진이 중복 문서로 보지 않습니다.</p>
+              <Eyebrow icon="inbox" color="#E5483A">보도자료함</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>보도자료를 찾으러 다니지 마세요.<br />메일함까지 알아서 모입니다.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">뉴스와이어와 정책브리핑의 보도자료가 30분마다 들어오고, <strong>기자 메일함으로 온 보도자료</strong>도 자동으로 같은 함에 쌓입니다. 우리 매체 분야에 맞는 것만 추천 탭에 뜹니다.</p>
               <ul className="mt-7 space-y-3">
-                <Check dark>매체마다 섹션이 달라도 자동으로 맞춰 송고</Check>
-                <Check dark>원본을 고치면 사본에도 반영</Check>
-                <Check dark>본문 바이라인의 매체 이름까지 자동 변경</Check>
+                <Check>지메일 필터 한 번 설정하면 보도자료 메일만 자동 수집 (개인 메일은 제외)</Check>
+                <Check>보낸 기관·제목 정리, 첨부 사진은 본문에, 한글·PDF는 내려받기</Check>
+                <Check>같은 자료가 여러 기자에게 와도 하나로, 이미 쓴 자료는 “기사화됨” 표시</Check>
+                <Check>배포처 약관(하루 사용 건수)까지 화면에서 확인</Check>
               </ul>
+              <MailForwardVisual />
             </Reveal>
-            <Reveal delay={150}><SyndicateVisual /></Reveal>
+            <Reveal delay={150}><PressInboxMock /></Reveal>
           </div>
         </section>
 
@@ -280,6 +294,26 @@ export default function ProductHome() {
                 <p className="mt-3 text-[13.5px] text-[#5B616B]">반려할 때는 사유가 기자에게 그대로 전달됩니다.</p>
               </div>
             </Reveal>
+          </div>
+        </section>
+
+        {/* ─── 고객센터 ─── */}
+        <section id="support" className="scroll-mt-16">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
+            <Reveal>
+              <Eyebrow icon="headset" color="#EC4899">고객센터 내장</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>요청·공지·청구서까지<br />편집국 화면 안에서.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">
+                따로 된 회원사 사이트에 다시 로그인할 필요가 없습니다. 기사를 쓰던 화면의 “고객센터” 메뉴에서 바로 요청하고, 답변이 오면 메뉴에 숫자로 알려드립니다.
+              </p>
+              <ul className="mt-7 space-y-3">
+                <Check>업무요청: 유형 선택·파일 첨부, 접수 → 진행 → 완료 단계 확인</Check>
+                <Check>운영팀 공지·업데이트 소식을 뉴스룸 첫 화면에서</Check>
+                <Check>월별 청구서 PDF 저장, 세금계산서 담당자 정보 관리</Check>
+                <Check>기자는 본인 요청만, 청구서는 편집장 이상만 보도록 권한 분리</Check>
+              </ul>
+            </Reveal>
+            <Reveal delay={150}><SupportMock /></Reveal>
           </div>
         </section>
 
