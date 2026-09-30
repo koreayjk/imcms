@@ -17,9 +17,10 @@ type Props = {
   userName: string
   role: UserRole | null
   isSuper?: boolean
+  isStaff?: boolean
 }
 
-export default function TopBar({ outletName, groupName, outlets = [], siteUrl = '/', currentOutletId, userName, role, isSuper }: Props) {
+export default function TopBar({ outletName, groupName, outlets = [], siteUrl = '/', currentOutletId, userName, role, isSuper, isStaff }: Props) {
   const router = useRouter()
   const [switching, setSwitching] = useState(false)
 
@@ -81,6 +82,8 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
               홈페이지 <ExternalIcon />
             </a>
           </div>
+        ) : isStaff ? (
+          <span className="text-[15px] font-bold tracking-tight">IM 뉴스룸 운영</span>
         ) : (
           <span className="rounded bg-danger/10 px-2.5 py-1 text-[12px] text-danger">
             소속 매체가 없습니다. 이 계정으로 쓴 기사는 홈페이지에 표시되지 않습니다. {isSuper ? '매체 메뉴에서 매체를 만들거나 고르세요.' : '관리자에게 소속 지정을 요청하세요.'}
@@ -96,7 +99,7 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
 
       <div className="flex items-center gap-3 text-[13px]">
         <Link href="/account" className="font-semibold hover:underline" title="내 정보·이름 바꾸기">{userName}</Link>
-        {isSuper ? <span className="rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">총관리자</span> : role && <span className="rounded bg-line/70 px-1.5 py-0.5 text-[11px] text-muted">{ROLE_LABEL[role]}</span>}
+        {isSuper ? <span className="rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">총관리자</span> : isStaff ? <span className="rounded bg-[#2F6BF0] px-1.5 py-0.5 text-[11px] font-bold text-white">IM 뉴스룸 매니저</span> : role && <span className="rounded bg-line/70 px-1.5 py-0.5 text-[11px] text-muted">{ROLE_LABEL[role]}</span>}
         <button type="button" onClick={logout} className="text-[12px] text-muted hover:text-danger">
           로그아웃
         </button>

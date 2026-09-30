@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import type { UserRole } from '@/lib/types'
-import { BuildingIcon, HeadsetIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
+import { BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
 
-type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'group' | 'super' }
+type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'group' | 'outlets' | 'staff' | 'super' }
 
 const ITEMS: Item[] = [
+  { href: '/admin/dashboard', label: '대시보드', icon: <ChartIcon />, match: (p) => p.startsWith('/admin/dashboard'), minRole: 'staff' },
   { href: '/newsroom', label: '뉴스룸', icon: <NewsroomIcon />, match: (p) => p === '/newsroom' },
   { href: '/articles/new', label: '기사쓰기', icon: <WriteIcon />, match: (p) => p === '/articles/new' || p.endsWith('/edit') },
   { href: '/articles', label: '기사목록', icon: <ListIcon />, match: (p) => p === '/articles' || (/^\/articles\/[^/]+$/.test(p) && p !== '/articles/new') },
@@ -16,20 +17,22 @@ const ITEMS: Item[] = [
   { href: '/admin/home', label: '홈편집', icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'editor' },
   { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'editor' },
   { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
-  { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'group' },
+  { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
   { href: '/support', label: '고객센터', icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') },
-  { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'super' },
+  { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'staff' },
 ]
 
-type Props = { role: UserRole | null; isSuper?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number }
+type Props = { role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number }
 
-export default function Rail({ role, isSuper = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0 }: Props) {
+export default function Rail({ role, isSuper = false, isStaff = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0, leadCount = 0 }: Props) {
   const pathname = usePathname()
   // 편집장 메뉴는 편집장·발행인·총관리자, 그룹 메뉴는 발행인·총관리자, 운영 메뉴는 총관리자만
   const allowed = (i: Item) =>
     !i.minRole
     || (i.minRole === 'editor' && (role === 'editor' || role === 'admin' || isSuper))
     || (i.minRole === 'group' && isGroupAdmin)
+    || (i.minRole === 'outlets' && (isGroupAdmin || isStaff))
+    || (i.minRole === 'staff' && isStaff)
     || (i.minRole === 'super' && isSuper)
 
   return (
@@ -53,8 +56,13 @@ export default function Rail({ role, isSuper = false, isGroupAdmin = false, pend
                 {item.icon}
                 {item.label}
                 {item.href === '/support' && supportCount > 0 && (
-                  <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={isSuper ? `새 요청 ${supportCount}건` : `새 답변 ${supportCount}건`}>
+                  <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={isStaff ? `새 요청 ${supportCount}건` : `새 답변 ${supportCount}건`}>
                     {supportCount}
+                  </span>
+                )}
+                {item.href === '/admin/leads' && leadCount > 0 && (
+                  <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={`새 상담 ${leadCount}건`}>
+                    {leadCount}
                   </span>
                 )}
                 {item.href === '/admin/users' && pendingCount > 0 && (

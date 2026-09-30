@@ -3,8 +3,8 @@ import { getCmsContext } from '@/lib/cms'
 import NoticeForm from '@/components/cms/NoticeForm'
 
 export default async function EditNoticePage({ params }: { params: { id: string } }) {
-  const { supabase, isSuper } = await getCmsContext()
-  if (!isSuper) redirect('/support/notices')
+  const { supabase, isStaff } = await getCmsContext()
+  if (!isStaff) redirect('/support/notices')
   const { data } = await supabase.from('support_notices').select('*').eq('id', params.id).maybeSingle()
   if (!data) notFound()
   return (

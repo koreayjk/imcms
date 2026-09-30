@@ -9,7 +9,7 @@ import PrintButton from '@/components/cms/PrintButton'
 import { setInvoicePaid } from '../../actions'
 
 export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const { supabase, isSuper: isStaff } = await getCmsContext()
+  const { supabase, isSuper } = await getCmsContext()
   const { data: inv } = await supabase.from('invoices').select('*, outlet:outlets(name)').eq('id', params.id).maybeSingle()
   if (!inv) notFound()
   const { data: billing } = await supabase.from('outlet_billing').select('*').eq('outlet_id', inv.outlet_id).maybeSingle()
@@ -23,7 +23,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href="/support/invoices" className="text-[13px] text-muted hover:text-ink">← 청구서 목록</Link>
         <div className="flex gap-2">
-          {isStaff && (
+          {isSuper && (
             <form action={setInvoicePaid.bind(null, inv.id, inv.status !== 'paid')}>
               <PendingButton pending="…" className="btn-secondary bg-white">{inv.status === 'paid' ? '미납으로 되돌리기' : '납부 완료 처리'}</PendingButton>
             </form>

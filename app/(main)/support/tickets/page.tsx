@@ -6,24 +6,27 @@ import { TICKET_CATEGORIES, TICKET_STATUS, hasUnreadReply, type TicketCategory, 
 type Props = { searchParams: { tab?: string } }
 
 export default async function TicketsPage({ searchParams }: Props) {
-  const { supabase, isSuper: isStaff } = await getCmsContext()
-  const tab = ['open', 'unread'].includes(searchParams.tab ?? '') ? searchParams.tab : 'all'
+  const { supabase, user, isStaff } = await getCmsContext()
+  const tab = ['open', 'unread', 'mine'].includes(searchParams.tab ?? '') ? searchParams.tab : 'all'
 
   const { data } = await supabase
     .from('support_tickets')
-    .select('id, title, status, category, created_at, done_at, last_staff_reply_at, requester_read_at, requester:profiles!support_tickets_requester_id_fkey(full_name), outlet:outlets(name)')
+    .select('*, requester:profiles!support_tickets_requester_id_fkey(full_name), outlet:outlets(name)')
     .order('created_at', { ascending: false })
     .limit(300)
   const all = (data ?? []) as any[]
   const open = all.filter((t) => t.status !== 'done')
   // 운영팀: 아직 답하지 않은 요청 / 회원사: 아직 읽지 않은 답변
   const unread = isStaff ? all.filter((t) => t.status === 'received') : all.filter(hasUnreadReply)
-  const rows = tab === 'open' ? open : tab === 'unread' ? unread : all
+  // 운영팀: 내가 담당한 미완료 요청
+  const mine = all.filter((t) => t.assigned_to === user.id && t.status !== 'done')
+  const rows = tab === 'open' ? open : tab === 'unread' ? unread : tab === 'mine' ? mine : all
 
   const tabs = [
     { key: 'all', label: '전체', n: null },
     { key: 'open', label: '미완료', n: open.length },
     { key: 'unread', label: isStaff ? '새 요청' : '미확인 답변', n: unread.length },
+    ...(isStaff ? [{ key: 'mine', label: '내 담당', n: mine.length }] : []),
   ]
 
   return (

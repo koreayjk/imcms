@@ -3,8 +3,8 @@ import { getCmsContext } from '@/lib/cms'
 import SupportNav from '@/components/cms/SupportNav'
 
 export default async function SupportLayout({ children }: { children: React.ReactNode }) {
-  const { supabase, outletId, isEditorPlus, isSuper: isStaff } = await getCmsContext()
-  const canBilling = isEditorPlus && (isStaff || !!outletId)
+  const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
+  const canBilling = isStaff || (isEditorPlus && !!outletId)
 
   const { error: missing } = await supabase.from('support_tickets').select('id', { head: true, count: 'exact' }).limit(1)
   // 편집장인데 세금계산서 담당자가 비어 있으면 알린다 (NDsoft처럼 상단 띠)

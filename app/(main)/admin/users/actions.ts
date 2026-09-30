@@ -28,8 +28,16 @@ async function publisherOf(supabase: Awaited<ReturnType<typeof getCmsContext>>['
 export async function approveUser(id: string, form: FormData) {
   const { supabase, isSuper } = await groupContext()
   if (!isSuper) fail('가입 승인은 총관리자만 할 수 있습니다.')
-  const role = String(form.get('role') ?? 'reporter') as UserRole
+  const roleInput = String(form.get('role') ?? 'reporter')
   const outletId = String(form.get('outlet_id') ?? '') || null
+  // IM 뉴스룸 매니저: 매체에 속하지 않고 상담·업무요청을 처리한다
+  if (roleInput === 'staff') {
+    const { error } = await supabase.from('profiles').update({ approved: true, is_staff: true, role: 'reporter', outlet_id: null, publisher_id: null }).eq('id', id)
+    if (error) fail(/is_staff/.test(error.message) ? '매니저를 두려면 staff.sql을 실행해 주세요.' : `승인하지 못했습니다: ${error.message}`)
+    revalidatePath('/', 'layout')
+    return
+  }
+  const role = roleInput as UserRole
   if (!ROLES.includes(role)) fail('역할을 확인해 주세요.')
   if (!outletId) fail('소속 매체를 정해주세요.')
   const publisher_id = role === 'admin' ? await publisherOf(supabase, outletId) : null
@@ -95,4 +103,18 @@ export async function cancelInvite(id: string) {
   const { supabase } = await groupContext()
   await supabase.from('invitations').delete().eq('id', id).is('accepted_at', null)
   revalidatePath('/admin/users')
+}
+
+// 매니저 지정·해제 (총관리자만, DB에서도 막혀 있음)
+export async function setStaff(id: string, on: boolean) {
+  const { supabase, isSuper } = await groupContext()
+  if (!isSuper) fail('매니저 지정은 총관리자만 할 수 있습니다.')
+  const { error } = await supabase.from('profiles').update(on ? { is_staff: true, approved: true } : { is_staff: false }).eq('id', id)
+  if (error) fail(/is_staff/.test(error.message) ? '매니저를 두려면 staff.sql을 실행해 주세요.' : error.message)
+  revalidatePath('/', 'layout')
+}
+
+export async function appointStaff(form: FormData) {
+  const id = String(form.get('user_id') ?? '')
+  if (id) await setStaff(id, true)
 }

@@ -45,3 +45,6 @@ export const MailIcon = () => (
 export const HeadsetIcon = () => (
   <svg {...base}><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="13" width="4" height="6" rx="1.5" /><rect x="17" y="13" width="4" height="6" rx="1.5" /><path d="M19 19a3 3 0 0 1-3 3h-3" /></svg>
 )
+export const ChartIcon = () => (
+  <svg {...base}><path d="M4 20V10M10 20V4M16 20v-8M22 20H2" /></svg>
+)

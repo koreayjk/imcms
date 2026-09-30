@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime } from '@/lib/format'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
@@ -14,7 +15,9 @@ const CARDS: { status: ArticleStatus; tone: string; note: string }[] = [
 type Props = { searchParams: { tab?: string } }
 
 export default async function NewsroomPage({ searchParams }: Props) {
-  const { supabase, user, outletId, isEditorPlus } = await getCmsContext()
+  const { supabase, user, outletId, isEditorPlus, isStaff, isSuper } = await getCmsContext()
+  // 매체에 속하지 않은 매니저는 대시보드가 첫 화면
+  if (isStaff && !isSuper && !outletId) redirect('/admin/dashboard')
   const tab = (CARDS.find((c) => c.status === searchParams.tab)?.status ?? 'draft') as ArticleStatus
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

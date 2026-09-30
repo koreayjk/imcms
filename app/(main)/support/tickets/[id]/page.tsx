@@ -5,7 +5,7 @@ import { formatDateTime } from '@/lib/format'
 import { STAFF_NAME, TICKET_CATEGORIES, TICKET_STATUS, type TicketCategory, type TicketStatus } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import ReplyBox from '@/components/cms/ReplyBox'
-import { setTicketStatus } from '../../actions'
+import { setTicketAssignee, setTicketStatus } from '../../actions'
 
 type FileRow = { id: string; reply_id: string | null; path: string; name: string; size: number }
 
@@ -25,7 +25,7 @@ function Files({ files, urls }: { files: FileRow[]; urls: Map<string, string> })
 }
 
 export default async function TicketPage({ params }: { params: { id: string } }) {
-  const { supabase, isSuper: isStaff } = await getCmsContext()
+  const { supabase, isStaff } = await getCmsContext()
 
   const { data: t } = await supabase
     .from('support_tickets')
@@ -39,6 +39,8 @@ export default async function TicketPage({ params }: { params: { id: string } })
     supabase.from('support_files').select('id, reply_id, path, name, size').eq('ticket_id', t.id).order('created_at'),
   ])
   if (!isStaff) await supabase.rpc('mark_ticket_read', { t: t.id })
+  const { data: staffRows } = isStaff ? await supabase.from('profiles').select('id, full_name, is_super, is_staff') : { data: [] }
+  const staff = ((staffRows ?? []) as any[]).filter((p) => p.is_super || p.is_staff)
 
   const fileRows = (files ?? []) as FileRow[]
   const { data: signed } = fileRows.length
@@ -76,7 +78,19 @@ export default async function TicketPage({ params }: { params: { id: string } })
             )
           })}
         </div>
-        {isStaff && <p className="mt-2 text-[11.5px] text-muted">운영팀: 단계를 눌러 상태를 바꿀 수 있습니다</p>}
+        {isStaff && (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[12.5px]">
+            <span className="text-muted">단계를 눌러 상태를 바꿉니다 ·</span>
+            <form action={setTicketAssignee.bind(null, t.id)} className="flex items-center gap-1.5">
+              <label htmlFor="assignee" className="text-muted">담당</label>
+              <select id="assignee" name="assigned_to" defaultValue={t.assigned_to ?? ''} className="rounded border border-line bg-white px-2 py-1">
+                <option value="">미지정</option>
+                {staff.map((s: any) => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+              </select>
+              <PendingButton pending="…" className="rounded border border-line bg-white px-2 py-1 hover:border-ink">지정</PendingButton>
+            </form>
+          </div>
+        )}
       </header>
 
       <div className="whitespace-pre-line py-8 text-[15px] leading-[1.85]">{t.body}</div>

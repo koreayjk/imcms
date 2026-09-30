@@ -16,8 +16,8 @@ const LEGAL_KEYS: (keyof SiteLegal)[] = ['company', 'ceo', 'publisher', 'editor'
 const cut = (v: unknown, n: number) => String(v ?? '').trim().slice(0, n)
 
 export async function saveSiteSettings(outletId: string, p: SitePayload): Promise<{ error?: string; ok?: string }> {
-  const { supabase, isGroupAdmin } = await getCmsContext()
-  if (!isGroupAdmin) return { error: '발행인 또는 총관리자만 바꿀 수 있습니다.' }
+  const { supabase, isStaff } = await getCmsContext()
+  if (!isStaff) return { error: '홈페이지 설정은 IM 뉴스룸 운영팀이 합니다. 고객센터 업무요청으로 요청해 주세요.' }
 
   const name = cut(p.name, 80)
   if (!name) return { error: '매체 이름을 적어주세요.' }

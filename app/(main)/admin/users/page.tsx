@@ -4,7 +4,7 @@ import { formatDateTime } from '@/lib/format'
 import { ROLE_LABEL, type Profile, type UserRole } from '@/lib/types'
 import UserManager, { InviteForm, type OutletOption } from '@/components/UserManager'
 import PendingButton from '@/components/cms/PendingButton'
-import { approveUser, cancelInvite, rejectUser } from './actions'
+import { appointStaff, approveUser, cancelInvite, rejectUser, setStaff } from './actions'
 
 type AuthInfo = { id: string; email: string; provider: string; last_sign_in_at: string | null }
 
@@ -96,6 +96,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
                     <form action={approveUser.bind(null, u.id)} className="flex items-center gap-2">
                       <select name="role" defaultValue="reporter" aria-label="역할" className="rounded border border-line px-2 py-1.5 text-[13px]">
                         <option value="reporter">기자</option><option value="editor">편집장</option><option value="admin">발행인</option>
+                        <option value="staff">IM 뉴스룸 매니저</option>
                       </select>
                       <select name="outlet_id" defaultValue={outletId ?? ''} aria-label="매체" className="rounded border border-line px-2 py-1.5 text-[13px]">
                         <option value="">매체 선택</option>
@@ -113,6 +114,30 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
           ) : (
             <p className="rounded-lg border border-line bg-white px-5 py-5 text-center text-sm text-muted">승인을 기다리는 가입 신청이 없습니다. 초대한 사람은 가입하면 바로 승인됩니다.</p>
           )}
+        </section>
+      )}
+
+      {isSuper && (
+        <section className="rounded-lg border border-[#2F6BF0]/30 bg-[#2F6BF0]/5 p-5">
+          <h2 className="text-[15px] font-bold">IM 뉴스룸 매니저 <span className="text-[12.5px] font-normal text-muted">상담 신청·업무요청 처리, 공지, 고객사 개설, 대시보드·청구서 보기</span></h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {members.filter((u) => u.is_staff).map((u) => (
+              <li key={u.id} className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[13px] ring-1 ring-line">
+                <strong>{u.full_name}</strong><span className="text-muted">{info.get(u.id)?.email}</span>
+                <form action={setStaff.bind(null, u.id, false)}>
+                  <PendingButton pending="…" confirm={`${u.full_name}님을 매니저에서 해제할까요?`} className="text-[12px] text-muted underline underline-offset-2 hover:text-danger">해제</PendingButton>
+                </form>
+              </li>
+            ))}
+            {!members.some((u) => u.is_staff) && <li className="text-[13px] text-muted">아직 매니저가 없습니다. 매니저가 가입하면 승인 대기에서 “IM 뉴스룸 매니저”로 승인하거나, 아래에서 지정하세요.</li>}
+          </ul>
+          <form action={appointStaff} className="mt-3 flex gap-2">
+            <select name="user_id" defaultValue="" aria-label="매니저로 지정할 회원" className="rounded border border-line bg-white px-2 py-1.5 text-[13px]">
+              <option value="">회원 선택</option>
+              {members.filter((u) => !u.is_staff && !u.is_super).map((u) => <option key={u.id} value={u.id}>{u.full_name} {info.get(u.id)?.email ? `(${info.get(u.id)?.email})` : ''}</option>)}
+            </select>
+            <PendingButton pending="지정 중…" className="btn-secondary bg-white">매니저로 지정</PendingButton>
+          </form>
         </section>
       )}
 

@@ -21,6 +21,8 @@ export async function getCmsContext() {
   const legacy = profile && !('is_super' in profile)
   const isSuper = legacy ? role === 'admin' : !!profile?.is_super
   const isGroupAdmin = isSuper || (role === 'admin' && !!profile?.publisher_id)
+  // 운영팀 = 총관리자 + IM 뉴스룸 매니저 (상담·업무요청 처리, 대시보드)
+  const isStaff = isSuper || !!profile?.is_staff
 
   return {
     supabase,
@@ -30,6 +32,7 @@ export async function getCmsContext() {
     // 총관리자: 모든 그룹 / 발행인: 자기 그룹 / 편집장: 자기 매체
     isSuper,
     isGroupAdmin,
+    isStaff,
     publisherId: (profile?.publisher_id as string | null) ?? null,
     isEditorPlus: role === 'editor' || role === 'admin' || isSuper,
   }

@@ -5,8 +5,8 @@ import { SITES, type OutletSiteSettings } from '@/lib/sites'
 import SiteSettingsForm from '@/components/cms/SiteSettingsForm'
 
 export default async function SiteSettingsPage({ params }: { params: { id: string } }) {
-  const { supabase, isGroupAdmin } = await getCmsContext()
-  if (!isGroupAdmin) redirect('/newsroom')
+  const { supabase, isStaff } = await getCmsContext()
+  if (!isStaff) redirect('/admin/outlets')
 
   const [{ data: outlet }, { data: cats }] = await Promise.all([
     supabase.from('outlets').select('*').eq('id', params.id).maybeSingle(),

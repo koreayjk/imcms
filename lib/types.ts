@@ -11,6 +11,7 @@ export interface Profile {
   approved?: boolean
   // groups.sql: 총관리자 표시, 발행인의 그룹
   is_super?: boolean
+  is_staff?: boolean
   publisher_id?: string | null
 }
 

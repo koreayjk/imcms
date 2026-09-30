@@ -7,7 +7,15 @@ import { NOTICE_CATEGORIES, TICKET_CATEGORIES, TICKET_STATUS, invoiceTotals, typ
 
 const text = (form: FormData, k: string, max: number) => String(form.get(k) ?? '').trim().slice(0, max)
 
+// 운영팀(총관리자·매니저): 업무요청 상태, 공지
 async function staffContext() {
+  const ctx = await getCmsContext()
+  if (!ctx.isStaff) redirect('/support')
+  return ctx
+}
+
+// 청구서 발행·납부 처리는 총관리자만
+async function superContext() {
   const ctx = await getCmsContext()
   if (!ctx.isSuper) redirect('/support')
   return ctx
@@ -96,7 +104,7 @@ export async function saveBilling(outletId: string, _prev: FormState, form: Form
 
 // ── 청구서 ──
 export async function saveInvoice(_prev: FormState, form: FormData): Promise<FormState> {
-  const { supabase } = await staffContext()
+  const { supabase } = await superContext()
   const outlet_id = text(form, 'outlet_id', 40)
   const month = text(form, 'month', 7)
   if (!outlet_id) return { error: '매체를 고르세요.' }
@@ -124,7 +132,14 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
 }
 
 export async function setInvoicePaid(id: string, paid: boolean) {
-  const { supabase } = await staffContext()
+  const { supabase } = await superContext()
   await supabase.from('invoices').update({ status: paid ? 'paid' : 'unpaid', paid_at: paid ? new Date().toISOString() : null }).eq('id', id)
+  revalidatePath('/support', 'layout')
+}
+
+export async function setTicketAssignee(id: string, form: FormData) {
+  const { supabase } = await staffContext()
+  const assignee = String(form.get('assigned_to') ?? '') || null
+  await supabase.from('support_tickets').update({ assigned_to: assignee }).eq('id', id)
   revalidatePath('/support', 'layout')
 }

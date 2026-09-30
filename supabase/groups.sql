@@ -93,8 +93,7 @@ create policy "publishers_select" on publishers for select to authenticated usin
 drop policy if exists "publishers_insert" on publishers;
 create policy "publishers_insert" on publishers for insert to authenticated with check (public.is_super());
 drop policy if exists "publishers_update" on publishers;
-create policy "publishers_update" on publishers for update to authenticated
-  using (public.is_super() or (public.is_group_admin() and id = public.my_publisher()));
+create policy "publishers_update" on publishers for update to authenticated using (public.is_super());
 drop policy if exists "publishers_delete" on publishers;
 create policy "publishers_delete" on publishers for delete to authenticated using (public.is_super());
 
@@ -111,12 +110,10 @@ create policy "invitations_manage" on invitations for all to authenticated
 drop policy if exists "outlets_select" on outlets;
 create policy "outlets_select" on outlets for select to authenticated using (public.can_view_outlet(id));
 drop policy if exists "outlets_insert" on outlets;
-create policy "outlets_insert" on outlets for insert to authenticated
-  with check (public.is_super() or (public.is_group_admin() and publisher_id = public.my_publisher()));
+-- 매체 추가·홈페이지 설정은 IM 뉴스룸 운영팀이 한다 (발행인은 업무요청으로 요청)
+create policy "outlets_insert" on outlets for insert to authenticated with check (public.is_super());
 drop policy if exists "outlets_update" on outlets;
-create policy "outlets_update" on outlets for update to authenticated
-  using (public.is_super() or (public.is_group_admin() and publisher_id = public.my_publisher()))
-  with check (public.is_super() or (public.is_group_admin() and publisher_id = public.my_publisher()));
+create policy "outlets_update" on outlets for update to authenticated using (public.is_super()) with check (public.is_super());
 drop policy if exists "outlets_delete" on outlets;
 create policy "outlets_delete" on outlets for delete to authenticated using (public.is_super());
 
@@ -327,8 +324,9 @@ begin
 end $$;
 
 -- ───────── 8. 고객센터: 운영팀 = 총관리자, 매체 관리자 = 발행인·편집장 ─────────
+-- 운영팀 = 총관리자 + IM 뉴스룸 매니저(staff.sql의 is_staff 칸. 칸이 없어도 동작하도록 jsonb로 읽는다)
 create or replace function public.is_staff() returns boolean language sql stable security definer set search_path = public as $$
-  select public.is_super();
+  select public.is_super() or coalesce((select (to_jsonb(p) ->> 'is_staff')::boolean from profiles p where p.id = auth.uid()), false);
 $$;
 create or replace function public.is_outlet_editor(o uuid) returns boolean language sql stable security definer set search_path = public as $$
   select public.can_manage_outlet(o);
