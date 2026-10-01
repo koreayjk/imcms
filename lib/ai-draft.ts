@@ -77,17 +77,22 @@ function userPrompt(input: DraftInput) {
 
 function parseDraft(text: string | undefined): AiDraft {
   if (!text) throw new AiDraftError('AI 응답이 비어 있습니다. 다시 시도해 주세요.')
+  // 가끔 ```json … ``` 으로 감싸거나 앞뒤에 말을 붙여 오므로 { … } 부분만 읽는다
+  const body = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+  const from = body.indexOf('{')
+  const to = body.lastIndexOf('}')
   try {
-    const d = JSON.parse(text) as AiDraft
-    if (!d.title || !d.paragraphs?.length) throw new Error('empty')
-    return { title: d.title, subtitle: d.subtitle ?? '', paragraphs: d.paragraphs, review_notes: d.review_notes ?? [] }
+    const d = JSON.parse(from >= 0 && to > from ? body.slice(from, to + 1) : body) as AiDraft
+    const paragraphs = (d.paragraphs ?? []).map((x) => String(x).trim()).filter(Boolean)
+    if (!d.title || !paragraphs.length) throw new Error('empty')
+    return { title: String(d.title), subtitle: String(d.subtitle ?? ''), paragraphs, review_notes: (d.review_notes ?? []).map(String) }
   } catch {
     throw new AiDraftError('AI 응답을 읽지 못했습니다. 다시 시도해 주세요.')
   }
 }
 
-async function withAnthropic(model: AiModel, input: DraftInput) {
-  const client = new Anthropic({ timeout: 50_000, maxRetries: 1 })
+async function withAnthropic(model: AiModel, input: DraftInput, budgetMs = 50_000) {
+  const client = new Anthropic({ timeout: budgetMs, maxRetries: budgetMs >= 40_000 ? 1 : 0 })
   let response: Anthropic.Beta.BetaMessage
   try {
     response = await client.beta.messages.create({
@@ -115,21 +120,29 @@ async function withAnthropic(model: AiModel, input: DraftInput) {
 }
 
 // 제미나이: 공식 REST generateContent (구조화 출력 = generationConfig.responseFormat.text)
-// 503(구글 쪽 과부하)·500·429는 잠깐 기다렸다 다시 보낸다. 전체 50초 안에서만.
+// - 503(구글 쪽 과부하)·500·429는 잠깐 기다렸다 다시 보낸다
+// - 답이 중간에 막히거나(RECITATION 등) 형식이 깨지면 한 번 더 쓰게 한다
+// 모두 서버리스 시간 제한 안(50초)에서만
 const GEMINI_RETRY = [2_000, 5_000]
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-async function withGemini(model: AiModel, input: DraftInput) {
-  const deadline = Date.now() + 50_000
-  const payload = JSON.stringify({
+// 웹에 이미 있는 글과 너무 비슷하면 제미나이가 출력을 멈춘다(RECITATION). 다시 쓸 때 덧붙이는 지시
+const REWRITE_HINT = '\n\n주의: 원문 문장을 길게 그대로 옮기지 말고, 사실은 그대로 두되 문장은 기사체로 새로 쓰세요. 인용문은 핵심 한두 문장만 짧게 쓰세요.'
+
+function geminiPayload(input: DraftInput, hint = '') {
+  return JSON.stringify({
     system_instruction: { parts: [{ text: SYSTEM }] },
-    contents: [{ role: 'user', parts: [{ text: userPrompt(input) }] }],
+    contents: [{ role: 'user', parts: [{ text: userPrompt(input) + hint }] }],
     generationConfig: {
       // REST에서는 enum 이름(대문자)으로 보내야 한다 (API 참조 문서의 ThinkingLevel·MimeType)
       thinkingConfig: { thinkingLevel: 'LOW' },
+      maxOutputTokens: 16384,
       responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: GEMINI_SCHEMA } },
     },
   })
+}
+
+async function geminiRequest(model: AiModel, payload: string, deadline: number) {
   let res: Response
   let body: any
   for (let attempt = 0; ; attempt++) {
@@ -158,31 +171,49 @@ async function withGemini(model: AiModel, input: DraftInput) {
   }
   if (!res.ok) {
     if (res.status === 400 && /API key/i.test(body?.error?.message ?? '')) throw new AiDraftError('제미나이 키가 올바르지 않습니다. GEMINI_API_KEY를 확인해 주세요.')
-    if (res.status === 429) throw new AiDraftError('제미나이 요청이 몰려 잠시 제한되었습니다. 1분 뒤 다시 시도해 주세요.')
-    if (res.status === 503 || res.status === 500) throw new AiDraftError('구글 제미나이 서버가 지금 붐빕니다(일시적). 몇 분 뒤 다시 시도해 주세요.')
+    if (res.status === 429) throw new AiDraftError('제미나이 요청이 몰려 잠시 제한되었습니다(429). 1분 뒤 다시 시도해 주세요.')
+    if (res.status === 503 || res.status === 500) throw new AiDraftError(`구글 제미나이 서버가 지금 붐빕니다(${res.status}, 일시적). 몇 분 뒤 다시 시도해 주세요.`)
     throw new AiDraftError(`제미나이 요청이 실패했습니다 (${res.status}${body?.error?.message ? `: ${String(body.error.message).slice(0, 120)}` : ''}).`)
   }
-  const cand = body?.candidates?.[0]
-  if (cand?.finishReason === 'MAX_TOKENS') throw new AiDraftError('보도자료가 너무 길어 초안이 중간에 끊겼습니다.')
-  if (cand?.finishReason && !['STOP', 'FINISH_REASON_UNSPECIFIED'].includes(cand.finishReason)) {
-    throw new AiDraftError(`제미나이가 이 보도자료의 기사화를 멈췄습니다 (${cand.finishReason}).`)
-  }
-  // 생각(thought) 부분은 빼고 답만
-  const text = (cand?.content?.parts ?? []).filter((p: any) => !p.thought && typeof p.text === 'string').map((p: any) => p.text).join('')
-  const u = body?.usageMetadata ?? {}
-  return {
-    draft: parseDraft(text),
-    inputTokens: Number(u.promptTokenCount ?? 0),
-    outputTokens: Number(u.candidatesTokenCount ?? 0) + Number(u.thoughtsTokenCount ?? 0),
+  return body
+}
+
+async function withGemini(model: AiModel, input: DraftInput, budgetMs = 50_000) {
+  const deadline = Date.now() + budgetMs
+  let inputTokens = 0
+  let outputTokens = 0
+  for (let attempt = 0; ; attempt++) {
+    const body = await geminiRequest(model, geminiPayload(input, attempt ? REWRITE_HINT : ''), deadline)
+    const u = body?.usageMetadata ?? {}
+    inputTokens += Number(u.promptTokenCount ?? 0)
+    outputTokens += Number(u.candidatesTokenCount ?? 0) + Number(u.thoughtsTokenCount ?? 0)
+    const cand = body?.candidates?.[0]
+    const reason: string | undefined = cand?.finishReason ?? body?.promptFeedback?.blockReason
+    // 생각(thought) 부분은 빼고 답만
+    const text = (cand?.content?.parts ?? []).filter((p: any) => !p.thought && typeof p.text === 'string').map((p: any) => p.text).join('')
+    try {
+      if (reason === 'MAX_TOKENS') throw new AiDraftError('보도자료가 너무 길어 초안이 중간에 끊겼습니다(MAX_TOKENS).')
+      if (reason && !['STOP', 'FINISH_REASON_UNSPECIFIED'].includes(reason)) {
+        throw new AiDraftError(reason === 'RECITATION'
+          ? '제미나이가 원문과 너무 비슷하다며 쓰기를 멈췄습니다(RECITATION).'
+          : `제미나이가 이 보도자료의 기사화를 멈췄습니다 (${reason}).`)
+      }
+      return { draft: parseDraft(text), inputTokens, outputTokens }
+    } catch (e) {
+      // 한 번 더 쓸 시간(약 20초)이 남아 있으면 다시 쓰게 한다
+      if (attempt === 0 && Date.now() + 20_000 < deadline) continue
+      throw e
+    }
   }
 }
 
-export async function draftWithModel(modelId: string, input: DraftInput): Promise<DraftResult> {
+// budgetMs: 이 모델에 쓸 수 있는 최대 시간 (서버리스 60초 제한 안에서 나눠 쓴다)
+export async function draftWithModel(modelId: string, input: DraftInput, budgetMs = 50_000): Promise<DraftResult> {
   const model = AI_MODELS.find((m) => m.id === modelId)
   if (!model) throw new AiDraftError('알 수 없는 AI 모델입니다.')
   if (!providerReady(model.provider)) throw new AiDraftError(`${model.label}을(를) 쓰려면 ${KEY[model.provider]}를 설정해야 합니다.`)
   const started = Date.now()
-  const r = model.provider === 'gemini' ? await withGemini(model, input) : await withAnthropic(model, input)
+  const r = model.provider === 'gemini' ? await withGemini(model, input, budgetMs) : await withAnthropic(model, input, budgetMs)
   const costUsd = (r.inputTokens * model.input + r.outputTokens * model.output) / 1_000_000
   return { ...r, model, ms: Date.now() - started, costUsd }
 }
@@ -190,5 +221,17 @@ export async function draftWithModel(modelId: string, input: DraftInput): Promis
 export async function draftFromPressRelease(input: DraftInput): Promise<AiDraft> {
   const model = activeModel()
   if (!model) throw new AiDraftError('AI 기능이 아직 설정되지 않았습니다. 관리자에게 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY) 설정을 요청하세요.')
-  return (await draftWithModel(model.id, input)).draft
+  // 제미나이를 쓰고 클로드 키도 있으면: 제미나이 30초 안에 못 쓰면 남은 시간에 클로드로 대신 쓴다
+  const canFallback = model.provider === 'gemini' && providerReady('anthropic')
+  const started = Date.now()
+  try {
+    return (await draftWithModel(model.id, input, canFallback ? 30_000 : 50_000)).draft
+  } catch (e) {
+    // 제미나이가 실패하면(과부하·출력 중단 등) 클로드 키가 있을 때 클로드로 대신 쓴다. 키 오류는 그대로 알린다
+    const keyError = e instanceof AiDraftError && /키가 올바르지/.test(e.message)
+    const left = 52_000 - (Date.now() - started)
+    if (!canFallback || keyError || left < 15_000) throw e
+    console.warn(`[ai-draft] 제미나이 실패 → 클로드로 대신 작성: ${e instanceof Error ? e.message : e}`)
+    return (await draftWithModel('claude-sonnet-5-5', input, left)).draft
+  }
 }
