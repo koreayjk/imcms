@@ -141,6 +141,55 @@ export default function AiCompare({ models }: { models: Model[] }) {
         {error && <p role="alert" className="mt-2 text-[13px] text-danger">{error}</p>}
       </section>
 
+      <section className="rounded-lg border border-line bg-white p-5">
+        <h2 className="text-[15px] font-bold">다른 기자에게 검토받기</h2>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+          링크를 보내면 로그인 없이 초안을 보고 자료마다 가장 좋은 초안을 골라 의견을 남길 수 있습니다. 결과는 이 화면 맨 위 “받은 검토”에 모입니다. 링크는 30일 동안 쓸 수 있습니다.
+        </p>
+        {busy ? (
+          <p className="mt-3 rounded-md bg-[#F8F9FA] px-3 py-2.5 text-[13px] text-muted">비교가 끝나면 링크를 만들 수 있습니다.</p>
+        ) : !run || finished === 0 ? (
+          <p className="mt-3 rounded-md bg-[#F8F9FA] px-3 py-2.5 text-[13px] leading-relaxed text-muted">
+            이 브라우저에 비교 결과가 없습니다. 비교 결과는 비교를 실행한 컴퓨터·브라우저에만 남습니다.
+            그 브라우저에서 이 화면을 열거나, 위에서 비교를 한 번 더 실행하면 바로 링크를 만들 수 있습니다.
+          </p>
+        ) : (
+          <>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <input
+                value={shareTitle}
+                onChange={(e) => setShareTitle(e.target.value)}
+                maxLength={80}
+                placeholder={`제목 (예: AI 초안 비교 ${new Date(run!.at).toLocaleDateString('ko-KR')})`}
+                className="w-full rounded-md border border-line px-3 py-2 text-[13.5px] outline-none focus:border-ink sm:w-auto sm:min-w-[260px] sm:flex-1"
+              />
+              <label className="flex items-center gap-2 text-[13px]">
+                <input type="checkbox" checked={blind} onChange={(e) => setBlind(e.target.checked)} />
+                AI 이름 가리기(블라인드)
+              </label>
+              <button type="button" onClick={share} disabled={sharing} className="btn-publish px-5">
+                {sharing ? '만드는 중…' : '검토 링크 만들기'}
+              </button>
+            </div>
+            {blind && <p className="mt-1.5 text-[11.5px] text-muted">블라인드: 초안이 A·B·C로만 보이고 자료마다 순서가 섞입니다. 시간·비용도 가립니다. 검토를 보낸 뒤에 공개됩니다.</p>}
+            {shareError && <p role="alert" className="mt-2 text-[13px] text-danger">{shareError}</p>}
+            {shareUrl && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-published/5 p-3">
+                <input readOnly value={shareUrl} onFocus={(e) => e.target.select()} className="min-w-0 flex-1 rounded-md border border-line bg-white px-3 py-2 text-[13px]" />
+                <button
+                  type="button"
+                  onClick={async () => { try { await navigator.clipboard.writeText(shareUrl); setCopied(true) } catch {} }}
+                  className="rounded-lg border border-published px-4 py-2 text-[13px] font-semibold text-published"
+                >
+                  {copied ? '복사됨 ✓' : '링크 복사'}
+                </button>
+                <a href={shareUrl} target="_blank" rel="noreferrer" className="text-[13px] text-review underline underline-offset-2">미리 보기</a>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
       {run && (
         <>
           <section className="overflow-x-auto rounded-lg border border-line bg-white">
@@ -175,45 +224,6 @@ export default function AiCompare({ models }: { models: Model[] }) {
             </p>
           </section>
 
-          {!busy && finished > 0 && (
-            <section className="rounded-lg border border-line bg-white p-5">
-              <h2 className="text-[15px] font-bold">다른 기자에게 검토받기</h2>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-                링크를 보내면 로그인 없이 초안을 보고 자료마다 가장 좋은 초안을 골라 의견을 남길 수 있습니다. 결과는 아래 “받은 검토”에 모입니다. 링크는 30일 동안 쓸 수 있습니다.
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <input
-                  value={shareTitle}
-                  onChange={(e) => setShareTitle(e.target.value)}
-                  maxLength={80}
-                  placeholder={`제목 (예: AI 초안 비교 ${new Date(run.at).toLocaleDateString('ko-KR')})`}
-                  className="min-w-[260px] flex-1 rounded-md border border-line px-3 py-2 text-[13.5px] outline-none focus:border-ink"
-                />
-                <label className="flex items-center gap-2 text-[13px]">
-                  <input type="checkbox" checked={blind} onChange={(e) => setBlind(e.target.checked)} />
-                  AI 이름 가리기(블라인드)
-                </label>
-                <button type="button" onClick={share} disabled={sharing} className="btn-publish px-5">
-                  {sharing ? '만드는 중…' : '검토 링크 만들기'}
-                </button>
-              </div>
-              {blind && <p className="mt-1.5 text-[11.5px] text-muted">블라인드: 초안이 A·B·C로만 보이고 자료마다 순서가 섞입니다. 시간·비용도 가립니다. 검토를 보낸 뒤에 공개됩니다.</p>}
-              {shareError && <p role="alert" className="mt-2 text-[13px] text-danger">{shareError}</p>}
-              {shareUrl && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-published/5 p-3">
-                  <input readOnly value={shareUrl} onFocus={(e) => e.target.select()} className="min-w-0 flex-1 rounded-md border border-line bg-white px-3 py-2 text-[13px]" />
-                  <button
-                    type="button"
-                    onClick={async () => { try { await navigator.clipboard.writeText(shareUrl); setCopied(true) } catch {} }}
-                    className="rounded-lg border border-published px-4 py-2 text-[13px] font-semibold text-published"
-                  >
-                    {copied ? '복사됨 ✓' : '링크 복사'}
-                  </button>
-                  <a href={shareUrl} target="_blank" rel="noreferrer" className="text-[13px] text-review underline underline-offset-2">미리 보기</a>
-                </div>
-              )}
-            </section>
-          )}
 
           <div className="space-y-4">
             {run.releases.map((r, idx) => (
