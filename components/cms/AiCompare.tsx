@@ -130,19 +130,27 @@ export default function AiCompare({ models }: { models: Model[] }) {
     await runJobs(releases.flatMap((r) => picked.map((m) => ({ r, m }))))
   }
 
-  // 3개씩 동시에
+  // 클로드는 3개씩 동시에, 제미나이는 사용 한도(분당 요청 수)가 빡빡해 1개씩 차례로
   async function runJobs(jobs: { r: CompareRelease; m: string }[]) {
     setBusy(true)
-    let i = 0
-    const worker = async () => {
-      while (i < jobs.length) {
-        const { r, m } = jobs[i++]
-        setRun((prev) => prev && { ...prev, results: { ...prev.results, [key(r.id, m)]: 'running' } })
-        const res = await runDraft(m, r).catch((e) => ({ ok: false as const, error: e instanceof Error ? e.message : '실패' }))
-        setRun((prev) => prev && { ...prev, results: { ...prev.results, [key(r.id, m)]: res } })
+    const pool = async (list: typeof jobs, workers: number, gapMs: number) => {
+      let i = 0
+      const worker = async () => {
+        while (i < list.length) {
+          const { r, m } = list[i++]
+          setRun((prev) => prev && { ...prev, results: { ...prev.results, [key(r.id, m)]: 'running' } })
+          const res = await runDraft(m, r).catch((e) => ({ ok: false as const, error: e instanceof Error ? e.message : '실패' }))
+          setRun((prev) => prev && { ...prev, results: { ...prev.results, [key(r.id, m)]: res } })
+          if (gapMs && i < list.length) await new Promise((ok) => setTimeout(ok, gapMs))
+        }
       }
+      await Promise.all(Array.from({ length: workers }, worker))
     }
-    await Promise.all([worker(), worker(), worker()])
+    const isGemini = (m: string) => m.startsWith('gemini')
+    await Promise.all([
+      pool(jobs.filter((j) => !isGemini(j.m)), 3, 0),
+      pool(jobs.filter((j) => isGemini(j.m)), 1, 1500),
+    ])
     setBusy(false)
   }
 

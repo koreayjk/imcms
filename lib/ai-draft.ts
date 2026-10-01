@@ -126,6 +126,13 @@ async function withAnthropic(model: AiModel, input: DraftInput, budgetMs = 50_00
 const GEMINI_RETRY = [2_000, 5_000]
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+// 구글 오류의 RetryInfo.retryDelay ("37s", "1.5s") → 밀리초. 너무 길면(20초 넘게) 기다리지 않는다
+function retryDelayMs(body: any): number {
+  const info = (body?.error?.details ?? []).find((d: any) => String(d?.['@type'] ?? '').endsWith('RetryInfo'))
+  const sec = parseFloat(String(info?.retryDelay ?? ''))
+  return Number.isFinite(sec) && sec > 0 && sec <= 20 ? Math.ceil(sec * 1000) : 0
+}
+
 // 웹에 이미 있는 글과 너무 비슷하면 제미나이가 출력을 멈춘다(RECITATION). 다시 쓸 때 덧붙이는 지시
 const REWRITE_HINT = '\n\n주의: 원문 문장을 길게 그대로 옮기지 말고, 사실은 그대로 두되 문장은 기사체로 새로 쓰세요. 인용문은 핵심 한두 문장만 짧게 쓰세요.'
 
@@ -164,14 +171,23 @@ async function geminiRequest(model: AiModel, payload: string, deadline: number) 
     }
     body = await res.json().catch(() => null)
     const retryable = res.status === 503 || res.status === 500 || res.status === 429
-    const wait = GEMINI_RETRY[attempt]
+    // 429면 구글이 알려 준 대기 시간(RetryInfo.retryDelay, 예: "37s")을 따른다
+    const asked = res.status === 429 ? retryDelayMs(body) : 0
+    const wait = asked ? Math.max(asked, GEMINI_RETRY[attempt] ?? 0) : GEMINI_RETRY[attempt]
     // 다시 보낼 시간(대기 + 응답 약 15초)이 남아 있을 때만
-    if (!retryable || wait === undefined || Date.now() + wait + 15_000 > deadline) break
+    if (!retryable || attempt >= GEMINI_RETRY.length || wait === undefined || Date.now() + wait + 15_000 > deadline) break
     await sleep(wait + Math.floor(Math.random() * 500))
   }
   if (!res.ok) {
-    if (res.status === 400 && /API key/i.test(body?.error?.message ?? '')) throw new AiDraftError('제미나이 키가 올바르지 않습니다. GEMINI_API_KEY를 확인해 주세요.')
-    if (res.status === 429) throw new AiDraftError('제미나이 요청이 몰려 잠시 제한되었습니다(429). 1분 뒤 다시 시도해 주세요.')
+    const msg = String(body?.error?.message ?? '')
+    if (res.status === 400 && /API key/i.test(msg)) throw new AiDraftError('제미나이 키가 올바르지 않습니다. GEMINI_API_KEY를 확인해 주세요.')
+    if (res.status === 429) {
+      // 무료 등급 한도면 결제(유료 등급) 연결이 필요하다
+      if (/free.?tier|free_tier/i.test(msg) || /free.?tier/i.test(JSON.stringify(body?.error?.details ?? ''))) {
+        throw new AiDraftError('제미나이 무료 등급 한도를 넘었습니다(429). Google AI Studio에서 이 키의 프로젝트에 결제를 연결(유료 등급)해야 합니다.')
+      }
+      throw new AiDraftError(`제미나이 사용 한도를 넘었습니다(429)${msg ? `: ${msg.slice(0, 160)}` : ''}`)
+    }
     if (res.status === 503 || res.status === 500) throw new AiDraftError(`구글 제미나이 서버가 지금 붐빕니다(${res.status}, 일시적). 몇 분 뒤 다시 시도해 주세요.`)
     throw new AiDraftError(`제미나이 요청이 실패했습니다 (${res.status}${body?.error?.message ? `: ${String(body.error.message).slice(0, 120)}` : ''}).`)
   }
