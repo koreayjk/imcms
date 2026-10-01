@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createShare, prepareReleases, runDraft, type CompareRelease, type CompareResult } from '@/app/(main)/admin/ai-compare/actions'
+import { DOC_ACCEPT, extractDocText, guessTitle } from '@/lib/doc-extract'
 
 type Model = { id: string; label: string; input: number; output: number; ready: boolean; note?: string }
 type Run = { releases: CompareRelease[]; models: string[]; results: Record<string, CompareResult | 'running'>; at: string }
@@ -9,6 +10,8 @@ type Run = { releases: CompareRelease[]; models: string[]; results: Record<strin
 const WON = 1400
 const won = (usd: number) => `${Math.round(usd * WON).toLocaleString()}원`
 const STORE = 'im-ai-compare-last'
+const CUSTOM_STORE = 'im-ai-compare-custom'
+const CUSTOM_SOURCE = '직접 올린 자료'
 const key = (r: string, m: string) => `${r}|${m}`
 
 export default function AiCompare({ models }: { models: Model[] }) {
@@ -23,11 +26,51 @@ export default function AiCompare({ models }: { models: Model[] }) {
   const [shareUrl, setShareUrl] = useState('')
   const [shareError, setShareError] = useState('')
   const [copied, setCopied] = useState(false)
+  // 비교할 자료: 최근 보도자료 10건 + 직접 올린 파일·붙여넣은 글
+  const [includeRecent, setIncludeRecent] = useState(true)
+  const [custom, setCustom] = useState<CompareRelease[]>([])
+  const [reading, setReading] = useState(false)
+  const [fileError, setFileError] = useState('')
+  const [pasteOpen, setPasteOpen] = useState(false)
+  const [pasteText, setPasteText] = useState('')
 
   // 지난 비교 결과는 이 브라우저에만 남겨 둔다
   useEffect(() => {
     try { const s = localStorage.getItem(STORE); if (s) setRun(JSON.parse(s)) } catch {}
+    try { const c = localStorage.getItem(CUSTOM_STORE); if (c) setCustom(JSON.parse(c)) } catch {}
   }, [])
+  useEffect(() => {
+    try { localStorage.setItem(CUSTOM_STORE, JSON.stringify(custom)) } catch {}
+  }, [custom])
+
+  // 워드·텍스트 파일은 이 브라우저에서 글자만 뽑는다 (사진이 든 큰 파일도 서버로 보내지 않는다)
+  async function addFiles(files: FileList | null) {
+    if (!files?.length) return
+    setFileError('')
+    setReading(true)
+    const added: CompareRelease[] = []
+    const errors: string[] = []
+    for (const f of Array.from(files)) {
+      try {
+        const text = await extractDocText(f)
+        added.push({ id: `file-${Date.now()}-${added.length}`, title: guessTitle(text, f.name), source: CUSTOM_SOURCE, text: text.slice(0, 12000) })
+      } catch (e) {
+        errors.push(`${f.name}: ${e instanceof Error ? e.message : '읽지 못했습니다'}`)
+      }
+    }
+    setCustom((prev) => [...prev, ...added])
+    setFileError(errors.join('\n'))
+    setReading(false)
+  }
+
+  function addPasted() {
+    const text = pasteText.trim()
+    if (text.length < 50) { setFileError('붙여넣은 글이 너무 짧습니다. 보도자료 전문을 붙여넣어 주세요.'); return }
+    setCustom((prev) => [...prev, { id: `paste-${Date.now()}`, title: guessTitle(text, '붙여넣은 보도자료'), source: CUSTOM_SOURCE, text: text.slice(0, 12000) }])
+    setPasteText('')
+    setPasteOpen(false)
+    setFileError('')
+  }
   useEffect(() => {
     if (!run || busy) return
     try { localStorage.setItem(STORE, JSON.stringify(run)) } catch {}
@@ -35,23 +78,29 @@ export default function AiCompare({ models }: { models: Model[] }) {
 
   const ready = models.filter((m) => m.ready)
   // 대략 예상 비용: 보도자료 1건 = 입력 4천·출력 3천 토큰
+  const releaseCount = custom.length + (includeRecent ? 10 : 0)
   const estimate = picked.reduce((a, id) => {
     const m = models.find((x) => x.id === id)!
-    return a + 10 * (4000 * m.input + 3000 * m.output) / 1e6
+    return a + releaseCount * (4000 * m.input + 3000 * m.output) / 1e6
   }, 0)
 
   async function start() {
     setError('')
     setBusy(true)
-    const prep = await prepareReleases(10)
-    if (prep.error || !prep.releases?.length) {
-      setError(prep.error ?? '비교할 보도자료가 없습니다. 보도자료함을 한 번 열어 자료를 모아 주세요.')
+    let releases = [...custom]
+    if (includeRecent) {
+      const prep = await prepareReleases(10)
+      if (prep.error && !custom.length) { setError(prep.error); setBusy(false); return }
+      releases = [...releases, ...(prep.releases ?? [])]
+    }
+    if (!releases.length) {
+      setError('비교할 자료가 없습니다. 파일을 올리거나 “최근 보도자료 10건”을 켜 주세요.')
       setBusy(false)
       return
     }
-    const next: Run = { releases: prep.releases, models: picked, results: {}, at: new Date().toISOString() }
+    const next: Run = { releases, models: picked, results: {}, at: new Date().toISOString() }
     setRun(next)
-    await runJobs(prep.releases.flatMap((r) => picked.map((m) => ({ r, m }))))
+    await runJobs(releases.flatMap((r) => picked.map((m) => ({ r, m }))))
   }
 
   // 3개씩 동시에
@@ -126,9 +175,51 @@ export default function AiCompare({ models }: { models: Model[] }) {
             </label>
           ))}
         </div>
+        <h2 className="mt-6 text-[15px] font-bold">비교할 자료</h2>
+        <div className="mt-3 space-y-3">
+          <label className="flex items-center gap-2 text-[13.5px]">
+            <input type="checkbox" checked={includeRecent} disabled={busy} onChange={(e) => setIncludeRecent(e.target.checked)} />
+            보도자료함의 최근 보도자료 10건
+          </label>
+          <div className="rounded-lg border border-dashed border-line p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <strong className="text-[13.5px]">내 자료 {custom.length}건</strong>
+              <label className={`cursor-pointer rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-semibold hover:border-ink ${busy || reading ? 'pointer-events-none opacity-50' : ''}`}>
+                {reading ? '읽는 중…' : '파일 올리기 (.doc .docx .txt)'}
+                <input type="file" accept={DOC_ACCEPT} multiple className="sr-only" onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} />
+              </label>
+              <button type="button" disabled={busy} onClick={() => setPasteOpen(!pasteOpen)} className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] hover:border-ink">
+                {pasteOpen ? '붙여넣기 닫기' : '글 붙여넣기'}
+              </button>
+              {custom.length > 0 && !busy && (
+                <button type="button" onClick={() => setCustom([])} className="ml-auto text-[12px] text-muted underline underline-offset-2 hover:text-danger">모두 빼기</button>
+              )}
+            </div>
+            <p className="mt-1.5 text-[11.5px] text-muted">파일은 서버로 보내지 않고 이 브라우저에서 글자만 읽어 비교에 씁니다. 한글(.hwp)은 한글에서 .docx로 저장해 올려 주세요.</p>
+            {pasteOpen && (
+              <div className="mt-2 space-y-2">
+                <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={6} placeholder="보도자료 전문을 붙여넣으세요. 첫 줄을 제목으로 씁니다." className="w-full rounded-md border border-line px-3 py-2 text-[13px] outline-none focus:border-ink" />
+                <button type="button" onClick={addPasted} className="btn-secondary px-4 py-1.5 text-[13px]">내 자료에 추가</button>
+              </div>
+            )}
+            {fileError && <p role="alert" className="mt-2 whitespace-pre-line text-[12.5px] text-danger">{fileError}</p>}
+            {custom.length > 0 && (
+              <ul className="mt-2 divide-y divide-line rounded-md border border-line bg-white">
+                {custom.map((c) => (
+                  <li key={c.id} className="flex items-center gap-3 px-3 py-2 text-[13px]">
+                    <span className="min-w-0 flex-1 truncate">{c.title}</span>
+                    <span className="shrink-0 text-[11.5px] tabular-nums text-muted">{c.text.length.toLocaleString()}자</span>
+                    {!busy && <button type="button" onClick={() => setCustom(custom.filter((x) => x.id !== c.id))} className="shrink-0 text-[12px] text-muted hover:text-danger" aria-label={`${c.title} 빼기`}>빼기</button>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={start} disabled={busy || !picked.length} className="btn-publish px-5">
-            {busy ? `비교 중… ${finished}/${total}` : '최근 보도자료 10건으로 비교 시작'}
+          <button type="button" onClick={start} disabled={busy || reading || !picked.length || !releaseCount} className="btn-publish px-5">
+            {busy ? `비교 중… ${finished}/${total}` : `비교 시작 (자료 ${releaseCount}건 × 모델 ${picked.length}개)`}
           </button>
           {!busy && failedJobs.length > 0 && (
             <button type="button" onClick={() => { setError(''); runJobs(failedJobs) }} className="rounded-lg border border-line px-4 py-2 text-[13.5px] font-semibold hover:border-ink">
