@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createShare, prepareReleases, runDraft, type CompareRelease, type CompareResult } from '@/app/(main)/admin/ai-compare/actions'
 import { DOC_ACCEPT, extractDocText, guessTitle } from '@/lib/doc-extract'
+import { AI_TEST_SET, AI_TEST_SET_VERSION } from '@/lib/ai-test-set'
 
 type Model = { id: string; label: string; input: number; output: number; ready: boolean; note?: string }
 type Run = { releases: CompareRelease[]; models: string[]; results: Record<string, CompareResult | 'running'>; at: string }
@@ -12,7 +13,14 @@ const won = (usd: number) => `${Math.round(usd * WON).toLocaleString()}원`
 const STORE = 'im-ai-compare-last'
 const CUSTOM_STORE = 'im-ai-compare-custom'
 const CUSTOM_SOURCE = '직접 올린 자료'
+const TEST_SET_FLAG = 'im-ai-compare-testset'
 const key = (r: string, m: string) => `${r}|${m}`
+
+// 기본 시험 자료를 맨 위에 두고, 이미 있는 같은 제목 자료는 하나만 남긴다
+function withTestSet(list: CompareRelease[]) {
+  const titles = new Set(AI_TEST_SET.map((t) => t.title))
+  return [...AI_TEST_SET, ...list.filter((c) => !titles.has(c.title))]
+}
 
 export default function AiCompare({ models }: { models: Model[] }) {
   const [picked, setPicked] = useState<string[]>(() => models.filter((m) => m.ready).map((m) => m.id).filter((id) => id !== 'gemini-3.5-flash-lite'))
@@ -29,6 +37,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
   // 비교할 자료: 최근 보도자료 10건 + 직접 올린 파일·붙여넣은 글
   const [includeRecent, setIncludeRecent] = useState(true)
   const [custom, setCustom] = useState<CompareRelease[]>([])
+  const [customLoaded, setCustomLoaded] = useState(false)
   const [reading, setReading] = useState(false)
   const [fileError, setFileError] = useState('')
   const [pasteOpen, setPasteOpen] = useState(false)
@@ -37,11 +46,27 @@ export default function AiCompare({ models }: { models: Model[] }) {
   // 지난 비교 결과는 이 브라우저에만 남겨 둔다
   useEffect(() => {
     try { const s = localStorage.getItem(STORE); if (s) setRun(JSON.parse(s)) } catch {}
-    try { const c = localStorage.getItem(CUSTOM_STORE); if (c) setCustom(JSON.parse(c)) } catch {}
+    // 내 자료 + 기본 시험 자료 6건(처음 한 번 맨 위에 넣는다, 같은 제목은 하나만)
+    let list: CompareRelease[] = []
+    try { const c = localStorage.getItem(CUSTOM_STORE); if (c) list = JSON.parse(c) } catch {}
+    let seeded = false
+    try { seeded = localStorage.getItem(TEST_SET_FLAG) === AI_TEST_SET_VERSION } catch {}
+    if (!seeded) {
+      list = withTestSet(list)
+      // 목록과 표시를 함께 저장해야 다시 불러올 때 시험 자료가 빠지지 않는다
+      try {
+        localStorage.setItem(CUSTOM_STORE, JSON.stringify(list))
+        localStorage.setItem(TEST_SET_FLAG, AI_TEST_SET_VERSION)
+      } catch {}
+    }
+    setCustom(list)
+    setCustomLoaded(true)
   }, [])
   useEffect(() => {
+    // 불러오기 전에 빈 목록으로 덮어쓰지 않도록
+    if (!customLoaded) return
     try { localStorage.setItem(CUSTOM_STORE, JSON.stringify(custom)) } catch {}
-  }, [custom])
+  }, [custom, customLoaded])
 
   // 워드·텍스트 파일은 이 브라우저에서 글자만 뽑는다 (사진이 든 큰 파일도 서버로 보내지 않는다)
   async function addFiles(files: FileList | null) {
@@ -62,6 +87,8 @@ export default function AiCompare({ models }: { models: Model[] }) {
     setFileError(errors.join('\n'))
     setReading(false)
   }
+
+  const missingTest = AI_TEST_SET.filter((t) => !custom.some((c) => c.title === t.title))
 
   function addPasted() {
     const text = pasteText.trim()
@@ -191,6 +218,11 @@ export default function AiCompare({ models }: { models: Model[] }) {
               <button type="button" disabled={busy} onClick={() => setPasteOpen(!pasteOpen)} className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] hover:border-ink">
                 {pasteOpen ? '붙여넣기 닫기' : '글 붙여넣기'}
               </button>
+              {missingTest.length > 0 && !busy && (
+                <button type="button" onClick={() => setCustom(withTestSet(custom))} className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] hover:border-ink">
+                  시험 자료 {missingTest.length}건 넣기
+                </button>
+              )}
               {custom.length > 0 && !busy && (
                 <button type="button" onClick={() => setCustom([])} className="ml-auto text-[12px] text-muted underline underline-offset-2 hover:text-danger">모두 빼기</button>
               )}
@@ -316,9 +348,28 @@ export default function AiCompare({ models }: { models: Model[] }) {
           </section>
 
 
+          <nav className="rounded-lg border border-line bg-white px-5 py-3" aria-label="자료 목록">
+            <p className="text-[12.5px] font-bold text-muted">자료 {run.releases.length}건 — 누르면 해당 자료로 이동</p>
+            <ol className="mt-2 grid gap-x-6 gap-y-1 text-[13px] md:grid-cols-2">
+              {run.releases.map((r, idx) => {
+                const fails = run.models.filter((m) => { const x = run.results[key(r.id, m)]; return x && x !== 'running' && !x.ok }).length
+                return (
+                  <li key={r.id} className="flex min-w-0 items-center gap-2">
+                    <span className="w-5 shrink-0 text-right tabular-nums text-muted">{idx + 1}</span>
+                    {/^(test|file|paste)-/.test(r.id) && (
+                      <span className="shrink-0 rounded bg-review/10 px-1.5 text-[10.5px] font-semibold text-review">내 자료</span>
+                    )}
+                    <a href={`#rel-${idx + 1}`} className="min-w-0 truncate hover:underline">{r.title}</a>
+                    {fails > 0 && <span className="shrink-0 text-[11px] font-semibold text-danger">실패 {fails}</span>}
+                  </li>
+                )
+              })}
+            </ol>
+          </nav>
+
           <div className="space-y-4">
             {run.releases.map((r, idx) => (
-              <section key={r.id} className="rounded-lg border border-line bg-white">
+              <section key={r.id} id={`rel-${idx + 1}`} className="scroll-mt-4 rounded-lg border border-line bg-white">
                 <div className="flex flex-wrap items-center gap-2 border-b border-line px-5 py-3">
                   <span className="text-[12px] font-bold text-muted">{idx + 1}</span>
                   <h3 className="min-w-0 flex-1 truncate text-[14.5px] font-bold">{r.title}</h3>
