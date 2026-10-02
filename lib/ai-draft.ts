@@ -22,12 +22,12 @@ export const AI_MODELS: AiModel[] = [
 const KEY: Record<AiProvider, string> = { anthropic: 'ANTHROPIC_API_KEY', gemini: 'GEMINI_API_KEY' }
 export const providerReady = (p: AiProvider) => !!process.env[KEY[p]]
 
-// 실제로 쓰는 모델: Vercel 환경 변수 AI_MODEL (없으면 키가 있는 쪽의 기본 모델)
+// 실제로 쓰는 모델: Vercel 환경 변수 AI_MODEL (없으면 Gemini Flash, Gemini 키가 없을 때만 Claude)
 export function activeModel(): AiModel | null {
   const chosen = AI_MODELS.find((m) => m.id === process.env.AI_MODEL)
   if (chosen && providerReady(chosen.provider)) return chosen
-  if (providerReady('anthropic')) return AI_MODELS[0]
   if (providerReady('gemini')) return AI_MODELS.find((m) => m.id === 'gemini-3.8-flash')!
+  if (providerReady('anthropic')) return AI_MODELS[0]
   return null
 }
 
