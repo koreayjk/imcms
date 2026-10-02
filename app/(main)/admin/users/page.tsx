@@ -77,7 +77,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
         </section>
       )}
 
-      {isSuper && (
+      {(isSuper || pending.length > 0) && (
         <section>
           <h2 className="mb-2 flex items-center gap-2 text-[15px] font-bold">
             가입 승인 대기
@@ -92,13 +92,19 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
                     <div className="min-w-[200px] flex-1">
                       <p className="font-semibold">{u.full_name}</p>
                       <p className="mt-0.5 text-[12.5px] text-muted">{a?.email ?? '이메일 확인 불가'} · {a?.provider === 'google' ? '구글 가입' : '이메일 가입'} · {formatDateTime(u.created_at)}</p>
+                      <p className="mt-1 text-[12.5px]">
+                        신청 매체:{' '}
+                        {u.requested_outlet_id
+                          ? <strong>{outlets.find((o) => o.id === u.requested_outlet_id)?.name ?? '다른 그룹 매체'}</strong>
+                          : <span className="text-muted">정하지 않음</span>}
+                      </p>
                     </div>
                     <form action={approveUser.bind(null, u.id)} className="flex items-center gap-2">
                       <select name="role" defaultValue="reporter" aria-label="역할" className="rounded border border-line px-2 py-1.5 text-[13px]">
                         <option value="reporter">기자</option><option value="editor">편집장</option><option value="admin">발행인</option>
-                        <option value="staff">IM 뉴스룸 매니저</option>
+                        {isSuper && <option value="staff">IM 뉴스룸 매니저</option>}
                       </select>
-                      <select name="outlet_id" defaultValue={outletId ?? ''} aria-label="매체" className="rounded border border-line px-2 py-1.5 text-[13px]">
+                      <select name="outlet_id" defaultValue={(u.requested_outlet_id && outlets.some((o) => o.id === u.requested_outlet_id) ? u.requested_outlet_id : outletId) ?? ''} aria-label="매체" className="rounded border border-line px-2 py-1.5 text-[13px]">
                         <option value="">매체 선택</option>
                         {outlets.map((o) => <option key={o.id} value={o.id}>{o.group ? `${o.group} · ` : ''}{o.name}</option>)}
                       </select>

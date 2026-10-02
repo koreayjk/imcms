@@ -14,8 +14,15 @@ async function signupReady() {
   return !error
 }
 
+// 가입 화면에서 고를 소속 매체 (signup-outlet.sql 전이면 빈 목록 → 고르기 칸을 숨긴다)
+async function signupOutlets() {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
+  const { data, error } = await supabase.rpc('signup_outlets')
+  return error ? [] : ((data ?? []) as { id: string; name: string }[])
+}
+
 export default async function SignupPage() {
-  if (await signupReady()) return <SignupForm />
+  if (await signupReady()) return <SignupForm outlets={await signupOutlets()} />
   return (
     <AuthShell subtitle="회원가입" footer={<Link href="/login" className="font-semibold text-ink underline underline-offset-2">로그인 화면으로</Link>}>
       <p className="rounded-lg border border-line bg-white px-6 py-7 text-center text-sm leading-relaxed text-muted">

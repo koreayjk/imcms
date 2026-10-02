@@ -7,8 +7,10 @@ import { createClient } from '@/lib/supabase'
 import AuthShell, { OrDivider } from '@/components/auth/AuthShell'
 import GoogleButton from '@/components/auth/GoogleButton'
 
-export default function SignupForm() {
+export default function SignupForm({ outlets }: { outlets: { id: string; name: string }[] }) {
   const [name, setName] = useState('')
+  // 소속 매체: 매체 id 또는 'unknown'(모름). 목록이 없으면(준비 전) 묻지 않는다
+  const [outlet, setOutlet] = useState(outlets.length ? '' : 'unknown')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -22,13 +24,14 @@ export default function SignupForm() {
     setError('')
     if (password.length < 8) return setError('비밀번호는 8자 이상으로 정해주세요.')
     if (password !== confirm) return setError('비밀번호 확인이 일치하지 않습니다.')
+    if (!outlet) return setError('소속 매체를 골라 주세요.')
 
     setLoading(true)
     const { data, error: authError } = await createClient().auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: name.trim() },
+        data: { full_name: name.trim(), ...(outlet !== 'unknown' ? { requested_outlet_id: outlet } : {}) },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/pending`,
       },
     })
@@ -59,7 +62,7 @@ export default function SignupForm() {
             <strong className="text-ink">{sentTo}</strong> 메일함에서 인증 링크를 눌러주세요.
             메일이 안 보이면 스팸함도 확인해 주세요.
           </p>
-          <p className="mt-4 rounded bg-paper px-3 py-2.5 text-[13px] leading-relaxed text-muted">인증 후 관리자가 승인하면 기사를 쓸 수 있습니다.</p>
+          <p className="mt-4 rounded bg-paper px-3 py-2.5 text-[13px] leading-relaxed text-muted">인증 후 소속 매체의 발행인이 승인하면 기사를 쓸 수 있습니다.</p>
         </div>
       </AuthShell>
     )
@@ -70,7 +73,18 @@ export default function SignupForm() {
       subtitle="편집국 회원가입"
       footer={<>이미 계정이 있으신가요? <Link href="/login" className="font-semibold text-ink underline underline-offset-2">로그인</Link></>}
     >
-      <GoogleButton label="구글 계정으로 가입" />
+      {outlets.length > 0 && (
+        <div className="mb-4">
+          <label htmlFor="outlet" className="field-label">소속 매체</label>
+          <select id="outlet" value={outlet} onChange={(e) => setOutlet(e.target.value)} required className="field-input">
+            <option value="" disabled>어느 매체 기자인지 골라 주세요</option>
+            {outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            <option value="unknown">목록에 없음 · 잘 모름</option>
+          </select>
+          <p className="mt-1 text-xs leading-relaxed text-muted">고른 매체의 발행인이 가입을 승인합니다. 구글 가입도 먼저 매체를 골라 주세요.</p>
+        </div>
+      )}
+      <GoogleButton label="구글 계정으로 가입" requestedOutlet={outlet} />
       <OrDivider />
 
       <form onSubmit={handleSignup} className="space-y-4">
@@ -94,7 +108,7 @@ export default function SignupForm() {
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? '가입하는 중...' : '가입하기'}
         </button>
-        <p className="text-center text-xs leading-relaxed text-muted">가입 후 관리자가 승인하면 기사를 쓸 수 있습니다.</p>
+        <p className="text-center text-xs leading-relaxed text-muted">가입 후 소속 매체의 발행인이 승인하면 기사를 쓸 수 있습니다.</p>
       </form>
     </AuthShell>
   )

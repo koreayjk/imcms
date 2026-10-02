@@ -7,8 +7,8 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin } = await getCmsContext()
 
   // 알림 숫자와 매체 목록은 한꺼번에 가져온다 (하나씩 기다리면 그만큼 느려진다)
-  // 승인 대기 가입자는 어느 그룹인지 모르므로 총관리자에게만 알린다
-  const pendingQ = isSuper
+  // 승인 대기 가입자: 총관리자는 전체, 발행인은 우리 그룹 매체로 신청한 사람 (DB 권한이 보이는 만큼만 센다)
+  const pendingQ = isGroupAdmin
     ? supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('approved', false)
     : Promise.resolve({ count: 0 })
   // 고객센터 알림: 운영팀(총관리자·매니저)은 새 요청 수, 회원사는 읽지 않은 답변 수 (support.sql 전이면 0)

@@ -26,12 +26,13 @@ async function publisherOf(supabase: Awaited<ReturnType<typeof getCmsContext>>['
 }
 
 export async function approveUser(id: string, form: FormData) {
+  // 총관리자는 모든 가입 신청, 발행인은 우리 그룹 매체로 신청한 사람만 (DB가 한 번 더 확인한다)
   const { supabase, isSuper } = await groupContext()
-  if (!isSuper) fail('가입 승인은 총관리자만 할 수 있습니다.')
   const roleInput = String(form.get('role') ?? 'reporter')
   const outletId = String(form.get('outlet_id') ?? '') || null
   // IM 뉴스룸 매니저: 매체에 속하지 않고 상담·업무요청을 처리한다
   if (roleInput === 'staff') {
+    if (!isSuper) fail('매니저 지정은 총관리자만 할 수 있습니다.')
     const { error } = await supabase.from('profiles').update({ approved: true, is_staff: true, role: 'reporter', outlet_id: null, publisher_id: null }).eq('id', id)
     if (error) fail(/is_staff/.test(error.message) ? '매니저를 두려면 staff.sql을 실행해 주세요.' : `승인하지 못했습니다: ${error.message}`)
     revalidatePath('/', 'layout')
@@ -41,14 +42,14 @@ export async function approveUser(id: string, form: FormData) {
   if (!ROLES.includes(role)) fail('역할을 확인해 주세요.')
   if (!outletId) fail('소속 매체를 정해주세요.')
   const publisher_id = role === 'admin' ? await publisherOf(supabase, outletId) : null
-  const { error } = await supabase.from('profiles').update({ approved: true, role, outlet_id: outletId, publisher_id }).eq('id', id)
-  if (error) fail(`승인하지 못했습니다: ${error.message}`)
+  const { data: done, error } = await supabase.from('profiles').update({ approved: true, role, outlet_id: outletId, publisher_id }).eq('id', id).select('id')
+  if (error) fail(/row-level security|권한/.test(error.message) ? '우리 그룹 매체로만 승인할 수 있습니다.' : `승인하지 못했습니다: ${error.message}`)
+  if (!done?.length) fail('이 가입 신청을 승인할 권한이 없습니다.')
   revalidatePath('/', 'layout')
 }
 
 export async function rejectUser(id: string) {
-  const { supabase, isSuper } = await groupContext()
-  if (!isSuper) fail('가입 거절은 총관리자만 할 수 있습니다.')
+  const { supabase } = await groupContext()
   const { error } = await supabase.rpc('admin_reject_user', { target: id })
   if (error) fail(`거절하지 못했습니다: ${error.message}`)
   revalidatePath('/', 'layout')

@@ -14,16 +14,20 @@ function GoogleMark() {
   )
 }
 
-export default function GoogleButton({ label }: { label: string }) {
+// requestedOutlet: 가입 화면에서 고른 소속 매체 ('unknown' = 모름). undefined면 로그인 버튼
+export default function GoogleButton({ label, requestedOutlet }: { label: string; requestedOutlet?: string }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function start() {
     setError('')
+    if (requestedOutlet === '') { setError('먼저 소속 매체를 골라 주세요.'); return }
     setLoading(true)
+    const back = new URL('/auth/callback', window.location.origin)
+    if (requestedOutlet && requestedOutlet !== 'unknown') back.searchParams.set('outlet', requestedOutlet)
     const { error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: back.toString() },
     })
     if (error) {
       setError(/provider is not enabled/i.test(error.message) ? '구글 로그인이 아직 설정되지 않았습니다. 관리자에게 문의하세요.' : `구글 로그인을 시작하지 못했습니다: ${error.message}`)

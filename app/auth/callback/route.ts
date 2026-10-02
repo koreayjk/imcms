@@ -22,5 +22,8 @@ export async function GET(request: NextRequest) {
     url.searchParams.set('error', '로그인 링크가 만료되었거나 다른 브라우저에서 열렸습니다. 다시 로그인해 주세요.')
     return NextResponse.redirect(url)
   }
+  // 구글 가입: 가입 화면에서 고른 소속 매체를 신청 매체로 기억 (이미 승인된 회원에게는 아무 일도 하지 않는다)
+  const outlet = searchParams.get('outlet')
+  if (outlet && /^[0-9a-f-]{36}$/.test(outlet)) await supabase.rpc('set_requested_outlet', { o: outlet })
   return NextResponse.redirect(new URL(safeNext, origin))
 }

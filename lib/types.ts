@@ -12,6 +12,8 @@ export interface Profile {
   // groups.sql: 총관리자 표시, 발행인의 그룹
   is_super?: boolean
   is_staff?: boolean
+  // 가입 때 고른 소속 매체 (승인 전, signup-outlet.sql)
+  requested_outlet_id?: string | null
   publisher_id?: string | null
 }
 
