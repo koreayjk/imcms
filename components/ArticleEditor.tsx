@@ -81,23 +81,12 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const ownOutlet = article?.outlet_id ?? outletId
   const otherOutlets = outlets.filter((o) => o.id !== ownOutlet)
 
-  async function save(mode: Mode) {
-    if (!title.trim()) { setError('제목을 입력해주세요.'); return }
-    if (!charCount) { setError('본문을 입력해주세요.'); return }
-    const chosenAt = fromKstInput(pubAt)
-    if (pubAt && !chosenAt) { setError('발행 일시를 확인해 주세요.'); return }
-    if (mode === 'publish') {
-      const when = chosenAt ? new Date(chosenAt) : null
-      const msg = when && when.getTime() > Date.now() + 60_000
-        ? `${formatDateTime(chosenAt)}에 홈페이지에 공개되도록 예약 발행할까요?\n그 전까지는 홈페이지에 보이지 않습니다.`
-        : when && when.getTime() < Date.now() - 60_000
-          ? `발행 일시를 ${formatDateTime(chosenAt)}(지난 날짜)로 해서 발행할까요?`
-          : '이 기사를 지금 홈페이지에 발행할까요?'
-      if (!window.confirm(msg)) return
-    }
-    setError('')
-    setSaving(mode)
+  // 자동 저장으로 처음 만든 기사 ID (새 기사일 때)
+  const [draftId, setDraftId] = useState<string | null>(article?.id ?? null)
+  const [autoSavedAt, setAutoSavedAt] = useState<string | null>(null)
 
+  // 저장할 내용 (상태 변경은 저장 방식에 따라 따로 붙인다)
+  function contentPayload(): Record<string, unknown> {
     const tagArray = tags.split(',').map((t) => t.trim()).filter(Boolean)
     const payload: Record<string, unknown> = {
       title: title.trim(),
@@ -116,7 +105,27 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     // 기자명이 회원 이름과 같으면 비워 둔다 (회원 이름을 바꾸면 기사에도 따라 바뀌도록)
     const customByline = byline.trim() && byline.trim() !== defaultName ? byline.trim() : null
     if (customByline || article?.byline !== undefined) payload.byline = customByline
+    return payload
+  }
 
+  async function save(mode: Mode) {
+    if (!title.trim()) { setError('제목을 입력해주세요.'); return }
+    if (!charCount) { setError('본문을 입력해주세요.'); return }
+    const chosenAt = fromKstInput(pubAt)
+    if (pubAt && !chosenAt) { setError('발행 일시를 확인해 주세요.'); return }
+    if (mode === 'publish') {
+      const when = chosenAt ? new Date(chosenAt) : null
+      const msg = when && when.getTime() > Date.now() + 60_000
+        ? `${formatDateTime(chosenAt)}에 홈페이지에 공개되도록 예약 발행할까요?\n그 전까지는 홈페이지에 보이지 않습니다.`
+        : when && when.getTime() < Date.now() - 60_000
+          ? `발행 일시를 ${formatDateTime(chosenAt)}(지난 날짜)로 해서 발행할까요?`
+          : '이 기사를 지금 홈페이지에 발행할까요?'
+      if (!window.confirm(msg)) return
+    }
+    setError('')
+    setSaving(mode)
+
+    const payload = contentPayload()
     // 발행 전 기사는 정한 일시를 같이 저장해 두고(편집장이 승인할 때 그대로 쓴다), 발행된 기사는 일시만 고친다
     if (mode !== 'publish') payload.published_at = chosenAt ?? (status === 'published' ? article?.published_at ?? null : null)
 
@@ -132,9 +141,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     }
 
     const supabase = createClient()
-    let id = article?.id
-    if (article) {
-      const { error: err } = await supabase.from('articles').update(payload).eq('id', article.id)
+    let id = article?.id ?? draftId
+    if (id) {
+      const { error: err } = await supabase.from('articles').update(payload).eq('id', id)
       if (err) { setError(saveError(err.message)); setSaving(null); return }
     } else {
       payload.author_id = userId
@@ -142,6 +151,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       if (err) { setError(saveError(err.message)); setSaving(null); return }
       id = data.id
     }
+    // 저장했으니 이 브라우저의 임시 백업은 지운다
+    clearLocalBackup()
+    serverKey.current = contentKey
 
     const livePublished = mode === 'publish' || (mode === 'draft' && status === 'published')
     if (id && livePublished && !isCopy && syndicateTo.length) {
@@ -162,6 +174,91 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       router.push(`/articles/${id}`)
       router.refresh()
     }
+  }
+
+  // ───────── 자동 저장 ─────────
+  // ① 이 브라우저에 바로바로 백업 (창이 닫히거나 인터넷이 끊겨도 다시 열면 복구)
+  // ② 아직 발행 전(작성중·반려)인 기사는 1분마다 서버에도 조용히 저장 → 기사목록 “작성중”이 임시보관함
+  //    발행된 기사·승인신청 중인 기사는 홈페이지·편집장 화면이 바뀌지 않도록 브라우저 백업만 한다
+  const backupKey = article ? `im-autosave-${article.id}` : `im-autosave-new-${userId}-${outletId ?? 'none'}`
+  const contentKey = JSON.stringify([title, subtitle, html, categoryId, tags, byline, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl])
+  const serverKey = useRef(contentKey)
+  const [restore, setRestore] = useState<{ at: number; data: Record<string, unknown> } | null>(null)
+  const canServerAutosave = !isCopy && (status === 'draft' || status === 'rejected')
+
+  function clearLocalBackup() {
+    try { localStorage.removeItem(backupKey) } catch {}
+  }
+
+  // 편집기가 준비되면(본문 정리가 끝난 뒤) 지금 내용을 기준으로 삼고, 저장하지 않은 백업이 있으면 복구할지 묻는다
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    if (!ready) return
+    serverKey.current = contentKey
+    try {
+      const raw = localStorage.getItem(backupKey)
+      if (!raw) return
+      const b = JSON.parse(raw) as { at: number; key: string; data: Record<string, unknown> }
+      const stale = article && Date.parse(article.updated_at) > b.at
+      if (stale || b.key === serverKey.current) { localStorage.removeItem(backupKey); return }
+      setRestore({ at: b.at, data: b.data })
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready])
+
+  // ① 고칠 때마다 1.2초 뒤 브라우저에 백업
+  useEffect(() => {
+    if (!ready || contentKey === serverKey.current || restore) return
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(backupKey, JSON.stringify({
+          at: Date.now(), key: contentKey,
+          data: { title, subtitle, html, categoryId, tags, byline, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl },
+        }))
+      } catch {}
+    }, 1200)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentKey, restore, ready])
+
+  // ② 1분마다 서버에 조용히 저장 (발행 전 기사만, 제목·본문이 있을 때)
+  const autoRef = useRef<() => Promise<void>>()
+  autoRef.current = async () => {
+    if (!ready || !canServerAutosave || saving || restore || contentKey === serverKey.current) return
+    if (!title.trim() || !charCount) return
+    const key = contentKey
+    const payload = contentPayload()
+    const chosenAt = fromKstInput(pubAt)
+    if (chosenAt || !pubAt) payload.published_at = chosenAt
+    const supabase = createClient()
+    const id = article?.id ?? draftId
+    if (id) {
+      const { error: err } = await supabase.from('articles').update(payload).eq('id', id)
+      if (err) return
+    } else {
+      const { data, error: err } = await supabase.from('articles').insert({ ...payload, status: 'draft', author_id: userId }).select('id').single()
+      if (err || !data) return
+      setDraftId(data.id)
+      // 화면을 다시 그리지 않고 주소만 편집 주소로 바꾼다 (새로고침해도 이어서 쓰도록)
+      window.history.replaceState(null, '', `/articles/${data.id}/edit`)
+    }
+    serverKey.current = key
+    clearLocalBackup()
+    setAutoSavedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))
+  }
+  useEffect(() => {
+    const t = setInterval(() => { autoRef.current?.() }, 60_000)
+    return () => clearInterval(t)
+  }, [])
+
+  function applyRestore() {
+    if (!restore) return
+    const d = restore.data as Record<string, any>
+    setTitle(d.title ?? ''); setSubtitle(d.subtitle ?? ''); setCategoryId(d.categoryId ?? ''); setTags(d.tags ?? '')
+    setByline(d.byline ?? defaultName); setPubAt(d.pubAt ?? ''); setMetaTitle(d.metaTitle ?? ''); setMetaDesc(d.metaDesc ?? '')
+    setIsFeatured(!!d.isFeatured); setThumbnailUrl(d.thumbnailUrl ?? '')
+    if (typeof d.html === 'string') { editorRef.current?.commands.setContent(d.html, true); setHtml(d.html) }
+    setRestore(null)
   }
 
   // 기자명을 바꾸면 본문 첫머리 "[매체=이름 기자]"도 같이 바꾼다
@@ -191,7 +288,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const onReady = useCallback((editor: Editor) => { editorRef.current = editor }, [])
+  const onReady = useCallback((editor: Editor) => { editorRef.current = editor; setReady(true) }, [])
   const onChange = useCallback((next: string, count: number) => { setHtml(next); setCharCount(count) }, [])
 
   function insertImage(img: LibraryImage) {
@@ -218,12 +315,27 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               ? <span className="status-badge status-scheduled px-2.5 py-1 text-[12.5px]">예약 · {formatDateTime(article.published_at)} 공개</span>
               : <span className={`status-badge status-${status} px-2.5 py-1 text-[12.5px]`}>{STATUS_LABEL[status]}</span>}
             {savedAt && <span className="text-[12px] text-muted">{savedAt} 저장됨</span>}
+            {autoSavedAt && !savedAt && <span className="text-[12px] text-muted">{autoSavedAt} 자동 저장됨</span>}
+            {canServerAutosave
+              ? <span className="text-[11.5px] text-muted md:ml-auto">1분마다 자동 저장 · 기사목록 “작성중”에 보관</span>
+              : <span className="text-[11.5px] text-muted md:ml-auto">쓰는 내용은 이 브라우저에 자동 백업</span>}
             {status === 'rejected' && article?.reject_reason && (
               <p className="w-full rounded border border-danger/30 bg-danger/5 px-3 py-2 text-[13px] text-danger">
                 <strong>반려 사유:</strong> {article.reject_reason}
               </p>
             )}
           </div>
+
+          {restore && (
+            <div role="alert" className="flex flex-wrap items-center gap-3 rounded border border-[#2F6BF0]/40 bg-[#2F6BF0]/5 px-4 py-3 text-[13px]">
+              <span className="min-w-0 flex-1">
+                <strong className="text-[#2F6BF0]">저장하지 않은 작성 내용이 있습니다.</strong>{' '}
+                {new Date(restore.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}에 이 브라우저에 백업된 내용을 불러올까요?
+              </span>
+              <button type="button" onClick={applyRestore} className="btn-primary px-3 py-1.5 text-[12.5px]">불러오기</button>
+              <button type="button" onClick={() => { clearLocalBackup(); setRestore(null) }} className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger">버리기</button>
+            </div>
+          )}
 
           {article?.ai_notes && (
             <div className="rounded border border-draft/40 bg-draft/10 px-4 py-3 text-[13px] leading-relaxed">
