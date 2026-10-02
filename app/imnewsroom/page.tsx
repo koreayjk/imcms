@@ -9,6 +9,7 @@ import { ApprovalFlow, HomeBoardMock, MailForwardVisual, PressInboxMock, Support
 import IndexWidget from '@/components/site/IndexWidget'
 import type { IndexSeries } from '@/lib/market-index'
 import { CountUp, Reveal } from '@/components/product/Motion'
+import Pricing from '@/components/product/Pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,7 +94,9 @@ const FAQ = [
   { q: '기사를 정해 둔 시각에 올릴 수 있나요?', a: '네. 기사쓰기에서 발행 일시를 앞으로의 시각으로 정하면 예약 발행됩니다. 그 시각 전까지는 홈페이지에 보이지 않고, 지난 날짜를 고르면 그 날짜로 발행됩니다. 시간은 한국 시간 기준입니다.' },
   { q: '한 기자가 여러 매체에서 일할 수 있나요?', a: '네. 같은 그룹 안에서 여러 매체에 소속되고, 매체마다 직급을 따로 가질 수 있습니다(예: A매체 편집장, B매체 기자). 상단바에서 매체를 바꾸면 그 매체의 직급으로 바뀝니다.' },
   { q: '휴대폰으로도 기사를 쓸 수 있나요?', a: '네. 편집국 화면이 휴대폰에 맞게 바뀌어 현장에서 바로 쓰고, 편집장은 휴대폰으로 승인·발행할 수 있습니다.' },
-  { q: '정식 요금은 얼마인가요?', a: '베타 기간이 끝나기 전에 안내하고, 베타 고객사에 가장 먼저 알려 드립니다.' },
+  { q: '요금은 얼마인가요?', a: '베이직 월 77,000원, 스탠다드 월 154,000원, 프리미엄 월 231,000원입니다(VAT 포함). 기자 계정은 모든 요금제에서 무제한이고, AI 초안 건수·저장 용량·전송량에 따라 나뉩니다. 지금 베타 테스트 신문사로 참여하시면 반값입니다.' },
+  { q: '1년 한 번에 결제하면 할인되나요?', a: '네. 1년 요금을 한 번에 내시면 2개월이 무료라 12개월을 10개월 값으로 씁니다. 베타 반값과 함께 적용됩니다. 예: 베이직 베타 신문사 1년 385,000원.' },
+  { q: '다른 프로그램에서 옮기면 세팅비가 있나요?', a: '없습니다. 다른 프로그램에서 옮겨 오거나 베타 신문사로 참여하시면 세팅비(110,000원)를 받지 않고, 기존 기사·사진 이전도 저희가 해 드립니다.' },
 ]
 
 const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인']
@@ -151,6 +154,7 @@ export default function ProductHome() {
             <a href="#support" className="hover:text-white">고객센터</a>
             <a href="#vertical" className="hover:text-white">전문지</a>
             <a href="#showcase" className="hover:text-white">디자인</a>
+            <a href="#pricing" className="hover:text-white">요금</a>
             <a href="#beta" className="hover:text-white">베타 모집</a>
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
@@ -174,7 +178,7 @@ export default function ProductHome() {
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[12.5px] font-semibold text-white/85 backdrop-blur">
                 <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E5483A] opacity-75" /><span className="relative h-2 w-2 rounded-full bg-[#E5483A]" /></span>
-                인터넷신문을 위한 AI 편집국 · 베타 고객사 모집 중
+                베타 테스트 신문사 모집 중 · 지금 참여하면 요금 반값
               </p>
               <h1 className="mt-7 text-[42px] font-extrabold leading-[1.14] tracking-[-0.04em] sm:text-[56px] xl:text-[60px]">
                 1인 언론사에도
@@ -490,6 +494,17 @@ export default function ProductHome() {
           </div>
         </section>
 
+        {/* ─── 요금 ─── */}
+        <section id="pricing" className="scroll-mt-16 bg-[#F4F5F7]">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+            <Reveal className="text-center">
+              <h2 className={H2}>필요한 건 기본으로, 요금은 가볍게</h2>
+              <p className="mx-auto mt-4 max-w-[36em] text-[17px] leading-[1.8] text-[#3B4048]">기자 수는 제한하지 않습니다. AI 초안 건수와 용량에 맞춰 고르세요.</p>
+            </Reveal>
+            <div className="mt-12"><Pricing /></div>
+          </div>
+        </section>
+
         {/* ─── 베타 모집 ─── */}
         <section id="beta" className="scroll-mt-16 px-4 sm:px-6">
           <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F5A524] via-[#EF6B3A] to-[#D93B4A] px-6 py-16 text-white shadow-[0_40px_80px_-30px_rgba(217,59,74,0.7)] sm:px-14">
@@ -502,8 +517,8 @@ export default function ProductHome() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
-                  { t: '이용료 없음', d: '베타 기간 동안' },
-                  { t: '기사 이전 대행', d: '기존 기사·사진을 저희가' },
+                  { t: '모든 요금 반값', d: '베타 테스트 신문사 특별 요금' },
+                  { t: '세팅비 무료', d: '기존 기사·사진 이전까지 저희가' },
                   { t: '기능 우선 반영', d: '필요한 기능을 먼저 개발' },
                   { t: '1:1 전담 지원', d: '개통부터 운영까지' },
                 ].map((b) => (
@@ -553,7 +568,8 @@ export default function ProductHome() {
                 신청서를 보내주시면 담당자가 연락드려 운영 중인 매체와 필요한 기능을 여쭤봅니다. 신청했다고 비용이 생기지 않습니다.
               </p>
               <ul className="mt-8 space-y-3">
-                <Check dark>설치비·약정 없음</Check>
+                <Check dark>베타 신문사 모든 요금 반값 · 세팅비 무료</Check>
+                <Check dark>1년 한 번에 결제하면 2개월 무료</Check>
                 <Check dark>쓰던 도메인 그대로</Check>
                 <Check dark>기존 기사 이전 지원</Check>
               </ul>
