@@ -7,12 +7,19 @@ import { monthLabel, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import PrintButton from '@/components/cms/PrintButton'
 import { setInvoicePaid } from '../../actions'
+import InvoicePayments, { type PaymentRow } from '@/components/cms/InvoicePayments'
+import { tossReady, tossTestMode } from '@/lib/toss'
 
 export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const { supabase, isSuper } = await getCmsContext()
+  const { supabase, isSuper, isStaff } = await getCmsContext()
   const { data: inv } = await supabase.from('invoices').select('*, outlet:outlets(name)').eq('id', params.id).maybeSingle()
   if (!inv) notFound()
-  const { data: billing } = await supabase.from('outlet_billing').select('*').eq('outlet_id', inv.outlet_id).maybeSingle()
+  // payments.sql 실행 전이면 결제 기록·자동결제 표가 없어 비어 있다
+  const [{ data: billing }, { data: payments }, { data: autopay }] = await Promise.all([
+    supabase.from('outlet_billing').select('*').eq('outlet_id', inv.outlet_id).maybeSingle(),
+    supabase.from('payments').select('id, status, kind, amount, method, approved_at, receipt_url, fail_message, test_mode, created_at').eq('invoice_id', inv.id).order('created_at', { ascending: false }),
+    supabase.from('outlet_autopay').select('card_company, card_number, last_error').eq('outlet_id', inv.outlet_id).eq('active', true).maybeSingle(),
+  ])
   const items = (inv.items ?? []) as InvoiceItem[]
   const row = (k: string, v: string | null | undefined) => (
     <div className="flex gap-3"><dt className="w-24 shrink-0 text-muted">{k}</dt><dd>{v || '-'}</dd></div>
@@ -96,6 +103,17 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           </div>
         )}
       </article>
+
+      <InvoicePayments
+        invoiceId={inv.id}
+        unpaid={inv.status !== 'paid'}
+        ready={tossReady()}
+        clientKey={process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? ''}
+        testMode={tossTestMode()}
+        autopay={autopay ?? null}
+        payments={(payments ?? []) as PaymentRow[]}
+        isStaff={isStaff}
+      />
     </div>
   )
 }

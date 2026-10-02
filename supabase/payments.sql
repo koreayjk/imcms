@@ -34,11 +34,14 @@ create table if not exists payments (
   approved_at timestamptz,
   receipt_url text,
   fail_message text,
+  -- 시험 키로 한 결제 (실제 돈이 오가지 않는다. 청구서는 미납 그대로 둔다)
+  test_mode boolean not null default false,
   requested_by uuid default auth.uid() references profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 create index if not exists payments_invoice on payments(invoice_id);
+alter table payments add column if not exists test_mode boolean not null default false;
 
 alter table payments enable row level security;
 drop policy if exists "payments_read" on payments;
@@ -73,8 +76,10 @@ revoke all on function public.payment_start(uuid, text) from public, anon;
 grant execute on function public.payment_start(uuid, text) to authenticated;
 
 -- 결제 승인 기록 (서버가 토스페이먼츠 승인 확인 후에만 부른다). 금액이 주문과 다르면 거절
+--   p_test: 시험 키로 한 결제면 결제 기록만 남기고 청구서는 미납 그대로 둔다
+drop function if exists public.payment_record(text, text, text, bigint, text, text, timestamptz, text, text);
 create or replace function public.payment_record(secret text, p_order_id text, p_payment_key text, p_amount bigint, p_status text,
-  p_method text, p_approved_at timestamptz, p_receipt_url text, p_message text) returns jsonb
+  p_method text, p_approved_at timestamptz, p_receipt_url text, p_message text, p_test boolean default false) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p payments%rowtype;
@@ -90,9 +95,12 @@ begin
     approved_at = coalesce(p_approved_at, approved_at),
     receipt_url = coalesce(p_receipt_url, receipt_url),
     fail_message = case when p_status = 'failed' then left(p_message, 300) else fail_message end,
+    test_mode = coalesce(p_test, false),
     updated_at = now()
   where id = p.id;
-  if p_status = 'done' then
+  if coalesce(p_test, false) then
+    null; -- 시험 결제는 청구서 상태를 바꾸지 않는다
+  elsif p_status = 'done' then
     update invoices set status = 'paid', paid_at = coalesce(p_approved_at, now()) where id = p.invoice_id;
   elsif p_status = 'canceled' then
     -- 취소되면, 같은 청구서에 다른 완료 결제가 없을 때 미납으로 되돌린다
@@ -102,8 +110,17 @@ begin
   end if;
   return jsonb_build_object('invoiceId', p.invoice_id, 'amount', p.amount);
 end $$;
-revoke all on function public.payment_record(text, text, text, bigint, text, text, timestamptz, text, text) from public;
-grant execute on function public.payment_record(text, text, text, bigint, text, text, timestamptz, text, text) to anon, authenticated;
+revoke all on function public.payment_record(text, text, text, bigint, text, text, timestamptz, text, text, boolean) from public;
+grant execute on function public.payment_record(text, text, text, bigint, text, text, timestamptz, text, text, boolean) to anon, authenticated;
+
+-- 서버(환불·웹훅): 결제 정보 (주문번호로)
+create or replace function public.payment_lookup(secret text, p_payment_id uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('orderId', order_id, 'paymentKey', payment_key, 'amount', amount, 'status', status, 'testMode', test_mode)
+  from payments where id = p_payment_id and public.payment_secret_ok(secret);
+$$;
+revoke all on function public.payment_lookup(text, uuid) from public;
+grant execute on function public.payment_lookup(text, uuid) to anon, authenticated;
 
 -- 주문 확인 (결제 완료 화면에서 금액 대조용). 그 매체 편집장·발행인·운영팀만
 create or replace function public.payment_order(p_order_id text) returns jsonb
@@ -231,6 +248,21 @@ language sql security definer set search_path = public as $$
 $$;
 revoke all on function public.autopay_error(text, uuid, text) from public;
 grant execute on function public.autopay_error(text, uuid, text) to anon, authenticated;
+
+-- 매일 오전 10시(한국) 자동결제: 납부 기한이 된 미납 청구서를 등록된 카드·계좌로 결제 (press-cron.sql의 예약 작업 열쇠를 쓴다)
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') and exists (select 1 from private.settings where key = 'press_cron_secret') then
+    perform cron.unschedule(jobid) from cron.job where jobname = 'autopay-charge';
+    perform cron.schedule('autopay-charge', '0 1 * * *', $job$
+      select net.http_get(
+        url := 'https://imcms.vercel.app/api/cron/autopay',
+        headers := jsonb_build_object('x-cron-secret', (select value from private.settings where key = 'press_cron_secret')),
+        timeout_milliseconds := 60000
+      );
+    $job$);
+  end if;
+end $$;
 
 -- 결과: 이 열쇠를 Vercel 환경 변수 PAYMENT_DB_SECRET 에 넣으세요
 select value as "Vercel PAYMENT_DB_SECRET 에 넣을 값" from private.settings where key = 'payment_db_secret';
