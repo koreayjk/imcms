@@ -51,6 +51,7 @@ const ICONS = {
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   doc: <><path d="M6 3h8l4 4v14H6V3Z" /><path d="M14 3v4h4M9 12h6M9 16h6" /></>,
   chart: <path d="M4 19h16M6 16l4-5 3 3 5-7" />,
+  history: <path d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4h4M12 8v4.5l3 2" />,
   shield: <path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z" />,
 }
 
@@ -67,7 +68,7 @@ const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
   { icon: 'mail', title: '메일로 받은 보도자료', body: '지메일 필터로 보도자료 메일만 자동 수집', color: '#EA4335' },
   { icon: 'spark', title: 'AI 기사 초안', body: 'Claude·Gemini 중 선택, 원문 대조 자동 점검', color: '#8B5CF6' },
   { icon: 'chart', title: 'AI 모델 비교', body: '우리 보도자료로 AI끼리 블라인드 비교·검토', color: '#7C3AED' },
-  { icon: 'doc', title: '워드 파일 읽기', body: '.doc·.docx 보도자료를 올리면 본문만 쏙', color: '#0EA5E9' },
+  { icon: 'doc', title: '한글·워드 파일 읽기', body: '.hwp·.docx 보도자료를 올리면 본문·제목이 쏙', color: '#0EA5E9' },
   { icon: 'clock', title: '예약 발행', body: '지정한 시각에 공개, 지난 날짜 발행도', color: '#6D28D9' },
   { icon: 'share', title: '여러 매체 함께 송고', body: '원본 표시로 검색엔진 중복 문서 방지', color: '#F5A524' },
   { icon: 'layout', title: '홈 편집판', body: '헤드라인·톱·주요 자리를 편집장이 직접', color: '#3B82F6' },
@@ -75,8 +76,8 @@ const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
   { icon: 'users', title: '매체별 직급', body: 'A매체 편집장·B매체 기자, 상단바에서 전환', color: '#6366F1' },
   { icon: 'shield', title: '가입 → 발행인 승인', body: '가입 때 소속 매체 선택, 그 매체 발행인이 승인', color: '#0F766E' },
   { icon: 'phone', title: '휴대폰 편집국', body: '현장에서 휴대폰으로 쓰고 승인·발행', color: '#EC4899' },
-  { icon: 'photo', title: '사진 크기·배치', body: '본문 사진 크기 조절, 왼쪽·가운데·오른쪽 배치', color: '#F97316' },
-  { icon: 'search', title: '검색 노출 설정', body: '기사별 검색 제목·설명, 공유 이미지', color: '#06B6D4' },
+  { icon: 'history', title: '자동 저장·수정 이력', body: '쓰던 기사는 자동 보관, 발행 뒤 고친 내용은 기록·되돌리기', color: '#F97316' },
+  { icon: 'search', title: '검색·포털 노출', body: '뉴스 사이트맵·RSS 자동, 기사별 검색 제목·공유 이미지', color: '#06B6D4' },
   { icon: 'headset', title: '고객센터 내장', body: '업무요청은 담당 매니저에게 자동 배정', color: '#14B8A6' },
   { icon: 'receipt', title: '청구서·결제 정보', body: '월별 청구서 PDF, 세금계산서 담당자 관리', color: '#A855F7' },
 ]
