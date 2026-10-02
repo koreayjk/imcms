@@ -6,6 +6,7 @@ import { sanitizeBody } from '@/lib/article-html'
 import { formatDateTime } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
 import { aiReady } from '@/lib/ai-draft'
+import { aiLevel, aiLimitMessage, getAiStatus } from '@/lib/ai-usage'
 import { ensureEmailImages } from '@/lib/press-attachments'
 import { createArticleFromPress, deleteManualPress } from '../actions'
 
@@ -21,11 +22,17 @@ export default async function PressDetailPage({ params, searchParams }: { params
   const { release: r, attachments } = await ensureEmailImages(supabase, await ensureFullBody(supabase, data as PressRelease), outletId)
   const files = attachments.filter((a) => !a.content_type.startsWith('image/') || !a.copied_url)
 
-  const { data: made } = outletId
-    ? await supabase.from('articles').select('id, title, status').eq('outlet_id', outletId).eq('press_release_id', r.id)
-    : { data: [] as { id: string; title: string; status: string }[] }
+  const [{ data: made }, usage] = await Promise.all([
+    outletId
+      ? supabase.from('articles').select('id, title, status').eq('outlet_id', outletId).eq('press_release_id', r.id)
+      : Promise.resolve({ data: [] as { id: string; title: string; status: string }[] }),
+    getAiStatus(supabase, outletId),
+  ])
+  const level = aiLevel(usage)
+  // 한도를 다 썼고 추가 사용이 꺼져 있으면 AI 초안 버튼을 막는다
+  const aiBlocked = (level === 'full' || level === 'over') && !usage?.overage
 
-  const ai = aiReady()
+  const ai = aiReady() && !aiBlocked
   const manual = r.source_key === MANUAL_SOURCE
   const emailed = r.source_key === 'email'
 
@@ -90,15 +97,25 @@ export default async function PressDetailPage({ params, searchParams }: { params
       </article>
 
       <p className="mt-4 text-[12px] leading-relaxed text-muted md:hidden">
-        {ai ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.' : 'AI 초안은 관리자가 AI 키를 설정하면 쓸 수 있습니다.'}{' '}
+        {ai ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.' : aiBlocked ? '이번 달 AI 초안 한도를 다 썼습니다.' : 'AI 초안은 관리자가 AI 키를 설정하면 쓸 수 있습니다.'}{' '}
         끝에 “{sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
       </p>
+
+      {usage && level && (
+        <p
+          role={level === 'ok' ? undefined : 'status'}
+          className={`mt-4 rounded-lg border px-4 py-2.5 text-[13px] ${level === 'ok' ? 'border-line bg-white text-muted' : level === 'near' ? 'border-draft/40 bg-draft/10 text-ink' : 'border-danger/30 bg-danger/5 font-medium text-danger'}`}
+        >
+          {aiLimitMessage(usage)}
+        </p>
+      )}
 
       <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[900px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
           <p className="hidden flex-1 text-[12.5px] leading-relaxed text-muted md:block">
             {ai
               ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.'
+              : aiBlocked ? '이번 달 AI 초안 한도를 다 썼습니다. 원문 그대로 기사 만들기는 쓸 수 있습니다.'
               : 'AI 초안은 관리자가 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)를 설정하면 쓸 수 있습니다.'}{' '}
             사진은 우리 저장소로 옮겨지고, 끝에 “{sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
           </p>

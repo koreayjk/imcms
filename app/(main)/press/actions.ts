@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
 import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, refreshPress, sourceLabel, textToParagraphs, type PressRelease } from '@/lib/press'
 import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
+import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
 
@@ -64,8 +65,13 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   let aiNotes: string | null = null
 
   if (mode === 'ai') {
+    // 이번 달 AI 초안 한도 확인 (요금제별). 한도를 다 쓰면 원문 그대로 만들기만 된다
+    const slot = await reserveAi(supabase, outletId)
+    if (!slot.ok) redirect(`/press/${id}?error=${encodeURIComponent(aiLimitMessage({ used: slot.used, limit: slot.limit, overage: false }))}`)
     try {
-      const draft = await draftFromPressRelease({ title: r.title, text: htmlToText(original) || r.summary || '', source: sourceLabel(r) })
+      const result = await draftFromPressRelease({ title: r.title, text: htmlToText(original) || r.summary || '', source: sourceLabel(r) })
+      await finishAi(supabase, slot.id, result)
+      const draft = result.draft
       title = draft.title
       excerpt = draft.subtitle || excerpt
       const paras = draft.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`)
@@ -73,6 +79,8 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       body = [paras[0], ...photoBlocks(original), ...paras.slice(1)].join('')
       aiNotes = draft.review_notes.length ? draft.review_notes.map((n) => `• ${n}`).join('\n') : null
     } catch (e) {
+      // AI가 실패하면 잡아 둔 한 건을 돌려준다 (한도에서 빠진다)
+      await releaseAi(supabase, slot.id)
       if (e instanceof AiDraftError) redirect(`/press/${id}?error=${encodeURIComponent(e.message)}`)
       throw e
     }

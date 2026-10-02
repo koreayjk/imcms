@@ -234,20 +234,20 @@ export async function draftWithModel(modelId: string, input: DraftInput, budgetM
   return { ...r, model, ms: Date.now() - started, costUsd }
 }
 
-export async function draftFromPressRelease(input: DraftInput): Promise<AiDraft> {
+export async function draftFromPressRelease(input: DraftInput): Promise<DraftResult> {
   const model = activeModel()
   if (!model) throw new AiDraftError('AI 기능이 아직 설정되지 않았습니다. 관리자에게 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY) 설정을 요청하세요.')
   // 제미나이를 쓰고 클로드 키도 있으면: 제미나이 30초 안에 못 쓰면 남은 시간에 클로드로 대신 쓴다
   const canFallback = model.provider === 'gemini' && providerReady('anthropic')
   const started = Date.now()
   try {
-    return (await draftWithModel(model.id, input, canFallback ? 30_000 : 50_000)).draft
+    return await draftWithModel(model.id, input, canFallback ? 30_000 : 50_000)
   } catch (e) {
     // 제미나이가 실패하면(과부하·출력 중단 등) 클로드 키가 있을 때 클로드로 대신 쓴다. 키 오류는 그대로 알린다
     const keyError = e instanceof AiDraftError && /키가 올바르지/.test(e.message)
     const left = 52_000 - (Date.now() - started)
     if (!canFallback || keyError || left < 15_000) throw e
     console.warn(`[ai-draft] 제미나이 실패 → 클로드로 대신 작성: ${e instanceof Error ? e.message : e}`)
-    return (await draftWithModel('claude-sonnet-5-5', input, left)).draft
+    return await draftWithModel('claude-sonnet-5-5', input, left)
   }
 }

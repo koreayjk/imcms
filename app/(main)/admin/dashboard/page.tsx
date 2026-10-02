@@ -81,7 +81,7 @@ export default async function DashboardPage() {
           <h1 className="text-[24px] font-extrabold tracking-tight">운영 대시보드</h1>
           <p className="mt-1 text-[13px] text-muted">{today} · 모든 그룹과 매체의 현황</p>
         </div>
-        <div className="flex gap-2"><Link href="/admin/ai-compare" className="btn-secondary bg-white">AI 모델 비교</Link><Link href="/admin/outlets" className="btn-primary">그룹·매체 관리</Link></div>
+        <div className="flex gap-2"><Link href="/admin/ai-usage" className="btn-secondary bg-white">요금제·AI 사용량</Link><Link href="/admin/ai-compare" className="btn-secondary bg-white">AI 모델 비교</Link><Link href="/admin/outlets" className="btn-primary">그룹·매체 관리</Link></div>
       </header>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">

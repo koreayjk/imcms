@@ -59,6 +59,9 @@ export async function openCustomer(leadId: string, _prev: LeadState, form: FormD
     .select('id').single()
   if (oErr || !outlet) return { error: `매체를 만들지 못했습니다: ${oErr?.message ?? ''} (그룹은 만들어졌으니 그룹·매체 관리에서 이어서 하세요)` }
   await supabase.from('categories').insert(DEFAULT_SECTIONS.map((c, i) => ({ ...c, outlet_id: outlet.id, sort_order: i + 1 })))
+  // 신청서에서 고른 요금제를 새 매체에 넣는다 (ai-usage.sql·service-apply.sql 실행 전이면 조용히 넘어간다)
+  const { data: lead } = await supabase.from('beta_requests').select('plan').eq('id', leadId).maybeSingle()
+  if (lead?.plan && lead.plan !== 'enterprise') await supabase.from('outlets').update({ plan: lead.plan }).eq('id', outlet.id)
   const { error: iErr } = await supabase.from('invitations').insert({ email, full_name: fullName || null, role: 'admin', publisher_id: group.id, outlet_id: outlet.id })
   await supabase.from('beta_requests').update({ status: 'done', publisher_id: group.id, updated_at: new Date().toISOString() }).eq('id', leadId)
 

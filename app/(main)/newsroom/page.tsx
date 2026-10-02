@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime, isScheduled } from '@/lib/format'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
+import { aiLevel, aiLimitMessage, getAiStatus } from '@/lib/ai-usage'
 import { NOTICE_CATEGORIES, TICKET_STATUS, hasUnreadReply, type NoticeCategory, type TicketStatus } from '@/lib/support'
 
 const CARDS: { status: ArticleStatus; tone: string; note: string }[] = [
@@ -31,7 +32,7 @@ export default async function NewsroomPage({ searchParams }: Props) {
   const countOf = (status: ArticleStatus) =>
     scoped(supabase.from('articles').select('id', { count: 'exact', head: true })).eq('status', status)
 
-  const [counts, list, reviewQueue, popular, { data: notices }, { data: myTickets }] = await Promise.all([
+  const [counts, list, reviewQueue, popular, { data: notices }, { data: myTickets }, aiUsage] = await Promise.all([
     Promise.all(CARDS.map((c) => countOf(c.status))),
     scoped(
       supabase
@@ -47,7 +48,11 @@ export default async function NewsroomPage({ searchParams }: Props) {
     // 고객센터 소식 (support.sql 전이면 비어 있다)
     supabase.from('support_notices').select('id, title, category, created_at').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     supabase.from('support_tickets').select('id, title, status, last_staff_reply_at, requester_read_at').eq('requester_id', user.id).order('updated_at', { ascending: false }).limit(3),
+    getAiStatus(supabase, outletId),
   ])
+  // 이번 달 AI 초안 한도의 80%를 넘으면 알린다
+  const aiLvl = aiLevel(aiUsage)
+  const aiAlert = aiUsage && (aiLvl === 'near' || aiLvl === 'full' || aiLvl === 'over') ? aiLvl : null
 
   const rows = (list.data ?? []) as any[]
 
@@ -60,6 +65,13 @@ export default async function NewsroomPage({ searchParams }: Props) {
         </div>
         <Link href="/articles/new" className="btn-primary shrink-0 px-4 py-2.5 md:px-5">+ 기사쓰기</Link>
       </div>
+
+      {aiAlert && aiUsage && (
+        <div role="status" className={`mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border px-5 py-3 text-[13.5px] ${aiAlert === 'near' ? 'border-draft/40 bg-draft/10' : 'border-danger/30 bg-danger/5 text-danger'}`}>
+          <span className="flex-1">{aiAlert === 'near' ? `AI 초안 한도에 가까워졌습니다. ${aiLimitMessage(aiUsage)}` : aiLimitMessage(aiUsage)}</span>
+          {isEditorPlus && !aiUsage.overage && <Link href="/support/tickets/new" className="shrink-0 font-semibold underline underline-offset-2">추가 사용·요금제 변경 요청 →</Link>}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {CARDS.map((c, i) => (
