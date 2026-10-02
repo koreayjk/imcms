@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { useFormState } from 'react-dom'
 import Link from 'next/link'
 import { uploadImage } from '@/components/editor/upload'
+import { DOC_ACCEPT, extractDocText, guessTitle } from '@/lib/doc-extract'
 import { createManualPress, type ManualPressState } from '@/app/(main)/press/actions'
 import PendingButton from './PendingButton'
 
@@ -15,6 +16,27 @@ export default function PressForm({ outletId }: { outletId: string | null }) {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [uploading, setUploading] = useState(0)
   const [photoError, setPhotoError] = useState('')
+  const titleRef = useRef<HTMLInputElement>(null)
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const [docState, setDocState] = useState<{ reading?: boolean; error?: string; name?: string }>({})
+
+  // 한글·워드·텍스트 보도자료 파일 → 본문(한 줄 = 한 문단), 제목이 비어 있으면 제목도 채운다
+  //   파일은 서버로 보내지 않고 이 브라우저에서 글자만 읽는다
+  async function readDoc(file: File | undefined) {
+    if (!file) return
+    const body = bodyRef.current
+    if (body?.value.trim() && !window.confirm('본문에 적힌 글을 파일 내용으로 바꿀까요?')) return
+    setDocState({ reading: true })
+    try {
+      const text = await extractDocText(file)
+      if (body) body.value = text.split('\n').map((l) => l.trim()).filter(Boolean).join('\n\n')
+      const title = titleRef.current
+      if (title && !title.value.trim()) title.value = guessTitle(text, file.name)
+      setDocState({ name: file.name })
+    } catch (e) {
+      setDocState({ error: e instanceof Error ? e.message : '파일을 읽지 못했습니다.' })
+    }
+  }
 
   async function addFiles(files: FileList | null) {
     if (!files?.length) return
@@ -42,18 +64,30 @@ export default function PressForm({ outletId }: { outletId: string | null }) {
           <input id="source_name" name="source_name" required maxLength={80} placeholder="예: 서울시 복지정책과, ○○요양병원" className="field-input max-w-md" />
 
           <label htmlFor="title" className="text-[13px] font-semibold">제목 <span className="text-danger">*</span></label>
-          <input id="title" name="title" required maxLength={300} placeholder="보도자료 제목" className="field-input" />
+          <input ref={titleRef} id="title" name="title" required maxLength={300} placeholder="보도자료 제목" className="field-input" />
 
           <label htmlFor="link" className="text-[13px] font-semibold">원문 링크</label>
           <input id="link" name="link" inputMode="url" placeholder="있으면 입력 (선택)" className="field-input" />
         </div>
 
         <div>
-          <label htmlFor="body" className="mb-2 flex items-baseline justify-between text-[13px] font-semibold">
-            <span>본문 <span className="text-danger">*</span></span>
-            <span className="text-[12px] font-normal text-muted">이메일 본문이나 한글(HWP)·PDF 파일의 글을 복사해 그대로 붙여넣으세요.</span>
-          </label>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <label htmlFor="body" className="text-[13px] font-semibold">본문 <span className="text-danger">*</span></label>
+            <label className={`btn-secondary cursor-pointer text-[12.5px] ${docState.reading ? 'pointer-events-none opacity-60' : ''}`}>
+              {docState.reading ? '읽는 중…' : '파일에서 불러오기 (한글·워드)'}
+              <input type="file" accept={DOC_ACCEPT} className="sr-only" onChange={(e) => { readDoc(e.target.files?.[0]); e.target.value = '' }} />
+            </label>
+          </div>
+          <p role={docState.error ? 'alert' : undefined} className={`mb-2 text-[12px] ${docState.error ? 'font-semibold text-danger' : 'text-muted'}`}>
+            {docState.error
+              ?? (docState.name
+                ? `“${docState.name}”에서 글을 불러왔습니다. 표·머리글이 섞였으면 지우고 다듬어 주세요.`
+                : '한글(.hwp .hwpx)·워드(.doc .docx) 파일을 불러오거나 여기에 끌어다 놓으세요. 이메일 본문·PDF는 글을 복사해 붙여넣으세요.')}
+          </p>
           <textarea
+            ref={bodyRef}
+            onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault() }}
+            onDrop={(e) => { const f = e.dataTransfer.files?.[0]; if (f) { e.preventDefault(); readDoc(f) } }}
             id="body"
             name="body"
             required

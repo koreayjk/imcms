@@ -220,7 +220,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
             <div className="flex flex-wrap items-center gap-2">
               <strong className="text-[13.5px]">내 자료 {custom.length}건</strong>
               <label className={`cursor-pointer rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-semibold hover:border-ink ${busy || reading ? 'pointer-events-none opacity-50' : ''}`}>
-                {reading ? '읽는 중…' : '파일 올리기 (.doc .docx .txt)'}
+                {reading ? '읽는 중…' : '파일 올리기 (한글·워드·txt)'}
                 <input type="file" accept={DOC_ACCEPT} multiple className="sr-only" onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} />
               </label>
               <button type="button" disabled={busy} onClick={() => setPasteOpen(!pasteOpen)} className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] hover:border-ink">
@@ -235,7 +235,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
                 <button type="button" onClick={() => setCustom([])} className="ml-auto text-[12px] text-muted underline underline-offset-2 hover:text-danger">모두 빼기</button>
               )}
             </div>
-            <p className="mt-1.5 text-[11.5px] text-muted">파일은 서버로 보내지 않고 이 브라우저에서 글자만 읽어 비교에 씁니다. 한글(.hwp)은 한글에서 .docx로 저장해 올려 주세요.</p>
+            <p className="mt-1.5 text-[11.5px] text-muted">파일은 서버로 보내지 않고 이 브라우저에서 글자만 읽어 비교에 씁니다. 한글(.hwp .hwpx)·워드(.doc .docx)·텍스트(.txt)를 읽습니다.</p>
             {pasteOpen && (
               <div className="mt-2 space-y-2">
                 <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={6} placeholder="보도자료 전문을 붙여넣으세요. 첫 줄을 제목으로 씁니다." className="w-full rounded-md border border-line px-3 py-2 text-[13px] outline-none focus:border-ink" />
