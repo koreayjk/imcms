@@ -17,7 +17,30 @@ import TableHeader from '@tiptap/extension-table-header'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, Slice } from '@tiptap/pm/model'
+import type { EditorView } from '@tiptap/pm/view'
 import { FontSize, ResizableImage } from './extensions'
+
+// 워드·한글·웹에서 복사한 글을 서식(글꼴·굵기·색·크기 등) 없이 글자만 넣는다. 줄바꿈은 문단으로 살린다
+function pastePlainText(view: EditorView, text: string) {
+  const lines = text
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u200b\ufeff]/g, '')
+    .replace(/[\u00a0\t]/g, ' ')
+    .split('\n')
+    .map((l) => l.replace(/ {2,}/g, ' ').trim())
+    .filter(Boolean)
+  if (!lines.length) return
+  const { state } = view
+  if (lines.length === 1) {
+    view.dispatch(state.tr.insertText(lines[0]).scrollIntoView())
+    return
+  }
+  const { paragraph } = state.schema.nodes
+  const nodes = lines.map((l) => paragraph.create(null, state.schema.text(l)))
+  // 앞뒤를 열어 두어 첫 줄·끝 줄은 지금 문단에 이어 붙는다
+  view.dispatch(state.tr.replaceSelection(new Slice(Fragment.from(nodes), 1, 1)).scrollIntoView())
+}
 
 type Props = {
   initialHtml: string
@@ -48,6 +71,25 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
   const [full, setFull] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  // 붙여넣기 방식: 기본은 글자만 (이 브라우저에 기억)
+  const [pastePlain, setPastePlain] = useState(true)
+  const pasteRef = useRef(true)
+  const [pasteNote, setPasteNote] = useState(false)
+  useEffect(() => {
+    try { if (localStorage.getItem('im-paste-plain') === '0') { setPastePlain(false); pasteRef.current = false } } catch {}
+  }, [])
+  const togglePaste = () => {
+    const v = !pastePlain
+    setPastePlain(v)
+    pasteRef.current = v
+    setPasteNote(false)
+    try { localStorage.setItem('im-paste-plain', v ? '1' : '0') } catch {}
+  }
+  useEffect(() => {
+    if (!pasteNote) return
+    const t = setTimeout(() => setPasteNote(false), 6000)
+    return () => clearTimeout(t)
+  }, [pasteNote])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -71,7 +113,22 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
       Placeholder.configure({ placeholder: '기사 본문을 입력하세요' }),
     ],
     content: initialHtml,
-    editorProps: { attributes: { class: 'article-content min-h-[520px] px-6 py-5 text-[16px] leading-[1.9] outline-none' } },
+    editorProps: {
+      attributes: { class: 'article-content min-h-[520px] px-6 py-5 text-[16px] leading-[1.9] outline-none' },
+      handlePaste: (view, event) => {
+        if (!pasteRef.current) return false
+        const dt = event.clipboardData
+        const text = dt?.getData('text/plain') ?? ''
+        // 사진만 복사한 경우, 또는 이 기사 안에서 옮기는 경우(서식 유지)는 원래대로
+        if (!dt || !text) return false
+        const html = dt.getData('text/html')
+        if (html.includes('data-pm-slice')) return false
+        event.preventDefault()
+        pastePlainText(view, text)
+        if (html) setPasteNote(true)
+        return true
+      },
+    },
     onUpdate: ({ editor }) => onChange(editor.getHTML(), editor.getText().replace(/\s/g, '').length),
     onCreate: ({ editor }) => onChange(editor.getHTML(), editor.getText().replace(/\s/g, '').length),
   })
@@ -172,7 +229,15 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
           <Btn label="유튜브 영상" onClick={addYoutube}>▶ 영상</Btn>
           <Btn label="표 넣기 (3×3)" active={inTable} onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>▦ 표</Btn>
           <Symbols onPick={(s) => chain().insertContent(s).run()} />
-          <span className="ml-auto">
+          <span className="ml-auto flex items-center gap-0.5">
+            {pasteNote && <span role="status" className="hidden px-1 text-[11.5px] text-muted md:inline">서식 없이 글자만 붙여 넣었습니다</span>}
+            <Btn
+              label={pastePlain ? '글자만 붙여넣기 켜짐: 워드·한글에서 복사한 글꼴·굵기·색은 빼고 글자만 넣습니다. 누르면 서식도 함께 붙여 넣습니다' : '서식 포함 붙여넣기 켜짐: 누르면 글자만 붙여 넣습니다'}
+              active={!pastePlain}
+              onClick={togglePaste}
+            >
+              {pastePlain ? '📋 글자만 붙여넣기' : '📋 서식 포함 붙여넣기'}
+            </Btn>
             <Btn label={more ? '추가 도구 접기' : '추가 도구 펼치기'} active={more} onClick={() => toggleMore(!more)}>{more ? '접기 ▴' : '더보기 ▾'}</Btn>
           </span>
         </div>
