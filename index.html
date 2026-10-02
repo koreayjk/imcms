@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>IM CMS — 개발 진행 현황</title>
+<title>IM 뉴스룸 개발 현황</title>
 <style>
 :root{--ink:#1A1A1A;--paper:#F7F5F1;--gold:#B8922A;--gold-lt:#F2E4BB;--muted:#6E6E6E;--rule:#E0DBD4;--card:#FFFFFF;--dark:#111111;--dark2:#1C1C1C;--done:#1E7D4D;--wip:#2d6ca8;--todo:#8A8175}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#EDE8E0;--paper:#141414;--gold:#D4AA40;--gold-lt:#3A2E10;--muted:#9A9A9A;--rule:#2C2C2C;--card:#1E1E1E;--dark:#0A0A0A;--dark2:#181818;--done:#2A9E61;--wip:#4A8EC8;--todo:#A89E90}}
@@ -71,155 +71,73 @@ section.block{padding:36px 0;border-bottom:1px solid var(--rule)}
 footer{background:var(--dark);color:rgba(255,255,255,.35);font-size:11px;padding:22px 0}
 footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
 @media (max-width:640px){.grid{grid-template-columns:1fr}.stats .wrap{grid-template-columns:repeat(2,1fr)}.stat:nth-child(3){border-left:none}.date{text-align:left}}
+
+.links a.pri{border-color:var(--gold);color:var(--gold)}
+.new{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:1px 5px;background:var(--gold);color:#111;vertical-align:1px}
+.rec{margin-top:6px;font-size:10.5px;font-weight:700;color:var(--wip)}
 </style>
 </head>
 <body>
 
-<nav class="nav"><div class="wrap"><div class="logo">IM<span>CMS</span> <span style="font-family:sans-serif;font-size:11px;font-weight:400;color:rgba(255,255,255,.35);margin-left:6px">내부 개발 현황</span></div><div class="badge">INTERNAL</div></div></nav>
+<nav class="nav"><div class="wrap"><div class="logo">IM<span> 뉴스룸</span> <span style="font-family:sans-serif;font-size:11px;font-weight:400;color:rgba(255,255,255,.35);margin-left:6px">내부 개발 현황</span></div><div class="badge">INTERNAL</div></div></nav>
 
 <header class="hero">
   <div class="wrap">
     <div>
-      <h1>IM CMS <span>개발 진행 현황</span></h1>
-      <p>7개 언론사 공용 CMS + 첫 번째 매체 더케어타임즈 홈페이지</p>
+      <h1>IM 뉴스룸 <span>개발 진행 현황</span></h1>
+      <p>여러 언론사가 함께 쓰는 AI 편집국 · 운영 매체 더케어타임즈 · Shipping Times(준비)</p>
       <div class="links">
-        <a href="https://imcms.vercel.app/">더케어타임즈 홈페이지 (테스트)</a>
-        <a href="https://imcms.vercel.app/login">기자 로그인</a>
+        <a class="pri" href="https://imcms.vercel.app/login">편집국 로그인</a>
+        <a href="https://imcms.vercel.app/">더케어타임즈 (테스트)</a>
+        <a href="https://shippingtimes.vercel.app/">Shipping Times (테스트)</a>
+        <a href="https://imcms.vercel.app/imnewsroom">IM 뉴스룸 소개 페이지</a>
       </div>
     </div>
-    <div class="date"><strong>2026년 9월 28일</strong>마지막 업데이트</div>
+    <div class="date"><strong>2026년 10월 2일</strong>마지막 업데이트</div>
   </div>
 </header>
 
 <div class="stats">
   <div class="wrap">
-    <div class="stat"><b class="c-done">27</b><small>완료</small></div>
-    <div class="stat"><b class="c-wip">5</b><small>진행 중 · 대기</small></div>
-    <div class="stat"><b class="c-todo">15</b><small>남은 작업</small></div>
-    <div class="stat"><b class="c-gold">57%</b><small>전체 진행률</small></div>
+    <div class="stat"><b class="c-done">47</b><small>완료</small></div>
+    <div class="stat"><b class="c-wip">11</b><small>대기 · 조치 필요</small></div>
+    <div class="stat"><b class="c-todo">23</b><small>남은 작업</small></div>
+    <div class="stat"><b class="c-gold">58%</b><small>전체 진행률</small></div>
   </div>
 </div>
 
 <div class="progress">
   <div class="wrap">
     <div class="bar-row">
-      <div class="bar-head"><span>전체 로드맵 (47개 항목)</span><b>57%</b></div>
-      <div class="track"><i style="width:57.4%;background:var(--done)"></i><i style="width:10.6%;background:var(--wip)"></i></div>
-      <div class="legend"><span class="l-done">완료 27</span><span class="l-wip">진행 중·대기 5</span><span class="l-todo">남음 15</span></div>
+      <div class="bar-head"><span>전체 로드맵 (81개 항목)</span><b>58%</b></div>
+      <div class="track"><i style="width:58.0%;background:var(--done)"></i><i style="width:13.6%;background:var(--wip)"></i></div>
+      <div class="legend"><span class="l-done">완료 47</span><span class="l-wip">대기 11</span><span class="l-todo">남음 23</span></div>
     </div>
-    <p class="must"><strong>더케어타임즈 오픈까지 필수 7개 남음</strong> — 도메인 연결 · 로고 원본 교체 · 인터넷신문 변경등록 · 조회수 수정 · 개인정보처리방침/청소년보호정책 · 사이트맵·포털 등록 · 오픈 당일 전환(테스트 기사 삭제, 검색 허용, Vercel Pro)</p>
+    <p class="must"><strong>지난 업데이트(9월 28일) 이후 새로 끝난 기능 32개</strong> — 표시 <span class="new">NEW</span>. 더케어타임즈 오픈까지 남은 필수: 조회수 집계 · 정책 페이지 · 사이트맵·포털 등록 · 도메인 연결 · 로고 원본 · 변경등록 · 오픈 당일 전환</p>
   </div>
 </div>
 
 <section class="block">
   <div class="wrap">
-    <div class="head"><span class="tag t-done">완료</span><h2>만들어서 배포까지 끝난 기능</h2><em>27개</em></div>
-
-    <div class="group">
-      <h3>CMS (기자·편집장 화면) · 12</h3>
-      <div class="grid">
-        <div class="item"><span class="dot d-done">✓</span><div><b>로그인 · 계정</b><p>이메일 로그인, 로그인 없이 CMS 접근 차단</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>역할별 권한</b><p>기자·편집장·관리자 분리. 기자가 스스로 권한을 올리는 것 차단</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>뉴스룸 대시보드</b><p>작성중·승인신청·반려·발행 현황, 승인 대기 목록, 많이 본 기사</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>기사쓰기 편집기</b><p>소제목·인용·목록·정렬·링크·유튜브. 예전 글도 자동 변환</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>사진 라이브러리</b><p>끌어다 놓기 업로드, 큰 사진 자동 축소, 사진 설명, 대표 사진 지정</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>바이라인 · 부제목</b><p>[더케어타임즈=김경석 기자] 자동 입력, 여러 줄 부제목</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>승인 흐름</b><p>승인신청 → 편집장 승인·발행 또는 반려(사유 전달)</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>바로 발행</b><p>편집장이 저장과 발행을 한 번에</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>기사목록</b><p>상태별 탭, 제목 검색, 사진·조회수 표시, 페이지 나누기</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>홈 편집판</b><p>톱·주요뉴스·이슈 PICK 자리에 기사를 끌어다 배치</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>함께 송고</b><p>골라서 다른 매체에 공동 게재. 바이라인·섹션 자동 변환</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>검색·공유 설정</b><p>검색 결과 제목·설명, 카카오톡 공유 미리보기</p></div></div>
-      </div>
-    </div>
-
-    <div class="group">
-      <h3>더케어타임즈 홈페이지 · 9</h3>
-      <div class="grid">
-        <div class="item"><span class="dot d-done">✓</span><div><b>PC 홈</b><p>데일리굿뉴스 구조 기반, 초록·금색 브랜드</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>모바일 홈 · 메뉴</b><p>넘겨 보는 톱기사, 왼쪽에서 열리는 전체 메뉴</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>케어 전문뉴스 · 이슈 PICK</b><p>보건·복지, 병원·의료, 요양·시니어케어, 돌봄산업 강조 구역</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>섹션 페이지</b><p>8개 섹션별 기사 목록</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>기사 페이지</b><p>관련 기사, 많이 본 뉴스, 최신 기사, 공유</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>기사 검색</b><p>제목으로 찾기</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>법정 표기</b><p>등록번호·발행인·편집인·청소년보호책임자 등</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>도메인별 언론사 구분</b><p>코드 하나로 7개 매체를 도메인별로 운영하는 구조</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>중복 기사 방지 표시</b><p>공동 게재 기사에 원본 표시(canonical)와 제공 문구</p></div></div>
-      </div>
-    </div>
-
-    <div class="group">
-      <h3>인프라 · 보안 · 6</h3>
-      <div class="grid">
-        <div class="item"><span class="dot d-done">✓</span><div><b>Supabase</b><p>DB, 사진 저장소 (Pro, 서울 리전)</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>Vercel 배포</b><p>GitHub에 올리면 자동 반영 · imcms.vercel.app</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>보안 패치</b><p>Next.js 로그인 우회 취약점 패치 버전으로 업그레이드</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>본문 악성코드 차단</b><p>허용된 서식만 홈페이지에 표시</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>오픈 전 검색엔진 차단</b><p>테스트 중 구글·네이버 수집 방지</p></div></div>
-        <div class="item"><span class="dot d-done">✓</span><div><b>테스트 기사 80건</b><p>섹션별 10건, 원문 요약 + 출처 링크</p></div></div>
-      </div>
-    </div>
+    <div class="head"><span class="tag t-done">완료</span><h2>만들어서 배포까지 끝난 기능</h2><em>47개</em></div>
+    <div class="group"><h3>편집국 (기자·편집장 화면) · 14</h3><div class="grid"><div class="item"><span class="dot d-done">✓</span><div><b>로그인 · 회원가입</b><p>이메일·구글 계정 가입, 승인 후 사용, 로그인 없이 편집국 접근 차단</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>직급별 권한</b><p>기자·편집장·발행인·총관리자 분리. 스스로 권한을 올리는 것 차단</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>뉴스룸 대시보드</b><p>작성중·승인신청·반려·발행 현황, 승인 대기, 많이 본 기사, 고객센터 소식</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>기사쓰기 편집기<span class=new>NEW</span></b><p>기본 도구 + 더보기(표·글자색·글자 크기·특수문자·HTML). 쉽게 쓰도록 정리</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>사진 라이브러리 · 크기 · 배치<span class=new>NEW</span></b><p>끌어다 놓기 업로드, 자동 축소, 본문 사진 25~100% 크기·왼쪽/가운데/오른쪽</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>바이라인 · 부제목 · 기자명<span class=new>NEW</span></b><p>[매체=기자] 자동 입력, 기사별 기자명 바꾸기, 내 이름 바꾸기</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>승인 흐름 · 바로 발행</b><p>승인신청 → 편집장 승인·발행 또는 반려(사유 전달), 편집장은 한 번에 발행</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>발행 일시 · 예약 발행<span class=new>NEW</span></b><p>지난 날짜로 발행, 앞으로의 시각은 예약(그 전까지 홈페이지·DB에서 숨김). 한국 시간</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>기사목록 · 기사 삭제<span class=new>NEW</span></b><p>상태별 탭·검색·예약 표시, 본인·편집장 삭제(송고 사본까지)</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>홈 편집판</b><p>헤드라인·톱·주요뉴스·이슈 PICK 자리에 기사 배치</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>함께 송고</b><p>같은 그룹 다른 매체에 공동 게재, 바이라인·섹션·발행 일시 자동 맞춤</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>검색·공유 설정</b><p>기사별 검색 제목·설명, 카카오톡 공유 미리보기</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>휴대폰 편집국<span class=new>NEW</span></b><p>아래 탭 메뉴, 카드 2열, 휴대폰에서 쓰고 승인·발행</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>속도 개선<span class=new>NEW</span></b><p>서버를 DB와 같은 도쿄로, 메뉴를 누르면 바로 뼈대 화면</p></div></div></div></div><div class="group"><h3>보도자료 · AI · 8</h3><div class="grid"><div class="item"><span class="dot d-done">✓</span><div><b>보도자료함 자동 수집<span class=new>NEW</span></b><p>뉴스와이어 14개 분야 + 정책브리핑, 30분마다 예약 수집, 90일 지나면 정리</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>매체별 추천</b><p>매체 분야 키워드로 추천 탭, 이미 쓴 자료는 “기사화됨” 표시</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>직접 등록 · 메일로 받기<span class=new>NEW</span></b><p>보도자료 직접 등록, 기자 전용 주소로 메일 보도자료 자동 수집(지메일 필터 안내)</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>AI 기사 초안<span class=new>NEW</span></b><p>Claude·Gemini 중 선택, 기사체 재작성 + 기자 확인 메모, 항상 ‘작성중’으로 저장</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>원문 대조 자동 점검<span class=new>NEW</span></b><p>원문에 없는 숫자·인용문을 찾아 표시</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>AI 실패 대비<span class=new>NEW</span></b><p>과부하·한도·출력 중단 시 자동 재시도, 실제 초안은 다른 AI가 대신 작성</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>AI 모델 비교<span class=new>NEW</span></b><p>최근 보도자료·내 자료(워드 파일·붙여넣기)로 모델별 초안·시간·비용 비교</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>블라인드 검토 링크<span class=new>NEW</span></b><p>로그인 없이 A·B·C 초안 중 고르기, 자료별·전체 의견 필수, 의견은 운영팀만 열람</p></div></div></div></div><div class="group"><h3>그룹 · 회원 · 운영 · 9</h3><div class="grid"><div class="item"><span class="dot d-done">✓</span><div><b>그룹(발행인)별 분리<span class=new>NEW</span></b><p>언론사마다 그룹, 발행인은 그룹 전체 매체 관리, 다른 그룹은 DB에서 차단</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>회원 초대 · 승인<span class=new>NEW</span></b><p>이메일로 미리 직급·매체를 정해 초대하면 가입 즉시 승인</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>가입 때 소속 매체 선택<span class=new>NEW</span></b><p>고른 매체의 발행인이 승인·거절, 모름이면 총관리자</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>여러 매체 소속 · 매체별 직급<span class=new>NEW</span></b><p>같은 그룹 안에서 A매체 편집장·B매체 기자, 상단바에서 전환</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>IM 뉴스룸 매니저<span class=new>NEW</span></b><p>상담·업무요청 처리, 담당 매체 지정, 담당 매체 업무요청 자동 배정</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>운영 대시보드<span class=new>NEW</span></b><p>전체 그룹·매체 현황, 확인할 일, 업무요청·상담 신청</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>상담 신청 → 고객사 개설<span class=new>NEW</span></b><p>베타 신청 관리, 그룹·첫 매체·발행인 초대를 한 번에</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>고객센터<span class=new>NEW</span></b><p>업무요청·공지·청구서·결제 정보·이용안내를 편집국 안에서</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>회원 탈퇴<span class=new>NEW</span></b><p>총관리자만. 쓴 기사·답변은 기자명 그대로 보존</p></div></div></div></div><div class="group"><h3>매체 홈페이지 · 7</h3><div class="grid"><div class="item"><span class="dot d-done">✓</span><div><b>PC 홈 · 모바일 홈 · 메뉴</b><p>데일리굿뉴스 구조 기반, 넘겨 보는 톱기사, 왼쪽 전체 메뉴</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>전문뉴스 · 이슈 PICK<span class=new>NEW</span></b><p>매체별 전문 섹션 묶음과 제목(케어 전문뉴스, 국제물류 전문뉴스)</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>섹션 · 기사 · 검색 페이지</b><p>관련 기사, 많이 본 뉴스, 최신 기사, 공유, 제목 검색</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>법정 표기 · 중복 방지 표시</b><p>등록번호·발행인 등, 공동 게재 기사 원본 표시(canonical)</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>매체 홈페이지 설정 화면<span class=new>NEW</span></b><p>로고·색·슬로건·섹션·법정 정보·검색 노출을 화면에서 (운영팀)</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>도메인별 매체 · 미리보기<span class=new>NEW</span></b><p>도메인으로 매체 구분, 연결 전 미리보기·별도 주소(shippingtimes.vercel.app)</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>해운 운임지수 위젯<span class=new>NEW</span></b><p>SCFI·KCCI 12주 그래프, 편집국이 매주 입력, 켠 매체만 표시</p></div></div></div></div><div class="group"><h3>운영 매체 · 제품 · 3</h3><div class="grid"><div class="item"><span class="dot d-done">✓</span><div><b>더케어타임즈</b><p>보건·복지·요양 전문지, 테스트 기사 80건(원문 요약 + 출처)</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>Shipping Times<span class=new>NEW</span></b><p>국제물류 전문지(준비). 로고, 섹션 8개, 가상 테스트 기사 160건, 물류·해운 보도자료 출처</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>IM 뉴스룸 소개 페이지<span class=new>NEW</span></b><p>기능 소개·완성 화면·FAQ·베타 고객사 신청 접수</p></div></div></div></div><div class="group"><h3>인프라 · 보안 · 6</h3><div class="grid"><div class="item"><span class="dot d-done">✓</span><div><b>Supabase</b><p>DB·사진 저장소 (Pro, 도쿄 리전)</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>Vercel 배포<span class=new>NEW</span></b><p>GitHub에 올리면 자동 반영. 서버는 도쿄, 정부 보도자료 수집은 서울</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>보안 패치 · 본문 악성코드 차단</b><p>로그인 우회 취약점 패치, 허용된 서식만 홈페이지에 표시</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>오픈 전 검색엔진 차단</b><p>테스트 중 구글·네이버 수집 방지</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>DB 권한 시험<span class=new>NEW</span></b><p>그룹 간 차단·발행인 권한·예약 기사 숨김 등을 시나리오별로 시험 후 반영</p></div></div><div class="item"><span class="dot d-done">✓</span><div><b>AI 키 · 결제<span class=new>NEW</span></b><p>Anthropic·Gemini(유료 등급) 키는 서버 환경 변수에만 보관</p></div></div></div></div>
   </div>
 </section>
 
 <section class="block">
   <div class="wrap">
-    <div class="head"><span class="tag t-wip">진행 중 · 대기</span><h2>누군가의 조치를 기다리는 일</h2><em>5개</em></div>
-    <div class="grid">
-      <div class="item"><span class="dot d-wip">⟳</span><div><b>thecaretimes.net 연결</b><p>DB 주소 변경 SQL · Vercel 도메인 추가 · 호스팅KR DNS 설정</p><span class="who">대표님 조치</span></div></div>
-      <div class="item"><span class="dot d-wip">⟳</span><div><b>로고 원본 교체</b><p>지금은 명함 이미지에서 잘라낸 로고. 투명 배경 PNG/AI 필요</p><span class="who">파일 전달 대기</span></div></div>
-      <div class="item"><span class="dot d-wip">⟳</span><div><b>인터넷신문 변경등록</b><p>등록증 주소(thecarentimes.com)와 실제 도메인(.net)이 다름</p><span class="who">경기도 문의</span></div></div>
-      <div class="item"><span class="dot d-wip">⟳</span><div><b>"기자 로그인" 명칭</b><p>"편집국 로그인" → "기자 로그인"으로 바꿀지</p><span class="who">결정 대기</span></div></div>
-      <div class="item"><span class="dot d-wip">⟳</span><div><b>imcms.vercel.app 정리</b><p>매체가 늘면 관리용 주소로 전환</p><span class="who">2번째 매체 추가 시</span></div></div>
-    </div>
+    <div class="head"><span class="tag t-wip">대기 · 조치 필요</span><h2>누군가의 조치나 결정을 기다리는 일</h2><em>11개</em></div>
+    <div class="grid"><div class="item"><span class="dot d-wip">⟳</span><div><b>새 SQL 실행 확인</b><p>staff-outlets · scheduled-publish · member-delete · market-indices · Shipping Times 테스트 데이터</p><span class="who">대표님 조치</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>AI 모델 결정</b><p>비교·블라인드 검토 결과로 기본 모델을 정해 Vercel AI_MODEL 설정</p><span class="who">검토 결과 대기</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>메일로 받기 연결</b><p>메일 수신 서비스(Postmark) 연결 후 실제 메일 수집 시작</p><span class="who">대표님 조치</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>구글 로그인 설정</b><p>Supabase Google 로그인 켜기, 돌아올 주소 등록</p><span class="who">대표님 조치</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>thecaretimes.net 연결</b><p>Vercel 도메인 추가 · DNS 설정</p><span class="who">대표님 조치</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>더케어타임즈 로고 원본</b><p>투명 배경 PNG/AI 파일로 교체</p><span class="who">파일 전달 대기</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>인터넷신문 변경등록</b><p>등록증 주소와 실제 도메인(.net) 맞추기</p><span class="who">경기도 문의</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>Shipping Times 이름 확정</b><p>KIPRIS 41·35·38류 확인 완료(국내 0건) → 상표 출원·인터넷신문 등록·도메인</p><span class="who">대표님 조치</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>청구서 발행사 정보</b><p>사업자 정보(상호·사업자번호·주소)를 청구서·소개 페이지 하단에</p><span class="who">사업자 등록 후</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>IM 뉴스룸 도메인</b><p>imnewsroom.com / .co.kr 구매 후 소개 페이지 연결</p><span class="who">결정 대기</span></div></div><div class="item"><span class="dot d-wip">⟳</span><div><b>“편집국 로그인” 명칭</b><p>“기자 로그인”으로 바꿀지</p><span class="who">결정 대기</span></div></div></div>
   </div>
 </section>
 
 <section class="block">
   <div class="wrap">
-    <div class="head"><span class="tag t-todo">남은 작업</span><h2>앞으로 만들 기능</h2><em>15개</em></div>
-
-    <div class="group">
-      <h3>① 더케어타임즈 오픈 전 필수 · 4</h3>
-      <div class="grid">
-        <div class="item"><span class="dot d-todo">1</span><div><b>조회수 수정</b><p>지금은 0에서 늘지 않음. 많이 본 뉴스 순위에 필요</p></div></div>
-        <div class="item"><span class="dot d-todo">2</span><div><b>개인정보처리방침 · 청소년보호정책</b><p>법적으로 필요한 페이지</p></div></div>
-        <div class="item"><span class="dot d-todo">3</span><div><b>사이트맵 · RSS · 포털 등록</b><p>네이버 서치어드바이저, 구글 서치콘솔</p></div></div>
-        <div class="item"><span class="dot d-todo">4</span><div><b>오픈 당일 전환</b><p>테스트 기사 삭제, 검색 허용, Vercel Pro(상업용) 전환</p></div></div>
-      </div>
-    </div>
-
-    <div class="group">
-      <h3>② 편집 기능 강화 · 5</h3>
-      <div class="grid">
-        <div class="item"><span class="dot d-todo">5</span><div><b>예약 발행</b><p>지정한 시각에 자동 발행</p></div></div>
-        <div class="item"><span class="dot d-todo">6</span><div><b>자동 저장 · 임시보관함</b><p>작성 중인 기사 유실 방지</p></div></div>
-        <div class="item"><span class="dot d-todo">7</span><div><b>PC · 모바일 미리보기</b><p>발행 전 실제 화면 확인</p></div></div>
-        <div class="item"><span class="dot d-todo">8</span><div><b>포토DB</b><p>예전에 올린 사진 검색해서 다시 쓰기</p></div></div>
-        <div class="item"><span class="dot d-todo">9</span><div><b>AI 문장 다듬기</b><p>미디어온의 강점 기능</p></div></div>
-      </div>
-    </div>
-
-    <div class="group">
-      <h3>③ 다매체 확장 · 2</h3>
-      <div class="grid">
-        <div class="item"><span class="dot d-todo">10</span><div><b>매체 전환 메뉴</b><p>관리자가 7개 매체를 바꿔가며 관리, 매체별 기사목록</p></div></div>
-        <div class="item"><span class="dot d-todo">11</span><div><b>나머지 매체 등록 · 기사 이전</b><p>신규 3곳 + 기존 홈페이지 3곳의 기사 옮기기</p></div></div>
-      </div>
-    </div>
-
-    <div class="group">
-      <h3>④ 운영 · 수익 · 4</h3>
-      <div class="grid">
-        <div class="item"><span class="dot d-todo">12</span><div><b>광고 배너 관리</b><p>배너 업로드, 위치, 노출 기간</p></div></div>
-        <div class="item"><span class="dot d-todo">13</span><div><b>통계</b><p>기자별·섹션별 조회수, 일별 현황</p></div></div>
-        <div class="item"><span class="dot d-todo">14</span><div><b>댓글</b><p>독자 댓글과 관리</p></div></div>
-        <div class="item"><span class="dot d-todo">15</span><div><b>뉴스레터</b><p>구독자에게 기사 발송</p></div></div>
-      </div>
-    </div>
+    <div class="head"><span class="tag t-todo">남은 작업</span><h2>앞으로 만들 기능</h2><em>23개</em></div>
+    <div class="group"><h3>① 오픈 전 필수 · 4</h3><div class="grid"><div class="item"><span class="dot d-todo">1</span><div><b>조회수 집계</b><p>지금은 0에서 늘지 않음. 많이 본 뉴스·통계에 필요</p><p class=rec>가장 먼저</p></div></div><div class="item"><span class="dot d-todo">2</span><div><b>개인정보처리방침 · 청소년보호정책</b><p>법적으로 필요한 페이지, 하단 링크</p><p class=rec>가장 먼저</p></div></div><div class="item"><span class="dot d-todo">3</span><div><b>사이트맵 · RSS · 포털 등록</b><p>뉴스 사이트맵, 네이버 서치어드바이저·구글 서치콘솔</p><p class=rec>가장 먼저</p></div></div><div class="item"><span class="dot d-todo">4</span><div><b>오픈 당일 전환</b><p>테스트 기사 삭제, 검색 허용, Vercel Pro(상업용) 전환</p></div></div></div></div><div class="group"><h3>② 편집 기능 · 8</h3><div class="grid"><div class="item"><span class="dot d-todo">5</span><div><b>자동 저장 · 임시보관함</b><p>작성 중인 기사 유실 방지</p><p class=rec>추천</p></div></div><div class="item"><span class="dot d-todo">6</span><div><b>기사 수정 이력</b><p>고친 내용·시각 기록, 정정보도·분쟁 대응</p><p class=rec>추천</p></div></div><div class="item"><span class="dot d-todo">7</span><div><b>기사 유형별 AI 쓰기</b><p>정보 입력형·키워드·인터뷰 기사, 블로그 글 변환</p><p class=rec>추천</p></div></div><div class="item"><span class="dot d-todo">8</span><div><b>AI 교정</b><p>맞춤법·띄어쓰기·표기 원칙 점검</p></div></div><div class="item"><span class="dot d-todo">9</span><div><b>한글(.hwp) 보도자료 읽기</b><p>정부·기관 보도자료 대부분이 .hwp</p><p class=rec>추천</p></div></div><div class="item"><span class="dot d-todo">10</span><div><b>메일 첨부 워드 자동 본문화</b><p>메일로 받은 .doc·.docx 첨부를 본문으로</p></div></div><div class="item"><span class="dot d-todo">11</span><div><b>PC · 모바일 미리보기</b><p>발행 전 실제 화면 확인</p></div></div><div class="item"><span class="dot d-todo">12</span><div><b>포토DB</b><p>예전에 올린 사진 검색해서 다시 쓰기</p></div></div></div></div><div class="group"><h3>③ 이전 · 확장 · 3</h3><div class="grid"><div class="item"><span class="dot d-todo">13</span><div><b>기존 기사 일괄 가져오기</b><p>ND소프트 등 기존 CMS 기사·사진 이전 도구</p><p class=rec>영업 핵심</p></div></div><div class="item"><span class="dot d-todo">14</span><div><b>옛 기사 주소 자동 연결</b><p>articleView.html?idxno= → 새 주소(301), 검색 노출 유지</p><p class=rec>영업 핵심</p></div></div><div class="item"><span class="dot d-todo">15</span><div><b>나머지 운영 매체 등록</b><p>대표님 그룹·김경석 그룹 매체 차례로 개설</p></div></div></div></div><div class="group"><h3>④ 운영 · 수익 · 6</h3><div class="grid"><div class="item"><span class="dot d-todo">16</span><div><b>광고 배너 관리</b><p>배너 업로드·위치·노출 기간·클릭 수</p><p class=rec>추천</p></div></div><div class="item"><span class="dot d-todo">17</span><div><b>통계</b><p>기자별·섹션별 조회수, 일별 현황, 월간 리포트</p></div></div><div class="item"><span class="dot d-todo">18</span><div><b>댓글</b><p>독자 댓글, 신고·삭제 관리 (이전 댓글 넣기 포함)</p></div></div><div class="item"><span class="dot d-todo">19</span><div><b>뉴스레터</b><p>구독자에게 주요 기사 발송</p></div></div><div class="item"><span class="dot d-todo">20</span><div><b>알림</b><p>승인신청·반려·업무요청 답변을 메일·카카오톡으로</p></div></div><div class="item"><span class="dot d-todo">21</span><div><b>결제</b><p>카드·자동이체로 이용료 결제, 청구서 연동</p></div></div></div></div><div class="group"><h3>⑤ 보안 · 안정 · 2</h3><div class="grid"><div class="item"><span class="dot d-todo">22</span><div><b>로그인 기록 · 2단계 인증</b><p>발행인·총관리자 계정 보호</p></div></div><div class="item"><span class="dot d-todo">23</span><div><b>백업 · 복구 점검</b><p>정기 백업 확인과 복구 연습</p></div></div></div></div>
   </div>
 </section>
 
-<footer><div class="wrap"><span>IM CMS 내부 개발 현황판 — 외부 공개 금지</span><span>기준일 2026.09.28</span></div></footer>
+<footer><div class="wrap"><span>IM 뉴스룸 내부 개발 현황판 — 외부 공개 금지</span><span>기준일 2026.10.02</span></div></footer>
 </body>
 </html>
