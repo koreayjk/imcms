@@ -55,6 +55,7 @@ export default function AiReview({ token, title, blind, modelCount, expiresAt, r
       return
     }
     if (!form.reviewer.trim()) { setError('이름을 적어 주세요.'); return }
+    if (form.comment.trim().length < 10) { setError('전체 의견을 10자 이상 적어 주세요.'); return }
     setBusy(true)
     const res = await submitReview(token, form).catch(() => ({ error: '보내지 못했습니다. 잠시 뒤 다시 눌러 주세요.' } as const))
     setBusy(false)
@@ -184,23 +185,27 @@ export default function AiReview({ token, title, blind, modelCount, expiresAt, r
           <section className="rounded-lg md:sticky md:bottom-0 md:rounded-b-none border border-line bg-white p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] sm:p-5">
             <div className="grid gap-3 md:grid-cols-[220px_1fr_auto] md:items-end">
               <label className="block text-[12.5px] font-semibold">
-                이름 (필수)
+                이름 <span className="text-danger">(필수)</span>
                 <input
                   value={form.reviewer}
                   onChange={(e) => setForm({ ...form, reviewer: e.target.value })}
                   maxLength={40}
                   placeholder="예: 홍길동 기자"
-                  className="mt-1 w-full rounded-md border border-line px-3 py-2 text-[14px] font-normal outline-none focus:border-ink"
+                  required
+                  aria-invalid={tried && !form.reviewer.trim()}
+                  className={`mt-1 w-full rounded-md border px-3 py-2 text-[14px] font-normal outline-none focus:border-ink ${tried && !form.reviewer.trim() ? 'border-danger bg-danger/5' : 'border-line'}`}
                 />
               </label>
               <label className="block text-[12.5px] font-semibold">
-                전체 의견 (선택)
+                전체 의견 <span className="text-danger">(필수)</span>
                 <input
                   value={form.comment}
                   onChange={(e) => setForm({ ...form, comment: e.target.value })}
                   maxLength={2000}
-                  placeholder="전체적으로 어떤 초안이 실제 기사에 가까웠는지"
-                  className="mt-1 w-full rounded-md border border-line px-3 py-2 text-[14px] font-normal outline-none focus:border-ink"
+                  placeholder="전체적으로 어떤 초안이 실제 기사에 가까웠는지 (10자 이상)"
+                  required
+                  aria-invalid={tried && form.comment.trim().length < 10}
+                  className={`mt-1 w-full rounded-md border px-3 py-2 text-[14px] font-normal outline-none focus:border-ink ${tried && form.comment.trim().length < 10 ? 'border-danger bg-danger/5' : 'border-line'}`}
                 />
               </label>
               <button type="button" onClick={submit} disabled={busy} className="btn-publish px-6 py-2.5">

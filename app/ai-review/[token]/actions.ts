@@ -12,6 +12,7 @@ export async function submitReview(
 ): Promise<{ ok?: true; reveal?: ReviewReveal; error?: string }> {
   const reviewer = input.reviewer.trim().slice(0, 40)
   if (!reviewer) return { error: '이름을 적어 주세요.' }
+  if (input.comment.trim().length < 10) return { error: '전체 의견을 10자 이상 적어 주세요.' }
   const share = await loadShare(token)
   if (!share) return { error: '링크가 없거나 기한이 지났습니다.' }
   const { releases, models } = share.data
