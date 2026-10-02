@@ -25,6 +25,9 @@ function isPublicPath(pathname: string) {
     pathname === '/api/payments/stripe-webhook' ||
     // 기사 조회수 (독자가 부른다)
     pathname === '/api/view' ||
+    // 뉴스레터 구독 확인·수신거부 (메일 속 링크)
+    pathname.startsWith('/newsletter/') ||
+    pathname === '/api/newsletter/unsubscribe' ||
     // 광고 배너 클릭·노출 (독자가 부른다)
     pathname.startsWith('/ad/') ||
     pathname === '/api/ad-view' ||

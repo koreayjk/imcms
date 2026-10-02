@@ -25,6 +25,7 @@ export default async function PrivacyPage() {
           <tbody>
             <tr><td>기사제보·광고문의 (이메일)</td><td>이름, 이메일 주소, 연락처, 문의 내용</td><td>제보 확인·취재, 문의 답변</td><td>처리 완료 후 1년</td></tr>
             <tr><td>편집국 회원 (기자·편집인)</td><td>이름, 이메일 주소, 소속 매체, 로그인 기록</td><td>기사 작성·편집·발행, 본인 확인</td><td>탈퇴 시까지 (기사의 기자명은 기사와 함께 보존)</td></tr>
+            <tr><td>뉴스레터 구독 (신청한 분만)</td><td>이메일 주소, (선택) 이름, 구독 확인·수신거부 일시</td><td>뉴스레터 발송, 구독 확인</td><td>수신거부할 때까지 (메일마다 수신거부 링크)</td></tr>
             <tr><td>홈페이지 이용 (자동 수집)</td><td>접속 IP, 브라우저 종류, 접속 일시</td><td>서비스 안정 운영, 부정 이용 방지</td><td>최대 1년</td></tr>
           </tbody>
         </table>
@@ -45,7 +46,7 @@ export default async function PrivacyPage() {
             <tr><td>Supabase Inc.</td><td>데이터베이스·사진 저장</td><td>일본 (도쿄 데이터센터)</td></tr>
             <tr><td>Vercel Inc.</td><td>홈페이지 호스팅·접속 기록</td><td>미국·일본 등</td></tr>
             <tr><td>Google LLC</td><td>편집국 회원 구글 계정 로그인</td><td>미국</td></tr>
-            <tr><td>메일 수신 서비스</td><td>편집국으로 전달된 보도자료 메일 수신</td><td>미국</td></tr>
+            <tr><td>Postmark (ActiveCampaign, LLC)</td><td>보도자료 메일 수신, 뉴스레터·알림 메일 발송</td><td>미국</td></tr>
           </tbody>
         </table>
         <p>이전 시기는 서비스 이용 시점이며, 이전 방법은 암호화된 네트워크 전송입니다. 보유 기간은 위 1항과 같습니다. 국외 이전을 원하지 않으면 기사제보는 전화로 해 주시기 바랍니다.</p>

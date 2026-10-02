@@ -2,6 +2,8 @@ import Link from 'next/link'
 import type { SiteConfig } from '@/lib/sites'
 import Logo from './Logo'
 import { POLICIES } from '@/lib/policies'
+import NewsletterBox from './NewsletterBox'
+import { mailReady } from '@/lib/mail'
 
 export default function SiteFooter({ site }: { site: SiteConfig }) {
   const l = site.legal
@@ -27,6 +29,11 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
         </nav>
       </div>
 
+      {site.outletId && mailReady() && (
+        <div className="border-b border-rule bg-white">
+          <div className="mx-auto max-w-[1200px] px-4 py-6"><NewsletterBox siteName={site.name} /></div>
+        </div>
+      )}
       <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-4 py-8 lg:flex-row lg:gap-12">
         <div className="flex-shrink-0">
           <Logo site={site} size="md" />
