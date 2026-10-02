@@ -37,12 +37,24 @@ export default function AiReview({ token, title, blind, modelCount, expiresAt, r
     try { localStorage.setItem(store, JSON.stringify(form)) } catch {}
   }, [form, store, done])
 
-  const picked = releases.filter((r) => form.picks[r.id]).length
+  const [tried, setTried] = useState(false)
+  // 자료마다 초안 고르기 + 한 줄 의견(5자 이상)이 모두 있어야 보낼 수 있다
+  const MIN_NOTE = 5
+  const noteOk = (id: string) => (form.notes[id] ?? '').trim().length >= MIN_NOTE
+  const isDone = (id: string) => !!form.picks[id] && noteOk(id)
+  const completed = releases.filter((r) => isDone(r.id)).length
 
   async function submit() {
     setError('')
+    setTried(true)
+    const firstMissing = releases.findIndex((r) => !isDone(r.id))
+    if (firstMissing >= 0) {
+      const left = releases.length - completed
+      setError(`아직 ${left}건이 남았습니다. 자료마다 초안 하나를 고르고 한 줄 의견(${MIN_NOTE}자 이상)을 적어 주세요.`)
+      document.getElementById(`review-${firstMissing + 1}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
     if (!form.reviewer.trim()) { setError('이름을 적어 주세요.'); return }
-    if (!picked) { setError('적어도 한 건은 가장 좋은 초안을 골라 주세요.'); return }
     setBusy(true)
     const res = await submitReview(token, form).catch(() => ({ error: '보내지 못했습니다. 잠시 뒤 다시 눌러 주세요.' } as const))
     setBusy(false)
@@ -61,7 +73,7 @@ export default function AiReview({ token, title, blind, modelCount, expiresAt, r
           <p className="mt-2 max-w-3xl text-[13.5px] leading-relaxed text-muted">
             같은 보도자료로 AI {modelCount}종이 쓴 기사 초안입니다. 자료마다 <strong className="text-ink">기사로 내기에 가장 좋은 초안 하나</strong>를 골라 주세요.
             {blind && ' 선입견 없이 보시도록 어떤 AI가 썼는지는 가려 두었고, 보내 주시면 공개됩니다.'}
-            {' '}고치고 싶은 점은 한 줄 의견으로 남겨 주세요.
+            {' '}고른 이유나 고칠 점을 자료마다 <strong className="text-ink">한 줄 의견</strong>으로 꼭 남겨 주세요. 의견은 IM 뉴스룸 운영팀만 봅니다.
           </p>
           <p className="mt-1 text-[12px] text-muted">링크 사용 기한 {new Date(expiresAt).toLocaleDateString('ko-KR')}까지</p>
         </div>
@@ -96,9 +108,10 @@ export default function AiReview({ token, title, blind, modelCount, expiresAt, r
       ) : (
         <main className="mx-auto max-w-[1400px] space-y-5 px-4 py-6 sm:px-8">
           {releases.map((r, idx) => (
-            <section key={r.id} className="rounded-lg border border-line bg-white">
+            <section key={r.id} id={`review-${idx + 1}`} className={`scroll-mt-4 rounded-lg border bg-white ${tried && !isDone(r.id) ? 'border-danger' : 'border-line'}`}>
               <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3 sm:px-5">
                 <span className="text-[12px] font-bold tabular-nums text-muted">{idx + 1}/{releases.length}</span>
+                {isDone(r.id) && <span className="rounded bg-published/10 px-1.5 text-[11px] font-semibold text-published">✓ 완료</span>}
                 <h2 className="min-w-0 flex-1 text-[15px] font-bold leading-snug">{r.title}</h2>
                 <span className="text-[11.5px] text-muted">{r.source}</span>
                 <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} className="text-[12.5px] text-review underline underline-offset-2">
@@ -145,13 +158,25 @@ export default function AiReview({ token, title, blind, modelCount, expiresAt, r
                 })}
               </div>
               <div className="border-t border-line px-4 py-3 sm:px-5">
+                <label htmlFor={`note-${r.id}`} className="mb-1 block text-[12.5px] font-semibold">
+                  한 줄 의견 <span className="text-danger">(필수)</span>
+                </label>
                 <input
+                  id={`note-${r.id}`}
                   value={form.notes[r.id] ?? ''}
                   onChange={(e) => setForm({ ...form, notes: { ...form.notes, [r.id]: e.target.value } })}
                   maxLength={500}
-                  placeholder="한 줄 의견 (선택) 예: B는 제목이 좋은데 3문단에 원문에 없는 표현이 있음"
-                  className="w-full rounded-md border border-line px-3 py-2 text-[13.5px] outline-none focus:border-ink"
+                  required
+                  aria-invalid={tried && !noteOk(r.id)}
+                  placeholder="예: B는 제목이 좋은데 3문단에 원문에 없는 표현이 있음"
+                  className={`w-full rounded-md border px-3 py-2 text-[13.5px] outline-none focus:border-ink ${tried && !noteOk(r.id) ? 'border-danger bg-danger/5' : 'border-line'}`}
                 />
+                {tried && !isDone(r.id) && (
+                  <p className="mt-1 text-[12px] text-danger">
+                    {!form.picks[r.id] && '가장 좋은 초안을 골라 주세요. '}
+                    {!noteOk(r.id) && `한 줄 의견을 ${MIN_NOTE}자 이상 적어 주세요.`}
+                  </p>
+                )}
               </div>
             </section>
           ))}
@@ -179,7 +204,7 @@ export default function AiReview({ token, title, blind, modelCount, expiresAt, r
                 />
               </label>
               <button type="button" onClick={submit} disabled={busy} className="btn-publish px-6 py-2.5">
-                {busy ? '보내는 중…' : `검토 보내기 (${picked}/${releases.length} 선택)`}
+                {busy ? '보내는 중…' : `검토 보내기 (${completed}/${releases.length} 완료)`}
               </button>
             </div>
             {error && <p role="alert" className="mt-2 text-[13px] text-danger">{error}</p>}

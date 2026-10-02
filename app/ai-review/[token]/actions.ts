@@ -30,7 +30,9 @@ export async function submitReview(
     const note = (input.notes[r.id] ?? '').trim().slice(0, 500)
     if (note) notes[r.id] = note
   }
-  if (!Object.keys(picks).length) return { error: '적어도 한 건은 가장 좋은 초안을 골라 주세요.' }
+  // 자료마다 초안 선택과 한 줄 의견(5자 이상)이 모두 있어야 한다
+  const missing = releases.filter((r) => !picks[r.id] || (notes[r.id] ?? '').length < 5).length
+  if (missing) return { error: `아직 ${missing}건이 남았습니다. 자료마다 초안 하나를 고르고 한 줄 의견(5자 이상)을 적어 주세요.` }
 
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase.rpc('ai_compare_review_submit', {
