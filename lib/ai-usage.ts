@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { EXTRA_AI_FEE } from './pricing'
 
-// 매체별 이번 달 AI 기사 초안 사용량 (supabase/ai-usage.sql)
+// 매체별 이번 달 AI 사용량 (supabase/ai-usage.sql · ai-usage-all.sql). AI 초안 1번·법적 검수 1번을 각각 1회로 센다
 //   SQL 실행 전이면 함수가 없어서 한도 없이 쓰고 집계도 하지 않는다
-export type AiStatus = { plan: string | null; limit: number | null; used: number; overage: boolean; over: number; mine_used?: number; mine_limit?: number | null }
+export type AiStatus = { plan: string | null; limit: number | null; used: number; drafts?: number; legal?: number; overage: boolean; over: number; mine_used?: number; mine_limit?: number | null }
 
 export async function getAiStatus(supabase: SupabaseClient, outletId: string | null): Promise<AiStatus | null> {
   if (!outletId) return null
@@ -12,15 +12,17 @@ export async function getAiStatus(supabase: SupabaseClient, outletId: string | n
   return data as AiStatus
 }
 
-export type AiReserve = { ok: true; id: number | null; used?: number; limit?: number | null; overLimit?: boolean } | { ok: false; used: number; limit: number; scope: 'member' | 'outlet' }
+export type AiReserve = { ok: true; id: number | null; used?: number; limit?: number | null; overLimit?: boolean; legacy?: boolean } | { ok: false; used: number; limit: number; scope: 'member' | 'outlet' }
 
-// AI 초안을 쓰기 직전에 한 건을 잡는다 (한도를 다 썼고 추가 사용이 꺼져 있으면 ok:false)
-export async function reserveAi(supabase: SupabaseClient, outletId: string | null): Promise<AiReserve> {
+// AI를 쓰기 직전에 한 건을 잡는다 (한도를 다 썼고 추가 사용이 꺼져 있으면 ok:false)
+//   kind: draft = 보도자료 AI 초안, legal = 법적 검수
+export async function reserveAi(supabase: SupabaseClient, outletId: string | null, kind: 'draft' | 'legal' = 'draft'): Promise<AiReserve> {
   if (!outletId) return { ok: true, id: null }
-  const { data, error } = await supabase.rpc('ai_usage_reserve', { o: outletId })
+  // 초안은 예전 함수(인자 하나)로도 되도록 그대로 부른다
+  const { data, error } = await supabase.rpc('ai_usage_reserve', kind === 'draft' ? { o: outletId } : { o: outletId, p_kind: kind })
   if (error) {
-    // 함수가 없으면(SQL 실행 전) 집계 없이 쓴다. 권한 오류 등은 그대로 알린다
-    if (/ai_usage_reserve|schema cache|does not exist/i.test(error.message)) return { ok: true, id: null }
+    // 함수가 없으면(SQL 실행 전) 집계 없이 쓴다 (legacy: 검수는 예전 방식으로 기록만). 권한 오류 등은 그대로 알린다
+    if (/ai_usage_reserve|schema cache|does not exist|Could not find the function/i.test(error.message)) return { ok: true, id: null, legacy: true }
     throw new Error(error.message)
   }
   const d = data as { ok: boolean; id?: number; used: number; limit: number | null; over_limit?: boolean; scope?: 'member' | 'outlet' }
@@ -42,8 +44,8 @@ export function myLimitMessage(s: AiStatus | null) {
   if (!s || s.mine_limit == null) return ''
   const used = s.mine_used ?? 0
   return used >= s.mine_limit
-    ? `이번 달 내 AI 초안 한도(${s.mine_limit}건)를 다 썼습니다. 더 필요하면 편집장에게 한도를 늘려 달라고 요청해 주세요.`
-    : `내 AI 초안 ${used}/${s.mine_limit}건`
+    ? `이번 달 내 AI 사용 한도(${s.mine_limit}회)를 다 썼습니다. 더 필요하면 편집장에게 한도를 늘려 달라고 요청해 주세요.`
+    : `내 AI 사용 ${used}/${s.mine_limit}회 (초안·법적 검수)`
 }
 export const myLimitFull = (s: AiStatus | null) => !!s && s.mine_limit != null && (s.mine_used ?? 0) >= s.mine_limit
 
@@ -60,9 +62,9 @@ export function aiLimitMessage(s: Pick<AiStatus, 'used' | 'limit' | 'overage'> &
   if (s.limit == null) return ''
   if (s.used >= s.limit) {
     return s.overage
-      ? `이번 달 AI 초안 한도(${s.limit.toLocaleString()}건)를 넘어 추가 사용 중입니다${s.over ? ` (${s.over.toLocaleString()}건)` : ''}. 추가분은 100건마다 ${EXTRA_AI_FEE.toLocaleString()}원이 청구됩니다.`
-      : `이번 달 AI 초안 한도(${s.limit.toLocaleString()}건)를 다 썼습니다. 다음 달 1일에 다시 쓸 수 있고, 더 쓰려면 고객센터에서 “추가 사용”을 신청하세요. 원문 그대로 기사 만들기는 계속 쓸 수 있습니다.`
+      ? `이번 달 AI 사용 한도(${s.limit.toLocaleString()}회)를 넘어 추가 사용 중입니다${s.over ? ` (${s.over.toLocaleString()}회)` : ''}. 추가분은 100회마다 ${EXTRA_AI_FEE.toLocaleString()}원이 청구됩니다.`
+      : `이번 달 AI 사용 한도(${s.limit.toLocaleString()}회)를 다 썼습니다. 다음 달 1일에 다시 쓸 수 있고, 더 쓰려면 고객센터에서 “추가 사용”을 신청하세요. 원문 그대로 기사 만들기는 계속 쓸 수 있습니다.`
   }
   const left = s.limit - s.used
-  return `이번 달 AI 초안 ${s.used.toLocaleString()}/${s.limit.toLocaleString()}건 사용 · ${left.toLocaleString()}건 남음`
+  return `이번 달 AI ${s.used.toLocaleString()}/${s.limit.toLocaleString()}회 사용 (초안·법적 검수) · ${left.toLocaleString()}회 남음`
 }

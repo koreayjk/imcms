@@ -65,11 +65,11 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   let aiNotes: string | null = null
 
   if (mode === 'ai') {
-    // 이번 달 AI 초안 한도 확인 (요금제별). 한도를 다 쓰면 원문 그대로 만들기만 된다
+    // 이번 달 AI 사용 한도 확인 (요금제별, 초안·법적 검수 합계). 한도를 다 쓰면 원문 그대로 만들기만 된다
     const slot = await reserveAi(supabase, outletId)
     if (!slot.ok) {
       const msg = slot.scope === 'member'
-        ? `이번 달 내 AI 초안 한도(${slot.limit}건)를 다 썼습니다. 더 필요하면 편집장에게 한도를 늘려 달라고 요청해 주세요. 원문 그대로 기사 만들기는 쓸 수 있습니다.`
+        ? `이번 달 내 AI 사용 한도(${slot.limit}회)를 다 썼습니다. 더 필요하면 편집장에게 한도를 늘려 달라고 요청해 주세요. 원문 그대로 기사 만들기는 쓸 수 있습니다.`
         : aiLimitMessage({ used: slot.used, limit: slot.limit, overage: false })
       redirect(`/press/${id}?error=${encodeURIComponent(msg)}`)
     }

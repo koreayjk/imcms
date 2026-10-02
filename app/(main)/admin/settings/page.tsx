@@ -41,11 +41,11 @@ export default async function NewsroomSettingsPage() {
               <h2 id="ai-title" className="text-[16px] font-bold">{month} 기자별 AI 사용량</h2>
               <p className="mt-1 text-[13px] leading-relaxed text-muted">
                 {status?.limit != null
-                  ? <>매체 전체 AI 초안 <strong className="text-ink">{status.used} / {status.limit}건</strong>. </>
+                  ? <>매체 전체 AI 사용 <strong className="text-ink">{status.used} / {status.limit}회</strong>{status.drafts != null ? ` (초안 ${status.drafts} · 법적 검수 ${status.legal ?? 0})` : ''}. </>
                   : '요금제 한도가 없는 매체입니다. '}
                 {manager
-                  ? '기자별 한도를 비워 두면 매체 한도를 인원수로 나눠 자동으로 정해집니다(예: 월 100건 · 2명 → 각 50건). 숫자를 적으면 그 사람만 따로 정해지고, 나머지 인원이 남은 건수를 나눠 갖습니다. 법적 검수는 한도에 세지 않습니다.'
-                  : '편집장이 정한 내 한도입니다. 더 필요하면 편집장에게 요청해 주세요. 법적 검수는 한도에 세지 않습니다.'}
+                  ? '기자별 한도를 비워 두면 매체 한도를 인원수로 나눠 자동으로 정해집니다(예: 월 300회 · 3명 → 각 100회). 숫자를 적으면 그 사람만 따로 정해지고, 나머지 인원이 남은 횟수를 나눠 갖습니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다.'
+                  : '편집장이 정한 내 한도입니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다. 더 필요하면 편집장에게 요청해 주세요.'}
               </p>
             </div>
             {error ? (

@@ -97,7 +97,7 @@ export default async function PressDetailPage({ params, searchParams }: { params
       </article>
 
       <p className="mt-4 text-[12px] leading-relaxed text-muted md:hidden">
-        {ai ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.' : aiBlocked ? '이번 달 AI 초안 한도를 다 썼습니다.' : 'AI 초안은 관리자가 AI 키를 설정하면 쓸 수 있습니다.'}{' '}
+        {ai ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.' : aiBlocked ? '이번 달 AI 사용 한도를 다 썼습니다.' : 'AI 초안은 관리자가 AI 키를 설정하면 쓸 수 있습니다.'}{' '}
         끝에 “{sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
       </p>
 
@@ -116,7 +116,7 @@ export default async function PressDetailPage({ params, searchParams }: { params
           <p className="hidden flex-1 text-[12.5px] leading-relaxed text-muted md:block">
             {ai
               ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.'
-              : aiBlocked ? '이번 달 AI 초안 한도를 다 썼습니다. 원문 그대로 기사 만들기는 쓸 수 있습니다.'
+              : aiBlocked ? '이번 달 AI 사용 한도를 다 썼습니다. 원문 그대로 기사 만들기는 쓸 수 있습니다.'
               : 'AI 초안은 관리자가 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)를 설정하면 쓸 수 있습니다.'}{' '}
             사진은 우리 저장소로 옮겨지고, 끝에 “{sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
           </p>

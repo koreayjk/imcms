@@ -12,6 +12,7 @@ export type PickPlanDetail = { plan: PlanId; billing: 'monthly' | 'annual' }
 const COMMON = [
   '기자 계정 무제한',
   'AI 기사 초안 · 원문 대조 점검',
+  '발행 전 AI 법적 검수 (명예훼손·저작권·개인정보)',
   '보도자료 자동 수집 · 메일로 받기',
   '기자 → 편집장 승인 · 예약 발행',
   '자동 저장 · 기사 수정 이력',
@@ -166,7 +167,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-2">
         {[
           ['매체 추가', `${won(EXTRA_OUTLET_FEE)}/월`, '같은 그룹에 매체를 더 둘 때 매체마다'],
-          ['AI 초안 추가', won(EXTRA_AI_FEE), '월 한도를 넘으면 100건마다'],
+          ['AI 사용 추가', won(EXTRA_AI_FEE), '월 한도(초안·법적 검수)를 넘으면 100회마다'],
         ].map(([k, v, d]) => (
           <div key={k} className="rounded-2xl bg-white p-5 ring-1 ring-black/5">
             <dt className="text-[13px] font-semibold text-[#5B616B]">{k}</dt>

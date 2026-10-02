@@ -5,6 +5,7 @@ import { createHmac } from 'crypto'
 import { AiDraftError } from '@/lib/ai-draft'
 import { checkLegal, legalModel, type LegalCheck } from '@/lib/ai-legal'
 import { htmlToText } from '@/lib/press'
+import { finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 
 // 띄어쓰기·줄바꿈만 다른 경우는 같은 글로 본다. 서버 비밀값으로 서명해 두어, 검수 결과를 직접 만들어 저장해도 "검수 완료"로 통하지 않게 한다
 function contentHash(title: string, subtitle: string, text: string) {
@@ -12,7 +13,7 @@ function contentHash(title: string, subtitle: string, text: string) {
   return createHmac('sha256', `legal:${process.env.PAYMENT_DB_SECRET ?? ''}`).update([title, subtitle, text].map(norm).join('\u0000')).digest('hex').slice(0, 32)
 }
 
-// 승인신청·발행 직전에 기사쓰기 화면이 부른다. 검수 횟수는 기자별 AI 사용 기록에 남는다(초안 한도에는 세지 않음)
+// 승인신청·발행 직전에 기사쓰기 화면이 부른다. 검수 1번 = AI 사용 1회 (초안과 같은 한도)
 // articleId가 있으면 저장된 검수 결과와 글자를 비교해, 같으면 AI를 다시 부르지 않는다 (기자가 승인신청 때 검수한 기사를 편집장이 그대로 발행하는 경우 등)
 export async function checkArticleLegal(input: { title: string; subtitle: string; html: string; outletId: string | null; articleId?: string | null }):
   Promise<{ ok: true; check: LegalCheck } | { ok: false; skipped?: boolean; error: string }> {
@@ -27,12 +28,28 @@ export async function checkArticleLegal(input: { title: string; subtitle: string
     const saved = (data as { legal_check?: LegalCheck | null } | null)?.legal_check
     if (saved?.content_hash === hash) return { ok: true, check: { ...saved, reused: true } }
   }
+  // 검수도 AI 사용 한도에 1회로 센다 (내 몫 → 매체 몫 순서)
+  const o = input.outletId ?? outletId
+  let slot: Awaited<ReturnType<typeof reserveAi>>
+  try {
+    slot = await reserveAi(supabase, o, 'legal')
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'AI 사용 한도를 확인하지 못했습니다.' }
+  }
+  if (!slot.ok) {
+    return { ok: false, error: slot.scope === 'member'
+      ? `이번 달 내 AI 사용 한도(${slot.limit}회)를 다 써서 검수하지 못했습니다. 편집장에게 한도를 늘려 달라고 요청할 수 있습니다.`
+      : `이번 달 매체 AI 사용 한도(${slot.limit.toLocaleString()}회)를 다 써서 검수하지 못했습니다.` }
+  }
   try {
     const r = await checkLegal({ title: input.title, subtitle: input.subtitle, text })
-    const o = input.outletId ?? outletId
-    if (o) await supabase.rpc('ai_usage_log', { o, p_kind: 'legal', m: r.model.id, tin: r.inputTokens, tout: r.outputTokens, cost: Number(r.costUsd.toFixed(5)) })
+    if (slot.legacy) {
+      // ai-usage-all.sql 실행 전: 예전처럼 기록만 남긴다 (한도에 세지 않음)
+      if (o) await supabase.rpc('ai_usage_log', { o, p_kind: 'legal', m: r.model.id, tin: r.inputTokens, tout: r.outputTokens, cost: Number(r.costUsd.toFixed(5)) })
+    } else await finishAi(supabase, slot.id, r)
     return { ok: true, check: { ...r.check, content_hash: hash } }
   } catch (e) {
+    await releaseAi(supabase, slot.id)
     return { ok: false, error: e instanceof AiDraftError ? e.message : 'AI 법적 검수를 하지 못했습니다.' }
   }
 }
