@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import { BETA, BILLING_LABEL, firstPayment, isMigrating, planById, type Billing } from '@/lib/pricing'
+import { BETA, BILLING_LABEL, firstPayment, planById, type Billing } from '@/lib/pricing'
 import { TERMS_VERSION } from '@/lib/service-terms'
 
 export type ApplyState = { ok?: boolean; error?: string }
@@ -37,7 +37,7 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
 
   const now = new Date().toISOString()
-  const pay = firstPayment(plan, billing, isMigrating(currentCms))
+  const pay = firstPayment(plan, billing)
   const base = {
     company,
     contact_name: contactName,

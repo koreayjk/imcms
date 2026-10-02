@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { ANNUAL_MONTHS, BETA, BETA_RATE, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, SETUP_FEE, won, type PlanId } from '@/lib/pricing'
+import { ANNUAL_MONTHS, BETA, BETA_RATE, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, SETUP_FEE, SETUP_ITEMS, won, type PlanId } from '@/lib/pricing'
 
 // 소개 페이지 요금표 (금액은 lib/pricing.ts)
 //   요금제의 신청 버튼을 누르면 아래 신청서에 그 요금제·결제 방식이 골라진다 (im-pick-plan 이벤트)
@@ -96,6 +96,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                     <p className="mt-1 tabular-nums">
                       <span className="text-[32px] font-extrabold tracking-[-0.03em]">{won(price)}</span>
                       <span className="ml-1 text-[14px] font-semibold text-[#5B616B]">/{annual ? '년' : '월'}</span>
+                      <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[3px] text-[11.5px] font-semibold text-[#5B616B]">VAT 포함</span>
                     </p>
                     {annual
                       ? <p className="mt-1 text-[13px] font-semibold tabular-nums text-[#0F9F6E]">한 달 약 {(price / 12 / 10_000).toFixed(1)}만 원꼴 · {won(saved)} 절약</p>
@@ -137,9 +138,33 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
         </ul>
       </div>
 
-      <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-3">
+      {/* ─── 세팅비 ─── */}
+      <section aria-labelledby="setup-title" className="mt-4 rounded-2xl bg-white p-6 ring-1 ring-black/5 sm:p-8">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 id="setup-title" className="text-[16px] font-extrabold">세팅비 · 처음 개통할 때 한 번</h3>
+            <p className="mt-1 text-[13.5px] text-[#5B616B]">신문사 편집국과 홈페이지를 바로 쓸 수 있게 저희가 처음부터 설정해 드리는 비용입니다. 매달 내는 이용료와 별도로 한 번만 냅니다.</p>
+          </div>
+          <p className="tabular-nums">
+            {BETA && <span className="mr-2 text-[15px] text-[#9AA0A8]"><s>{won(SETUP_FEE)}</s></span>}
+            <span className="text-[26px] font-extrabold tracking-[-0.02em]">{BETA ? '0원' : won(SETUP_FEE)}</span>
+            <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[4px] text-[11.5px] font-semibold text-[#5B616B]">VAT 포함</span>
+            {BETA && <span className="ml-2 inline-block whitespace-nowrap rounded bg-[#FDECEA] px-2 py-0.5 align-[4px] text-[12px] font-bold text-[#D93B4A]">베타 기간 신청 무료</span>}
+          </p>
+        </div>
+        <ul className="mt-5 grid gap-x-6 gap-y-3 text-[14px] sm:grid-cols-2">
+          {SETUP_ITEMS.map(([t, d]) => (
+            <li key={t} className="flex gap-2.5">
+              <span className="mt-0.5 font-bold text-[#10B981]" aria-hidden>✓</span>
+              <span><strong className="font-bold text-[#14171C]">{t}</strong><span className="block text-[13px] leading-snug text-[#5B616B]">{d}</span></span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 text-[12.5px] text-[#8A9099]">{BETA ? `베타 기간이 끝난 뒤 신청하시면 세팅비 ${won(SETUP_FEE)}이 첫 결제에 함께 청구됩니다. ` : ''}개통한 뒤에는 세팅비를 돌려드리지 않습니다.</p>
+      </section>
+
+      <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-2">
         {[
-          ['세팅비', won(SETUP_FEE), `다른 프로그램에서 옮겨 오${BETA ? '거나 베타 신문사는' : '면'} 무료 (기사·사진 이전 포함)`],
           ['매체 추가', `${won(EXTRA_OUTLET_FEE)}/월`, '같은 그룹에 매체를 더 둘 때 매체마다'],
           ['AI 초안 추가', won(EXTRA_AI_FEE), '월 한도를 넘으면 100건마다'],
         ].map(([k, v, d]) => (
@@ -152,7 +177,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       </dl>
 
       <p className="mt-5 text-center text-[12.5px] leading-relaxed text-[#8A9099]">
-        모든 금액은 VAT 포함입니다. * 전송량은 일반적인 언론사 사용 기준으로 제한 없이 쓰며, 아주 큰 트래픽이 계속되면 요금제를 함께 정합니다. 배너·팝업 디자인은 운영팀이 만들어 드리는 건수이고, 직접 만든 배너는 개수 제한 없이 올릴 수 있습니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
+        모든 금액은 부가세(VAT) 포함입니다. * 전송량은 일반적인 언론사 사용 기준으로 제한 없이 쓰며, 아주 큰 트래픽이 계속되면 요금제를 함께 정합니다. 배너·팝업 디자인은 운영팀이 만들어 드리는 건수이고, 직접 만든 배너는 개수 제한 없이 올릴 수 있습니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
         {BETA && ' 베타 반값의 적용 기간과 조건은 상담할 때 안내해 드립니다.'}
       </p>
     </div>

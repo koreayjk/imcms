@@ -4,7 +4,18 @@
 export const BETA = true
 export const BETA_RATE = 0.5
 export const ANNUAL_MONTHS = 10
-export const SETUP_FEE = 110_000
+export const SETUP_FEE = 150_000
+
+// 세팅비(처음 한 번)에 들어가는 일 — 소개 페이지 요금표에 그대로 보여준다
+export const SETUP_ITEMS: [string, string][] = [
+  ['편집국·홈페이지 개설', '매체 등록, 섹션(메뉴) 구성, 기자·편집장 계정 초대와 직급 설정'],
+  ['홈페이지 맞춤 적용', '로고·대표 색·슬로건, 첫 화면 배치와 전문 섹션 구성'],
+  ['법정 표기·정책 페이지', '등록번호·발행인·편집인 등 하단 표기, 개인정보처리방침·청소년보호정책'],
+  ['도메인 연결', '쓰던 도메인 연결과 보안 접속(https) 적용'],
+  ['기존 기사 옮기기', '다른 프로그램의 기사·사진 이전과 옛 기사 주소 자동 연결 (검색 노출 유지)'],
+  ['포털 검색 등록 준비', '사이트맵·RSS 생성, 네이버·구글 소유 확인 연결'],
+  ['사용법 안내', '기사 쓰기·승인·홈 편집·보도자료·AI 초안 사용법 1:1 안내'],
+]
 export const EXTRA_OUTLET_FEE = 33_000
 export const EXTRA_AI_FEE = 11_000 // 100건마다
 
@@ -75,17 +86,12 @@ export function planCharge(plan: Plan, billing: Billing, beta = BETA) {
   return { regular, price: regular * (beta ? BETA_RATE : 1) }
 }
 
-// 신청서의 첫 결제 금액: 이용료 + 세팅비 (베타 신문사·다른 프로그램에서 옮겨 오는 곳은 세팅비 무료)
-export function firstPayment(plan: Plan, billing: Billing, migrating: boolean, beta = BETA) {
+// 신청서의 첫 결제 금액: 이용료 + 세팅비 (베타 기간에 신청하면 세팅비 무료)
+export function firstPayment(plan: Plan, billing: Billing, beta = BETA) {
   const charge = planCharge(plan, billing, beta)
   if (!charge) return null
-  const setupFree = beta || migrating
+  const setupFree = beta
   const setup = setupFree ? 0 : SETUP_FEE
   return { ...charge, setup, setupFree, total: charge.price + setup }
 }
 
-// 다른 프로그램에서 옮겨 오는지 (세팅비 무료 판단): 쓰는 프로그램을 적었고 “없음”이 아니면
-export function isMigrating(currentCms: string) {
-  const v = currentCms.trim()
-  return !!v && !/^(없음|없다|없어요|x|-|창간\s*준비)/i.test(v)
-}

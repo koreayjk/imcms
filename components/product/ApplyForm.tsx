@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { submitBetaRequest, type ApplyState } from '@/app/imnewsroom/actions'
-import { BETA, BILLING_LABEL, PLANS, SETUP_FEE, firstPayment, isMigrating, planById, won, type Billing, type PlanId } from '@/lib/pricing'
+import { BETA, BILLING_LABEL, PLANS, SETUP_FEE, firstPayment, planById, won, type Billing, type PlanId } from '@/lib/pricing'
 import { applyConsentSections, termsSections } from '@/lib/service-terms'
 import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
@@ -56,7 +56,6 @@ export default function ApplyForm() {
   const [state, action] = useFormState<ApplyState, FormData>(submitBetaRequest, {})
   const [plan, setPlan] = useState<PlanId>('standard')
   const [billing, setBilling] = useState<Billing>('annual')
-  const [cms, setCms] = useState('')
   const [agree, setAgree] = useState(false)
   const [agreeTerms, setAgreeTerms] = useState(false)
 
@@ -72,7 +71,7 @@ export default function ApplyForm() {
   }, [])
 
   const chosen = planById(plan)!
-  const pay = firstPayment(chosen, billing, isMigrating(cms))
+  const pay = firstPayment(chosen, billing)
 
   if (state.ok) {
     return (
@@ -135,7 +134,7 @@ export default function ApplyForm() {
                   이용료 {won(pay.price)} ({chosen.name} · {billing === 'annual' ? '12개월을 10개월 값으로' : '1개월'}{BETA ? ' · 베타 반값' : ''})
                   {BETA && <s className="ml-1 text-[#9AA0A8]">{won(pay.regular)}</s>}
                 </li>
-                <li>세팅비 {pay.setupFree ? <>0원 <s className="text-[#9AA0A8]">{won(SETUP_FEE)}</s> ({BETA ? '베타 신문사 무료' : '옮겨 오는 고객사 무료'})</> : won(pay.setup)}</li>
+                <li>세팅비 {pay.setupFree ? <>0원 <s className="text-[#9AA0A8]">{won(SETUP_FEE)}</s> (베타 기간 신청 무료)</> : <>{won(pay.setup)} (처음 한 번)</>}</li>
                 {billing === 'monthly' && <li>다음 달부터 매달 {won(pay.price)}</li>}
               </ul>
             </>
@@ -172,8 +171,8 @@ export default function ApplyForm() {
           </select>
         </Field>
         <div className="sm:col-span-2">
-          <Field id="current_cms" label="지금 쓰는 기사 관리 프로그램" hint="다른 프로그램에서 옮겨 오시면 세팅비가 무료이고, 기존 기사·사진도 옮겨 드립니다.">
-            <input id="current_cms" name="current_cms" value={cms} onChange={(e) => setCms(e.target.value)} maxLength={80} placeholder="없음 / 프로그램 이름" className={input} />
+          <Field id="current_cms" label="지금 쓰는 기사 관리 프로그램" hint="다른 프로그램을 쓰고 계시면 기존 기사·사진과 옛 기사 주소를 옮겨 드립니다 (세팅비에 포함).">
+            <input id="current_cms" name="current_cms" maxLength={80} placeholder="없음 / 프로그램 이름" className={input} />
           </Field>
         </div>
       </div>
