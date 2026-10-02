@@ -36,6 +36,8 @@ export type SiteConfig = {
   slogan: string
   sloganEn: string
   description: string
+  // 첫 화면 전문 섹션 묶음의 제목 (예: 케어 전문뉴스, 국제물류 전문뉴스)
+  specialtyTitle: string
   logoMark: string
   // mark: 심볼 + 매체 이름 글자 / full: 로고 이미지만 / text: 매체 이름 글자만
   logoMode?: LogoMode
@@ -57,6 +59,7 @@ export const SITES: SiteConfig[] = [
     slogan: '세상을 더 깊이, 사람을 더 가까이',
     sloganEn: 'NEWS FOR A BETTER TOMORROW',
     description: '보건·복지, 병원·의료, 요양·시니어케어, 돌봄산업 전문 인터넷신문',
+    specialtyTitle: '케어 전문뉴스',
     logoMark: '/sites/thecaretimes/logo-mark.png',
     colors: { brand: '#02472F', brandDark: '#01321F', gold: '#D3A82B', goldInk: '#8C6D12' },
     sections: [
@@ -107,6 +110,7 @@ export type OutletSiteSettings = {
   slogan?: string
   sloganEn?: string
   description?: string
+  specialtyTitle?: string
   logoUrl?: string
   logoMode?: LogoMode
   colors?: { brand?: string; accent?: string }
@@ -167,6 +171,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     slogan: s.slogan ?? code?.slogan ?? '',
     sloganEn: s.sloganEn ?? code?.sloganEn ?? '',
     description: s.description ?? code?.description ?? `${o.name} 인터넷신문`,
+    specialtyTitle: s.specialtyTitle || code?.specialtyTitle || '전문뉴스',
     logoMark: s.logoUrl ?? code?.logoMark ?? '',
     logoMode: s.logoMode ?? (s.logoUrl || code?.logoMark ? 'mark' : 'text'),
     colors: { brand, brandDark: shade(brand, 0.3), gold: accent, goldInk: shade(accent, 0.35) },

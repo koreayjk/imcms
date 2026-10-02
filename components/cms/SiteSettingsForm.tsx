@@ -134,6 +134,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <Field label="영문 슬로건"><input value={s.sloganEn ?? ''} onChange={(e) => set({ sloganEn: e.target.value })} maxLength={80} className="field-input" /></Field>
           <div className="sm:col-span-2">
             <Field label="매체 소개" hint="검색 결과·공유할 때 나오는 설명 (160자 이내 권장)"><input value={s.description ?? ''} onChange={(e) => set({ description: e.target.value })} maxLength={200} className="field-input" /></Field>
+            <Field label="전문뉴스 제목" hint="첫 화면 전문 섹션 묶음의 제목 (예: 국제물류 전문뉴스)"><input value={s.specialtyTitle ?? ''} onChange={(e) => set({ specialtyTitle: e.target.value })} maxLength={30} placeholder="전문뉴스" className="field-input" /></Field>
           </div>
         </div>
       </Card>

@@ -7,14 +7,14 @@ import Thumb from './Thumb'
 
 type Tab = { slug: string; name: string; description?: string; articles: PublicArticle[] }
 
-export default function SpecialtyTabs({ tabs }: { tabs: Tab[] }) {
+export default function SpecialtyTabs({ tabs, title = '전문뉴스' }: { tabs: Tab[]; title?: string }) {
   const [active, setActive] = useState(0)
   const tab = tabs[active]
   const [lead, ...rest] = tab.articles
 
   return (
     <div>
-      <div role="tablist" aria-label="케어 전문뉴스 분야" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-4">
+      <div role="tablist" aria-label={`${title} 분야`} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-4">
         {tabs.map((t, i) => (
           <button
             key={t.slug}

@@ -38,6 +38,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     slogan: cut(s.slogan, 80),
     sloganEn: cut(s.sloganEn, 80),
     description: cut(s.description, 200),
+    specialtyTitle: cut(s.specialtyTitle, 30) || undefined,
     logoUrl: logoUrl || undefined,
     logoMode: mode,
     colors: {

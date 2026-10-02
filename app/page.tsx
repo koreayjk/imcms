@@ -167,18 +167,22 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── 케어 전문뉴스 ── */}
+      {/* ── 전문뉴스 (매체 설정의 전문 섹션) ── */}
       <section aria-labelledby="specialty-title" className="border-y border-rule bg-soft py-9">
         <div className="mx-auto max-w-[1200px] px-4">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <p className="font-serif text-[11px] tracking-[0.24em] text-gold-ink">{site.nameEn} SPECIAL</p>
-              <h2 id="specialty-title" className="mt-1 text-[24px] font-extrabold tracking-[-0.03em] text-brand">케어 전문뉴스</h2>
+              <h2 id="specialty-title" className="mt-1 text-[24px] font-extrabold tracking-[-0.03em] text-brand">{site.specialtyTitle}</h2>
             </div>
             <p className="hidden text-[13px] text-sub lg:block">{site.description}</p>
           </div>
 
-          <div className="hidden grid-cols-4 gap-5 lg:grid">
+          {/* 전문 섹션 수에 맞춰 한 줄로 (3·4·5개), 6개 이상이면 3개씩 */}
+          <div
+            className="hidden gap-5 lg:grid"
+            style={{ gridTemplateColumns: `repeat(${specialty.length <= 5 ? specialty.length : specialty.length % 4 === 0 ? 4 : 3}, minmax(0, 1fr))` }}
+          >
             {specialty.map((s) => {
               const [lead, ...rest] = bySection[s.slug] ?? []
               return (
@@ -208,6 +212,7 @@ export default async function HomePage() {
 
           <div className="lg:hidden">
             <SpecialtyTabs
+              title={site.specialtyTitle}
               tabs={specialty.map((s) => ({ slug: s.slug, name: s.name, description: s.description, articles: bySection[s.slug] ?? [] }))}
             />
           </div>
