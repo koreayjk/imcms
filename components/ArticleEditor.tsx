@@ -16,6 +16,7 @@ import PendingButton from './cms/PendingButton'
 import { deleteArticle } from '@/app/(main)/articles/actions'
 import { checkArticleLegal } from '@/app/(main)/articles/legal'
 import LegalDecide, { type Decision } from './cms/LegalDecide'
+import LegalReview from './cms/LegalReview'
 import type { LegalCheck } from '@/lib/legal-types'
 import { canReplaceInEditor, findInText, replaceInEditor, replaceInText } from '@/lib/editor-replace'
 import { PREVIEW_STORE, type ArticlePreviewData } from '@/lib/article-preview'
@@ -86,13 +87,12 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   // 기자명 옆 이메일: 기자는 언론사 대표 이메일로 고정, 편집장 이상은 기사마다 바꿀 수 있다
   const savedEmail = (article as { byline_email?: string | null } | undefined)?.byline_email ?? null
   const [bylineEmail, setBylineEmail] = useState(savedEmail ?? outletEmail ?? '')
-  // AI 법적 검수: 같은 내용으로 이미 검수했으면 다시 하지 않는다
+  // AI 법적 검수 (원할 때 “AI 검수” 버튼으로). 같은 내용으로 이미 검수했으면 다시 하지 않는다
   const [checking, setChecking] = useState(false)
-  const [legal, setLegal] = useState<{ check: LegalCheck; key: string; mode: Mode } | null>(null)
+  const [legal, setLegal] = useState<{ check: LegalCheck; key: string } | null>(null)
   const [legalOpen, setLegalOpen] = useState(false)
-  const legalModeRef = useRef<Mode>('review')
   // 미리보기 창 (mode가 있으면 승인신청·발행 직전 단계, null이면 그냥 보기)
-  const [preview, setPreview] = useState<{ mode: Mode | null; check: LegalCheck | null; n: number } | null>(null)
+  const [preview, setPreview] = useState<{ mode: Mode | null; n: number } | null>(null)
   const [previewDevice, setPreviewDevice] = useState<'pc' | 'mobile'>('pc')
 
   const status: ArticleStatus = article?.status ?? 'draft'
@@ -101,9 +101,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const ownOutlet = article?.outlet_id ?? outletId
   const otherOutlets = outlets.filter((o) => o.id !== ownOutlet)
 
-  // 자동 저장으로 처음 만든 기사 ID (새 기사일 때)
-  const [draftId, setDraftId] = useState<string | null>(article?.id ?? null)
-  const [autoSavedAt, setAutoSavedAt] = useState<string | null>(null)
+  // 이미 저장된 기사 ID (새 기사는 “저장”을 누를 때 만든다)
+  const draftId = article?.id ?? null
 
   // 저장할 내용 (상태 변경은 저장 방식에 따라 따로 붙인다)
   function contentPayload(): Record<string, unknown> {
@@ -130,30 +129,18 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     return payload
   }
 
-  // 승인신청·발행 전 AI 법적 검수. 문제가 보이면 확인창을 띄우고 멈춘다 (true = 계속 진행)
-  async function legalGate(mode: Mode): Promise<LegalCheck | null | false> {
-    // 같은 내용으로 이미 검수했으면 다시 하지 않는다 (확인할 곳이 있으면 결과 창만 다시 연다)
-    if (legal && legal.key === legalKey) {
-      // 문제가 없거나, 항목마다 바꾸기/그대로를 이미 골랐으면 다시 묻지 않는다
-      if (legal.check.issues.every((x) => x.decision)) return legal.check
-      setLegal({ ...legal, mode })
-      setLegalOpen(true)
-      return false
-    }
-    legalModeRef.current = mode
+  // “AI 검수” 버튼: 법적 위험 표현을 찾아 항목마다 바꿀지 고르게 한다 (승인신청·발행과는 따로)
+  async function runLegal() {
+    if (!validate()) return
+    if (legal && legal.key === legalKey) { setLegalOpen(true); return }
     setChecking(true)
     setError('')
     const r = await checkArticleLegal({ title: title.trim(), subtitle: subtitle.trim(), html, outletId: ownOutlet, articleId: article?.id ?? draftId })
     setChecking(false)
-    if (!r.ok) {
-      if (r.skipped) return null
-      return window.confirm(`AI 법적 검수를 하지 못했습니다: ${r.error}\n검수 없이 ${mode === 'publish' ? '발행' : '승인신청'}할까요?`) ? null : false
-    }
-    setLegal({ check: r.check, key: legalKey, mode })
-    if (r.check.issues.length) { setLegalOpen(true); return false }
-    return r.check
+    if (!r.ok) { setError(r.skipped ? r.error : `AI 검수를 하지 못했습니다: ${r.error}`); return }
+    setLegal({ check: r.check, key: legalKey })
+    setLegalOpen(true)
   }
-
   function validate() {
     if (!title.trim()) { setError('제목을 입력해주세요.'); return false }
     if (!charCount) { setError('본문을 입력해주세요.'); return false }
@@ -161,12 +148,10 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     return true
   }
 
-  // 승인신청·발행: AI 법적 검수 → (문제가 있으면 항목별로 바꾸기/그대로 선택) → 홈페이지 모양 미리보기 → 제출
-  async function submit(mode: 'review' | 'publish') {
+  // 승인신청·발행: 홈페이지 모양 미리보기 → 제출 (AI 검수는 원할 때 따로)
+  function submit(mode: 'review' | 'publish') {
     if (!validate()) return
-    const g = await legalGate(mode)
-    if (g === false) return
-    openPreview(mode, g)
+    openPreview(mode)
   }
 
   function previewData(over: { title?: string; subtitle?: string } = {}): ArticlePreviewData {
@@ -184,12 +169,12 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     }
   }
 
-  function openPreview(mode: Mode | null, check: LegalCheck | null, over?: { title?: string; subtitle?: string }) {
-    try { sessionStorage.setItem(PREVIEW_STORE, JSON.stringify(previewData(over))) } catch { /* 저장 공간이 없으면 빈 미리보기 */ }
-    setPreview({ mode, check, n: Date.now() })
+  function openPreview(mode: Mode | null) {
+    try { sessionStorage.setItem(PREVIEW_STORE, JSON.stringify(previewData())) } catch { /* 저장 공간이 없으면 빈 미리보기 */ }
+    setPreview({ mode, n: Date.now() })
   }
 
-  // 검수 항목마다 고른 대로 기사를 고치고 바로 미리보기로 넘어간다
+  // 검수 항목마다 고른 대로 기사를 고친다
   function applyDecisions(decisions: Decision[]) {
     if (!legal) return
     const editor = editorRef.current
@@ -210,12 +195,12 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     if (sub !== subtitle) setSubtitle(sub)
     const check = { ...legal.check, issues, reused: undefined }
     // 고친 뒤 내용 기준으로 "이미 골랐음"을 기억한다 (아래 effect가 새 내용의 key를 붙인다)
-    setLegal({ check, key: '__pending__', mode: legal.mode })
+    setLegal({ check, key: '__pending__' })
     setLegalOpen(false)
-    openPreview(legal.mode, check, { title: t, subtitle: sub })
   }
 
-  async function save(mode: Mode, legalCheck: LegalCheck | null = null) {
+  async function save(mode: Mode) {
+    const legalCheck = mode === 'draft' ? null : currentLegal
     if (!validate()) return
     const chosenAt = fromKstInput(pubAt)
     // 지금 발행은 미리보기에서 확인했으니 다시 묻지 않고, 예약·지난 날짜만 한 번 더 확인한다
@@ -258,8 +243,10 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       if (err) { setError(saveError(err.message)); setSaving(null); return }
       id = data.id
     }
-    // 저장했으니 이 브라우저의 임시 백업은 지운다
+    // 저장했으니 이 브라우저의 임시 저장은 지운다
     clearLocalBackup()
+    setRestored(null)
+    setTempSavedAt(null)
     serverKey.current = contentKey
 
     // 승인신청이면 편집장들에게 알림 메일 (메일 설정 전이면 아무 일도 하지 않는다)
@@ -286,26 +273,39 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     }
   }
 
-  // ───────── 자동 저장 ─────────
-  // ① 이 브라우저에 바로바로 백업 (창이 닫히거나 인터넷이 끊겨도 다시 열면 복구)
-  // ② 아직 발행 전(작성중·반려)인 기사는 1분마다 서버에도 조용히 저장 → 기사목록 “작성중”이 임시보관함
-  //    발행된 기사·승인신청 중인 기사는 홈페이지·편집장 화면이 바뀌지 않도록 브라우저 백업만 한다
+  // ───────── 자동 임시 저장 ─────────
+  // 쓰는 내용은 고칠 때마다 이 브라우저에만 바로 임시 저장한다 (기사목록에는 들어가지 않는다)
+  //   컴퓨터가 꺼지거나 브라우저가 닫혀도 다시 기사쓰기(또는 그 기사 수정)를 열면 그대로 이어서 나온다
+  //   “저장”을 누르면 기사목록에 들어가고 임시 저장은 지운다
   const backupKey = article ? `im-autosave-${article.id}` : `im-autosave-new-${userId}-${outletId ?? 'none'}`
   // 법적 검수는 제목·부제·본문만 본다 (태그·일시만 바꿨으면 다시 검수하지 않는다)
   const legalKey = JSON.stringify([title.trim(), subtitle.trim(), html])
   useEffect(() => {
     if (legal?.key === '__pending__') setLegal({ ...legal, key: legalKey })
   }, [legal, legalKey])
+  // 지금 내용 그대로 검수한 결과가 있으면 승인신청·발행할 때 같이 저장한다
+  const currentLegal = legal && legal.key === legalKey ? legal.check : null
   const contentKey = JSON.stringify([title, subtitle, html, categoryId, tags, byline, bylineEmail, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl])
   const serverKey = useRef(contentKey)
-  const [restore, setRestore] = useState<{ at: number; data: Record<string, unknown> } | null>(null)
-  const canServerAutosave = !isCopy && (status === 'draft' || status === 'rejected')
+  // 임시 저장을 불러왔을 때: 불러온 시각과, 되돌릴 때 쓸 원래 내용
+  const [restored, setRestored] = useState<{ at: number; original: Record<string, unknown> } | null>(null)
+  const [tempSavedAt, setTempSavedAt] = useState<number | null>(null)
 
   function clearLocalBackup() {
     try { localStorage.removeItem(backupKey) } catch {}
   }
 
-  // 편집기가 준비되면(본문 정리가 끝난 뒤) 지금 내용을 기준으로 삼고, 저장하지 않은 백업이 있으면 복구할지 묻는다
+  const snapshot = () => ({ title, subtitle, html: editorRef.current?.getHTML() ?? html, categoryId, tags, byline, bylineEmail, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl })
+
+  function applySnapshot(d: Record<string, any>) {
+    setTitle(d.title ?? ''); setSubtitle(d.subtitle ?? ''); setCategoryId(d.categoryId ?? ''); setTags(d.tags ?? '')
+    setByline(d.byline ?? defaultName); setPubAt(d.pubAt ?? ''); setMetaTitle(d.metaTitle ?? ''); setMetaDesc(d.metaDesc ?? '')
+    setIsFeatured(!!d.isFeatured); setThumbnailUrl(d.thumbnailUrl ?? '')
+    if (isEditorPlus && typeof d.bylineEmail === 'string') setBylineEmail(d.bylineEmail)
+    if (typeof d.html === 'string') { editorRef.current?.commands.setContent(d.html, true); setHtml(d.html) }
+  }
+
+  // 편집기가 준비되면(본문 정리가 끝난 뒤) 지금 내용을 기준으로 삼고, 임시 저장이 있으면 바로 불러온다
   const [ready, setReady] = useState(false)
   useEffect(() => {
     if (!ready) return
@@ -314,66 +314,55 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       const raw = localStorage.getItem(backupKey)
       if (!raw) return
       const b = JSON.parse(raw) as { at: number; key: string; data: Record<string, unknown> }
+      // 그 뒤에 기사가 따로 저장됐으면(다른 컴퓨터 등) 오래된 임시 저장은 버린다
       const stale = article && Date.parse(article.updated_at) > b.at
       if (stale || b.key === serverKey.current) { localStorage.removeItem(backupKey); return }
-      setRestore({ at: b.at, data: b.data })
+      const original = snapshot()
+      applySnapshot(b.data)
+      shownName.current = (typeof b.data.byline === 'string' && b.data.byline.trim()) || defaultName
+      setRestored({ at: b.at, original })
+      setTempSavedAt(b.at)
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready])
 
-  // ① 고칠 때마다 1.2초 뒤 브라우저에 백업
+  function writeBackup() {
+    if (!ready || contentKey === serverKey.current) return
+    try {
+      const at = Date.now()
+      localStorage.setItem(backupKey, JSON.stringify({ at, key: contentKey, data: snapshot() }))
+      setTempSavedAt(at)
+    } catch {}
+  }
+  const writeRef = useRef(writeBackup)
+  writeRef.current = writeBackup
+
+  // 고칠 때마다 0.8초 뒤 임시 저장
   useEffect(() => {
-    if (!ready || contentKey === serverKey.current || restore) return
-    const t = setTimeout(() => {
-      try {
-        localStorage.setItem(backupKey, JSON.stringify({
-          at: Date.now(), key: contentKey,
-          data: { title, subtitle, html, categoryId, tags, byline, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl },
-        }))
-      } catch {}
-    }, 1200)
+    if (!ready) return
+    if (contentKey === serverKey.current) { clearLocalBackup(); return }
+    const t = setTimeout(() => writeRef.current(), 800)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contentKey, restore, ready])
+  }, [contentKey, ready])
 
-  // ② 1분마다 서버에 조용히 저장 (발행 전 기사만, 제목·본문이 있을 때)
-  const autoRef = useRef<() => Promise<void>>()
-  autoRef.current = async () => {
-    if (!ready || !canServerAutosave || saving || restore || contentKey === serverKey.current) return
-    if (!title.trim() || !charCount) return
-    const key = contentKey
-    const payload = contentPayload()
-    const chosenAt = fromKstInput(pubAt)
-    if (chosenAt || !pubAt) payload.published_at = chosenAt
-    const supabase = createClient()
-    const id = article?.id ?? draftId
-    if (id) {
-      const { error: err } = await supabase.from('articles').update(payload).eq('id', id)
-      if (err) return
-    } else {
-      const { data, error: err } = await supabase.from('articles').insert({ ...payload, status: 'draft', author_id: userId }).select('id').single()
-      if (err || !data) return
-      setDraftId(data.id)
-      // 화면을 다시 그리지 않고 주소만 편집 주소로 바꾼다 (새로고침해도 이어서 쓰도록)
-      window.history.replaceState(null, '', `/articles/${data.id}/edit`)
-    }
-    serverKey.current = key
-    clearLocalBackup()
-    setAutoSavedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))
-  }
+  // 창을 닫거나 다른 탭으로 갈 때는 기다리지 않고 바로 임시 저장
   useEffect(() => {
-    const t = setInterval(() => { autoRef.current?.() }, 60_000)
-    return () => clearInterval(t)
+    const flush = () => writeRef.current()
+    const onHide = () => { if (document.visibilityState === 'hidden') flush() }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', onHide)
+    return () => { window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onHide) }
   }, [])
 
-  function applyRestore() {
-    if (!restore) return
-    const d = restore.data as Record<string, any>
-    setTitle(d.title ?? ''); setSubtitle(d.subtitle ?? ''); setCategoryId(d.categoryId ?? ''); setTags(d.tags ?? '')
-    setByline(d.byline ?? defaultName); setPubAt(d.pubAt ?? ''); setMetaTitle(d.metaTitle ?? ''); setMetaDesc(d.metaDesc ?? '')
-    setIsFeatured(!!d.isFeatured); setThumbnailUrl(d.thumbnailUrl ?? '')
-    if (typeof d.html === 'string') { editorRef.current?.commands.setContent(d.html, true); setHtml(d.html) }
-    setRestore(null)
+  // 불러온 임시 저장을 버리고 원래(마지막으로 저장한) 내용으로
+  function discardRestored() {
+    if (!restored) return
+    applySnapshot(restored.original as Record<string, any>)
+    shownName.current = (restored.original.byline as string)?.trim() || defaultName
+    clearLocalBackup()
+    setRestored(null)
+    setTempSavedAt(null)
   }
 
   // 기자명을 바꾸면 본문 첫머리 "[매체=이름 기자]"도 같이 바꾼다
@@ -430,10 +419,11 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               ? <span className="status-badge status-scheduled px-2.5 py-1 text-[12.5px]">예약 · {formatDateTime(article.published_at)} 공개</span>
               : <span className={`status-badge status-${status} px-2.5 py-1 text-[12.5px]`}>{STATUS_LABEL[status]}</span>}
             {savedAt && <span className="text-[12px] text-muted">{savedAt} 저장됨</span>}
-            {autoSavedAt && !savedAt && <span className="text-[12px] text-muted">{autoSavedAt} 자동 저장됨</span>}
-            {canServerAutosave
-              ? <span className="text-[11.5px] text-muted md:ml-auto">1분마다 자동 저장 · 기사목록 “작성중”에 보관</span>
-              : <span className="text-[11.5px] text-muted md:ml-auto">쓰는 내용은 이 브라우저에 자동 백업</span>}
+            <span className="text-[11.5px] text-muted md:ml-auto" aria-live="polite">
+              {tempSavedAt && contentKey !== serverKey.current
+                ? `${new Date(tempSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 이 브라우저에 임시 저장됨 · “저장”을 눌러야 기사목록에 들어갑니다`
+                : '쓰는 내용은 이 브라우저에 자동 임시 저장됩니다'}
+            </span>
             {status === 'rejected' && article?.reject_reason && (
               <p className="w-full rounded border border-danger/30 bg-danger/5 px-3 py-2 text-[13px] text-danger">
                 <strong>반려 사유:</strong> {article.reject_reason}
@@ -441,14 +431,20 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             )}
           </div>
 
-          {restore && (
-            <div role="alert" className="flex flex-wrap items-center gap-3 rounded border border-[#2F6BF0]/40 bg-[#2F6BF0]/5 px-4 py-3 text-[13px]">
+          {restored && (
+            <div role="status" className="flex flex-wrap items-center gap-3 rounded border border-[#2F6BF0]/40 bg-[#2F6BF0]/5 px-4 py-3 text-[13px]">
               <span className="min-w-0 flex-1">
-                <strong className="text-[#2F6BF0]">저장하지 않은 작성 내용이 있습니다.</strong>{' '}
-                {new Date(restore.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}에 이 브라우저에 백업된 내용을 불러올까요?
+                <strong className="text-[#2F6BF0]">임시 저장된 내용을 불러왔습니다.</strong>{' '}
+                {new Date(restored.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}에 이 브라우저에 저장된 내용입니다. 이어서 쓰세요.
               </span>
-              <button type="button" onClick={applyRestore} className="btn-primary px-3 py-1.5 text-[12.5px]">불러오기</button>
-              <button type="button" onClick={() => { clearLocalBackup(); setRestore(null) }} className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger">버리기</button>
+              <button type="button" onClick={() => setRestored(null)} className="btn-primary px-3 py-1.5 text-[12.5px]">확인</button>
+              <button
+                type="button"
+                onClick={() => { if (window.confirm(article ? '임시 저장된 내용을 버리고 마지막으로 저장한 기사로 되돌릴까요?' : '임시 저장된 내용을 지우고 새로 쓸까요?')) discardRestored() }}
+                className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger"
+              >
+                {article ? '버리고 저장된 기사로' : '지우고 새로 쓰기'}
+              </button>
             </div>
           )}
 
@@ -671,14 +667,31 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
         <div role="dialog" aria-modal="true" aria-labelledby="legal-title" className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-0 md:items-center md:p-6">
           <div className="max-h-[88vh] w-full max-w-[680px] overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl md:rounded-2xl md:p-7">
             <h2 id="legal-title" className="text-[18px] font-bold">AI 법적 검수 결과</h2>
-            <p className="mb-4 mt-1 text-[13px] text-muted">명예훼손·개인정보·저작권(도용) 등 문제가 될 수 있는 부분입니다. 항목마다 AI가 고친 문장으로 바꿀지, 그대로 둘지 골라 주세요.</p>
-            <LegalDecide
-              check={legal.check}
-              fixable={legal.check.issues.map((x) => !!x.fix && (!!findInText(title, x.quote) || !!findInText(subtitle, x.quote) || canReplaceInEditor(editorRef.current, x.quote)))}
-              next="미리보기"
-              onDone={applyDecisions}
-              onEdit={() => setLegalOpen(false)}
-            />
+            {legal.check.issues.length > 0 && legal.check.issues.every((x) => x.decision) ? (
+              // 이미 항목마다 고른 결과를 다시 볼 때
+              <>
+                <p className="mb-4 mt-1 text-[13px] text-muted">고른 대로 반영된 결과입니다. 승인신청·발행할 때 이 기록이 함께 저장됩니다.</p>
+                <LegalReview check={legal.check} compact />
+                <div className="mt-5 flex justify-end border-t border-line pt-4">
+                  <button type="button" onClick={() => setLegalOpen(false)} className="btn-primary px-5" autoFocus>닫기</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mb-4 mt-1 text-[13px] text-muted">
+                  {legal.check.issues.length
+                    ? '명예훼손·개인정보·저작권(도용) 등 문제가 될 수 있는 부분입니다. 항목마다 AI가 고친 문장으로 바꿀지, 그대로 둘지 골라 주세요.'
+                    : '명예훼손·개인정보·저작권(도용) 등을 살펴봤습니다.'}
+                </p>
+                <LegalDecide
+                  check={legal.check}
+                  fixable={legal.check.issues.map((x) => !!x.fix && (!!findInText(title, x.quote) || !!findInText(subtitle, x.quote) || canReplaceInEditor(editorRef.current, x.quote)))}
+                  next="완료"
+                  onDone={applyDecisions}
+                  onEdit={() => setLegalOpen(false)}
+                />
+              </>
+            )}
           </div>
         </div>
       )}
@@ -690,7 +703,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               <p className="text-[14.5px] font-bold">미리보기</p>
               <p className="truncate text-[12px] text-muted">
                 홈페이지에 이렇게 보입니다{preview.mode ? ' · 고칠 곳이 있으면 “고치러 가기”를 누르세요' : ''}
-                {preview.check && preview.check.issues.length > 0 && ` · 법적 검수 ${preview.check.issues.filter((x) => x.decision === 'fixed').length}곳 고침, ${preview.check.issues.filter((x) => x.decision !== 'fixed').length}곳 그대로`}
+                {preview.mode && (currentLegal ? ' · AI 검수 완료' : ' · AI 검수를 하지 않았습니다')}
               </p>
             </div>
             <div role="group" aria-label="화면 크기" className="inline-flex rounded-md border border-line p-0.5 text-[12.5px] font-semibold">
@@ -704,7 +717,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             {preview.mode && (
               <button
                 type="button"
-                onClick={() => { const p = preview; setPreview(null); save(p.mode!, p.check) }}
+                onClick={() => { const m = preview.mode!; setPreview(null); save(m) }}
                 className={`${preview.mode === 'publish' ? 'btn-publish' : 'btn-review'} px-4 md:px-5`}
                 autoFocus
               >
@@ -728,7 +741,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
           {error ? (
             <p role="alert" className="line-clamp-2 min-w-0 flex-1 text-[12.5px] text-danger md:truncate md:text-[13px]">{error}</p>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="hidden items-center gap-4 md:flex">
               <button type="button" onClick={() => router.back()} className="whitespace-nowrap text-[13px] text-muted hover:text-ink">← 취소</button>
               {article && (
                 <form className="hidden md:block" action={deleteArticle.bind(null, article.id)}>
@@ -744,20 +757,30 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </div>
           )}
           <div className="ml-auto flex shrink-0 gap-1.5 md:gap-2">
-            <button type="button" onClick={() => { if (validate()) openPreview(null, null) }} disabled={!!saving} className="btn-secondary px-3 md:px-5">
+            <button type="button" onClick={() => { if (validate()) openPreview(null) }} disabled={!!saving} className="btn-secondary px-2.5 md:px-5">
               미리보기
             </button>
-            <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary px-3 md:px-5">
+            {/* 저장 = 기사목록에 들어간다 (쓰는 중인 내용은 따로 이 브라우저에 자동 임시 저장) */}
+            <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary px-2.5 md:px-5">
               {saving === 'draft' ? '저장 중…' : '저장'}
             </button>
+            <button
+              type="button"
+              onClick={runLegal}
+              disabled={!!saving || checking}
+              title="명예훼손·저작권(도용)·개인정보 등 법적으로 문제가 될 표현을 AI가 찾아 줍니다 (AI 사용 1회)"
+              className={`btn-secondary whitespace-nowrap px-2.5 md:px-5 ${currentLegal ? 'border-published/50 text-published' : ''}`}
+            >
+              {checking ? '검수 중…' : currentLegal ? 'AI 검수 ✓' : 'AI 검수'}
+            </button>
             {status !== 'published' && status !== 'in_review' && (
-              <button type="button" onClick={() => submit('review')} disabled={!!saving || checking} className="btn-review px-3 md:px-5">
-                {checking && legalModeRef.current === 'review' ? 'AI 검수 중…' : saving === 'review' ? '신청 중…' : '승인신청'}
+              <button type="button" onClick={() => submit('review')} disabled={!!saving || checking} className="btn-review px-2.5 md:px-5">
+                {saving === 'review' ? '신청 중…' : '승인신청'}
               </button>
             )}
             {isEditorPlus && (
-              <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish px-3 md:px-5">
-                {checking && legalModeRef.current === 'publish' ? 'AI 검수 중…' : saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
+              <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish px-2.5 md:px-5">
+                {saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
               </button>
             )}
           </div>

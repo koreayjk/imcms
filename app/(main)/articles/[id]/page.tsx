@@ -52,9 +52,13 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
         </div>
       )}
 
+      {'legal_check' in article && !article.legal_check && article.status === 'in_review' && (
+        <p className="mb-5 rounded-lg border border-line bg-white px-5 py-3 text-[13px] text-muted">AI 법적 검수를 하지 않고 승인신청한 기사입니다. 필요하면 수정 화면에서 “AI 검수”를 눌러 확인할 수 있습니다.</p>
+      )}
+
       {(article as { legal_check?: LegalCheck | null }).legal_check && (
         <section aria-labelledby="legal-title" className="mb-5 rounded-lg border border-line bg-white px-5 py-4">
-          <h2 id="legal-title" className="mb-2 text-[14px] font-bold">AI 법적 검수 <span className="text-[12px] font-normal text-muted">· 승인신청·발행할 때의 내용 기준</span></h2>
+          <h2 id="legal-title" className="mb-2 text-[14px] font-bold">AI 법적 검수 <span className="text-[12px] font-normal text-muted">· 승인신청·발행할 때 저장된 결과</span></h2>
           <LegalReview check={(article as { legal_check: LegalCheck }).legal_check} />
         </section>
       )}

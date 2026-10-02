@@ -30,6 +30,9 @@ export default function LegalDecide({ check, fixable, next, onDone, onEdit }: {
       </div>
       {check.reused && <p className="text-[12px] text-muted">앞서 검수한 뒤로 제목·본문이 바뀌지 않아 그때 결과를 그대로 보여 드립니다.</p>}
 
+      {check.issues.length === 0 && (
+        <p className="rounded-lg border border-published/30 bg-published/5 px-4 py-3 text-[13.5px] font-medium text-published">문제가 될 만한 표현을 찾지 못했습니다.</p>
+      )}
       <ol className="space-y-2">
         {check.issues.map((x, i) => {
           const pick = picks[i]
@@ -73,10 +76,14 @@ export default function LegalDecide({ check, fixable, next, onDone, onEdit }: {
       <p className="text-[11.5px] leading-relaxed text-muted">AI 검수는 참고용이며 법률 자문이 아닙니다. 인터넷에서 다른 기사와 똑같은지까지 대조하지는 않으니, 다른 매체 글을 옮겼다면 출처를 꼭 밝혀 주세요.</p>
 
       <div className="sticky bottom-0 -mx-5 -mb-5 flex flex-wrap items-center justify-end gap-2 border-t border-line bg-white px-5 py-4 md:-mx-7 md:-mb-7 md:px-7">
-        <p className="mr-auto text-[12.5px] text-muted">
-          {fixCount ? <><strong className="text-ink">{fixCount}곳</strong>을 AI 문장으로 바꿉니다</> : '바꾸는 곳 없이 그대로 진행합니다'}
-        </p>
-        <button type="button" onClick={onEdit} className="btn-secondary">직접 고치기</button>
+        {check.issues.length > 0 && (
+          <>
+            <p className="mr-auto text-[12.5px] text-muted">
+              {fixCount ? <><strong className="text-ink">{fixCount}곳</strong>을 AI 문장으로 바꿉니다</> : '바꾸는 곳 없이 그대로 둡니다'}
+            </p>
+            <button type="button" onClick={onEdit} className="btn-secondary">직접 고치기</button>
+          </>
+        )}
         <button type="button" onClick={() => onDone(picks.map((p, i) => (fixable[i] ? p : 'kept')))} className="btn-primary px-5" autoFocus>
           {fixCount ? '바꾸고 ' : ''}{next}
         </button>
