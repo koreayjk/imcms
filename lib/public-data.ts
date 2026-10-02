@@ -61,6 +61,13 @@ export async function currentSite(): Promise<SiteConfig> {
   }
 }
 
+// 기사 미리보기용: 접속한 주소와 상관없이 그 매체의 홈페이지 설정을 쓴다 ("도메인 연결 전" 띠는 빼고)
+export async function siteForOutlet(outletId: string): Promise<SiteConfig> {
+  if (isDemo) return SITES[0]
+  const site = await loadSite('#outlet', outletId).catch(() => null)
+  return site ? { ...site, preview: false } : resolveSite('')
+}
+
 const LIST_FIELDS =
   'id, title, excerpt, thumbnail_url, published_at, view_count, is_featured, tags, author:profiles!articles_author_id_fkey(full_name), category:categories(name, slug)'
 
@@ -278,6 +285,21 @@ export async function getArticleData(site: SiteConfig, id: string) {
     mostViewed: (mostViewed.data ?? []).map(toPublic),
     latest: (latest.data ?? []).map(toPublic),
   }
+}
+
+// 기사 화면 오른쪽 (많이 본 기사·최신 기사). 기사 미리보기가 쓴다
+export async function getArticleSidebar(site: SiteConfig) {
+  if (isDemo) {
+    const all = demoArticles()
+    return { mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 8), latest: all.slice(0, 5) }
+  }
+  const scope = await outletScope(site)
+  if (!scope) return { mostViewed: [] as PublicArticle[], latest: [] as PublicArticle[] }
+  const [mostViewed, latest] = await Promise.all([
+    published(scope).order('view_count', { ascending: false }).limit(8),
+    published(scope).order('published_at', { ascending: false }).limit(5),
+  ])
+  return { mostViewed: (mostViewed.data ?? []).map(toPublic), latest: (latest.data ?? []).map(toPublic) }
 }
 
 // ───────── 해운 운임지수 위젯 (SCFI·KCCI) ─────────

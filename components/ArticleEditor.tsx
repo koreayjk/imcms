@@ -15,8 +15,10 @@ import { notifyArticle } from '@/app/(main)/articles/notify'
 import PendingButton from './cms/PendingButton'
 import { deleteArticle } from '@/app/(main)/articles/actions'
 import { checkArticleLegal } from '@/app/(main)/articles/legal'
-import LegalReview from './cms/LegalReview'
+import LegalDecide, { type Decision } from './cms/LegalDecide'
 import type { LegalCheck } from '@/lib/legal-types'
+import { canReplaceInEditor, findInText, replaceInEditor, replaceInText } from '@/lib/editor-replace'
+import { PREVIEW_STORE, type ArticlePreviewData } from '@/lib/article-preview'
 
 type Props = {
   article?: Article
@@ -89,6 +91,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const [legal, setLegal] = useState<{ check: LegalCheck; key: string; mode: Mode } | null>(null)
   const [legalOpen, setLegalOpen] = useState(false)
   const legalModeRef = useRef<Mode>('review')
+  // 미리보기 창 (mode가 있으면 승인신청·발행 직전 단계, null이면 그냥 보기)
+  const [preview, setPreview] = useState<{ mode: Mode | null; check: LegalCheck | null; n: number } | null>(null)
+  const [previewDevice, setPreviewDevice] = useState<'pc' | 'mobile'>('pc')
 
   const status: ArticleStatus = article?.status ?? 'draft'
   const isMine = !article || article.author_id === userId
@@ -129,7 +134,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   async function legalGate(mode: Mode): Promise<LegalCheck | null | false> {
     // 같은 내용으로 이미 검수했으면 다시 하지 않는다 (확인할 곳이 있으면 결과 창만 다시 연다)
     if (legal && legal.key === legalKey) {
-      if (!legal.check.issues.length) return legal.check
+      // 문제가 없거나, 항목마다 바꾸기/그대로를 이미 골랐으면 다시 묻지 않는다
+      if (legal.check.issues.every((x) => x.decision)) return legal.check
       setLegal({ ...legal, mode })
       setLegalOpen(true)
       return false
@@ -148,25 +154,79 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     return r.check
   }
 
-  async function save(mode: Mode, confirmedLegal?: LegalCheck) {
-    if (!title.trim()) { setError('제목을 입력해주세요.'); return }
-    if (!charCount) { setError('본문을 입력해주세요.'); return }
-    const chosenAt = fromKstInput(pubAt)
-    if (pubAt && !chosenAt) { setError('발행 일시를 확인해 주세요.'); return }
-    let legalCheck: LegalCheck | null = confirmedLegal ?? null
-    if ((mode === 'review' || mode === 'publish') && !confirmedLegal) {
-      const g = await legalGate(mode)
-      if (g === false) return
-      legalCheck = g
+  function validate() {
+    if (!title.trim()) { setError('제목을 입력해주세요.'); return false }
+    if (!charCount) { setError('본문을 입력해주세요.'); return false }
+    if (pubAt && !fromKstInput(pubAt)) { setError('발행 일시를 확인해 주세요.'); return false }
+    return true
+  }
+
+  // 승인신청·발행: AI 법적 검수 → (문제가 있으면 항목별로 바꾸기/그대로 선택) → 홈페이지 모양 미리보기 → 제출
+  async function submit(mode: 'review' | 'publish') {
+    if (!validate()) return
+    const g = await legalGate(mode)
+    if (g === false) return
+    openPreview(mode, g)
+  }
+
+  function previewData(over: { title?: string; subtitle?: string } = {}): ArticlePreviewData {
+    const cat = categories.find((c) => c.id === categoryId)
+    return {
+      title: (over.title ?? title).trim(),
+      subtitle: (over.subtitle ?? subtitle).trim(),
+      html: editorRef.current?.getHTML() ?? html,
+      category: cat ? { name: cat.name, slug: cat.slug } : null,
+      author: byline.trim() || defaultName,
+      email: settingsReady ? (isEditorPlus ? bylineEmail.trim() || outletEmail : savedEmail ?? outletEmail) || null : null,
+      publishedAt: fromKstInput(pubAt) ?? new Date().toISOString(),
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      thumbnail: thumbnailUrl || null,
     }
-    if (mode === 'publish') {
-      const when = chosenAt ? new Date(chosenAt) : null
-      const msg = when && when.getTime() > Date.now() + 60_000
+  }
+
+  function openPreview(mode: Mode | null, check: LegalCheck | null, over?: { title?: string; subtitle?: string }) {
+    try { sessionStorage.setItem(PREVIEW_STORE, JSON.stringify(previewData(over))) } catch { /* 저장 공간이 없으면 빈 미리보기 */ }
+    setPreview({ mode, check, n: Date.now() })
+  }
+
+  // 검수 항목마다 고른 대로 기사를 고치고 바로 미리보기로 넘어간다
+  function applyDecisions(decisions: Decision[]) {
+    if (!legal) return
+    const editor = editorRef.current
+    let t = title
+    let sub = subtitle
+    const issues = legal.check.issues.map((x, i) => {
+      let decision: Decision = decisions[i] ?? 'kept'
+      if (decision === 'fixed' && x.fix) {
+        const nt = replaceInText(t, x.quote, x.fix)
+        const ns = nt == null ? replaceInText(sub, x.quote, x.fix) : null
+        if (nt != null) t = nt
+        else if (ns != null) sub = ns
+        else if (!(editor && replaceInEditor(editor, x.quote, x.fix))) decision = 'kept'
+      } else decision = 'kept'
+      return { ...x, decision }
+    })
+    if (t !== title) setTitle(t)
+    if (sub !== subtitle) setSubtitle(sub)
+    const check = { ...legal.check, issues, reused: undefined }
+    // 고친 뒤 내용 기준으로 "이미 골랐음"을 기억한다 (아래 effect가 새 내용의 key를 붙인다)
+    setLegal({ check, key: '__pending__', mode: legal.mode })
+    setLegalOpen(false)
+    openPreview(legal.mode, check, { title: t, subtitle: sub })
+  }
+
+  async function save(mode: Mode, legalCheck: LegalCheck | null = null) {
+    if (!validate()) return
+    const chosenAt = fromKstInput(pubAt)
+    // 지금 발행은 미리보기에서 확인했으니 다시 묻지 않고, 예약·지난 날짜만 한 번 더 확인한다
+    if (mode === 'publish' && chosenAt) {
+      const when = new Date(chosenAt).getTime()
+      const msg = when > Date.now() + 60_000
         ? `${formatDateTime(chosenAt)}에 홈페이지에 공개되도록 예약 발행할까요?\n그 전까지는 홈페이지에 보이지 않습니다.`
-        : when && when.getTime() < Date.now() - 60_000
+        : when < Date.now() - 60_000
           ? `발행 일시를 ${formatDateTime(chosenAt)}(지난 날짜)로 해서 발행할까요?`
-          : '이 기사를 지금 홈페이지에 발행할까요?'
-      if (!window.confirm(msg)) return
+          : null
+      if (msg && !window.confirm(msg)) return
     }
     setError('')
     setSaving(mode)
@@ -233,6 +293,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const backupKey = article ? `im-autosave-${article.id}` : `im-autosave-new-${userId}-${outletId ?? 'none'}`
   // 법적 검수는 제목·부제·본문만 본다 (태그·일시만 바꿨으면 다시 검수하지 않는다)
   const legalKey = JSON.stringify([title.trim(), subtitle.trim(), html])
+  useEffect(() => {
+    if (legal?.key === '__pending__') setLegal({ ...legal, key: legalKey })
+  }, [legal, legalKey])
   const contentKey = JSON.stringify([title, subtitle, html, categoryId, tags, byline, bylineEmail, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl])
   const serverKey = useRef(contentKey)
   const [restore, setRestore] = useState<{ at: number; data: Record<string, unknown> } | null>(null)
@@ -389,7 +452,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </div>
           )}
 
-          {legal && !legalOpen && legal.check.issues.length > 0 && legal.key === legalKey && (
+          {legal && !legalOpen && legal.check.issues.some((x) => !x.decision) && legal.key === legalKey && (
             <div className="rounded border border-danger/30 bg-danger/5 px-4 py-3 text-[13px]">
               <p className="flex flex-wrap items-center gap-2"><strong className="text-danger">AI 법적 검수: 확인할 곳 {legal.check.issues.length}개</strong><button type="button" onClick={() => setLegalOpen(true)} className="text-[12.5px] underline underline-offset-2">다시 보기</button></p>
             </div>
@@ -608,18 +671,54 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
         <div role="dialog" aria-modal="true" aria-labelledby="legal-title" className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-0 md:items-center md:p-6">
           <div className="max-h-[88vh] w-full max-w-[680px] overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl md:rounded-2xl md:p-7">
             <h2 id="legal-title" className="text-[18px] font-bold">AI 법적 검수 결과</h2>
-            <p className="mb-4 mt-1 text-[13px] text-muted">명예훼손·개인정보·저작권(도용) 등 문제가 될 수 있는 부분입니다. 고친 뒤 다시 {legal.mode === 'publish' ? '발행' : '승인신청'}하거나, 확인했다면 그대로 진행할 수 있습니다.</p>
-            <LegalReview check={legal.check} />
-            <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4">
-              <button type="button" onClick={() => setLegalOpen(false)} className="btn-primary px-5" autoFocus>기사 고치기</button>
+            <p className="mb-4 mt-1 text-[13px] text-muted">명예훼손·개인정보·저작권(도용) 등 문제가 될 수 있는 부분입니다. 항목마다 AI가 고친 문장으로 바꿀지, 그대로 둘지 골라 주세요.</p>
+            <LegalDecide
+              check={legal.check}
+              fixable={legal.check.issues.map((x) => !!x.fix && (!!findInText(title, x.quote) || !!findInText(subtitle, x.quote) || canReplaceInEditor(editorRef.current, x.quote)))}
+              next="미리보기"
+              onDone={applyDecisions}
+              onEdit={() => setLegalOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {preview && (
+        <div role="dialog" aria-modal="true" aria-label="기사 미리보기" className="fixed inset-0 z-[80] flex flex-col bg-[#14171C]/85">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line bg-white px-4 py-2.5 md:gap-3 md:px-6">
+            <div className="min-w-0 flex-1">
+              <p className="text-[14.5px] font-bold">미리보기</p>
+              <p className="truncate text-[12px] text-muted">
+                홈페이지에 이렇게 보입니다{preview.mode ? ' · 고칠 곳이 있으면 “고치러 가기”를 누르세요' : ''}
+                {preview.check && preview.check.issues.length > 0 && ` · 법적 검수 ${preview.check.issues.filter((x) => x.decision === 'fixed').length}곳 고침, ${preview.check.issues.filter((x) => x.decision !== 'fixed').length}곳 그대로`}
+              </p>
+            </div>
+            <div role="group" aria-label="화면 크기" className="inline-flex rounded-md border border-line p-0.5 text-[12.5px] font-semibold">
+              {([['pc', 'PC'], ['mobile', '모바일']] as const).map(([d, label]) => (
+                <button key={d} type="button" aria-pressed={previewDevice === d} onClick={() => setPreviewDevice(d)} className={`rounded px-3 py-1 ${previewDevice === d ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>{label}</button>
+              ))}
+            </div>
+            <button type="button" onClick={() => setPreview(null)} className="btn-secondary px-3 md:px-4" autoFocus={!preview.mode}>
+              {preview.mode ? '← 고치러 가기' : '닫기'}
+            </button>
+            {preview.mode && (
               <button
                 type="button"
-                onClick={() => { setLegalOpen(false); save(legal.mode, legal.check) }}
-                className="btn-secondary"
+                onClick={() => { const p = preview; setPreview(null); save(p.mode!, p.check) }}
+                className={`${preview.mode === 'publish' ? 'btn-publish' : 'btn-review'} px-4 md:px-5`}
+                autoFocus
               >
-                확인했습니다 · 그대로 {legal.mode === 'publish' ? '발행' : '승인신청'}
+                {preview.mode === 'publish' ? (status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행하기' : '발행하기') : '승인신청하기'}
               </button>
-            </div>
+            )}
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto p-0 md:p-4">
+            <iframe
+              key={preview.n}
+              title="홈페이지 미리보기"
+              src={`/preview/article?outlet=${ownOutlet ?? ''}&c=${encodeURIComponent(categories.find((c) => c.id === categoryId)?.slug ?? '')}&n=${preview.n}`}
+              className={`mx-auto block h-full border-0 bg-white ${previewDevice === 'mobile' ? 'w-[390px] max-w-full md:rounded-xl md:shadow-2xl' : 'w-full md:rounded-lg'}`}
+            />
           </div>
         </div>
       )}
@@ -645,16 +744,19 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </div>
           )}
           <div className="ml-auto flex shrink-0 gap-1.5 md:gap-2">
+            <button type="button" onClick={() => { if (validate()) openPreview(null, null) }} disabled={!!saving} className="btn-secondary px-3 md:px-5">
+              미리보기
+            </button>
             <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary px-3 md:px-5">
               {saving === 'draft' ? '저장 중…' : '저장'}
             </button>
             {status !== 'published' && status !== 'in_review' && (
-              <button type="button" onClick={() => save('review')} disabled={!!saving || checking} className="btn-review px-3 md:px-5">
+              <button type="button" onClick={() => submit('review')} disabled={!!saving || checking} className="btn-review px-3 md:px-5">
                 {checking && legalModeRef.current === 'review' ? 'AI 검수 중…' : saving === 'review' ? '신청 중…' : '승인신청'}
               </button>
             )}
             {isEditorPlus && (
-              <button type="button" onClick={() => save('publish')} disabled={!!saving || checking} className="btn-publish px-3 md:px-5">
+              <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish px-3 md:px-5">
                 {checking && legalModeRef.current === 'publish' ? 'AI 검수 중…' : saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
               </button>
             )}

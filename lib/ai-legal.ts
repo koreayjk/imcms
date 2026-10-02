@@ -21,9 +21,10 @@ const SYSTEM = `당신은 한국 언론사의 법무 검토 담당자입니다. 
 원칙
 - 공인(정치인·고위 공직자·대기업)의 공적 활동 비판, 공식 발표·보도자료를 출처와 함께 옮긴 내용, 정부·기관 통계는 문제로 보지 않습니다.
 - 지나치게 많이 찾지 말고, 실제로 문제가 될 만한 것만 고릅니다. 문제가 없으면 issues를 빈 배열로 둡니다.
-- quote에는 기사 속 문장을 그대로(최대 120자) 옮깁니다.
+- quote에는 문제가 되는 부분을 기사(제목·부제·본문)에서 한 글자도 바꾸지 말고 그대로 복사합니다. 한 문단 안에서만, 최대 150자. 줄이거나 "…"로 생략하지 않습니다.
+- fix에는 quote 자리에 그대로 바꿔 넣을 고친 문장을 씁니다. 앞뒤 문장과 자연스럽게 이어지도록 quote와 같은 범위만 고쳐 씁니다(익명 처리, "~한 의혹을 받고 있다", "○○에 따르면" 등). 문장을 고쳐서 해결되지 않는 문제(반론 취재, 사진 출처 확인 등)는 빈 문자열로 둡니다.
 - reason에는 왜 문제가 될 수 있는지 한두 문장으로 씁니다.
-- suggestion에는 고쳐 쓸 문장이나 할 일(출처 밝히기, 익명 처리, 반론 넣기 등)을 구체적으로 씁니다.
+- suggestion에는 고치는 방법이나 할 일(출처 밝히기, 익명 처리, 반론 넣기 등)을 구체적으로 씁니다.
 - severity: high = 소송·정정보도 청구 가능성이 큼, medium = 다듬는 게 좋음, low = 참고.
 - risk는 가장 심각한 문제를 기준으로 low / medium / high.
 - summary는 전체 판단을 한 문장으로 씁니다.
@@ -42,10 +43,11 @@ const SCHEMA = {
           type: { type: 'string', enum: ['defamation', 'insult', 'privacy', 'copyright', 'false_info', 'crime_report', 'ad', 'election', 'other'] },
           severity: { type: 'string', enum: ['low', 'medium', 'high'] },
           quote: { type: 'string' },
+          fix: { type: 'string' },
           reason: { type: 'string' },
           suggestion: { type: 'string' },
         },
-        required: ['type', 'severity', 'quote', 'reason', 'suggestion'],
+        required: ['type', 'severity', 'quote', 'fix', 'reason', 'suggestion'],
         additionalProperties: false,
       },
     },

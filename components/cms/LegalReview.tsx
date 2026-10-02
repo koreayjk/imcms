@@ -1,13 +1,13 @@
 import { LEGAL_TYPE_LABEL, RISK_LABEL, type LegalCheck } from '@/lib/legal-types'
 import { formatDateTime } from '@/lib/format'
 
-const SEV: Record<string, string> = {
+export const SEV: Record<string, string> = {
   high: 'border-danger/40 bg-danger/5',
   medium: 'border-draft/50 bg-draft/10',
   low: 'border-line bg-paper',
 }
-const SEV_LABEL: Record<string, string> = { high: '위험', medium: '주의', low: '참고' }
-const RISK_TONE: Record<string, string> = { high: 'bg-danger text-white', medium: 'bg-draft text-[#3B2A00]', low: 'bg-published text-white' }
+export const SEV_LABEL: Record<string, string> = { high: '위험', medium: '주의', low: '참고' }
+export const RISK_TONE: Record<string, string> = { high: 'bg-danger text-white', medium: 'bg-draft text-[#3B2A00]', low: 'bg-published text-white' }
 
 // AI 법적 검수 결과 (기사쓰기 확인창과 편집장 승인 화면이 같이 쓴다)
 export default function LegalReview({ check, compact = false }: { check: LegalCheck; compact?: boolean }) {
@@ -26,10 +26,12 @@ export default function LegalReview({ check, compact = false }: { check: LegalCh
               <p className="flex flex-wrap items-center gap-2 text-[12px] font-bold">
                 <span>{LEGAL_TYPE_LABEL[x.type] ?? x.type}</span>
                 <span className="font-semibold text-muted">· {SEV_LABEL[x.severity] ?? x.severity}</span>
+                {x.decision && <span className={`ml-auto rounded px-1.5 py-0.5 text-[11px] ${x.decision === 'fixed' ? 'bg-published/15 text-published' : 'bg-ink/5 text-muted'}`}>{x.decision === 'fixed' ? 'AI 문장으로 고침' : '그대로 둠'}</span>}
               </p>
               {x.quote && <blockquote className="mt-1.5 border-l-2 border-ink/30 pl-3 text-ink">“{x.quote}”</blockquote>}
               <p className="mt-1.5"><strong className="font-semibold">이유</strong> {x.reason}</p>
               {x.suggestion && <p className="mt-0.5"><strong className="font-semibold">고치는 방법</strong> {x.suggestion}</p>}
+              {x.fix && x.decision === 'fixed' && <p className="mt-0.5"><strong className="font-semibold">바꾼 문장</strong> “{x.fix}”</p>}
             </li>
           ))}
         </ol>
