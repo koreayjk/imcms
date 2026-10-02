@@ -22,6 +22,7 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/api/inbound/') ||
     // 토스페이먼츠 웹훅: 받은 내용을 믿지 않고 결제를 다시 조회한다
     pathname === '/api/payments/webhook' ||
+    pathname === '/api/payments/stripe-webhook' ||
     // 기사 조회수 (독자가 부른다)
     pathname === '/api/view' ||
     // 광고 배너 클릭·노출 (독자가 부른다)

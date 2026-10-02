@@ -1,6 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { ourStatus, paymentDbSecret, tossTestMode, type TossPayment } from './toss'
 
+// 결제사와 상관없이 확인된 결제 결과를 DB에 남긴다 (서버 열쇠로만). 시험 결제는 청구서 상태를 바꾸지 않는다
+export type PaymentResult = {
+  orderId: string; paymentKey: string | null; amount: number; status: 'done' | 'failed' | 'canceled'
+  method?: string | null; approvedAt?: string | null; receiptUrl?: string | null; message?: string | null; test: boolean
+}
+export async function recordResult(supabase: SupabaseClient, r: PaymentResult) {
+  const { error } = await supabase.rpc('payment_record', {
+    secret: paymentDbSecret(), p_order_id: r.orderId, p_payment_key: r.paymentKey, p_amount: r.amount, p_status: r.status,
+    p_method: r.method ?? null, p_approved_at: r.approvedAt ?? null, p_receipt_url: r.receiptUrl ?? null, p_message: r.message ?? null, p_test: r.test,
+  })
+  return { error: error?.message ?? null }
+}
+
 // 토스페이먼츠에서 확인한 결제 결과를 DB에 남긴다 (payments.sql 의 payment_record, 서버 열쇠로만)
 //   시험 키로 한 결제는 기록만 남기고 청구서는 미납 그대로 둔다
 export async function recordPayment(supabase: SupabaseClient, p: TossPayment, fallbackOrderId?: string, failMessage?: string) {

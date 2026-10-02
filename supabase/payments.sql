@@ -1,6 +1,6 @@
--- 청구서 온라인 결제 (토스페이먼츠) — Supabase SQL 에디터에서 실행 (support.sql·press-cron.sql 다음)
+-- 청구서 온라인 결제 (Stripe, 또는 나중에 토스페이먼츠) — Supabase SQL 에디터에서 실행 (support.sql·press-cron.sql 다음)
 --   고객사(편집장·발행인)가 청구서에서 카드·계좌이체로 결제하거나, 카드를 등록해 두면 청구서가 나올 때 자동으로 결제된다
---   결제 승인은 우리 서버가 토스페이먼츠에 확인한 뒤에만 기록된다. 서버는 아래 “결제 기록용 비밀 열쇠”로 자신을 증명한다
+--   결제 승인은 우리 서버가 결제사(Stripe·토스페이먼츠)에 확인한 뒤에만 기록된다. 서버는 아래 “결제 기록용 비밀 열쇠”로 자신을 증명한다
 --   ※ 실행 후 맨 아래 결과에 나오는 열쇠를 Vercel 환경 변수 PAYMENT_DB_SECRET 에 넣어 주세요 (채팅·메일로 보내지 마세요)
 
 create extension if not exists pgcrypto;
@@ -29,6 +29,8 @@ create table if not exists payments (
   status text not null default 'ready' check (status in ('ready', 'done', 'failed', 'canceled')),
   -- card / transfer / autopay
   kind text not null default 'card' check (kind in ('card', 'transfer', 'autopay')),
+  -- 결제사
+  provider text not null default 'stripe' check (provider in ('stripe', 'toss')),
   payment_key text unique,
   method text,
   approved_at timestamptz,
@@ -42,6 +44,7 @@ create table if not exists payments (
 );
 create index if not exists payments_invoice on payments(invoice_id);
 alter table payments add column if not exists test_mode boolean not null default false;
+alter table payments add column if not exists provider text not null default 'stripe' check (provider in ('stripe', 'toss'));
 
 alter table payments enable row level security;
 drop policy if exists "payments_read" on payments;
@@ -50,7 +53,8 @@ create policy "payments_read" on payments for select to authenticated
 -- 쓰기는 아래 함수로만
 
 -- 결제 시작: 청구서 금액 그대로 주문을 만든다 (금액은 화면이 아니라 청구서에서 가져온다)
-create or replace function public.payment_start(inv uuid, p_kind text default 'card') returns jsonb
+drop function if exists public.payment_start(uuid, text);
+create or replace function public.payment_start(inv uuid, p_kind text default 'card', p_provider text default 'stripe') returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   i invoices%rowtype;
@@ -68,12 +72,13 @@ begin
   select name into outlet_name from outlets where id = i.outlet_id;
   oname := left(coalesce(outlet_name, '') || ' ' || to_char(i.month, 'YYYY년 FMMM월') || ' IM 뉴스룸 이용료', 100);
   oid := 'IMN-' || to_char(now() at time zone 'Asia/Seoul', 'YYMMDD') || '-' || encode(gen_random_bytes(8), 'hex');
-  insert into payments (invoice_id, outlet_id, order_id, order_name, amount, kind)
-  values (i.id, i.outlet_id, oid, oname, i.total, case when p_kind = 'transfer' then 'transfer' else 'card' end);
+  insert into payments (invoice_id, outlet_id, order_id, order_name, amount, kind, provider)
+  values (i.id, i.outlet_id, oid, oname, i.total, case when p_kind = 'transfer' then 'transfer' else 'card' end,
+    case when p_provider = 'toss' then 'toss' else 'stripe' end);
   return jsonb_build_object('orderId', oid, 'orderName', oname, 'amount', i.total);
 end $$;
-revoke all on function public.payment_start(uuid, text) from public, anon;
-grant execute on function public.payment_start(uuid, text) to authenticated;
+revoke all on function public.payment_start(uuid, text, text) from public, anon;
+grant execute on function public.payment_start(uuid, text, text) to authenticated;
 
 -- 결제 승인 기록 (서버가 토스페이먼츠 승인 확인 후에만 부른다). 금액이 주문과 다르면 거절
 --   p_test: 시험 키로 한 결제면 결제 기록만 남기고 청구서는 미납 그대로 둔다
@@ -116,7 +121,7 @@ grant execute on function public.payment_record(text, text, text, bigint, text, 
 -- 서버(환불·웹훅): 결제 정보 (주문번호로)
 create or replace function public.payment_lookup(secret text, p_payment_id uuid) returns jsonb
 language sql stable security definer set search_path = public as $$
-  select jsonb_build_object('orderId', order_id, 'paymentKey', payment_key, 'amount', amount, 'status', status, 'testMode', test_mode)
+  select jsonb_build_object('orderId', order_id, 'paymentKey', payment_key, 'amount', amount, 'status', status, 'testMode', test_mode, 'provider', provider)
   from payments where id = p_payment_id and public.payment_secret_ok(secret);
 $$;
 revoke all on function public.payment_lookup(text, uuid) from public;
@@ -137,12 +142,14 @@ grant execute on function public.payment_order(text) to authenticated;
 create table if not exists outlet_autopay (
   outlet_id uuid primary key references outlets(id) on delete cascade,
   card_company text,
-  card_number text, -- 가려진 번호 (예: 4330****1234***)
+  card_number text, -- 가려진 번호 (예: •••• 1234)
+  provider text not null default 'stripe' check (provider in ('stripe', 'toss')),
   active boolean not null default true,
   registered_by uuid references profiles(id) on delete set null,
   registered_at timestamptz not null default now(),
   last_error text
 );
+alter table outlet_autopay add column if not exists provider text not null default 'stripe' check (provider in ('stripe', 'toss'));
 alter table outlet_autopay enable row level security;
 drop policy if exists "autopay_read" on outlet_autopay;
 create policy "autopay_read" on outlet_autopay for select to authenticated
@@ -151,9 +158,12 @@ create policy "autopay_read" on outlet_autopay for select to authenticated
 create table if not exists private.billing_keys (
   outlet_id uuid primary key references public.outlets(id) on delete cascade,
   customer_key text not null,
+  -- 토스: 빌링키 / Stripe: “고객ID|결제수단ID”
   billing_key text not null,
+  provider text not null default 'stripe',
   updated_at timestamptz not null default now()
 );
+alter table private.billing_keys add column if not exists provider text not null default 'stripe';
 
 -- 카드 등록 화면에서 쓰는 고객 키 (매체마다 하나, 추측할 수 없는 값). 편집장·발행인만
 create or replace function public.autopay_customer_key(o uuid) returns text
@@ -173,23 +183,24 @@ revoke all on function public.autopay_customer_key(uuid) from public, anon;
 grant execute on function public.autopay_customer_key(uuid) to authenticated;
 
 -- 서버: 빌링키 저장 (토스페이먼츠에서 발급받은 뒤). 고객 키가 그 매체 것과 같아야 한다
-create or replace function public.autopay_save(secret text, o uuid, p_customer_key text, p_billing_key text, p_card_company text, p_card_number text, p_user uuid)
+drop function if exists public.autopay_save(text, uuid, text, text, text, text, uuid);
+create or replace function public.autopay_save(secret text, o uuid, p_customer_key text, p_billing_key text, p_card_company text, p_card_number text, p_user uuid, p_provider text default 'stripe')
 returns void language plpgsql security definer set search_path = public, private as $$
 begin
   if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
-  if p_customer_key is distinct from coalesce((select customer_key from private.billing_keys where outlet_id = o),
+  if p_customer_key is null or p_customer_key is distinct from coalesce((select customer_key from private.billing_keys where outlet_id = o),
        (select value from private.settings where key = 'autopay_ck_' || o::text)) then
     raise exception '고객 키가 맞지 않습니다.';
   end if;
-  insert into private.billing_keys (outlet_id, customer_key, billing_key, updated_at) values (o, p_customer_key, p_billing_key, now())
-  on conflict (outlet_id) do update set billing_key = excluded.billing_key, customer_key = excluded.customer_key, updated_at = now();
-  insert into outlet_autopay (outlet_id, card_company, card_number, active, registered_by, registered_at, last_error)
-  values (o, left(p_card_company, 40), left(p_card_number, 40), true, p_user, now(), null)
-  on conflict (outlet_id) do update set card_company = excluded.card_company, card_number = excluded.card_number, active = true,
+  insert into private.billing_keys (outlet_id, customer_key, billing_key, provider, updated_at) values (o, p_customer_key, p_billing_key, coalesce(p_provider, 'stripe'), now())
+  on conflict (outlet_id) do update set billing_key = excluded.billing_key, customer_key = excluded.customer_key, provider = excluded.provider, updated_at = now();
+  insert into outlet_autopay (outlet_id, card_company, card_number, provider, active, registered_by, registered_at, last_error)
+  values (o, left(p_card_company, 40), left(p_card_number, 40), coalesce(p_provider, 'stripe'), true, p_user, now(), null)
+  on conflict (outlet_id) do update set card_company = excluded.card_company, card_number = excluded.card_number, provider = excluded.provider, active = true,
     registered_by = excluded.registered_by, registered_at = now(), last_error = null;
 end $$;
-revoke all on function public.autopay_save(text, uuid, text, text, text, text, uuid) from public;
-grant execute on function public.autopay_save(text, uuid, text, text, text, text, uuid) to anon, authenticated;
+revoke all on function public.autopay_save(text, uuid, text, text, text, text, uuid, text) from public;
+grant execute on function public.autopay_save(text, uuid, text, text, text, text, uuid, text) to anon, authenticated;
 
 -- 자동결제 해지 (편집장·발행인·운영팀). 빌링키도 지운다
 create or replace function public.autopay_remove(o uuid) returns void
@@ -202,19 +213,22 @@ end $$;
 revoke all on function public.autopay_remove(uuid) from public, anon;
 grant execute on function public.autopay_remove(uuid) to authenticated;
 
--- 서버(예약 작업): 자동결제할 청구서 목록 — 미납, 납부 기한이 오늘(한국)까지, 자동결제 켜짐, 오늘 아직 시도 안 함
-create or replace function public.autopay_due(secret text) returns table (invoice_id uuid, outlet_id uuid, customer_key text, billing_key text, amount bigint, manager_email text)
+-- 서버(예약 작업): 자동결제할 청구서 목록 — 미납, 납부 기한이 오늘(한국)까지, 발행 후 7일 지남, 자동결제 켜짐, 오늘 아직 시도 안 함
+drop function if exists public.autopay_due(text);
+create or replace function public.autopay_due(secret text) returns table (invoice_id uuid, outlet_id uuid, customer_key text, billing_key text, provider text, amount bigint, manager_email text)
 language plpgsql stable security definer set search_path = public, private as $$
 begin
   if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
   return query
-    select i.id, i.outlet_id, k.customer_key, k.billing_key, i.total, b.manager_email
+    select i.id, i.outlet_id, k.customer_key, k.billing_key, k.provider, i.total, b.manager_email
     from invoices i
     join outlet_autopay a on a.outlet_id = i.outlet_id and a.active
     join private.billing_keys k on k.outlet_id = i.outlet_id
     left join outlet_billing b on b.outlet_id = i.outlet_id
     where i.status = 'unpaid' and i.total > 0
       and (i.due_date is null or i.due_date <= (now() at time zone 'Asia/Seoul')::date)
+      -- 한국 정기결제 규칙: 결제 7일 전에 알린다 → 청구서를 발행하고 7일이 지나야 자동결제한다
+      and i.created_at <= now() - interval '7 days'
       and not exists (select 1 from payments p where p.invoice_id = i.id and p.kind = 'autopay'
                       and p.created_at >= (date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul'));
 end $$;
@@ -222,7 +236,8 @@ revoke all on function public.autopay_due(text) from public;
 grant execute on function public.autopay_due(text) to anon, authenticated;
 
 -- 서버: 자동결제 주문 만들기
-create or replace function public.autopay_start(secret text, inv uuid) returns jsonb
+drop function if exists public.autopay_start(text, uuid);
+create or replace function public.autopay_start(secret text, inv uuid, p_provider text default 'stripe') returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   i invoices%rowtype;
@@ -234,12 +249,12 @@ begin
   if i.id is null then raise exception '결제할 청구서가 없습니다.'; end if;
   oname := left(coalesce((select name from outlets where id = i.outlet_id), '') || ' ' || to_char(i.month, 'YYYY년 FMMM월') || ' IM 뉴스룸 이용료', 100);
   oid := 'IMA-' || to_char(now() at time zone 'Asia/Seoul', 'YYMMDD') || '-' || encode(gen_random_bytes(8), 'hex');
-  insert into payments (invoice_id, outlet_id, order_id, order_name, amount, kind, requested_by)
-  values (i.id, i.outlet_id, oid, oname, i.total, 'autopay', null);
+  insert into payments (invoice_id, outlet_id, order_id, order_name, amount, kind, provider, requested_by)
+  values (i.id, i.outlet_id, oid, oname, i.total, 'autopay', case when p_provider = 'toss' then 'toss' else 'stripe' end, null);
   return jsonb_build_object('orderId', oid, 'orderName', oname, 'amount', i.total);
 end $$;
-revoke all on function public.autopay_start(text, uuid) from public;
-grant execute on function public.autopay_start(text, uuid) to anon, authenticated;
+revoke all on function public.autopay_start(text, uuid, text) from public;
+grant execute on function public.autopay_start(text, uuid, text) to anon, authenticated;
 
 -- 서버: 자동결제 실패 사유를 남긴다 (화면에 “카드를 확인해 주세요” 안내)
 create or replace function public.autopay_error(secret text, o uuid, msg text) returns void

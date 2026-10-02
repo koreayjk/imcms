@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation'
 import { removeAutopay } from '@/app/(main)/support/payments/actions'
 import { formatDateTime } from '@/lib/format'
 import { AutopayRegister } from './TossPay'
+import { StripeSetupButton } from './StripePay'
 
 type Autopay = { card_company: string | null; card_number: string | null; registered_at: string; last_error: string | null } | null
 
 // 결제 정보 화면: 자동결제 카드·계좌 등록/해지
-export default function AutopaySection({ autopay, ready, clientKey, testMode }: { autopay: Autopay; ready: boolean; clientKey: string; testMode: boolean }) {
+export default function AutopaySection({ autopay, ready, provider, clientKey, testMode }: { autopay: Autopay; ready: boolean; provider: 'stripe' | 'toss' | null; clientKey: string; testMode: boolean }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [msg, setMsg] = useState('')
@@ -29,7 +30,7 @@ export default function AutopaySection({ autopay, ready, clientKey, testMode }: 
             <p className="text-[12.5px] text-muted">{formatDateTime(autopay.registered_at)} 등록</p>
             {autopay.last_error && <p className="mt-1 text-[12.5px] font-semibold text-danger">지난 자동결제 실패: {autopay.last_error} — 다른 카드로 다시 등록해 주세요.</p>}
           </div>
-          <AutopayRegister clientKey={clientKey} label="다른 카드로 바꾸기" />
+          {provider === 'stripe' ? <StripeSetupButton label="다른 결제수단으로 바꾸기" /> : <AutopayRegister clientKey={clientKey} label="다른 카드로 바꾸기" />}
           <button
             type="button"
             disabled={pending}
@@ -41,11 +42,17 @@ export default function AutopaySection({ autopay, ready, clientKey, testMode }: 
         </div>
       ) : (
         <div className="mt-4 flex flex-wrap items-start gap-3">
-          <AutopayRegister clientKey={clientKey} label="카드 등록" />
-          <AutopayRegister clientKey={clientKey} label="계좌 등록 (퀵계좌이체)" method="TRANSFER" />
+          {provider === 'stripe' ? (
+            <StripeSetupButton />
+          ) : (
+            <>
+              <AutopayRegister clientKey={clientKey} label="카드 등록" />
+              <AutopayRegister clientKey={clientKey} label="계좌 등록 (퀵계좌이체)" method="TRANSFER" />
+            </>
+          )}
         </div>
       )}
-      {ready && testMode && <p className="mt-3 text-[12px] font-semibold text-draft">시험 모드입니다. 등록 화면의 인증번호는 000000이고, 실제 결제는 일어나지 않습니다.</p>}
+      {ready && testMode && <p className="mt-3 text-[12px] font-semibold text-draft">시험 모드입니다. 실제 결제는 일어나지 않습니다.{provider === 'stripe' ? ' (시험 카드 4242 4242 4242 4242)' : ' (등록 화면 인증번호 000000)'}</p>}
       {msg && <p role="status" className="mt-2 text-[13px] text-muted">{msg}</p>}
     </section>
   )

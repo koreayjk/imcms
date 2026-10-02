@@ -8,7 +8,7 @@ import PendingButton from '@/components/cms/PendingButton'
 import PrintButton from '@/components/cms/PrintButton'
 import { setInvoicePaid } from '../../actions'
 import InvoicePayments, { type PaymentRow } from '@/components/cms/InvoicePayments'
-import { tossReady, tossTestMode } from '@/lib/toss'
+import { payProvider } from '@/lib/pay-provider'
 
 export default async function InvoicePage({ params }: { params: { id: string } }) {
   const { supabase, isSuper, isStaff } = await getCmsContext()
@@ -107,9 +107,9 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       <InvoicePayments
         invoiceId={inv.id}
         unpaid={inv.status !== 'paid'}
-        ready={tossReady()}
+        provider={payProvider().provider}
         clientKey={process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? ''}
-        testMode={tossTestMode()}
+        testMode={payProvider().testMode}
         autopay={autopay ?? null}
         payments={(payments ?? []) as PaymentRow[]}
         isStaff={isStaff}

@@ -7,7 +7,7 @@ export default async function SupportLayout({ children }: { children: React.Reac
   const canBilling = isStaff || (isEditorPlus && !!outletId)
 
   const { error: missing } = await supabase.from('support_tickets').select('id', { head: true, count: 'exact' }).limit(1)
-  // 편집장인데 세금계산서 담당자가 비어 있으면 알린다 (NDsoft처럼 상단 띠)
+  // 편집장인데 청구 담당자가 비어 있으면 알린다 (NDsoft처럼 상단 띠)
   const { data: billing } = !isStaff && canBilling && outletId && !missing
     ? await supabase.from('outlet_billing').select('manager_name, manager_email').eq('outlet_id', outletId).maybeSingle()
     : { data: { manager_name: 'x', manager_email: 'x' } }
@@ -17,7 +17,7 @@ export default async function SupportLayout({ children }: { children: React.Reac
     <div>
       {billingMissing && (
         <div className="flex items-center justify-center gap-3 bg-[#FDECEA] print:hidden px-4 py-2.5 text-[13.5px]">
-          <span>세금계산서·청구서 담당자 <strong>정보가 입력되지 않았습니다.</strong></span>
+          <span>청구서·결제 담당자 <strong>정보가 입력되지 않았습니다.</strong></span>
           <Link href="/support/billing" className="rounded-full bg-danger px-3 py-1 text-[12px] font-bold text-white hover:opacity-90">지금 입력하기</Link>
         </div>
       )}

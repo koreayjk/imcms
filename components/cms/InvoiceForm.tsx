@@ -30,7 +30,8 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         </div>
         <div>
           <label htmlFor="i-due" className="field-label">납부 기한</label>
-          <input id="i-due" name="due_date" type="date" className="field-input" />
+          <input id="i-due" name="due_date" type="date" defaultValue={new Date(Date.now() + 9 * 3600_000 + 14 * 864e5).toISOString().slice(0, 10)} className="field-input" />
+          <p className="mt-1 text-[11.5px] text-muted">자동결제를 등록한 매체는 발행 7일 뒤부터, 납부 기한에 자동으로 결제됩니다.</p>
         </div>
       </div>
 

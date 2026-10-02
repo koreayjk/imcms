@@ -12,7 +12,7 @@ const FIELDS: { k: keyof Billing; label: string; ph?: string; type?: string; gro
   { k: 'ceo_name', label: '대표자', group: 'biz' },
   { k: 'address', label: '사업장 주소', group: 'biz' },
   { k: 'manager_name', label: '담당자 이름', group: 'mgr' },
-  { k: 'manager_email', label: '담당자 이메일', type: 'email', ph: '세금계산서를 받을 주소', group: 'mgr' },
+  { k: 'manager_email', label: '담당자 이메일', type: 'email', ph: '청구서·영수증을 받을 주소', group: 'mgr' },
   { k: 'manager_phone', label: '담당자 연락처', type: 'tel', group: 'mgr' },
 ]
 
@@ -33,8 +33,8 @@ export default function BillingForm({ outletId, billing }: { outletId: string; b
   )
   return (
     <form action={action} className="space-y-5">
-      {section('mgr', '세금계산서·청구서 담당자')}
-      {section('biz', '사업자 정보 (세금계산서 발행용)')}
+      {section('mgr', '청구서·결제 담당자')}
+      {section('biz', '사업자 정보 (청구서 표기용)')}
       <div className="flex items-center justify-end gap-3">
         {state.error && <p role="alert" className="text-[13.5px] text-danger">{state.error}</p>}
         {state.ok && <p role="status" className="text-[13.5px] text-published">저장했습니다.</p>}

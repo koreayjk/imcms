@@ -80,7 +80,7 @@ const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
   { icon: 'history', title: '자동 저장·수정 이력', body: '쓰던 기사는 자동 보관, 발행 뒤 고친 내용은 기록·되돌리기', color: '#F97316' },
   { icon: 'search', title: '검색·포털 노출', body: '뉴스 사이트맵·RSS 자동, 기사별 검색 제목·공유 이미지', color: '#06B6D4' },
   { icon: 'headset', title: '고객센터 내장', body: '업무요청은 담당 매니저에게 자동 배정', color: '#14B8A6' },
-  { icon: 'receipt', title: '청구서·결제 정보', body: '월별 청구서 PDF, 세금계산서 담당자 관리', color: '#A855F7' },
+  { icon: 'receipt', title: '청구서·온라인 결제', body: '국내 카드·카카오페이·네이버페이 결제, 자동결제', color: '#A855F7' },
 ]
 
 const FAQ = [
@@ -356,7 +356,7 @@ export default function ProductHome() {
               <ul className="mt-7 space-y-3">
                 <Check>업무요청: 유형 선택·파일 첨부, 접수 → 진행 → 완료 단계 확인</Check>
                 <Check>운영팀 공지·업데이트 소식을 뉴스룸 첫 화면에서</Check>
-                <Check>월별 청구서 PDF 저장, 세금계산서 담당자 정보 관리</Check>
+                <Check>월별 청구서를 국내 카드·카카오페이·네이버페이로 바로 결제, 자동결제 등록</Check>
                 <Check>업무요청은 매체를 맡은 담당 매니저에게 자동 배정</Check>
                 <Check>기자는 본인 요청만, 청구서는 편집장 이상만 보도록 권한 분리</Check>
               </ul>

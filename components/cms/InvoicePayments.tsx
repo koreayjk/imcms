@@ -2,6 +2,7 @@ import { formatDateTime } from '@/lib/format'
 import { KIND_LABEL, PAY_STATUS } from '@/lib/payments'
 import { won } from '@/lib/support'
 import { PayButtons } from './TossPay'
+import { StripePayButton } from './StripePay'
 import RefundButton from './RefundButton'
 
 export type PaymentRow = {
@@ -10,8 +11,8 @@ export type PaymentRow = {
 }
 
 // 청구서 아래: 온라인 결제 버튼과 결제 기록 (인쇄할 때는 숨김)
-export default function InvoicePayments({ invoiceId, unpaid, ready, clientKey, testMode, autopay, payments, isStaff }: {
-  invoiceId: string; unpaid: boolean; ready: boolean; clientKey: string; testMode: boolean
+export default function InvoicePayments({ invoiceId, unpaid, provider, clientKey, testMode, autopay, payments, isStaff }: {
+  invoiceId: string; unpaid: boolean; provider: 'stripe' | 'toss' | null; clientKey: string; testMode: boolean
   autopay: { card_company: string | null; card_number: string | null; last_error: string | null } | null
   payments: PaymentRow[] | null; isStaff: boolean
 }) {
@@ -20,7 +21,7 @@ export default function InvoicePayments({ invoiceId, unpaid, ready, clientKey, t
     <section aria-labelledby="pay-title" className="mt-6 rounded-2xl bg-white p-6 ring-1 ring-black/5 print:hidden">
       <h2 id="pay-title" className="text-[16px] font-bold">온라인 결제</h2>
       {unpaid ? (
-        ready ? (
+        provider ? (
           <div className="mt-3 space-y-3">
             {autopay && (
               <p className="rounded-lg bg-published/5 px-4 py-3 text-[13.5px]">
@@ -28,8 +29,10 @@ export default function InvoicePayments({ invoiceId, unpaid, ready, clientKey, t
                 {autopay.last_error && <span className="mt-1 block text-danger">지난 자동결제 실패: {autopay.last_error}</span>}
               </p>
             )}
-            <PayButtons invoiceId={invoiceId} clientKey={clientKey} testMode={testMode} />
-            <p className="text-[12px] text-muted">토스페이먼츠 결제창이 열립니다. 결제가 끝나면 이 청구서가 바로 “납부 완료”로 바뀌고 영수증을 볼 수 있습니다.</p>
+            {provider === 'stripe'
+              ? <StripePayButton invoiceId={invoiceId} testMode={testMode} />
+              : <PayButtons invoiceId={invoiceId} clientKey={clientKey} testMode={testMode} />}
+            <p className="text-[12px] text-muted">결제가 끝나면 이 청구서가 바로 “납부 완료”로 바뀌고 영수증을 볼 수 있습니다.</p>
           </div>
         ) : (
           <p className="mt-2 text-[13.5px] text-muted">온라인 결제는 준비 중입니다. 계좌 입금 안내는 운영팀에 문의해 주세요.</p>

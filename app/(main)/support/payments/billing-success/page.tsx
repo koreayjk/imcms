@@ -24,7 +24,7 @@ export default async function BillingSuccessPage({ searchParams }: { searchParam
     const number = transfer?.bankAccountNumber ?? b.cardNumber ?? b.card?.number ?? ''
     const { error } = await supabase.rpc('autopay_save', {
       secret: paymentDbSecret(), o: outletId, p_customer_key: customerKey, p_billing_key: b.billingKey,
-      p_card_company: company, p_card_number: number, p_user: user.id,
+      p_card_company: company, p_card_number: number, p_user: user.id, p_provider: 'toss',
     })
     if (error) return <PaymentResult ok={false} title="등록 정보를 저장하지 못했습니다" actions={back}>{error.message}</PaymentResult>
     return (
