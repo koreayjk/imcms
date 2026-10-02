@@ -3,19 +3,29 @@ import Link from 'next/link'
 import ReviewActions from '@/components/ReviewActions'
 import { getCmsContext } from '@/lib/cms'
 import { sanitizeBody } from '@/lib/article-html'
-import { formatDateTime } from '@/lib/format'
+import { formatDateTime, isScheduled } from '@/lib/format'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import PendingButton from '@/components/cms/PendingButton'
+import RevisionHistory, { type Revision } from '@/components/cms/RevisionHistory'
 import { deleteArticle } from '../actions'
 
 export default async function ArticleDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
   const { supabase, user, isEditorPlus } = await getCmsContext()
 
-  const { data: article } = await supabase
-    .from('articles')
-    .select('*, author:profiles!articles_author_id_fkey(id, full_name), category:categories(name)')
-    .eq('id', params.id)
-    .single()
+  const [{ data: article }, { data: revs }] = await Promise.all([
+    supabase
+      .from('articles')
+      .select('*, author:profiles!articles_author_id_fkey(id, full_name), category:categories(name)')
+      .eq('id', params.id)
+      .single(),
+    // article-revisions.sql 실행 전이면 표가 없어 빈 목록
+    supabase
+      .from('article_revisions')
+      .select('id, changed_at, title, excerpt, body, byline, editor:profiles(full_name)')
+      .eq('article_id', params.id)
+      .order('changed_at', { ascending: false })
+      .limit(50),
+  ])
   if (!article) notFound()
 
   const canEdit = article.author_id === user.id || isEditorPlus
@@ -43,7 +53,9 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
       <article className="rounded-lg border border-line bg-white px-5 py-6 md:px-10 md:py-9">
         <header className="border-b border-line pb-6">
           <div className="flex items-center gap-2 text-[12.5px]">
-            <span className={`status-badge status-${article.status} px-2 py-1`}>{STATUS_LABEL[article.status as ArticleStatus]}</span>
+            {isScheduled(article)
+              ? <span className="status-badge status-scheduled px-2 py-1">예약 · {formatDateTime(article.published_at)} 공개</span>
+              : <span className={`status-badge status-${article.status} px-2 py-1`}>{STATUS_LABEL[article.status as ArticleStatus]}</span>}
             {(article.category as any)?.name && <span className="text-muted">{(article.category as any).name}</span>}
             {article.is_featured && <span className="font-semibold text-draft">★ 주요 기사</span>}
           </div>
@@ -55,6 +67,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
             {article.byline?.trim() || (article.author as any)?.full_name} 기자
             <span className="mx-2 text-line">|</span>작성 {formatDateTime(article.created_at)}
             {article.published_at && <><span className="mx-2 text-line">|</span>발행 {formatDateTime(article.published_at)}</>}
+            {(revs?.length ?? 0) > 0 && <><span className="mx-2 text-line">|</span>최종 수정 {formatDateTime(revs![0].changed_at)}</>}
           </p>
           {article.status === 'rejected' && article.reject_reason && (
             <p className="mt-4 rounded border border-danger/30 bg-danger/5 px-4 py-3 text-[13.5px] text-danger">
@@ -71,6 +84,15 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
           </ul>
         )}
       </article>
+
+      <RevisionHistory
+        articleId={article.id}
+        revisions={(revs ?? []) as unknown as Revision[]}
+        current={{ title: article.title, excerpt: article.excerpt, body: article.body, byline: article.byline ?? null }}
+        hasByline={'byline' in article}
+        canRestore={canEdit && !article.source_article_id}
+        live={article.status === 'published' && !article.source_article_id}
+      />
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <Link href="/articles" className="text-[13px] text-muted hover:text-ink">← 목록으로</Link>
