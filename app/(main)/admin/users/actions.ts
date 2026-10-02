@@ -137,3 +137,13 @@ export async function appointStaff(form: FormData) {
   const id = String(form.get('user_id') ?? '')
   if (id) await setStaff(id, true)
 }
+
+// 매니저의 담당 매체 (총관리자만, staff-outlets.sql). 담당 매체에서 들어온 업무요청은 자동으로 그 매니저에게 배정된다
+export async function setStaffOutlets(id: string, outletIds: string[]): Promise<FormState> {
+  const { supabase, isSuper } = await groupContext()
+  if (!isSuper) return { error: '담당 매체는 총관리자만 정할 수 있습니다.' }
+  const { error } = await supabase.rpc('admin_set_staff_outlets', { target: id, outlet_ids: outletIds })
+  if (error) return { error: /admin_set_staff_outlets/.test(error.message) ? '담당 매체를 쓰려면 staff-outlets.sql을 실행해 주세요.' : error.message }
+  revalidatePath('/admin/users')
+  return { ok: '저장했습니다.' }
+}

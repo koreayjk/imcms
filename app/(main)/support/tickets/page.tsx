@@ -18,8 +18,10 @@ export default async function TicketsPage({ searchParams }: Props) {
   const open = all.filter((t) => t.status !== 'done')
   // 운영팀: 아직 답하지 않은 요청 / 회원사: 아직 읽지 않은 답변
   const unread = isStaff ? all.filter((t) => t.status === 'received') : all.filter(hasUnreadReply)
-  // 운영팀: 내가 담당한 미완료 요청
-  const mine = all.filter((t) => t.assigned_to === user.id && t.status !== 'done')
+  // 운영팀: 내가 담당한 미완료 요청 (배정된 것 + 아직 배정 안 된 내 담당 매체 요청)
+  const { data: myOutletRows } = isStaff ? await supabase.from('staff_outlets').select('outlet_id').eq('staff_id', user.id) : { data: [] }
+  const myOutlets = new Set(((myOutletRows ?? []) as { outlet_id: string }[]).map((r) => r.outlet_id))
+  const mine = all.filter((t) => t.status !== 'done' && (t.assigned_to === user.id || (!t.assigned_to && t.outlet_id && myOutlets.has(t.outlet_id))))
   const rows = tab === 'open' ? open : tab === 'unread' ? unread : tab === 'mine' ? mine : all
 
   const tabs = [

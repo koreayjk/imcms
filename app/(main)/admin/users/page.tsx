@@ -4,7 +4,8 @@ import { formatDateTime } from '@/lib/format'
 import { ROLE_LABEL, type Profile, type UserRole } from '@/lib/types'
 import UserManager, { InviteForm, type OutletOption } from '@/components/UserManager'
 import PendingButton from '@/components/cms/PendingButton'
-import { appointStaff, approveUser, cancelInvite, rejectUser, setStaff } from './actions'
+import StaffRow from '@/components/cms/StaffOutlets'
+import { appointStaff, approveUser, cancelInvite, rejectUser } from './actions'
 
 type AuthInfo = { id: string; email: string; provider: string; last_sign_in_at: string | null }
 
@@ -21,6 +22,11 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
     // 매체별 소속·직급 (outlet-members.sql 전이면 오류 → 예전처럼 매체 하나)
     supabase.from('outlet_members').select('profile_id, outlet_id, role').order('created_at'),
   ])
+  // 매니저의 담당 매체 (총관리자만, staff-outlets.sql 전이면 오류 → 정하기 버튼을 숨긴다)
+  const staffRes = isSuper ? await supabase.from('staff_outlets').select('staff_id, outlet_id') : { data: [], error: null }
+  const staffReady = isSuper && !staffRes.error
+  const staffOutlets: Record<string, string[]> = {}
+  for (const r of (staffRes.data ?? []) as { staff_id: string; outlet_id: string }[]) (staffOutlets[r.staff_id] ??= []).push(r.outlet_id)
   const membershipsReady = !membersRes.error
   const memberships: Record<string, { outletId: string; role: 'reporter' | 'editor' }[]> = {}
   for (const m of (membersRes.data ?? []) as { profile_id: string; outlet_id: string; role: 'reporter' | 'editor' }[]) {
@@ -47,10 +53,12 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
   const groupOf = Object.fromEntries(members.map((u) => [u.id, groupIdOf(u) ? groupName.get(groupIdOf(u)!) ?? null : null]))
 
   // 총관리자는 그룹별로 나눠 보고, 발행인은 자기 그룹만 본다
+  // 매니저는 매체 소속이 아니므로 그룹 회원 표에서 빼고, 아래 매니저 칸에서 담당 매체를 정한다
+  const groupMembers = members.filter((u) => !u.is_staff || u.is_super)
   const sections = isSuper
-    ? [...(groups ?? []).map((g) => ({ key: g.id as string, title: g.name as string, list: members.filter((u) => groupIdOf(u) === g.id) })),
-       { key: 'none', title: '그룹 없음 (총관리자 등)', list: members.filter((u) => !groupIdOf(u)) }].filter((s) => s.list.length)
-    : [{ key: 'mine', title: '우리 그룹 회원', list: members }]
+    ? [...(groups ?? []).map((g) => ({ key: g.id as string, title: g.name as string, list: groupMembers.filter((u) => groupIdOf(u) === g.id) })),
+       { key: 'none', title: '그룹 없음 (총관리자 등)', list: groupMembers.filter((u) => !groupIdOf(u)) }].filter((s) => s.list.length)
+    : [{ key: 'mine', title: '우리 그룹 회원', list: groupMembers }]
 
   return (
     <div className="mx-auto max-w-[1000px] space-y-8 px-4 py-5 md:px-8 md:py-8">
@@ -133,16 +141,13 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
       {isSuper && (
         <section className="rounded-lg border border-[#2F6BF0]/30 bg-[#2F6BF0]/5 p-5">
           <h2 className="text-[15px] font-bold">IM 뉴스룸 매니저 <span className="text-[12.5px] font-normal text-muted">상담 신청·업무요청 처리, 공지, 고객사 개설, 대시보드·청구서 보기</span></h2>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {members.filter((u) => u.is_staff).map((u) => (
-              <li key={u.id} className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[13px] ring-1 ring-line">
-                <strong>{u.full_name}</strong><span className="text-muted">{info.get(u.id)?.email}</span>
-                <form action={setStaff.bind(null, u.id, false)}>
-                  <PendingButton pending="…" confirm={`${u.full_name}님을 매니저에서 해제할까요?`} className="text-[12px] text-muted underline underline-offset-2 hover:text-danger">해제</PendingButton>
-                </form>
-              </li>
+          <p className="mt-1 text-[12.5px] text-muted">매니저는 매체에 소속되지 않고 직급도 없습니다. 담당 매체만 정하면, 그 매체의 업무요청이 자동으로 배정됩니다.</p>
+          {!staffReady && <p className="mt-2 text-[12.5px] text-draft">담당 매체를 정하려면 <code>supabase/staff-outlets.sql</code>을 실행해 주세요.</p>}
+          <ul className="mt-3 space-y-2">
+            {members.filter((u) => u.is_staff && !u.is_super).map((u) => (
+              <StaffRow key={u.id} id={u.id} name={u.full_name} email={info.get(u.id)?.email} outlets={outlets} assigned={staffOutlets[u.id] ?? []} ready={staffReady} />
             ))}
-            {!members.some((u) => u.is_staff) && <li className="text-[13px] text-muted">아직 매니저가 없습니다. 매니저가 가입하면 승인 대기에서 “IM 뉴스룸 매니저”로 승인하거나, 아래에서 지정하세요.</li>}
+            {!members.some((u) => u.is_staff && !u.is_super) && <li className="text-[13px] text-muted">아직 매니저가 없습니다. 매니저가 가입하면 승인 대기에서 “IM 뉴스룸 매니저”로 승인하거나, 아래에서 지정하세요.</li>}
           </ul>
           <form action={appointStaff} className="mt-3 flex gap-2">
             <select name="user_id" defaultValue="" aria-label="매니저로 지정할 회원" className="rounded border border-line bg-white px-2 py-1.5 text-[13px]">
