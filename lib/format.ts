@@ -33,3 +33,19 @@ export function formatToday() {
     timeZone: TZ, year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
   })
 }
+
+// ───────── 발행 일시 (한국 시간 기준) ─────────
+const KST = 9 * 3600_000
+// ISO → <input type="datetime-local"> 값 (한국 시간)
+export function toKstInput(iso: string | null | undefined) {
+  if (!iso) return ''
+  return new Date(Date.parse(iso) + KST).toISOString().slice(0, 16)
+}
+// <input type="datetime-local"> 값(한국 시간) → ISO
+export function fromKstInput(v: string) {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v) ? new Date(`${v}:00+09:00`).toISOString() : null
+}
+// 발행했지만 공개 시각이 아직 안 된 기사 (예약 발행)
+export function isScheduled(a: { status?: string | null; published_at?: string | null }) {
+  return a.status === 'published' && !!a.published_at && Date.parse(a.published_at) > Date.now()
+}

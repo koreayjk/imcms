@@ -45,6 +45,8 @@ export async function syndicate(articleId: string): Promise<SyndicateResult> {
       meta_description: src.meta_description,
     }
     if ('byline' in src) content.byline = src.byline
+    // 원본 발행 일시(예약 포함)를 사본도 따라간다
+    if (src.published_at) content.published_at = src.published_at
 
     const existing = (copies ?? []).find((c) => c.outlet_id === outlet.id)
     if (existing) {

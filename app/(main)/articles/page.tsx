@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
-import { formatDateTime } from '@/lib/format'
+import { formatDateTime, isScheduled } from '@/lib/format'
 import { ImageIcon } from '@/components/cms/icons'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import PendingButton from '@/components/cms/PendingButton'
@@ -104,7 +104,9 @@ export default async function ArticlesPage({ searchParams }: Props) {
           <ul className="divide-y divide-line">
             {rows.map((a) => (
               <li key={a.id} className="group flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3.5 hover:bg-[#F8F9FA] md:flex-nowrap md:gap-4 md:px-5">
-                <span className={`status-badge status-${a.status} w-[58px] shrink-0 justify-center`}>{STATUS_LABEL[a.status as ArticleStatus]}</span>
+                {isScheduled(a)
+                  ? <span className="status-badge status-scheduled w-[58px] shrink-0 justify-center" title={`${formatDateTime(a.published_at)} 공개 예정`}>예약</span>
+                  : <span className={`status-badge status-${a.status} w-[58px] shrink-0 justify-center`}>{STATUS_LABEL[a.status as ArticleStatus]}</span>}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     {a.is_featured && <span className="text-[12px] font-bold text-draft" title="주요 기사">★</span>}

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
-import { formatDateTime } from '@/lib/format'
+import { formatDateTime, isScheduled } from '@/lib/format'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import { NOTICE_CATEGORIES, TICKET_STATUS, hasUnreadReply, type NoticeCategory, type TicketStatus } from '@/lib/support'
 
@@ -102,7 +102,10 @@ export default async function NewsroomPage({ searchParams }: Props) {
                 <li key={a.id}>
                   <Link href={a.status === 'published' ? `/articles/${a.id}` : `/articles/${a.id}/edit`} className="flex items-center gap-4 px-4 py-3.5 hover:bg-[#F8F9FA] md:px-5">
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[14.5px] font-medium md:truncate">{a.title}</p>
+                      <p className="line-clamp-2 text-[14.5px] font-medium md:truncate">
+                        {isScheduled(a) && <span className="status-badge status-scheduled mr-1.5 align-[1px]">예약</span>}
+                        {a.title}
+                      </p>
                       <p className="mt-0.5 truncate text-[12px] text-muted md:hidden">
                         {[a.category?.name ?? '섹션 없음', isEditorPlus ? a.author?.full_name : null, a.status === 'published' ? `조회 ${a.view_count ?? 0}` : null, formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)].filter(Boolean).join(' · ')}
                       </p>

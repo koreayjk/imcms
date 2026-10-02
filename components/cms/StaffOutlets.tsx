@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { setStaff, setStaffOutlets } from '@/app/(main)/admin/users/actions'
+import { deleteMember, setStaff, setStaffOutlets } from '@/app/(main)/admin/users/actions'
 import PendingButton from './PendingButton'
 
 type Outlet = { id: string; name: string; group: string | null }
@@ -36,6 +36,21 @@ export default function StaffRow({ id, name, email, outlets, assigned, ready }: 
         <form action={setStaff.bind(null, id, false)}>
           <PendingButton pending="…" confirm={`${name}님을 매니저에서 해제할까요? 담당 매체도 함께 지워집니다.`} className="text-[12px] text-muted underline underline-offset-2 hover:text-danger">해제</PendingButton>
         </form>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            if (!window.confirm(`${name}님${email ? `(${email})` : ''}을 탈퇴시킬까요?\n\n· 계정이 삭제되어 더 이상 로그인할 수 없습니다.\n· 고객 업무요청에 남긴 답변은 그대로 남습니다.\n· 되돌릴 수 없습니다.`)) return
+            start(async () => {
+              const r = await deleteMember(id)
+              setMsg(r)
+              if (!r.error) router.refresh()
+            })
+          }}
+          className="text-[12px] text-muted underline underline-offset-2 hover:text-danger"
+        >
+          탈퇴
+        </button>
       </div>
 
       {open && (

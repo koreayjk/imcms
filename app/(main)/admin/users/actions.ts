@@ -147,3 +147,14 @@ export async function setStaffOutlets(id: string, outletIds: string[]): Promise<
   revalidatePath('/admin/users')
   return { ok: '저장했습니다.' }
 }
+
+// 회원 탈퇴(계정 삭제) — 총관리자만 (member-delete.sql). 쓴 기사는 기자명 그대로 남는다
+export async function deleteMember(id: string): Promise<FormState> {
+  const { supabase, isSuper, user } = await groupContext()
+  if (!isSuper) return { error: '회원 탈퇴는 총관리자만 할 수 있습니다.' }
+  if (id === user.id) return { error: '내 계정은 여기서 탈퇴시킬 수 없습니다.' }
+  const { error } = await supabase.rpc('admin_delete_user', { target: id })
+  if (error) return { error: /admin_delete_user/.test(error.message) ? '회원 탈퇴를 쓰려면 member-delete.sql을 실행해 주세요.' : error.message }
+  revalidatePath('/', 'layout')
+  return { ok: '탈퇴 처리했습니다.' }
+}

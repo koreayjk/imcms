@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useFormState } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { inviteMember, setMember, setMemberships, type FormState, type Membership } from '@/app/(main)/admin/users/actions'
+import { deleteMember, inviteMember, setMember, setMemberships, type FormState, type Membership } from '@/app/(main)/admin/users/actions'
 import type { Profile, UserRole } from '@/lib/types'
 import { ROLE_LABEL } from '@/lib/types'
 import PendingButton from './cms/PendingButton'
@@ -49,8 +49,10 @@ export function InviteForm({ outlets }: { outlets: OutletOption[] }) {
 
 type Kind = 'member' | 'admin'
 
-function MemberRow({ u, email, outlets, isMe, groupName, memberships }: {
+function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete }: {
   u: Profile; email?: string; outlets: OutletOption[]; isMe: boolean; groupName: string | null
+  // 총관리자만: 회원 탈퇴(계정 삭제)
+  canDelete: boolean
   // null이면 outlet-members.sql 전: 예전처럼 직급 하나 + 매체 하나
   memberships: Membership[] | null
 }) {
@@ -161,19 +163,37 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships }: {
             {pending ? '저장 중…' : '저장'}
           </button>
         )}
+        {canDelete && !isMe && !u.is_super && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              if (!window.confirm(`${u.full_name}님${email ? `(${email})` : ''}을 탈퇴시킬까요?\n\n· 계정이 삭제되어 더 이상 로그인할 수 없습니다.\n· 쓴 기사는 그대로 남고 기자명도 유지됩니다.\n· 되돌릴 수 없습니다.`)) return
+              start(async () => {
+                const r = await deleteMember(u.id)
+                setMsg(r)
+                if (!r.error) router.refresh()
+              })
+            }}
+            className="mt-1 block w-full text-right text-[11.5px] text-muted hover:text-danger"
+          >
+            탈퇴
+          </button>
+        )}
         {msg.error && <span role="alert" className="block text-[11.5px] text-danger">{msg.error}</span>}
       </td>
     </tr>
   )
 }
 
-export default function UserManager({ users, outlets, currentUserId, emails = {}, groupOf = {}, memberships = null }: {
+export default function UserManager({ users, outlets, currentUserId, emails = {}, groupOf = {}, memberships = null, canDelete = false }: {
   users: Profile[]
   outlets: OutletOption[]
   currentUserId: string
   emails?: Record<string, string>
   groupOf?: Record<string, string | null>
   memberships?: Record<string, Membership[]> | null
+  canDelete?: boolean
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-line bg-white px-5">
@@ -189,7 +209,7 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
         </thead>
         <tbody>
           {users.map((u) => (
-            <MemberRow key={u.id} u={u} email={emails[u.id]} outlets={outlets} isMe={u.id === currentUserId} groupName={groupOf[u.id] ?? null} memberships={memberships ? memberships[u.id] ?? [] : null} />
+            <MemberRow key={u.id} u={u} email={emails[u.id]} outlets={outlets} isMe={u.id === currentUserId} groupName={groupOf[u.id] ?? null} memberships={memberships ? memberships[u.id] ?? [] : null} canDelete={canDelete} />
           ))}
           {!users.length && (
             <tr><td colSpan={5} className="py-10 text-center text-sm text-muted">회원이 없습니다.</td></tr>

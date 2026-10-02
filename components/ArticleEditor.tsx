@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { Editor } from '@tiptap/react'
 import { createClient } from '@/lib/supabase'
 import { toHtml } from '@/lib/body-text'
+import { formatDateTime, fromKstInput, isScheduled, toKstInput } from '@/lib/format'
 import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@/lib/types'
 import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
@@ -63,6 +64,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const [metaTitle, setMetaTitle] = useState(article?.meta_title ?? '')
   const [metaDesc, setMetaDesc] = useState(article?.meta_description ?? '')
   const [isFeatured, setIsFeatured] = useState(article?.is_featured ?? false)
+  // 발행 일시: 비우면 발행하는 순간, 지정하면 그 시각 (지난 시각 = 그 날짜로, 앞으로의 시각 = 예약 발행)
+  const [pubAt, setPubAt] = useState(toKstInput(article?.published_at))
   const [syndicateTo, setSyndicateTo] = useState<string[]>(article?.syndicate_to ?? [])
   const [showSeo, setShowSeo] = useState(false)
   const [saving, setSaving] = useState<Mode | null>(null)
@@ -81,7 +84,17 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   async function save(mode: Mode) {
     if (!title.trim()) { setError('제목을 입력해주세요.'); return }
     if (!charCount) { setError('본문을 입력해주세요.'); return }
-    if (mode === 'publish' && !window.confirm('이 기사를 지금 홈페이지에 발행할까요?')) return
+    const chosenAt = fromKstInput(pubAt)
+    if (pubAt && !chosenAt) { setError('발행 일시를 확인해 주세요.'); return }
+    if (mode === 'publish') {
+      const when = chosenAt ? new Date(chosenAt) : null
+      const msg = when && when.getTime() > Date.now() + 60_000
+        ? `${formatDateTime(chosenAt)}에 홈페이지에 공개되도록 예약 발행할까요?\n그 전까지는 홈페이지에 보이지 않습니다.`
+        : when && when.getTime() < Date.now() - 60_000
+          ? `발행 일시를 ${formatDateTime(chosenAt)}(지난 날짜)로 해서 발행할까요?`
+          : '이 기사를 지금 홈페이지에 발행할까요?'
+      if (!window.confirm(msg)) return
+    }
     setError('')
     setSaving(mode)
 
@@ -104,11 +117,14 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     const customByline = byline.trim() && byline.trim() !== defaultName ? byline.trim() : null
     if (customByline || article?.byline !== undefined) payload.byline = customByline
 
+    // 발행 전 기사는 정한 일시를 같이 저장해 두고(편집장이 승인할 때 그대로 쓴다), 발행된 기사는 일시만 고친다
+    if (mode !== 'publish') payload.published_at = chosenAt ?? (status === 'published' ? article?.published_at ?? null : null)
+
     if (mode === 'review') {
       payload.status = 'in_review'
     } else if (mode === 'publish') {
       payload.status = 'published'
-      payload.published_at = article?.published_at ?? new Date().toISOString()
+      payload.published_at = chosenAt ?? new Date().toISOString()
       payload.reviewed_by = userId
       payload.reject_reason = null
     } else if (!article) {
@@ -198,7 +214,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
         <div className="min-w-0 space-y-5 rounded-lg border border-line bg-white p-4 md:p-7">
           <div className="flex flex-wrap items-center gap-3 border-b border-line pb-5">
             <span className="w-16 text-[13px] font-semibold">기사상태</span>
-            <span className={`status-badge status-${status} px-2.5 py-1 text-[12.5px]`}>{STATUS_LABEL[status]}</span>
+            {article && isScheduled(article)
+              ? <span className="status-badge status-scheduled px-2.5 py-1 text-[12.5px]">예약 · {formatDateTime(article.published_at)} 공개</span>
+              : <span className={`status-badge status-${status} px-2.5 py-1 text-[12.5px]`}>{STATUS_LABEL[status]}</span>}
             {savedAt && <span className="text-[12px] text-muted">{savedAt} 저장됨</span>}
             {status === 'rejected' && article?.reject_reason && (
               <p className="w-full rounded border border-danger/30 bg-danger/5 px-3 py-2 text-[13px] text-danger">
@@ -298,6 +316,34 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
               주요 기사로 지정 (홈페이지 톱 영역 우선 노출)
             </label>
+
+            <label htmlFor="pub-at" className="text-[13px] font-semibold">발행 일시</label>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  id="pub-at"
+                  type="datetime-local"
+                  value={pubAt}
+                  onChange={(e) => setPubAt(e.target.value)}
+                  className="field-input py-1.5"
+                  style={{ width: 'auto', maxWidth: 240 }}
+                />
+                <span className="text-[12px] text-muted">한국 시간</span>
+                {pubAt
+                  ? <button type="button" onClick={() => setPubAt('')} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">비우기 (발행하는 순간으로)</button>
+                  : <span className="text-[12px] text-muted">비워 두면 발행하는 순간</span>}
+              </div>
+              {(() => {
+                const t = fromKstInput(pubAt)
+                if (!t) return null
+                const diff = Date.parse(t) - Date.now()
+                return diff > 60_000
+                  ? <p className="mt-1 text-[12px] font-semibold text-[#6D28D9]">예약 발행: {formatDateTime(t)}에 홈페이지에 공개됩니다. 그 전까지는 보이지 않습니다.</p>
+                  : diff < -60_000
+                    ? <p className="mt-1 text-[12px] text-muted">지난 날짜로 발행됩니다. 기사 날짜와 목록 순서가 이 일시를 따릅니다.</p>
+                    : null
+              })()}
+            </div>
           </div>
 
           {isCopy ? (
@@ -397,7 +443,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             )}
             {isEditorPlus && (
               <button type="button" onClick={() => save('publish')} disabled={!!saving} className="btn-publish px-3 md:px-5">
-                {saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : '바로 발행'}
+                {saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
               </button>
             )}
           </div>

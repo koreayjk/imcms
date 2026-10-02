@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { describe, syndicate } from '@/lib/syndicate'
 
-export default function ReviewActions({ articleId }: { articleId: string }) {
+// presetAt: 기자가 정해 둔 발행 일시 (있으면 그 시각으로 발행 — 앞으로의 시각이면 예약 발행)
+export default function ReviewActions({ articleId, presetAt = null }: { articleId: string; presetAt?: string | null }) {
   const [showReject, setShowReject] = useState(false)
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
@@ -13,11 +14,13 @@ export default function ReviewActions({ articleId }: { articleId: string }) {
   const supabase = createClient()
 
   async function approve() {
+    const scheduled = presetAt && Date.parse(presetAt) > Date.now()
+    if (scheduled && !window.confirm(`기자가 정한 발행 일시(${new Date(presetAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})로 예약 발행합니다. 그 전까지는 홈페이지에 보이지 않습니다.`)) return
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     const { error } = await supabase.from('articles').update({
       status: 'published',
-      published_at: new Date().toISOString(),
+      published_at: presetAt ?? new Date().toISOString(),
       reviewed_by: user?.id ?? null,
       reject_reason: null,
     }).eq('id', articleId)

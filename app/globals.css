@@ -13,6 +13,7 @@ body {
 .status-draft     { @apply bg-draft/10 text-draft; }
 .status-in_review { @apply bg-review/10 text-review; }
 .status-published { @apply bg-published/10 text-published; }
+.status-scheduled { @apply bg-[#7C3AED]/10 text-[#6D28D9]; }
 .status-rejected  { @apply bg-danger/10 text-danger; }
 
 /* 기사 본문 렌더링 */

@@ -113,6 +113,8 @@ function published(scope: NonNullable<Awaited<ReturnType<typeof outletScope>>>) 
     .select(scope.fields, { count: 'exact' })
     .eq('outlet_id', scope.outletId)
     .eq('status', 'published')
+    // 예약 발행: 공개 시각이 지난 기사만 (DB에서도 막는다, scheduled-publish.sql)
+    .lte('published_at', new Date().toISOString())
 }
 
 export type HomeData = {
@@ -222,7 +224,7 @@ async function sourceOf(supabase: ReturnType<typeof client>, id: string): Promis
   const sourceId = (self as { source_article_id?: string | null } | null)?.source_article_id
   if (!sourceId) return null
   const { data: src } = await supabase
-    .from('articles').select('id, outlet:outlets(name, domain)').eq('id', sourceId).eq('status', 'published').maybeSingle()
+    .from('articles').select('id, outlet:outlets(name, domain)').eq('id', sourceId).eq('status', 'published').lte('published_at', new Date().toISOString()).maybeSingle()
   const outlet = (src as any)?.outlet as { name: string; domain: string | null } | undefined
   if (!src || !outlet) return null
   return { id: src.id, outletName: outlet.name, url: outlet.domain ? `https://${outlet.domain}/news/${src.id}` : null }
@@ -250,6 +252,7 @@ export async function getArticleData(site: SiteConfig, id: string) {
     .eq('id', id)
     .eq('outlet_id', scope.outletId)
     .eq('status', 'published')
+    .lte('published_at', new Date().toISOString())
     .maybeSingle()
   if (!data) return null
 

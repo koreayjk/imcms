@@ -36,7 +36,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
       {canReview && (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg md:gap-4 border border-review/30 bg-review/5 px-5 py-4">
           <p className="text-[14px] font-medium text-review">승인신청된 기사입니다. 내용을 확인하고 승인하거나 반려하세요.</p>
-          <ReviewActions articleId={article.id} />
+          <ReviewActions articleId={article.id} presetAt={article.published_at} />
         </div>
       )}
 

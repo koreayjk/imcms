@@ -162,7 +162,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
       {sections.map((s) => (
         <section key={s.key}>
           <h2 className="mb-2 text-[15px] font-bold">{s.title} <span className="text-[12.5px] font-normal text-muted">{s.list.length}명</span></h2>
-          <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} memberships={membershipsReady ? memberships : null} />
+          <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} memberships={membershipsReady ? memberships : null} canDelete={isSuper} />
         </section>
       ))}
     </div>
