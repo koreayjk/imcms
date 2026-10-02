@@ -65,7 +65,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
             <h2 className="mb-2 text-[13px] font-bold">공급자</h2>
             <dl className="space-y-1">
               {row('상호', ISSUER.company ?? `${PRODUCT.name} (사업자 정보 등록 예정)`)}
-              {row('사업자번호', ISSUER.bizNo)}
+              {ISSUER.bizNo && row('사업자번호', ISSUER.bizNo)}
               {row('대표자', ISSUER.ceo)}
               {row('주소', ISSUER.address)}
               {row('연락처', ISSUER.contact)}

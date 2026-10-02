@@ -14,11 +14,16 @@ export function isProductHost(host: string | null | undefined) {
   return PRODUCT.domains.includes(h)
 }
 
-// 청구서의 공급자(운영사) 정보 — 사업자 등록 후 채운다
+// 청구서의 공급자(운영사) 정보 — 미국 법인 IM America Group Corp 의 상호(DBA) IM Genesis 가 IM 뉴스룸을 운영한다
+//   주소는 청구서(그 고객사만 볼 수 있음)에만 나온다
 export const ISSUER = {
-  company: null as string | null,
+  // 청구서 “공급자 상호”
+  company: 'IM Genesis (IM America Group Corp)' as string | null,
+  // 계약 상대방 (이용약관의 “회사”)
+  legalName: 'IM America Group Corp' as string | null,
+  dba: 'IM Genesis' as string | null,
   bizNo: null as string | null,
-  ceo: null as string | null,
-  address: null as string | null,
+  ceo: 'Sang W Lee' as string | null,
+  address: '1608 Hollowhil Dr, Apt 912, Bryan, TX 77802, USA' as string | null,
   contact: null as string | null,
 }

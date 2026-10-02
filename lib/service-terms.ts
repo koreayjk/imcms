@@ -9,14 +9,15 @@ export const TERMS_EFFECTIVE = '2026년 10월 2일'
 
 export type PolicySection = { title: string; body: (string | string[])[] }
 
-const company = () => ISSUER.company ?? `${PRODUCT.name} 운영사`
+const company = () => ISSUER.legalName ?? ISSUER.company ?? `${PRODUCT.name} 운영사`
+// 약관 첫머리: “IM America Group Corp(상호 IM Genesis, 이하 “회사”)”
+const companyIntro = () => `${company()}(${ISSUER.legalName && ISSUER.dba ? `상호 ${ISSUER.dba}, ` : ''}이하 “회사”)`
 const contact = () => ISSUER.contact ?? `${PRODUCT.name} 편집국 안 “고객센터” 또는 소개 페이지 상담 신청`
 
 // ───────── 서비스 이용약관 ─────────
 export function termsSections(): PolicySection[] {
-  const c = company()
   return [
-    { title: '제1조 (목적)', body: [`이 약관은 ${c}(이하 “회사”)가 제공하는 클라우드형 인터넷신문 편집국·홈페이지 서비스 “${PRODUCT.name}”(이하 “서비스”)를 언론사가 이용하는 조건과 절차, 회사와 고객사의 권리·의무를 정합니다.`] },
+    { title: '제1조 (목적)', body: [`이 약관은 ${companyIntro()}가 제공하는 클라우드형 인터넷신문 편집국·홈페이지 서비스 “${PRODUCT.name}”(이하 “서비스”)를 언론사가 이용하는 조건과 절차, 회사와 고객사의 권리·의무를 정합니다.`] },
     {
       title: '제2조 (용어)',
       body: [[
@@ -239,9 +240,8 @@ export function applyConsentSections(): PolicySection[] {
 
 // ───────── 개인정보처리방침 (소개 페이지·편집국 이용자용) ─────────
 export function privacySections(): PolicySection[] {
-  const c = company()
   return [
-    { title: '들어가며', body: [`${c}(이하 “회사”)는 ${PRODUCT.name} 서비스를 신청하거나 이용하는 분의 개인정보를 개인정보 보호법에 따라 처리합니다. 매체 홈페이지 독자의 개인정보는 각 언론사의 개인정보처리방침을 따릅니다.`] },
+    { title: '들어가며', body: [`${companyIntro()}는 ${PRODUCT.name} 서비스를 신청하거나 이용하는 분의 개인정보를 개인정보 보호법에 따라 처리합니다. 매체 홈페이지 독자의 개인정보는 각 언론사의 개인정보처리방침을 따릅니다.`] },
     {
       title: '1. 처리하는 개인정보와 목적',
       body: [[
