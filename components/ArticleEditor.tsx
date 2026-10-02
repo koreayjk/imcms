@@ -128,7 +128,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   // 승인신청·발행 전 AI 법적 검수. 문제가 보이면 확인창을 띄우고 멈춘다 (true = 계속 진행)
   async function legalGate(mode: Mode): Promise<LegalCheck | null | false> {
     // 같은 내용으로 이미 검수했으면 다시 하지 않는다 (확인할 곳이 있으면 결과 창만 다시 연다)
-    if (legal && legal.key === contentKey) {
+    if (legal && legal.key === legalKey) {
       if (!legal.check.issues.length) return legal.check
       setLegal({ ...legal, mode })
       setLegalOpen(true)
@@ -137,13 +137,13 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     legalModeRef.current = mode
     setChecking(true)
     setError('')
-    const r = await checkArticleLegal({ title: title.trim(), subtitle: subtitle.trim(), html, outletId: ownOutlet })
+    const r = await checkArticleLegal({ title: title.trim(), subtitle: subtitle.trim(), html, outletId: ownOutlet, articleId: article?.id ?? draftId })
     setChecking(false)
     if (!r.ok) {
       if (r.skipped) return null
       return window.confirm(`AI 법적 검수를 하지 못했습니다: ${r.error}\n검수 없이 ${mode === 'publish' ? '발행' : '승인신청'}할까요?`) ? null : false
     }
-    setLegal({ check: r.check, key: contentKey, mode })
+    setLegal({ check: r.check, key: legalKey, mode })
     if (r.check.issues.length) { setLegalOpen(true); return false }
     return r.check
   }
@@ -172,7 +172,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     setSaving(mode)
 
     const payload = contentPayload()
-    if (legalCheck && settingsReady) { payload.legal_check = legalCheck; payload.legal_checked_at = legalCheck.checked_at ?? new Date().toISOString() }
+    if (legalCheck && settingsReady) { const { reused: _r, ...lc } = legalCheck; payload.legal_check = lc; payload.legal_checked_at = legalCheck.checked_at ?? new Date().toISOString() }
     // 발행 전 기사는 정한 일시를 같이 저장해 두고(편집장이 승인할 때 그대로 쓴다), 발행된 기사는 일시만 고친다
     if (mode !== 'publish') payload.published_at = chosenAt ?? (status === 'published' ? article?.published_at ?? null : null)
 
@@ -231,6 +231,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   // ② 아직 발행 전(작성중·반려)인 기사는 1분마다 서버에도 조용히 저장 → 기사목록 “작성중”이 임시보관함
   //    발행된 기사·승인신청 중인 기사는 홈페이지·편집장 화면이 바뀌지 않도록 브라우저 백업만 한다
   const backupKey = article ? `im-autosave-${article.id}` : `im-autosave-new-${userId}-${outletId ?? 'none'}`
+  // 법적 검수는 제목·부제·본문만 본다 (태그·일시만 바꿨으면 다시 검수하지 않는다)
+  const legalKey = JSON.stringify([title.trim(), subtitle.trim(), html])
   const contentKey = JSON.stringify([title, subtitle, html, categoryId, tags, byline, bylineEmail, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl])
   const serverKey = useRef(contentKey)
   const [restore, setRestore] = useState<{ at: number; data: Record<string, unknown> } | null>(null)
@@ -387,7 +389,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </div>
           )}
 
-          {legal && !legalOpen && legal.check.issues.length > 0 && legal.key === contentKey && (
+          {legal && !legalOpen && legal.check.issues.length > 0 && legal.key === legalKey && (
             <div className="rounded border border-danger/30 bg-danger/5 px-4 py-3 text-[13px]">
               <p className="flex flex-wrap items-center gap-2"><strong className="text-danger">AI 법적 검수: 확인할 곳 {legal.check.issues.length}개</strong><button type="button" onClick={() => setLegalOpen(true)} className="text-[12.5px] underline underline-offset-2">다시 보기</button></p>
             </div>

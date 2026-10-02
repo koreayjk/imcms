@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { activeModel, AiDraftError, geminiRequest, type AiModel } from './ai-draft'
+import { activeModel, AI_MODELS, AiDraftError, geminiRequest, providerReady, type AiModel } from './ai-draft'
 
 // 기사 발행 전 AI 법적 검수: 명예훼손·모욕, 개인정보·초상권, 저작권(도용·표절), 허위·과장, 기사형 광고 등
 //   참고용 점검이다. 인터넷 검색으로 다른 기사와 대조하지는 않는다
@@ -118,8 +118,17 @@ async function withGemini(model: AiModel, input: LegalInput) {
   return { check: parse(text), inputTokens: Number(u.promptTokenCount ?? 0), outputTokens: Number(u.candidatesTokenCount ?? 0) + Number(u.thoughtsTokenCount ?? 0) }
 }
 
+// 검수 모델: 초안 쓰기와 따로 정한다 (Vercel 환경 변수 AI_LEGAL_MODEL, 없으면 Gemini Flash).
+// 문제 표현을 찾는 일이라 싼 모델로 충분하다. Gemini 키가 없을 때만 초안 모델을 쓴다
+export function legalModel(): AiModel | null {
+  const chosen = AI_MODELS.find((m) => m.id === process.env.AI_LEGAL_MODEL)
+  if (chosen && providerReady(chosen.provider)) return chosen
+  if (providerReady('gemini')) return AI_MODELS.find((m) => m.id === 'gemini-3.8-flash')!
+  return activeModel()
+}
+
 export async function checkLegal(input: LegalInput) {
-  const model = activeModel()
+  const model = legalModel()
   if (!model) throw new AiDraftError('AI 기능이 아직 설정되지 않았습니다.')
   const r = model.provider === 'gemini' ? await withGemini(model, input) : await withAnthropic(model, input)
   const costUsd = (r.inputTokens * model.input + r.outputTokens * model.output) / 1_000_000

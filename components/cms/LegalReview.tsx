@@ -18,6 +18,7 @@ export default function LegalReview({ check, compact = false }: { check: LegalCh
         <p className="min-w-0 flex-1 text-[13.5px]">{check.summary || (check.issues.length ? '' : '문제가 될 만한 표현을 찾지 못했습니다.')}</p>
         {check.checked_at && !compact && <span className="text-[11.5px] tabular-nums text-muted">{formatDateTime(check.checked_at)} 검수</span>}
       </div>
+      {check.reused && <p className="text-[12px] text-muted">앞서 검수한 뒤로 제목·본문이 바뀌지 않아 그때 결과를 그대로 보여 드립니다{check.checked_at ? ` (${formatDateTime(check.checked_at)})` : ''}.</p>}
       {check.issues.length > 0 && (
         <ol className="space-y-2">
           {check.issues.map((x, i) => (

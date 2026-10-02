@@ -6,7 +6,8 @@ export type LegalIssue = {
   reason: string
   suggestion: string
 }
-export type LegalCheck = { risk: 'low' | 'medium' | 'high'; summary: string; issues: LegalIssue[]; model?: string; checked_at?: string }
+// content_hash: 검수한 제목·부제·본문 글자의 해시. 같으면 다시 검수하지 않고 저장된 결과를 쓴다 (reused = 그렇게 다시 쓴 결과)
+export type LegalCheck = { risk: 'low' | 'medium' | 'high'; summary: string; issues: LegalIssue[]; model?: string; checked_at?: string; content_hash?: string; reused?: boolean }
 
 export const LEGAL_TYPE_LABEL: Record<LegalIssue['type'], string> = {
   defamation: '명예훼손', insult: '모욕·비하', privacy: '개인정보·초상권', copyright: '저작권·도용',
