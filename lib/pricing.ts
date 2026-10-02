@@ -27,7 +27,7 @@ export const PLANS: Plan[] = [
     name: '베이직',
     for: '기자 몇 명이 매일 기사를 내는 소규모 인터넷신문',
     monthly: 77_000,
-    specs: [['AI 기사 초안', '월 100건'], ['저장 용량', '30G'], ['월 전송량', '300G'], ['업무요청', '50pt']],
+    specs: [['AI 기사 초안', '월 100건'], ['저장 용량', '30G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 3건'], ['뉴스레터', '회당 2,000명']],
     extras: [],
   },
   {
@@ -36,7 +36,7 @@ export const PLANS: Plan[] = [
     for: '섹션이 많고 기사량이 꾸준한 일반 언론사',
     monthly: 154_000,
     pick: true,
-    specs: [['AI 기사 초안', '월 300건'], ['저장 용량', '60G'], ['월 전송량', '500G'], ['업무요청', '100pt']],
+    specs: [['AI 기사 초안', '월 300건'], ['저장 용량', '60G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 5건'], ['뉴스레터', '회당 2,000명']],
     extras: ['홈페이지 맞춤 수정 지원'],
   },
   {
@@ -44,7 +44,7 @@ export const PLANS: Plan[] = [
     name: '프리미엄',
     for: '방문자가 많거나 매체를 여럿 운영하는 언론사',
     monthly: 231_000,
-    specs: [['AI 기사 초안', '월 1,000건'], ['저장 용량', '100G'], ['월 전송량', '1,000G'], ['업무요청', '200pt']],
+    specs: [['AI 기사 초안', '월 1,000건'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '회당 10,000명']],
     extras: ['홈페이지 맞춤 수정 지원', '같은 그룹 매체 3개까지 포함', '우선 지원'],
   },
   {
@@ -52,12 +52,18 @@ export const PLANS: Plan[] = [
     name: '엔터프라이즈',
     for: '방문자·기사량이 아주 많은 중대형 언론사',
     monthly: null,
-    specs: [['AI 기사 초안', '맞춤'], ['저장 용량', '맞춤'], ['월 전송량', '맞춤'], ['업무요청', '상담']],
+    specs: [['AI 기사 초안', '맞춤'], ['저장 용량', '맞춤'], ['전송량', '맞춤'], ['배너·팝업 디자인', '상담'], ['뉴스레터', '맞춤']],
     extras: ['전용 지원 담당'],
   },
 ]
 
 export const planById = (id: string | null | undefined) => PLANS.find((p) => p.id === id) ?? null
+
+// 뉴스레터 한 번에 보낼 수 있는 인원 (요금제 없음 = 운영사 자체 매체는 넉넉히)
+export function newsletterLimit(plan: string | null | undefined) {
+  if (plan === 'premium' || plan === 'enterprise' || !plan) return 10_000
+  return 2_000
+}
 export const BILLING_LABEL: Record<Billing, string> = { monthly: '월 결제', annual: '1년 결제' }
 
 export const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
