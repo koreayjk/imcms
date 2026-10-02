@@ -14,6 +14,7 @@ export type SitePayload = {
 const HEX = /^#[0-9a-f]{6}$/i
 const LEGAL_KEYS: (keyof SiteLegal)[] = ['company', 'ceo', 'publisher', 'editor', 'youthOfficer', 'registrationNo', 'registeredAt', 'bizNo', 'postcode', 'address', 'phone', 'email']
 const cut = (v: unknown, n: number) => String(v ?? '').trim().slice(0, n)
+const verifyCode = (v: unknown) => { const t = cut(v, 300); const m = t.match(/content=["']([^"']+)["']/); return (m ? m[1] : t).replace(/[^A-Za-z0-9_\-]/g, '').slice(0, 100) }
 
 export async function saveSiteSettings(outletId: string, p: SitePayload): Promise<{ error?: string; ok?: string }> {
   const { supabase, isStaff } = await getCmsContext()
@@ -40,6 +41,9 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     description: cut(s.description, 200),
     specialtyTitle: cut(s.specialtyTitle, 30) || undefined,
     indexWidget: !!s.indexWidget,
+    // 소유 확인 코드: 메타 태그 전체를 붙여 넣어도 content 값만 남긴다
+    naverVerification: verifyCode(s.naverVerification) || undefined,
+    googleVerification: verifyCode(s.googleVerification) || undefined,
     logoUrl: logoUrl || undefined,
     logoMode: mode,
     colors: {

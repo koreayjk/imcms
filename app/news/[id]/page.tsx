@@ -10,6 +10,7 @@ import MostViewed from '@/components/site/MostViewed'
 import Thumb from '@/components/site/Thumb'
 import { sanitizeBody } from '@/lib/article-html'
 import ShareButton from './ShareButton'
+import ViewCounter from './ViewCounter'
 
 type Props = { params: { id: string } }
 
@@ -45,6 +46,7 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <SiteFrame site={site} current={a.category?.slug}>
+      {!a.id.startsWith('demo-') && <ViewCounter id={a.id} />}
       <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[1fr_300px] lg:py-10">
         <article className="min-w-0">
           <header className="border-b border-rule pb-5">

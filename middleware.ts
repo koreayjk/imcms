@@ -19,7 +19,15 @@ function isPublicPath(pathname: string) {
     // 예약 수집: 로그인 대신 DB 비밀 열쇠로 확인한다
     pathname.startsWith('/api/cron/') ||
     // 메일 수신 서비스: DB 비밀 열쇠로 확인한다
-    pathname.startsWith('/api/inbound/')
+    pathname.startsWith('/api/inbound/') ||
+    // 기사 조회수 (독자가 부른다)
+    pathname === '/api/view' ||
+    // 정책 페이지·사이트맵·RSS (공개)
+    pathname.startsWith('/policy/') ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/news-sitemap.xml' ||
+    pathname === '/rss.xml' ||
+    pathname === '/robots.txt'
   )
 }
 

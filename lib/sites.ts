@@ -40,6 +40,8 @@ export type SiteConfig = {
   specialtyTitle: string
   // 해운 운임지수(SCFI·KCCI) 위젯을 홈 오른쪽에 보여줄지
   indexWidget?: boolean
+  // 검색 포털 소유 확인 코드 (네이버 서치어드바이저·구글 서치콘솔)
+  verification?: { naver?: string; google?: string }
   logoMark: string
   // mark: 심볼 + 매체 이름 글자 / full: 로고 이미지만 / text: 매체 이름 글자만
   logoMode?: LogoMode
@@ -114,6 +116,8 @@ export type OutletSiteSettings = {
   description?: string
   specialtyTitle?: string
   indexWidget?: boolean
+  naverVerification?: string
+  googleVerification?: string
   logoUrl?: string
   logoMode?: LogoMode
   colors?: { brand?: string; accent?: string }
@@ -176,6 +180,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     description: s.description ?? code?.description ?? `${o.name} 인터넷신문`,
     specialtyTitle: s.specialtyTitle || code?.specialtyTitle || '전문뉴스',
     indexWidget: !!s.indexWidget,
+    verification: { naver: s.naverVerification || undefined, google: s.googleVerification || undefined },
     logoMark: s.logoUrl ?? code?.logoMark ?? '',
     logoMode: s.logoMode ?? (s.logoUrl || code?.logoMark ? 'mark' : 'text'),
     colors: { brand, brandDark: shade(brand, 0.3), gold: accent, goldInk: shade(accent, 0.35) },

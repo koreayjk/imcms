@@ -260,6 +260,17 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             <span className="mt-0.5 block text-[12.5px] text-muted">정식으로 여는 날 켜세요. 테스트 기사가 남아 있을 때 켜면 검색 결과에 그대로 남을 수 있습니다.</span>
           </span>
         </label>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field label="네이버 서치어드바이저 확인 코드" hint="“HTML 태그” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다">
+            <input value={s.naverVerification ?? ''} onChange={(e) => set({ naverVerification: e.target.value })} maxLength={300} placeholder='<meta name="naver-site-verification" content="…" />' className="field-input" />
+          </Field>
+          <Field label="구글 서치콘솔 확인 코드" hint="“HTML 태그” 방식의 content 값">
+            <input value={s.googleVerification ?? ''} onChange={(e) => set({ googleVerification: e.target.value })} maxLength={300} placeholder='<meta name="google-site-verification" content="…" />' className="field-input" />
+          </Field>
+        </div>
+        <p className="mt-3 rounded bg-[#F8F9FA] px-3 py-2.5 text-[12.5px] leading-relaxed text-muted">
+          포털에 등록할 주소 — 사이트맵: <code>/sitemap.xml</code> · 뉴스 사이트맵: <code>/news-sitemap.xml</code> · RSS: <code>/rss.xml</code> (매체 도메인 뒤에 붙입니다. 예: https://{domain || '매체도메인'}/sitemap.xml)
+        </p>
       </Card>
 
       {/* 하단 미리보기 */}

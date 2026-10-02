@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { SiteConfig } from '@/lib/sites'
 import Logo from './Logo'
+import { POLICIES } from '@/lib/policies'
 
 export default function SiteFooter({ site }: { site: SiteConfig }) {
   const l = site.legal
@@ -14,6 +15,9 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
             <Link key={s.slug} href={`/section/${s.slug}`} className="hover:text-brand">{s.name}</Link>
           ))}
           <span className="hidden flex-1 lg:block" />
+          {POLICIES.map((p) => (
+            <Link key={p.slug} href={`/policy/${p.slug}`} className={p.slug === 'privacy' ? 'font-bold text-body hover:text-brand' : 'hover:text-brand'}>{p.title}</Link>
+          ))}
           {l.email && (
             <>
               <a href={`${mail}?subject=${encodeURIComponent('[기사제보]')}`} className="font-semibold text-body hover:text-brand">기사제보</a>

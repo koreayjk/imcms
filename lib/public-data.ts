@@ -306,3 +306,28 @@ export async function getIndexSeries(site: SiteConfig): Promise<IndexSeries | nu
     return null
   }
 }
+
+// ───────── 사이트맵·RSS ─────────
+export type FeedArticle = PublicArticle & { updated_at: string | null }
+
+// 공개된 기사 목록 (최신순). sinceHours를 주면 그 시간 안에 공개된 기사만 (뉴스 사이트맵용)
+export async function getFeedArticles(site: SiteConfig, limit: number, sinceHours?: number): Promise<FeedArticle[]> {
+  if (isDemo) return demoArticles().slice(0, limit).map((a) => ({ ...a, updated_at: a.published_at }))
+  const scope = await outletScope(site)
+  if (!scope) return []
+  let q = scope.supabase
+    .from('articles')
+    .select(`${scope.fields}, updated_at`)
+    .eq('outlet_id', scope.outletId)
+    .eq('status', 'published')
+    .lte('published_at', new Date().toISOString())
+  if (sinceHours) q = q.gte('published_at', new Date(Date.now() - sinceHours * 3600_000).toISOString())
+  const { data } = await q.order('published_at', { ascending: false }).limit(limit)
+  return ((data ?? []) as any[]).map((r) => ({ ...toPublic(r), updated_at: r.updated_at ?? r.published_at }))
+}
+
+// 사이트맵·RSS에 쓰는 대표 주소 (도메인이 연결돼 있으면 그 주소, 아니면 지금 접속한 주소)
+export function siteBaseUrl(site: SiteConfig, host: string | null) {
+  const h = site.domains[0] ?? (host ?? '').split(',')[0].trim()
+  return `https://${h}`
+}

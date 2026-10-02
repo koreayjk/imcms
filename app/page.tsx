@@ -18,6 +18,12 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: { icon: site.logoMark },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
     openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website' },
+    alternates: { types: { 'application/rss+xml': [{ url: '/rss.xml', title: site.name }] } },
+    // 네이버 서치어드바이저·구글 서치콘솔 소유 확인 (홈페이지 설정에서 넣는다)
+    verification: {
+      google: site.verification?.google,
+      other: site.verification?.naver ? { 'naver-site-verification': site.verification.naver } : undefined,
+    },
   }
 }
 
