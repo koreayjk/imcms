@@ -1,9 +1,11 @@
 // IM 뉴스룸 요금 (소개 페이지 요금표·신청서·고객 상담 화면이 같이 쓴다). 금액은 모두 VAT 포함
-//   1년 한 번에 결제하면 2개월 무료(10개월 값), 베타 테스트 신문사는 반값 — 두 혜택은 함께 적용된다
+//   1년 한 번에 결제하면 1개월 무료(11개월 값), 베타 테스트 신문사는 반값 — 두 혜택은 함께 적용된다
 //   베타 모집이 끝나면 BETA 를 false 로 바꾸면 반값 표시·계산이 모두 빠진다
 export const BETA = true
 export const BETA_RATE = 0.5
-export const ANNUAL_MONTHS = 10
+export const ANNUAL_MONTHS = 11
+// 1년 결제 혜택 표시 ("1개월 무료")
+export const ANNUAL_FREE = `${12 - ANNUAL_MONTHS}개월 무료`
 export const SETUP_FEE = 150_000
 
 // 세팅비(처음 한 번)에 들어가는 일 — 소개 페이지 요금표에 그대로 보여준다
@@ -79,7 +81,7 @@ export const BILLING_LABEL: Record<Billing, string> = { monthly: '월 결제', a
 
 export const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 
-// 한 번 결제하는 이용료 (월 결제면 한 달, 1년 결제면 10개월 값). 별도 문의 요금제는 null
+// 한 번 결제하는 이용료 (월 결제면 한 달, 1년 결제면 11개월 값). 별도 문의 요금제는 null
 export function planCharge(plan: Plan, billing: Billing, beta = BETA) {
   if (plan.monthly == null) return null
   const regular = plan.monthly * (billing === 'annual' ? ANNUAL_MONTHS : 1)

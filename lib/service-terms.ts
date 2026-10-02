@@ -2,7 +2,7 @@
 //   매체 홈페이지 독자용 정책(lib/policies.ts)과는 다르다. 이쪽은 언론사(고객사)와 IM 뉴스룸 운영사 사이의 약속이다
 //   운영사 정보(상호·대표·연락처)는 사업자 등록 후 lib/product.ts 의 ISSUER 에 넣으면 여기에 들어간다
 import { ISSUER, PRODUCT } from './product'
-import { ANNUAL_MONTHS, EXTRA_AI_FEE, SETUP_FEE, won } from './pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, EXTRA_AI_FEE, SETUP_FEE, won } from './pricing'
 
 export const TERMS_VERSION = '2026-10-02'
 export const TERMS_EFFECTIVE = '2026년 10월 2일'
@@ -98,7 +98,7 @@ export function termsSections(): PolicySection[] {
       body: [
         '고객사는 언제든지 고객센터 업무요청이나 이메일로 해지를 신청할 수 있습니다.',
         '월 결제: 해지를 신청한 달의 말일까지 쓰고 그 달 요금은 돌려드리지 않습니다. 미리 낸 다음 달 이후 요금은 돌려드립니다.',
-        '1년 결제: 이미 낸 금액에서 “쓴 달 수 × 월 결제 요금(같은 할인 기준)”을 뺀 나머지를 돌려드립니다. 1년 결제 혜택(2개월 무료)은 1년을 다 쓴 경우에만 적용되기 때문입니다.',
+        `1년 결제: 이미 낸 금액에서 “쓴 달 수 × 월 결제 요금(같은 할인 기준)”을 뺀 나머지를 돌려드립니다. 1년 결제 혜택(${ANNUAL_FREE})은 1년을 다 쓴 경우에만 적용되기 때문입니다.`,
         '세팅비는 개통한 뒤에는 돌려드리지 않습니다.',
         '회사 사정으로 서비스를 끝내거나 회사 잘못으로 해지하는 경우에는 남은 기간 요금을 모두 돌려드립니다.',
       ],

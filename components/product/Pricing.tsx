@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { ANNUAL_MONTHS, BETA, BETA_RATE, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, SETUP_FEE, SETUP_ITEMS, won, type PlanId } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA, BETA_RATE, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, SETUP_FEE, SETUP_ITEMS, won, type PlanId } from '@/lib/pricing'
 
 // 소개 페이지 요금표 (금액은 lib/pricing.ts)
 //   요금제의 신청 버튼을 누르면 아래 신청서에 그 요금제·결제 방식이 골라진다 (im-pick-plan 이벤트)
@@ -65,11 +65,11 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
             className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-[15px] font-bold transition ${annual ? 'bg-white text-[#14171C] shadow-[0_4px_14px_-6px_rgba(11,16,32,0.4)]' : 'text-[#5B616B] hover:text-[#14171C]'}`}
           >
             1년 한 번에 결제
-            <span className="rounded-full bg-[#10B981] px-2 py-0.5 text-[12px] font-extrabold text-white">2개월 무료</span>
+            <span className="rounded-full bg-[#10B981] px-2 py-0.5 text-[12px] font-extrabold text-white">{ANNUAL_FREE}</span>
           </button>
         </div>
         <p className="text-[14px] text-[#5B616B]">
-          {annual ? <>1년 요금을 한 번에 내시면 <strong className="text-[#0F9F6E]">12개월을 10개월 값</strong>으로 씁니다.</> : '매달 결제하고 언제든 해지할 수 있습니다.'}
+          {annual ? <>1년 요금을 한 번에 내시면 <strong className="text-[#0F9F6E]">12개월을 {ANNUAL_MONTHS}개월 값</strong>으로 씁니다.</> : '매달 결제하고 언제든 해지할 수 있습니다.'}
         </p>
       </div>
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { submitBetaRequest, type ApplyState } from '@/app/imnewsroom/actions'
-import { BETA, BILLING_LABEL, PLANS, SETUP_FEE, firstPayment, planById, won, type Billing, type PlanId } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA, BILLING_LABEL, PLANS, SETUP_FEE, firstPayment, planById, won, type Billing, type PlanId } from '@/lib/pricing'
 import { applyConsentSections, termsSections } from '@/lib/service-terms'
 import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
@@ -116,7 +116,7 @@ export default function ApplyForm() {
                 className={`flex items-center justify-center gap-1.5 rounded-md border px-3 py-2.5 text-[14px] font-semibold transition ${billing === b ? 'border-[#14171C] bg-[#14171C] text-white' : 'border-[#D5D8DD] text-[#3B4048] hover:border-[#14171C]'}`}
               >
                 {BILLING_LABEL[b]}
-                {b === 'annual' && <span className="rounded-full bg-[#10B981] px-1.5 py-0.5 text-[11px] font-extrabold text-white">2개월 무료</span>}
+                {b === 'annual' && <span className="rounded-full bg-[#10B981] px-1.5 py-0.5 text-[11px] font-extrabold text-white">{ANNUAL_FREE}</span>}
               </button>
             ))}
           </div>
@@ -131,7 +131,7 @@ export default function ApplyForm() {
               </p>
               <ul className="mt-1.5 space-y-0.5 text-[12.5px] tabular-nums text-[#5B616B]">
                 <li>
-                  이용료 {won(pay.price)} ({chosen.name} · {billing === 'annual' ? '12개월을 10개월 값으로' : '1개월'}{BETA ? ' · 베타 반값' : ''})
+                  이용료 {won(pay.price)} ({chosen.name} · {billing === 'annual' ? `12개월을 ${ANNUAL_MONTHS}개월 값으로` : '1개월'}{BETA ? ' · 베타 반값' : ''})
                   {BETA && <s className="ml-1 text-[#9AA0A8]">{won(pay.regular)}</s>}
                 </li>
                 <li>세팅비 {pay.setupFree ? <>0원 <s className="text-[#9AA0A8]">{won(SETUP_FEE)}</s> (베타 기간 신청 무료)</> : <>{won(pay.setup)} (처음 한 번)</>}</li>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { PRODUCT, isProductHost } from '@/lib/product'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_RATE, PLANS, won } from '@/lib/pricing'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
@@ -95,7 +96,7 @@ const FAQ = [
   { q: '한 기자가 여러 매체에서 일할 수 있나요?', a: '네. 같은 그룹 안에서 여러 매체에 소속되고, 매체마다 직급을 따로 가질 수 있습니다(예: A매체 편집장, B매체 기자). 상단바에서 매체를 바꾸면 그 매체의 직급으로 바뀝니다.' },
   { q: '휴대폰으로도 기사를 쓸 수 있나요?', a: '네. 편집국 화면이 휴대폰에 맞게 바뀌어 현장에서 바로 쓰고, 편집장은 휴대폰으로 승인·발행할 수 있습니다.' },
   { q: '요금은 얼마인가요?', a: '베이직 월 110,000원, 스탠다드 월 150,000원, 프리미엄 월 230,000원이고 모두 부가세(VAT) 포함 금액입니다. 기자 계정은 모든 요금제에서 무제한이고, AI 사용 횟수(초안·법적 검수)·저장 용량에 따라 나뉩니다. 지금 베타 테스트 신문사로 참여하시면 반값입니다.' },
-  { q: '1년 한 번에 결제하면 할인되나요?', a: '네. 1년 요금을 한 번에 내시면 2개월이 무료라 12개월을 10개월 값으로 씁니다. 베타 반값과 함께 적용됩니다. 예: 베이직 베타 신문사 1년 550,000원.' },
+  { q: '1년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로 씁니다. 베타 반값과 함께 적용됩니다. 예: 베이직 베타 신문사 1년 ${won(PLANS[0].monthly! * ANNUAL_MONTHS * BETA_RATE)}.` },
   { q: '세팅비는 무엇인가요?', a: '처음 개통할 때 한 번만 내는 150,000원(VAT 포함)입니다. 편집국·홈페이지 개설, 로고·색 등 맞춤 적용, 법정 표기·정책 페이지, 도메인 연결, 기존 기사·사진 옮기기와 옛 주소 연결, 포털 검색 등록 준비, 사용법 1:1 안내가 들어 있습니다. 지금 베타 기간에 신청하시면 세팅비는 무료입니다.' },
 ]
 
@@ -569,7 +570,7 @@ export default function ProductHome() {
               </p>
               <ul className="mt-8 space-y-3">
                 <Check dark>베타 신문사 모든 요금 반값 · 세팅비 무료</Check>
-                <Check dark>1년 한 번에 결제하면 2개월 무료</Check>
+                <Check dark>1년 한 번에 결제하면 {ANNUAL_FREE}</Check>
                 <Check dark>쓰던 도메인 그대로</Check>
                 <Check dark>기존 기사 이전 지원</Check>
               </ul>
