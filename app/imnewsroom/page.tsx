@@ -563,9 +563,9 @@ export default function ProductHome() {
           </div>
           <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-24 sm:px-6 md:grid-cols-[0.8fr_1.2fr]">
             <div>
-              <h2 className={H2}>베타 고객사 신청</h2>
+              <h2 className={H2}>서비스 신청</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-white/70">
-                신청서를 보내주시면 담당자가 연락드려 운영 중인 매체와 필요한 기능을 여쭤봅니다. 신청했다고 비용이 생기지 않습니다.
+                요금제를 고르고 신청서를 보내주시면 담당자가 연락드려 개통 일정과 계약 서류를 안내합니다. 결제는 계약 내용을 확인한 뒤에 진행되며, 신청만으로는 비용이 생기지 않습니다.
               </p>
               <ul className="mt-8 space-y-3">
                 <Check dark>베타 신문사 모든 요금 반값 · 세팅비 무료</Check>
@@ -587,7 +587,9 @@ export default function ProductHome() {
           </div>
           <div className="flex gap-5">
             <Link href="/login" className="hover:text-white">편집국 로그인</Link>
-            <a href="#apply" className="hover:text-white">상담 신청</a>
+            <a href="#apply" className="hover:text-white">서비스 신청</a>
+            <Link href={`${PRODUCT.path}/terms`} className="hover:text-white">이용약관</Link>
+            <Link href={`${PRODUCT.path}/privacy`} className="font-semibold text-white/80 hover:text-white">개인정보처리방침</Link>
           </div>
           <p className="w-full text-[12px] text-white/40">© {new Date().getFullYear()} {PRODUCT.nameEn}</p>
         </div>

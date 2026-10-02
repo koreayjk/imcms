@@ -5,11 +5,14 @@ import { useFormState } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { openCustomer, saveLead, type LeadState } from '@/app/(main)/admin/leads/actions'
 import PendingButton from './PendingButton'
+import { BILLING_LABEL, planById, won, type Billing } from '@/lib/pricing'
 
 export type Lead = {
   id: string; company: string; contact_name: string; phone: string; email: string | null; outlet_count: string | null
   current_cms: string | null; message: string | null; status: string; created_at: string
   note?: string | null; assigned_to?: string | null; publisher_id?: string | null
+  plan?: string | null; billing?: string | null; domain?: string | null; quoted_total?: number | null
+  beta_discount?: boolean | null; terms_agreed_at?: string | null; terms_version?: string | null
 }
 
 const STATUS: Record<string, { label: string; cls: string }> = {
@@ -35,6 +38,12 @@ export default function LeadCard({ lead, staff, createdLabel, groupName }: { lea
         <span className={`rounded px-2 py-0.5 text-[12px] font-semibold ${STATUS[lead.status]?.cls}`}>{STATUS[lead.status]?.label ?? lead.status}</span>
         <strong className="text-[16px]">{lead.company}</strong>
         {lead.outlet_count && <span className="text-[13px] text-muted">매체 {lead.outlet_count}</span>}
+        {planById(lead.plan) && (
+          <span className="rounded bg-[#FFF4F1] px-2 py-0.5 text-[12px] font-semibold text-[#C2410C]">
+            {planById(lead.plan)!.name}{lead.billing ? ` · ${BILLING_LABEL[lead.billing as Billing] ?? lead.billing}` : ''}{lead.beta_discount ? ' · 베타 반값' : ''}
+            {lead.quoted_total != null && <span className="tabular-nums"> · 첫 결제 {won(lead.quoted_total)}</span>}
+          </span>
+        )}
         {groupName && <span className="rounded bg-published/10 px-1.5 py-0.5 text-[11.5px] font-semibold text-published">개설됨 · {groupName}</span>}
         <time className="ml-auto text-[12.5px] tabular-nums text-muted">{createdLabel}</time>
       </div>
@@ -42,7 +51,9 @@ export default function LeadCard({ lead, staff, createdLabel, groupName }: { lea
         {lead.contact_name} · <a href={`tel:${lead.phone}`} className="underline underline-offset-2">{lead.phone}</a>
         {lead.email && <> · <a href={`mailto:${lead.email}`} className="underline underline-offset-2">{lead.email}</a></>}
         {lead.current_cms && <span className="text-muted"> · 사용 중: {lead.current_cms}</span>}
+        {lead.domain && <span className="text-muted"> · 도메인: {lead.domain}</span>}
       </p>
+      {lead.terms_agreed_at && <p className="mt-1 text-[12px] text-muted">이용약관({lead.terms_version}) · 개인정보 수집·이용 동의함</p>}
       {lead.message && <p className="mt-2 whitespace-pre-line rounded bg-paper px-4 py-3 text-[13.5px] leading-relaxed">{lead.message}</p>}
 
       {/* 처리: 담당·상태·상담 기록 */}

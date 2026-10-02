@@ -2,52 +2,12 @@
 
 import { useState } from 'react'
 
-// 소개 페이지 요금표 (금액은 모두 VAT 포함)
-//   1년 한 번에 결제하면 2개월 무료(10개월 값), 베타 테스트 신문사는 반값 — 두 혜택은 함께 적용된다
-//   베타 모집이 끝나면 BETA 를 false 로 바꾸면 반값 표시가 빠진다
-const BETA = true
-const ANNUAL_MONTHS = 10
+import { ANNUAL_MONTHS, BETA, BETA_RATE, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, SETUP_FEE, won, type PlanId } from '@/lib/pricing'
 
-type Plan = {
-  name: string
-  for: string
-  monthly: number | null
-  pick?: boolean
-  specs: [string, string][]
-  extras: string[]
-}
-
-const PLANS: Plan[] = [
-  {
-    name: '베이직',
-    for: '기자 몇 명이 매일 기사를 내는 소규모 인터넷신문',
-    monthly: 77_000,
-    specs: [['AI 기사 초안', '월 100건'], ['저장 용량', '30G'], ['월 전송량', '300G'], ['업무요청', '50pt']],
-    extras: [],
-  },
-  {
-    name: '스탠다드',
-    for: '섹션이 많고 기사량이 꾸준한 일반 언론사',
-    monthly: 154_000,
-    pick: true,
-    specs: [['AI 기사 초안', '월 300건'], ['저장 용량', '60G'], ['월 전송량', '500G'], ['업무요청', '100pt']],
-    extras: ['홈페이지 맞춤 수정 지원'],
-  },
-  {
-    name: '프리미엄',
-    for: '방문자가 많거나 매체를 여럿 운영하는 언론사',
-    monthly: 231_000,
-    specs: [['AI 기사 초안', '월 1,000건'], ['저장 용량', '100G'], ['월 전송량', '1,000G'], ['업무요청', '200pt']],
-    extras: ['홈페이지 맞춤 수정 지원', '같은 그룹 매체 3개까지 포함', '우선 지원'],
-  },
-  {
-    name: '엔터프라이즈',
-    for: '방문자·기사량이 아주 많은 중대형 언론사',
-    monthly: null,
-    specs: [['AI 기사 초안', '맞춤'], ['저장 용량', '맞춤'], ['월 전송량', '맞춤'], ['업무요청', '상담']],
-    extras: ['전용 지원 담당'],
-  },
-]
+// 소개 페이지 요금표 (금액은 lib/pricing.ts)
+//   요금제의 신청 버튼을 누르면 아래 신청서에 그 요금제·결제 방식이 골라진다 (im-pick-plan 이벤트)
+export const PICK_PLAN_EVENT = 'im-pick-plan'
+export type PickPlanDetail = { plan: PlanId; billing: 'monthly' | 'annual' }
 
 const COMMON = [
   '기자 계정 무제한',
@@ -63,11 +23,10 @@ const COMMON = [
   '편집국 안 고객센터',
 ]
 
-const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
-
 export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }) {
   const [annual, setAnnual] = useState(true)
-  const rate = BETA ? 0.5 : 1
+  const rate = BETA ? BETA_RATE : 1
+  const pick = (plan: PlanId) => window.dispatchEvent(new CustomEvent<PickPlanDetail>(PICK_PLAN_EVENT, { detail: { plan, billing: annual ? 'annual' : 'monthly' } }))
 
   return (
     <div>
@@ -143,9 +102,10 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
 
               <a
                 href={applyHref}
+                onClick={() => pick(p.id)}
                 className={`mt-5 rounded-xl px-4 py-3 text-center text-[15px] font-bold transition ${p.pick ? 'bg-gradient-to-r from-[#F5A524] to-[#E5483A] text-white hover:brightness-110' : 'bg-[#14171C] text-white hover:bg-[#2A2F37]'}`}
               >
-                {price == null ? '상담 신청' : '베타 신청하기'}
+                {price == null ? '상담 신청' : BETA ? '베타 신청하기' : '신청하기'}
               </a>
 
               <dl className="mt-6 space-y-2 border-t border-[#EEF0F3] pt-5 text-[14px]">
@@ -175,9 +135,9 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
 
       <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-3">
         {[
-          ['세팅비', '110,000원', '다른 프로그램에서 옮겨 오거나 베타 신문사는 무료 (기사·사진 이전 포함)'],
-          ['매체 추가', '33,000원/월', '같은 그룹에 매체를 더 둘 때 매체마다'],
-          ['AI 초안 추가', '11,000원', '월 한도를 넘으면 100건마다'],
+          ['세팅비', won(SETUP_FEE), `다른 프로그램에서 옮겨 오${BETA ? '거나 베타 신문사는' : '면'} 무료 (기사·사진 이전 포함)`],
+          ['매체 추가', `${won(EXTRA_OUTLET_FEE)}/월`, '같은 그룹에 매체를 더 둘 때 매체마다'],
+          ['AI 초안 추가', won(EXTRA_AI_FEE), '월 한도를 넘으면 100건마다'],
         ].map(([k, v, d]) => (
           <div key={k} className="rounded-2xl bg-white p-5 ring-1 ring-black/5">
             <dt className="text-[13px] font-semibold text-[#5B616B]">{k}</dt>
@@ -188,7 +148,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       </dl>
 
       <p className="mt-5 text-center text-[12.5px] leading-relaxed text-[#8A9099]">
-        모든 금액은 VAT 포함입니다. 업무요청 포인트는 배너·팝업 교체 같은 디자인·설정 작업에 씁니다.
+        모든 금액은 VAT 포함입니다. 업무요청 포인트는 배너·팝업 교체 같은 디자인·설정 작업에 씁니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
         {BETA && ' 베타 반값의 적용 기간과 조건은 상담할 때 안내해 드립니다.'}
       </p>
     </div>
