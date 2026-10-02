@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { describe, syndicate } from '@/lib/syndicate'
+import { notifyArticle } from '@/app/(main)/articles/notify'
 
 // presetAt: 기자가 정해 둔 발행 일시 (있으면 그 시각으로 발행 — 앞으로의 시각이면 예약 발행)
 export default function ReviewActions({ articleId, presetAt = null }: { articleId: string; presetAt?: string | null }) {
@@ -27,6 +28,7 @@ export default function ReviewActions({ articleId, presetAt = null }: { articleI
     if (error) {
       window.alert(`승인하지 못했습니다: ${error.message}`)
     } else {
+      notifyArticle(articleId, 'published').catch(() => {})
       try {
         const summary = describe(await syndicate(articleId))
         if (summary) window.alert(summary)
@@ -41,10 +43,11 @@ export default function ReviewActions({ articleId, presetAt = null }: { articleI
   async function reject() {
     if (!reason.trim()) return
     setLoading(true)
-    await supabase.from('articles').update({
+    const { error } = await supabase.from('articles').update({
       status: 'rejected',
       reject_reason: reason.trim(),
     }).eq('id', articleId)
+    if (!error) notifyArticle(articleId, 'rejected').catch(() => {})
     setShowReject(false)
     router.refresh()
     setLoading(false)

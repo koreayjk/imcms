@@ -32,3 +32,12 @@ export async function switchOutlet(outletId: string): Promise<{ error?: string }
   revalidatePath('/', 'layout')
   return {}
 }
+
+// 알림 메일 받기 켜기·끄기 (승인신청·반려·업무요청 답변 등). mail.sql 실행 전이면 칸이 없어 실패한다
+export async function setEmailNotify(on: boolean): Promise<{ error?: string }> {
+  const { supabase, user } = await getCmsContext()
+  const { error } = await supabase.from('profiles').update({ email_notify: on }).eq('id', user.id)
+  if (error) return { error: /email_notify/.test(error.message) ? '알림 메일 설정은 준비 중입니다.' : error.message }
+  revalidatePath('/account')
+  return {}
+}

@@ -11,6 +11,7 @@ import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
 import { uploadImage } from './editor/upload'
 import { describe, syndicate } from '@/lib/syndicate'
+import { notifyArticle } from '@/app/(main)/articles/notify'
 import PendingButton from './cms/PendingButton'
 import { deleteArticle } from '@/app/(main)/articles/actions'
 
@@ -154,6 +155,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     // 저장했으니 이 브라우저의 임시 백업은 지운다
     clearLocalBackup()
     serverKey.current = contentKey
+
+    // 승인신청이면 편집장들에게 알림 메일 (메일 설정 전이면 아무 일도 하지 않는다)
+    if (id && mode === 'review') notifyArticle(id, 'submitted').catch(() => {})
 
     const livePublished = mode === 'publish' || (mode === 'draft' && status === 'published')
     if (id && livePublished && !isCopy && syndicateTo.length) {
