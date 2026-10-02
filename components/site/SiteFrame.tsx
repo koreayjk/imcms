@@ -3,6 +3,7 @@ import type { SiteConfig } from '@/lib/sites'
 import { isDemo } from '@/lib/public-data'
 import SiteHeader from './SiteHeader'
 import SiteFooter from './SiteFooter'
+import AdArea from './AdArea'
 
 type Props = { site: SiteConfig; current?: string; children: ReactNode }
 
@@ -28,6 +29,7 @@ export default function SiteFrame({ site, current, children }: Props) {
         </div>
       )}
       <SiteHeader site={site} current={current} />
+      <AdArea site={site} slot="header" className="mx-auto max-w-[1200px] px-4 pt-4" />
       <main id="content">{children}</main>
       <SiteFooter site={site} />
     </div>

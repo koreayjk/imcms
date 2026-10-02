@@ -22,6 +22,9 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/api/inbound/') ||
     // 기사 조회수 (독자가 부른다)
     pathname === '/api/view' ||
+    // 광고 배너 클릭·노출 (독자가 부른다)
+    pathname.startsWith('/ad/') ||
+    pathname === '/api/ad-view' ||
     // 정책 페이지·사이트맵·RSS (공개)
     pathname.startsWith('/policy/') ||
     pathname === '/sitemap.xml' ||

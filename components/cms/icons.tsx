@@ -48,3 +48,6 @@ export const HeadsetIcon = () => (
 export const ChartIcon = () => (
   <svg {...base}><path d="M4 20V10M10 20V4M16 20v-8M22 20H2" /></svg>
 )
+export const MegaphoneIcon = () => (
+  <svg {...base}><path d="M3 10v4a1 1 0 0 0 1 1h3l6 4V5L7 9H4a1 1 0 0 0-1 1Z" /><path d="M17 8.5a5 5 0 0 1 0 7M7 15l1.5 5" /></svg>
+)

@@ -9,6 +9,7 @@ import MostViewed from '@/components/site/MostViewed'
 import SpecialtyTabs from '@/components/site/SpecialtyTabs'
 import Thumb from '@/components/site/Thumb'
 import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
+import AdArea from '@/components/site/AdArea'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
@@ -153,9 +154,12 @@ export default async function HomePage() {
               <MostViewed items={mostViewed} />
             </div>
             {isDemo && <AdSlot label="광고 영역 300×250" className="hidden h-[250px] lg:flex" />}
+            <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
           </aside>
         </div>
+        <AdArea site={site} slot="home_middle" className="pb-8" />
       </div>
+      <AdArea site={site} slot="popup" />
 
       {/* ── 이슈 PICK (편집판에서 채운 경우만) ── */}
       {picks.length > 0 && (

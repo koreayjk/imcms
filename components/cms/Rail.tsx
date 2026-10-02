@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase'
 import type { UserRole } from '@/lib/types'
-import { BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
+import { BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, UsersIcon, WriteIcon } from './icons'
 
 type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'group' | 'outlets' | 'staff' | 'super' }
 
@@ -17,6 +17,7 @@ const ITEMS: Item[] = [
   { href: '/press', label: '보도자료', icon: <InboxIcon />, match: (p) => p.startsWith('/press') },
   { href: '/admin/home', label: '홈편집', icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'editor' },
   { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'editor' },
+  { href: '/admin/ads', label: '광고', icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'editor' },
   { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
   { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
   { href: '/support', label: '고객센터', icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') },

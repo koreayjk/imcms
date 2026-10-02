@@ -1,3 +1,4 @@
+import AdArea from '@/components/site/AdArea'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -74,8 +75,9 @@ export default async function SectionPage({ params, searchParams }: Props) {
           )}
         </div>
 
-        <aside>
+        <aside className="space-y-10">
           <MostViewed items={mostViewed} />
+          <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
         </aside>
       </div>
     </SiteFrame>

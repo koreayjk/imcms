@@ -11,6 +11,7 @@ import Thumb from '@/components/site/Thumb'
 import { sanitizeBody } from '@/lib/article-html'
 import ShareButton from './ShareButton'
 import ViewCounter from './ViewCounter'
+import AdArea from '@/components/site/AdArea'
 
 type Props = { params: { id: string } }
 
@@ -88,6 +89,8 @@ export default async function ArticlePage({ params }: Props) {
             dangerouslySetInnerHTML={{ __html: sanitizeBody(a.body) }}
           />
 
+          <AdArea site={site} slot="article_bottom" className="mt-9" />
+
           {a.tags && a.tags.length > 0 && (
             <ul className="mt-8 flex flex-wrap gap-2">
               {a.tags.map((t) => (
@@ -132,6 +135,7 @@ export default async function ArticlePage({ params }: Props) {
 
         <aside className="space-y-10">
           <MostViewed items={mostViewed} />
+          <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
           {latest.length > 0 && (
             <section aria-label="최신 기사">
               <SectionHeading title="최신 기사" as="h3" />
