@@ -5,7 +5,9 @@ import { PRODUCT, isProductHost } from '@/lib/product'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
-import { ApprovalFlow, HomeBoardMock, MailForwardVisual, PressInboxMock, SupportMock, SyndicateVisual } from '@/components/product/Mockups'
+import { ApprovalFlow, HomeBoardMock, MailForwardVisual, PressInboxMock, SupportMock, SyndicateVisual, TeamMock } from '@/components/product/Mockups'
+import IndexWidget from '@/components/site/IndexWidget'
+import type { IndexSeries } from '@/lib/market-index'
 import { CountUp, Reveal } from '@/components/product/Motion'
 
 export const dynamic = 'force-dynamic'
@@ -46,6 +48,10 @@ const ICONS = {
   headset: <><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="13" width="4" height="6" rx="1.5" /><rect x="17" y="13" width="4" height="6" rx="1.5" /></>,
   receipt: <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3ZM9 8h6M9 12h6" />,
   pen: <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />,
+  clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  doc: <><path d="M6 3h8l4 4v14H6V3Z" /><path d="M14 3v4h4M9 12h6M9 16h6" /></>,
+  chart: <path d="M4 19h16M6 16l4-5 3 3 5-7" />,
+  shield: <path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z" />,
 }
 
 function Glyph({ name, className = '' }: { name: Icon; className?: string }) {
@@ -57,18 +63,22 @@ function Glyph({ name, className = '' }: { name: Icon; className?: string }) {
 }
 
 const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
-  { icon: 'inbox', title: '보도자료 자동 수집', body: '뉴스와이어 8개 분야와 정책브리핑을 30분마다', color: '#E5483A' },
-  { icon: 'spark', title: 'AI 기사 초안', body: '홍보 문구는 빼고, 확인할 점은 메모로', color: '#8B5CF6' },
+  { icon: 'inbox', title: '보도자료 자동 수집', body: '뉴스와이어 14개 분야와 정책브리핑을 30분마다', color: '#E5483A' },
+  { icon: 'mail', title: '메일로 받은 보도자료', body: '지메일 필터로 보도자료 메일만 자동 수집', color: '#EA4335' },
+  { icon: 'spark', title: 'AI 기사 초안', body: 'Claude·Gemini 중 선택, 원문 대조 자동 점검', color: '#8B5CF6' },
+  { icon: 'chart', title: 'AI 모델 비교', body: '우리 보도자료로 AI끼리 블라인드 비교·검토', color: '#7C3AED' },
+  { icon: 'doc', title: '워드 파일 읽기', body: '.doc·.docx 보도자료를 올리면 본문만 쏙', color: '#0EA5E9' },
+  { icon: 'clock', title: '예약 발행', body: '지정한 시각에 공개, 지난 날짜 발행도', color: '#6D28D9' },
   { icon: 'share', title: '여러 매체 함께 송고', body: '원본 표시로 검색엔진 중복 문서 방지', color: '#F5A524' },
   { icon: 'layout', title: '홈 편집판', body: '헤드라인·톱·주요 자리를 편집장이 직접', color: '#3B82F6' },
   { icon: 'check', title: '기자 → 편집장 승인', body: '작성중·승인신청·반려·발행 상태 관리', color: '#10B981' },
-  { icon: 'phone', title: '모바일 신문 사이트', body: 'PC·휴대폰 화면을 따로 만들 필요 없이', color: '#EC4899' },
+  { icon: 'users', title: '매체별 직급', body: 'A매체 편집장·B매체 기자, 상단바에서 전환', color: '#6366F1' },
+  { icon: 'shield', title: '가입 → 발행인 승인', body: '가입 때 소속 매체 선택, 그 매체 발행인이 승인', color: '#0F766E' },
+  { icon: 'phone', title: '휴대폰 편집국', body: '현장에서 휴대폰으로 쓰고 승인·발행', color: '#EC4899' },
+  { icon: 'photo', title: '사진 크기·배치', body: '본문 사진 크기 조절, 왼쪽·가운데·오른쪽 배치', color: '#F97316' },
   { icon: 'search', title: '검색 노출 설정', body: '기사별 검색 제목·설명, 공유 이미지', color: '#06B6D4' },
-  { icon: 'users', title: '가입·권한 관리', body: '구글 계정 가입, 관리자 승인 후 사용', color: '#6366F1' },
-  { icon: 'mail', title: '메일로 받은 보도자료', body: '지메일 필터로 보도자료 메일만 자동 수집', color: '#EA4335' },
-  { icon: 'headset', title: '고객센터 내장', body: '업무요청·공지를 편집국 화면 안에서', color: '#14B8A6' },
+  { icon: 'headset', title: '고객센터 내장', body: '업무요청은 담당 매니저에게 자동 배정', color: '#14B8A6' },
   { icon: 'receipt', title: '청구서·결제 정보', body: '월별 청구서 PDF, 세금계산서 담당자 관리', color: '#A855F7' },
-  { icon: 'pen', title: '기자명·기사 관리', body: '기사별 기자명 변경, 본인 기사 삭제', color: '#F97316' },
 ]
 
 const FAQ = [
@@ -79,10 +89,13 @@ const FAQ = [
   { q: '보도자료를 자유롭게 기사로 써도 되나요?', a: '배포처 약관을 따라야 합니다. 예를 들어 뉴스와이어는 언론사가 하루 5건을 넘게 쓰려면 사전 허락이 필요합니다. 보도자료함에 오늘 사용한 건수가 표시됩니다.' },
   { q: '기자 메일로 받은 보도자료도 모을 수 있나요?', a: '네. 기자마다 전용 전달 주소가 생기고, 지메일에서 “보도자료” 메일만 그 주소로 자동 전달하도록 한 번 설정하면 됩니다. 네이버·다음 메일은 자동 전달 기능이 없어 “전달” 버튼으로 보내면 됩니다. 설정 방법은 화면에서 단계별로 안내합니다.' },
   { q: '문의나 수정 요청은 어떻게 하나요?', a: '편집국 화면의 “고객센터”에서 업무요청을 남기면 운영팀이 답변합니다. 따로 된 사이트에 로그인할 필요가 없고, 답변이 오면 메뉴에 숫자로 표시됩니다.' },
+  { q: '기사를 정해 둔 시각에 올릴 수 있나요?', a: '네. 기사쓰기에서 발행 일시를 앞으로의 시각으로 정하면 예약 발행됩니다. 그 시각 전까지는 홈페이지에 보이지 않고, 지난 날짜를 고르면 그 날짜로 발행됩니다. 시간은 한국 시간 기준입니다.' },
+  { q: '한 기자가 여러 매체에서 일할 수 있나요?', a: '네. 같은 그룹 안에서 여러 매체에 소속되고, 매체마다 직급을 따로 가질 수 있습니다(예: A매체 편집장, B매체 기자). 상단바에서 매체를 바꾸면 그 매체의 직급으로 바뀝니다.' },
+  { q: '휴대폰으로도 기사를 쓸 수 있나요?', a: '네. 편집국 화면이 휴대폰에 맞게 바뀌어 현장에서 바로 쓰고, 편집장은 휴대폰으로 승인·발행할 수 있습니다.' },
   { q: '정식 요금은 얼마인가요?', a: '베타 기간이 끝나기 전에 안내하고, 베타 고객사에 가장 먼저 알려 드립니다.' },
 ]
 
-const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', '기자 확인 메모', '고객센터 내장', '월별 청구서', '홈 편집판', '모바일 신문', '검색 노출 설정', '승인 흐름', '사진 자동 정리', '구글 로그인']
+const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인']
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
@@ -111,6 +124,13 @@ function Check({ children, dark = false }: { children: React.ReactNode; dark?: b
   )
 }
 
+// 전문지 맞춤 섹션의 운임지수 위젯 예시 (샘플 값, 화면에 “샘플” 표시)
+const weeks = (start: string, vals: number[]) => vals.map((value, i) => ({ date: new Date(Date.parse(start) + i * 7 * 864e5).toISOString().slice(0, 10), value, sample: true }))
+const DEMO_INDEX: IndexSeries = {
+  scfi: weeks('2026-07-17', [1654.61, 1610.2, 1598.4, 1560.9, 1572.3, 1521.8, 1490.2, 1466.7, 1402.5, 1388.9, 1301.4, 1220.55]),
+  kcci: weeks('2026-07-13', [2350.62, 2331.1, 2290.4, 2302.8, 2260.3, 2231.5, 2205.9, 2188.2, 2150.6, 2131.2, 2110.4, 2096.64]),
+}
+
 const H2 = 'text-[30px] font-extrabold leading-[1.25] tracking-[-0.03em] [text-wrap:balance] sm:text-[40px]'
 
 export default function ProductHome() {
@@ -124,9 +144,11 @@ export default function ProductHome() {
           <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo dark /></a>
           <nav className="ml-auto hidden items-center gap-7 text-[14px] text-white/70 md:flex" aria-label="소개 메뉴">
             <a href="#multi" className="hover:text-white">여러 매체</a>
+            <a href="#team" className="hover:text-white">권한</a>
             <a href="#ai" className="hover:text-white">AI 초안</a>
             <a href="#press" className="hover:text-white">보도자료</a>
             <a href="#support" className="hover:text-white">고객센터</a>
+            <a href="#vertical" className="hover:text-white">전문지</a>
             <a href="#showcase" className="hover:text-white">디자인</a>
             <a href="#beta" className="hover:text-white">베타 모집</a>
           </nav>
@@ -200,7 +222,7 @@ export default function ProductHome() {
         <section className="relative z-10 -mt-24 px-4 sm:px-6">
           <div className="mx-auto grid max-w-[1100px] grid-cols-2 overflow-hidden rounded-2xl bg-white shadow-[0_30px_60px_-20px_rgba(11,16,32,0.35)] ring-1 ring-black/5 md:grid-cols-4">
             {[
-              { n: 9, s: '곳', label: '보도자료 출처 자동 연결', color: '#E5483A' },
+              { n: 15, s: '곳', label: '보도자료 출처 자동 연결', color: '#E5483A' },
               { n: 30, s: '분', label: '마다 새 보도자료 수집', color: '#F5A524' },
               { n: 0, s: '원', label: '설치비', color: '#8B5CF6' },
               { n: 1, s: '개', label: '계정으로 여러 매체 운영', color: '#10B981' },
@@ -239,6 +261,24 @@ export default function ProductHome() {
           </div>
         </section>
 
+        {/* ─── 그룹·권한 ─── */}
+        <section id="team" className="scroll-mt-16 bg-[#F4F5F7]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.95fr_1.05fr]">
+            <Reveal>
+              <Eyebrow icon="users" color="#6366F1">그룹 · 권한</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>발행인·편집장·기자,<br />매체마다 다른 직급까지.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">여러 매체를 가진 발행인은 그룹 전체를, 편집장은 자기 매체를, 기자는 자기 기사를 봅니다. 한 사람이 여러 매체에서 일하면 매체마다 직급을 따로 줄 수 있습니다.</p>
+              <ul className="mt-7 space-y-3">
+                <Check>A매체 편집장 · B매체 기자처럼 매체별 직급, 상단바에서 바로 전환</Check>
+                <Check>가입할 때 소속 매체를 고르면 그 매체 발행인이 승인</Check>
+                <Check>다른 그룹(다른 언론사)의 회원·기사는 DB에서부터 차단</Check>
+                <Check>휴대폰에서도 같은 화면 — 현장에서 쓰고, 이동 중에 승인</Check>
+              </ul>
+            </Reveal>
+            <Reveal delay={150}><TeamMock /></Reveal>
+          </div>
+        </section>
+
         {/* ─── AI 초안 ─── */}
         <section id="ai" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0B1020] text-white">
           <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
@@ -256,6 +296,8 @@ export default function ProductHome() {
                 <Check dark>“업계 최초”, “획기적인” 같은 근거 없는 수식어 제거</Check>
                 <Check dark>확인이 필요한 수치·주장은 “기자 확인 메모”로 표시</Check>
                 <Check dark>초안은 항상 ‘작성중’으로 저장, 사람이 확인 후 발행</Check>
+                <Check dark>Claude·Gemini 중 선택, 한쪽이 막히면 다른 AI가 대신 작성</Check>
+                <Check dark>새 AI는 우리 보도자료로 나란히 비교하고, 기자들이 블라인드로 골라 결정</Check>
               </ul>
             </Reveal>
           </div>
@@ -310,10 +352,47 @@ export default function ProductHome() {
                 <Check>업무요청: 유형 선택·파일 첨부, 접수 → 진행 → 완료 단계 확인</Check>
                 <Check>운영팀 공지·업데이트 소식을 뉴스룸 첫 화면에서</Check>
                 <Check>월별 청구서 PDF 저장, 세금계산서 담당자 정보 관리</Check>
+                <Check>업무요청은 매체를 맡은 담당 매니저에게 자동 배정</Check>
                 <Check>기자는 본인 요청만, 청구서는 편집장 이상만 보도록 권한 분리</Check>
               </ul>
             </Reveal>
             <Reveal delay={150}><SupportMock /></Reveal>
+          </div>
+        </section>
+
+        {/* ─── 전문지 맞춤 ─── */}
+        <section id="vertical" className="scroll-mt-16">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <Reveal delay={150} className="order-2 lg:order-1">
+              <div className="mx-auto grid max-w-[560px] items-start gap-5 sm:grid-cols-[1fr_260px]">
+                <div className="rounded-2xl bg-[#0B4D3B] p-6 text-white shadow-[0_30px_70px_-30px_rgba(11,77,59,0.8)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/sites/shippingtimes/logo-full-white.svg" alt="Shipping Times 로고" className="h-10 w-auto" />
+                  <p className="mt-5 text-[11px] tracking-[0.24em] text-[#D9C08E]">SHIPPING TIMES SPECIAL</p>
+                  <p className="mt-1 text-[20px] font-extrabold">국제물류 전문뉴스</p>
+                  <ul className="mt-4 grid grid-cols-2 gap-2 text-[12.5px]">
+                    {['해운', '물류·포워딩', '항만', '항공화물', '무역·통관', '조선·해양'].map((x) => (
+                      <li key={x} className="rounded-lg border border-white/15 bg-white/5 px-3 py-2">{x}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-4 text-[11.5px] leading-relaxed text-white/60">보도자료함 추천도 해운·항만·통관 같은 분야 키워드로</p>
+                </div>
+                <div style={{ ['--brand' as string]: '#0B4D3B', ['--gold' as string]: '#B8975A', ['--gold-ink' as string]: '#78623A', ['--brand-dark' as string]: '#083629' }}>
+                  <IndexWidget series={DEMO_INDEX} />
+                </div>
+              </div>
+            </Reveal>
+            <Reveal className="order-1 lg:order-2">
+              <Eyebrow icon="chart" color="#0B4D3B">전문지 맞춤</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>해운지는 해운지답게,<br />의료지는 의료지답게.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">같은 {PRODUCT.name}이라도 매체마다 로고·색·섹션·첫 화면이 다릅니다. 업계 사람들이 매일 찾아오게 만드는 분야별 위젯도 붙일 수 있습니다.</p>
+              <ul className="mt-7 space-y-3">
+                <Check>해운 운임지수(SCFI·KCCI) 주간 그래프 — 편집국이 매주 값만 입력</Check>
+                <Check>“국제물류 전문뉴스”, “케어 전문뉴스”처럼 매체별 전문 섹션 묶음</Check>
+                <Check>분야 키워드로 보도자료 추천, 분야별 보도자료 출처 연결</Check>
+                <Check>도메인 연결 전에도 매체마다 따로 된 주소로 미리 확인</Check>
+              </ul>
+            </Reveal>
           </div>
         </section>
 
@@ -403,7 +482,7 @@ export default function ProductHome() {
             </Reveal>
             <Reveal delay={150}>
               <p className="text-[17px] leading-[1.9] text-[#3B4048]">
-                {PRODUCT.name}은 저희가 직접 운영하는 인터넷신문을 위해 만들었습니다. 보건·복지·요양 전문지 <strong>더케어타임즈</strong>를 시작으로 운영 매체를 차례로 옮기고 있습니다.
+                {PRODUCT.name}은 저희가 직접 운영하는 인터넷신문을 위해 만들었습니다. 보건·복지·요양 전문지 <strong>더케어타임즈</strong>를 시작으로, 국제물류 전문지 <strong>Shipping Times</strong>(준비 중) 등 운영 매체를 차례로 옮기고 있습니다.
                 매일 쓰면서 불편한 점을 먼저 고치니, 현장에서 필요한 기능이 먼저 들어갑니다.
               </p>
             </Reveal>

@@ -246,3 +246,40 @@ export function SupportMock() {
     </div>
   )
 }
+
+// 그룹·권한: 한 사람이 여러 매체에서 다른 직급을 갖고, 상단바에서 매체를 바꾼다
+export function TeamMock() {
+  const people = [
+    { name: '김발행', tag: '발행인', tagCls: 'bg-[#F5A524] text-[#3B2A00]', roles: [['그룹 전체 매체', '관리']] },
+    { name: '이편집', tag: '매체별 직급', tagCls: 'bg-[#6366F1]/10 text-[#4F46E5]', roles: [['케어타임즈', '편집장'], ['시니어경제', '기자']] },
+    { name: '박기자', tag: '매체별 직급', tagCls: 'bg-[#6366F1]/10 text-[#4F46E5]', roles: [['시니어경제', '기자']] },
+  ]
+  return (
+    <div className="overflow-hidden rounded-xl border border-black/10 bg-[#F4F5F7] text-[#14171C] shadow-[0_30px_80px_-25px_rgba(11,16,32,0.45)]">
+      <div className="flex items-center gap-3 border-b border-[#E4E6EA] bg-white px-5 py-3 text-[12.5px]">
+        <span className="grid h-7 w-7 place-items-center rounded-md bg-[#1C1F26] text-[10px] font-extrabold text-white">IM</span>
+        <span className="rounded border border-[#E4E6EA] px-2.5 py-1 font-bold">케어타임즈 (편집장) ▾</span>
+        <span className="ml-auto text-[11px] text-[#8C929B]">매체를 바꾸면 그 매체의 직급으로</span>
+      </div>
+      <div className="space-y-2.5 p-4">
+        {people.map((p) => (
+          <div key={p.name} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-white p-3 shadow-[0_6px_18px_-12px_rgba(11,16,32,0.35)]">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-[#EEF2F8] text-[12px] font-bold">{p.name[0]}</span>
+            <span className="text-[13px] font-bold">{p.name}</span>
+            <span className={`rounded px-1.5 py-px text-[10.5px] font-bold ${p.tagCls}`}>{p.tag}</span>
+            <span className="ml-auto flex flex-wrap gap-1.5">
+              {p.roles.map(([o, r]) => (
+                <span key={o} className="rounded-full border border-[#E4E6EA] px-2.5 py-1 text-[11px]">{o} · <strong>{r}</strong></span>
+              ))}
+            </span>
+          </div>
+        ))}
+        <div className="flex items-center gap-2 rounded-xl border border-dashed border-[#F5A524]/60 bg-[#FFF8EA] p-3 text-[12px]">
+          <span className="rounded bg-[#E5483A] px-1.5 py-px text-[10px] font-bold text-white">가입 신청</span>
+          <span>최신입 · <strong>케어타임즈</strong> 기자로 가입</span>
+          <span className="ml-auto rounded bg-[#10B981] px-2 py-0.5 text-[11px] font-bold text-white">발행인 승인</span>
+        </div>
+      </div>
+    </div>
+  )
+}
