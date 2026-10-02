@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { demoArticles } from './demo-articles'
 import { SITES, buildSite, resolveSite, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
 import { normalizeLayout, type SlotKey } from './home-layout'
+import { INDEX_WEEKS, type IndexKey, type IndexSeries } from './market-index'
 
 export type PublicArticle = {
   id: string
@@ -266,5 +267,39 @@ export async function getArticleData(site: SiteConfig, id: string) {
     related: (related.data ?? []).map(toPublic),
     mostViewed: (mostViewed.data ?? []).map(toPublic),
     latest: (latest.data ?? []).map(toPublic),
+  }
+}
+
+// ───────── 해운 운임지수 위젯 (SCFI·KCCI) ─────────
+// 편집국에서 값을 저장하면 'market-index' 태그로 바로 새로 읽는다. market-indices.sql 전이면 빈 값
+const loadIndexSeries = unstable_cache(
+  async (outletId: string): Promise<IndexSeries> => {
+    const empty: IndexSeries = { scfi: [], kcci: [] }
+    const { data, error } = await client()
+      .from('market_index_points')
+      .select('index_key, week_date, value, is_sample')
+      .eq('outlet_id', outletId)
+      .order('week_date', { ascending: false })
+      .limit(INDEX_WEEKS * 2 * 2)
+    if (error || !data) return empty
+    for (const r of data as { index_key: IndexKey; week_date: string; value: number; is_sample: boolean }[]) {
+      const list = empty[r.index_key]
+      if (list && list.length < INDEX_WEEKS) list.push({ date: r.week_date, value: Number(r.value), sample: r.is_sample })
+    }
+    empty.scfi.reverse()
+    empty.kcci.reverse()
+    return empty
+  },
+  ['market-index'],
+  { revalidate: 600, tags: ['market-index'] }
+)
+
+export async function getIndexSeries(site: SiteConfig): Promise<IndexSeries | null> {
+  if (!site.indexWidget || !site.outletId || isDemo) return null
+  try {
+    const s = await loadIndexSeries(site.outletId)
+    return s.scfi.length || s.kcci.length ? s : null
+  } catch {
+    return null
   }
 }

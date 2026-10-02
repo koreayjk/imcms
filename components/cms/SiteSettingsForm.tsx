@@ -132,9 +132,13 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <Field label="영문 이름" hint="로고 아래 작은 글자 (비워도 됨)"><input value={s.nameEn ?? ''} onChange={(e) => set({ nameEn: e.target.value })} maxLength={60} placeholder="예: THE CARE TIMES" className="field-input" /></Field>
           <Field label="슬로건" hint="메뉴·하단에 표시"><input value={s.slogan ?? ''} onChange={(e) => set({ slogan: e.target.value })} maxLength={80} className="field-input" /></Field>
           <Field label="영문 슬로건"><input value={s.sloganEn ?? ''} onChange={(e) => set({ sloganEn: e.target.value })} maxLength={80} className="field-input" /></Field>
-          <div className="sm:col-span-2">
+          <div className="space-y-4 sm:col-span-2">
             <Field label="매체 소개" hint="검색 결과·공유할 때 나오는 설명 (160자 이내 권장)"><input value={s.description ?? ''} onChange={(e) => set({ description: e.target.value })} maxLength={200} className="field-input" /></Field>
             <Field label="전문뉴스 제목" hint="첫 화면 전문 섹션 묶음의 제목 (예: 국제물류 전문뉴스)"><input value={s.specialtyTitle ?? ''} onChange={(e) => set({ specialtyTitle: e.target.value })} maxLength={30} placeholder="전문뉴스" className="field-input" /></Field>
+            <label className="flex items-start gap-2 text-[13.5px]">
+              <input type="checkbox" checked={!!s.indexWidget} onChange={(e) => set({ indexWidget: e.target.checked })} className="mt-1" />
+              <span><strong>해운 운임지수 위젯</strong> (SCFI·KCCI 주간 그래프를 홈 오른쪽에 표시) <span className="block text-[12px] text-muted">켜면 편집국 “홈편집”에서 매주 지수 값을 입력할 수 있습니다.</span></span>
+            </label>
           </div>
         </div>
       </Card>

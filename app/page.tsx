@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { currentSite, getHomeData, isDemo, type PublicArticle } from '@/lib/public-data'
+import { currentSite, getHomeData, getIndexSeries, isDemo, type PublicArticle } from '@/lib/public-data'
+import IndexWidget from '@/components/site/IndexWidget'
 import { formatDate, formatShort } from '@/lib/format'
 import SiteFrame from '@/components/site/SiteFrame'
 import SectionHeading from '@/components/site/SectionHeading'
@@ -22,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const site = await currentSite()
-  const { latest, mostViewed, bySection, pinned } = await getHomeData(site)
+  const [{ latest, mostViewed, bySection, pinned }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])
 
   if (!latest.length) {
     return (
@@ -140,6 +141,8 @@ export default async function HomePage() {
               <SectionHeading title="실시간 뉴스" as="h3" />
               <RealtimeList items={realtime} />
             </div>
+            {/* 해운 운임지수 (홈페이지 설정에서 켠 매체만) */}
+            {indexSeries && <IndexWidget series={indexSeries} />}
             <div id="popular" className="scroll-mt-28">
               <MostViewed items={mostViewed} />
             </div>

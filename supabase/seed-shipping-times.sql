@@ -25,6 +25,7 @@ begin
     'sloganEn', 'GLOBAL LOGISTICS · MARITIME · TRADE',
     'description', '해운·항만·항공화물·포워딩·무역 전문 국제물류 미디어',
     'specialtyTitle', '국제물류 전문뉴스',
+    'indexWidget', true,
     'logoUrl', '/sites/shippingtimes/logo-full.svg',
     'logoMode', 'full',
     'colors', jsonb_build_object('brand', '#0B4D3B', 'accent', '#B8975A'),

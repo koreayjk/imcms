@@ -38,6 +38,8 @@ export type SiteConfig = {
   description: string
   // 첫 화면 전문 섹션 묶음의 제목 (예: 케어 전문뉴스, 국제물류 전문뉴스)
   specialtyTitle: string
+  // 해운 운임지수(SCFI·KCCI) 위젯을 홈 오른쪽에 보여줄지
+  indexWidget?: boolean
   logoMark: string
   // mark: 심볼 + 매체 이름 글자 / full: 로고 이미지만 / text: 매체 이름 글자만
   logoMode?: LogoMode
@@ -111,6 +113,7 @@ export type OutletSiteSettings = {
   sloganEn?: string
   description?: string
   specialtyTitle?: string
+  indexWidget?: boolean
   logoUrl?: string
   logoMode?: LogoMode
   colors?: { brand?: string; accent?: string }
@@ -172,6 +175,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     sloganEn: s.sloganEn ?? code?.sloganEn ?? '',
     description: s.description ?? code?.description ?? `${o.name} 인터넷신문`,
     specialtyTitle: s.specialtyTitle || code?.specialtyTitle || '전문뉴스',
+    indexWidget: !!s.indexWidget,
     logoMark: s.logoUrl ?? code?.logoMark ?? '',
     logoMode: s.logoMode ?? (s.logoUrl || code?.logoMark ? 'mark' : 'text'),
     colors: { brand, brandDark: shade(brand, 0.3), gold: accent, goldInk: shade(accent, 0.35) },
