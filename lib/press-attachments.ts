@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { PressRelease } from './press'
+import { isImageAttachment } from './press-email'
 
 export type PressAttachment = { id: string; name: string; content_type: string; size: number; copied_url: string | null }
 
@@ -13,6 +14,13 @@ export function byteaToBytes(v: unknown): Uint8Array {
 }
 
 const EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
+// 메일 프로그램이 image/jpg·octet-stream 등으로 보낸 사진도 확장자로 알아본다
+function imageType(a: { content_type: string; name: string }): string | null {
+  if (EXT[a.content_type]) return a.content_type
+  if (!isImageAttachment(a.content_type, a.name)) return null
+  const ext = a.name.toLowerCase().match(/\.(jpe?g|png|webp|gif)$/)?.[1] ?? (/png/i.test(a.content_type) ? 'png' : 'jpeg')
+  return ({ jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' } as Record<string, string>)[ext] ?? null
+}
 
 // 메일로 받은 보도자료: 첨부 사진을 처음 열 때 사진 저장소로 옮기고 본문 첫 문단 뒤에 넣는다
 export async function ensureEmailImages(supabase: SupabaseClient, r: PressRelease, outletId: string | null) {
@@ -22,7 +30,7 @@ export async function ensureEmailImages(supabase: SupabaseClient, r: PressReleas
     .from('press_attachments').select('id, name, content_type, size, copied_url').eq('press_release_id', r.id).order('created_at')
   if (error || !list) return { release: r, attachments: [] as PressAttachment[] }
 
-  const pending = list.filter((a) => EXT[a.content_type] && !a.copied_url)
+  const pending = list.filter((a) => imageType(a) && !a.copied_url)
   if (!pending.length) return { release: r, attachments: list as PressAttachment[] }
 
   const added: string[] = []
@@ -31,8 +39,9 @@ export async function ensureEmailImages(supabase: SupabaseClient, r: PressReleas
     const bytes = byteaToBytes(row?.data)
     if (!bytes.length) continue
     const now = new Date()
-    const path = `${outletId ?? 'common'}/press/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${crypto.randomUUID()}.${EXT[a.content_type]}`
-    const { error: upErr } = await supabase.storage.from('media').upload(path, bytes, { contentType: a.content_type, cacheControl: '31536000' })
+    const type = imageType(a)!
+    const path = `${outletId ?? 'common'}/press/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${crypto.randomUUID()}.${EXT[type]}`
+    const { error: upErr } = await supabase.storage.from('media').upload(path, bytes, { contentType: type, cacheControl: '31536000' })
     if (upErr) continue
     const url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
     // 다른 사람이 먼저 옮겼으면 건너뛴다
@@ -46,7 +55,7 @@ export async function ensureEmailImages(supabase: SupabaseClient, r: PressReleas
   const body = r.body_html ?? ''
   const cut = body.indexOf('</p>')
   const next = cut >= 0 ? body.slice(0, cut + 4) + added.join('') + body.slice(cut + 4) : added.join('') + body
-  const image = r.image_url ?? list.find((a) => a.copied_url)?.copied_url ?? null
+  const image = r.image_url || (list.find((a) => a.copied_url)?.copied_url ?? null)
   await supabase.from('press_releases').update({ body_html: next, image_url: image }).eq('id', r.id)
   return { release: { ...r, body_html: next, image_url: image }, attachments: list as PressAttachment[] }
 }

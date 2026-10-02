@@ -117,6 +117,18 @@ export async function refreshPress(supabase: SupabaseClient, force = false) {
   )
 }
 
+// <div …>가 시작하는 위치에서 짝이 맞는 </div> 바로 뒤 위치 (안쪽 div 개수를 센다)
+function divEnd(s: string, start: number) {
+  const re = /<div\b|<\/div>/gi
+  re.lastIndex = start
+  let depth = 0
+  for (let m = re.exec(s); m; m = re.exec(s)) {
+    depth += m[0][1] === '/' ? -1 : 1
+    if (depth === 0) return m.index + m[0].length
+  }
+  return s.length
+}
+
 // 뉴스와이어 기사 페이지에서 본문과 사진(설명 포함)만 뽑아 문단 HTML로 만든다
 export function newswireBody(page: string) {
   const open = '<section class="article_column">'
@@ -129,13 +141,34 @@ export function newswireBody(page: string) {
   let s = page.slice(start + open.length, ends.length ? Math.min(...ends) : undefined)
 
   // 사진 묶음(images_column > column_image > … )은 통째로 사진 자리표시로 바꾼다
-  const images: { src: string; caption: string }[] = []
-  s = s.replace(/<div class="images_column"[\s\S]*?(?:<\/div>\s*){4}/g, (block) => {
-    const marks = Array.from(block.matchAll(/data-src="([^"]+)"[\s\S]*?alt="([^"]*)"/g), (m) => {
-      images.push({ src: m[1], caption: decode(m[2]) })
-      return `@@IMG${images.length - 1}@@`
+  //   세로 사진은 class="images_column vertical"처럼 다른 이름이 붙으므로 class 앞부분만 본다
+  const images: { src: string; caption: string; video?: string }[] = []
+  for (let at = s.search(/<div class="images_column\b/); at >= 0; at = s.search(/<div class="images_column\b/)) {
+    const end = divEnd(s, at)
+    const block = s.slice(at, end)
+    const marks = block.split(/(?=<div class="column_image\b)/).slice(1).flatMap((one) => {
+      const desc = one.match(/<div class="desc">\s*(?:<span>)?([\s\S]*?)(?:<\/span>\s*)?<\/div>/)?.[1]
+      // 유튜브 영상 칸: 영상으로 넣는다 (사진으로 넣으면 깨진다)
+      const yt = /class="column_image[^"]*\byoutube\b/.test(one) ? (one.match(/youtube(?:-nocookie)?\.com\/(?:embed\/|watch\?v=)([\w-]{6,})/) ?? one.match(/youtu\.be\/([\w-]{6,})/))?.[1] : null
+      if (yt) {
+        images.push({ src: '', video: yt, caption: decode((desc ?? '').replace(/<[^>]+>/g, '')).trim() })
+        return [`@@IMG${images.length - 1}@@`]
+      }
+      // 원본 크기(data-src)를 쓰고, 없으면 화면용 사진(img src)
+      const src = one.match(/data-src="([^"]+)"/)?.[1] ?? one.match(/<img\b[^>]*\bsrc="([^"]+)"/)?.[1]
+      if (!src || !/<img\b/.test(one)) return []
+      const alt = one.match(/<img\b[^>]*\balt="([^"]*)"/)?.[1]
+      images.push({ src: decode(src), caption: decode((desc ?? alt ?? '').replace(/<[^>]+>/g, '')).trim() })
+      return [`@@IMG${images.length - 1}@@`]
     })
-    return `\n\n${marks.join('\n\n')}\n\n`
+    s = `${s.slice(0, at)}\n\n${marks.join('\n\n')}\n\n${s.slice(end)}`
+  }
+  // 묶음 밖에 따로 있는 기사 사진(class="pic_…")도 놓치지 않는다
+  s = s.replace(/<img\b[^>]*\bclass="pic_[^"]*"[^>]*>/g, (tag) => {
+    const src = tag.match(/\bsrc="([^"]+)"/)?.[1]
+    if (!src) return ''
+    images.push({ src: decode(src), caption: decode(tag.match(/\balt="([^"]*)"/)?.[1] ?? '').trim() })
+    return `\n\n@@IMG${images.length - 1}@@\n\n`
   })
   s = s.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')
   s = decode(s).replace(/[ \t]+/g, ' ')
@@ -148,21 +181,27 @@ export function newswireBody(page: string) {
       const m = b.match(/^@@IMG(\d+)@@$/)
       if (!m) return `<p>${escapeHtml(b)}</p>`
       const img = images[Number(m[1])]
-      return `<img src="${escapeHtml(img.src)}" alt="${escapeHtml(img.caption)}">` + (img.caption ? `<p><em>▲ ${escapeHtml(img.caption)}</em></p>` : '')
+      const cap = img.caption ? `<p><em>▲ ${escapeHtml(img.caption)}</em></p>` : ''
+      if (img.video) return `<div data-youtube-video=""><iframe src="https://www.youtube-nocookie.com/embed/${img.video}" width="640" height="360" allowfullscreen></iframe></div>${cap}`
+      return `<img src="${escapeHtml(img.src)}" alt="${escapeHtml(img.caption)}">${cap}`
     })
     .join('')
-  return { html, image: images[0]?.src ?? null }
+  return { html, image: images.find((i) => !i.video)?.src ?? null }
 }
 
 // 목록에는 요약만 있으므로, 처음 열 때 전문을 가져와 저장해 둔다
+//   예전 방식으로 읽어 세로 사진 등을 놓친 보도자료(사진 없음 + image_url 비어 있음)도 한 번 다시 읽는다.
+//   다시 읽은 뒤 사진이 없으면 image_url을 ''로 두어 다음부터는 다시 읽지 않는다
 export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease): Promise<PressRelease> {
-  if (r.body_html) return r
   if (findPressSource(r.source_key)?.kind !== 'newswire') return r
+  const missedPhotos = !!r.body_html && r.image_url === null && !/<img\b|data-youtube-video/.test(r.body_html)
+  if (r.body_html && !missedPhotos) return r
   try {
     const parsed = newswireBody(await fetchText(r.link, 8000))
     if (!parsed) return r
-    await supabase.from('press_releases').update({ body_html: parsed.html, image_url: parsed.image }).eq('id', r.id)
-    return { ...r, body_html: parsed.html, image_url: parsed.image }
+    const image = parsed.image ?? ''
+    await supabase.from('press_releases').update({ body_html: parsed.html, image_url: image }).eq('id', r.id)
+    return { ...r, body_html: parsed.html, image_url: image }
   } catch {
     return r
   }

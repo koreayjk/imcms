@@ -25,8 +25,8 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'nw-shipbuilding', name: '뉴스와이어 · 조선', url: 'https://api.newswire.co.kr/rss/industry/404', kind: 'newswire' },
   { key: 'nw-ocean', name: '뉴스와이어 · 수산 해양', url: 'https://api.newswire.co.kr/rss/industry/414', kind: 'newswire' },
   { key: 'nw-trade', name: '뉴스와이어 · 무역과 박람회', url: 'https://api.newswire.co.kr/rss/industry/102', kind: 'newswire' },
-  // 해양수산부·관세청·산업통상자원부·국토교통부 보도자료도 여기에 함께 들어온다 (매체별 키워드로 추천)
-  { key: 'kr-press', name: '정책브리핑 · 정부 보도자료', url: 'https://www.korea.kr/rss/pressrelease.xml', kind: 'rss' },
+  // 정책브리핑(korea.kr) RSS는 2026-07-01에 서비스가 중단되어 뺐다 (저작권 보호를 이유로 제공 방식 변경).
+  //   이미 받아 둔 'kr-press' 보도자료는 보도자료함에 그대로 남는다. 정부 보도자료는 부처 메일 구독 → 보도자료 메일함으로 받는다
 ]
 
 export function findPressSource(key: string) {

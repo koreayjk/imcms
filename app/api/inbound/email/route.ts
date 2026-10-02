@@ -60,7 +60,16 @@ export async function POST(req: NextRequest) {
           p_attachments: parsed.attachments,
         }
 
-  const { data, error } = await supabase.rpc('press_ingest_email', { secret, p_token: parsed.token, ...args })
+  let { data, error } = await supabase.rpc('press_ingest_email', { secret, p_token: parsed.token, ...args })
+  // 첨부가 너무 커서 저장하지 못했으면 본문만이라도 저장한다 (첨부는 이름만 남긴다)
+  if (error && parsed.kind === 'release' && parsed.attachments.length) {
+    const names = parsed.attachments.map((a) => a.name.replace(/[<>&]/g, '')).join(', ')
+    ;({ data, error } = await supabase.rpc('press_ingest_email', {
+      secret, p_token: parsed.token, ...args,
+      p_attachments: [],
+      p_body_html: `${args.p_body_html}<p><em>※ 첨부파일(${names})이 너무 커서 가져오지 못했습니다 — 받은 메일에서 확인하세요.</em></p>`,
+    }))
+  }
   if (error) {
     const status = /forbidden/.test(error.message) ? 401 : 500
     return NextResponse.json({ error: status === 401 ? 'unauthorized' : 'save_failed' }, { status })

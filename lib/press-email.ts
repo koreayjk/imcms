@@ -33,7 +33,11 @@ export type ParsedMail =
     }
 
 // 첨부는 사진·문서만, 한 통에 합계 3MB까지 (서버가 받을 수 있는 요청 크기 한도 때문)
-const MAX_TOTAL = 3 * 1024 * 1024
+// 첨부 합계 한도: 보도자료 사진은 한 장에 2~5MB인 경우가 많아 넉넉하게 (사진을 먼저 담는다)
+export const MAX_ATTACH_TOTAL = 15 * 1024 * 1024
+const MAX_TOTAL = MAX_ATTACH_TOTAL
+// 사진 판단: 메일 프로그램마다 image/jpg, application/octet-stream 등으로 보내므로 확장자도 본다
+export const isImageAttachment = (type: string, name: string) => /^image\/(p?jpe?g|png|x-png|webp|gif)$/i.test(type) || /\.(jpe?g|png|webp|gif)$/i.test(name)
 const KEEP_TYPES = /^(image\/(jpeg|png|webp|gif)|application\/pdf|application\/(x-)?hwp|application\/haansofthwp|application\/vnd\.hancom\.hwpx|application\/octet-stream)$/i
 const KEEP_EXT = /\.(jpe?g|png|webp|gif|pdf|hwp|hwpx|docx?)$/i
 
@@ -123,7 +127,8 @@ export async function parseInbound(mail: InboundMail): Promise<ParsedMail | null
   const attachments: { name: string; content_type: string; size: number; content: string }[] = []
   const skipped: string[] = []
   let total = 0
-  for (const a of mail.Attachments ?? []) {
+  const ordered = [...(mail.Attachments ?? [])].sort((a, b) => Number(isImageAttachment(b.ContentType ?? '', b.Name ?? '')) - Number(isImageAttachment(a.ContentType ?? '', a.Name ?? '')))
+  for (const a of ordered) {
     const name = a.Name ?? '첨부파일'
     const type = a.ContentType ?? 'application/octet-stream'
     const size = a.ContentLength ?? Math.floor(((a.Content?.length ?? 0) * 3) / 4)

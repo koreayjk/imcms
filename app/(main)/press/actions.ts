@@ -48,7 +48,7 @@ function firstSentences(text: string, max = 120) {
 
 // 사진과 그 아래 "▲ 설명" 문단을 한 덩어리로 뽑는다
 function photoBlocks(html: string) {
-  return Array.from(html.matchAll(/<img[^>]*>(?:<p><em>▲[\s\S]*?<\/em><\/p>)?/g), (m) => m[0])
+  return Array.from(html.matchAll(/(?:<img[^>]*>|<div data-youtube-video[^>]*>[\s\S]*?<\/div>)(?:<p><em>▲[\s\S]*?<\/em><\/p>)?/g), (m) => m[0])
 }
 
 export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
