@@ -7,6 +7,8 @@ import { formatDateTime, isScheduled } from '@/lib/format'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import PendingButton from '@/components/cms/PendingButton'
 import RevisionHistory, { type Revision } from '@/components/cms/RevisionHistory'
+import LegalReview from '@/components/cms/LegalReview'
+import type { LegalCheck } from '@/lib/legal-types'
 import { deleteArticle } from '../actions'
 
 export default async function ArticleDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
@@ -50,6 +52,13 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
         </div>
       )}
 
+      {(article as { legal_check?: LegalCheck | null }).legal_check && (
+        <section aria-labelledby="legal-title" className="mb-5 rounded-lg border border-line bg-white px-5 py-4">
+          <h2 id="legal-title" className="mb-2 text-[14px] font-bold">AI 법적 검수 <span className="text-[12px] font-normal text-muted">· 승인신청·발행할 때의 내용 기준</span></h2>
+          <LegalReview check={(article as { legal_check: LegalCheck }).legal_check} />
+        </section>
+      )}
+
       <article className="rounded-lg border border-line bg-white px-5 py-6 md:px-10 md:py-9">
         <header className="border-b border-line pb-6">
           <div className="flex items-center gap-2 text-[12.5px]">
@@ -65,6 +74,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
           )}
           <p className="mt-4 text-[12.5px] tabular-nums text-muted">
             {article.byline?.trim() || (article.author as any)?.full_name} 기자
+            {(article as { byline_email?: string | null }).byline_email && <span className="ml-1.5">{(article as { byline_email: string }).byline_email}</span>}
             <span className="mx-2 text-line">|</span>작성 {formatDateTime(article.created_at)}
             {article.published_at && <><span className="mx-2 text-line">|</span>발행 {formatDateTime(article.published_at)}</>}
             {(revs?.length ?? 0) > 0 && <><span className="mx-2 text-line">|</span>최종 수정 {formatDateTime(revs![0].changed_at)}</>}

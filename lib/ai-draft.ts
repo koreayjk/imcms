@@ -149,7 +149,7 @@ function geminiPayload(input: DraftInput, hint = '') {
   })
 }
 
-async function geminiRequest(model: AiModel, payload: string, deadline: number) {
+export async function geminiRequest(model: AiModel, payload: string, deadline: number) {
   let res: Response
   let body: any
   for (let attempt = 0; ; attempt++) {

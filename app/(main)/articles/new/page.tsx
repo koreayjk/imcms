@@ -1,5 +1,9 @@
 import ArticleEditor from '@/components/ArticleEditor'
 import { getCmsContext } from '@/lib/cms'
+import { outletEmailOf } from '@/lib/outlet-email'
+
+// 승인신청·발행할 때 AI 법적 검수를 기다린다
+export const maxDuration = 60
 
 export default async function NewArticlePage() {
   const { supabase, user, profile, outletId, isEditorPlus } = await getCmsContext()
@@ -11,6 +15,7 @@ export default async function NewArticlePage() {
     supabase.from('outlets').select('id, name').order('created_at'),
   ])
   const outlet = outlets?.find((o) => o.id === outletId)
+  const contact = await outletEmailOf(supabase, outletId)
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
@@ -25,6 +30,8 @@ export default async function NewArticlePage() {
         isEditorPlus={isEditorPlus}
         outlets={outlets ?? []}
         syndicatedOutletIds={[]}
+        outletEmail={contact.email}
+        settingsReady={contact.ready}
         sourceOutletName={null}
       />
     </div>

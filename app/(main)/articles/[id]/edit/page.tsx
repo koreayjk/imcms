@@ -2,6 +2,10 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import ArticleEditor from '@/components/ArticleEditor'
 import { getCmsContext } from '@/lib/cms'
+import { outletEmailOf } from '@/lib/outlet-email'
+
+// 승인신청·발행할 때 AI 법적 검수를 기다린다
+export const maxDuration = 60
 
 export default async function EditArticlePage({ params }: { params: { id: string } }) {
   const { supabase, user, profile, outletId, isEditorPlus } = await getCmsContext()
@@ -23,6 +27,7 @@ export default async function EditArticlePage({ params }: { params: { id: string
     supabase.from('profiles').select('full_name').eq('id', article.author_id).maybeSingle(),
   ])
   const outlet = outlets?.find((o) => o.id === scope)
+  const contact = await outletEmailOf(supabase, scope)
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
@@ -41,6 +46,8 @@ export default async function EditArticlePage({ params }: { params: { id: string
         isEditorPlus={isEditorPlus}
         outlets={outlets ?? []}
         syndicatedOutletIds={(copies ?? []).map((c) => c.outlet_id as string)}
+        outletEmail={contact.email}
+        settingsReady={contact.ready}
         sourceOutletName={(source as any)?.outlet?.name ?? null}
         articleAuthorName={author?.full_name ?? null}
       />

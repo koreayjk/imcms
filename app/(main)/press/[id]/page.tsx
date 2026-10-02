@@ -6,7 +6,7 @@ import { sanitizeBody } from '@/lib/article-html'
 import { formatDateTime } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
 import { aiReady } from '@/lib/ai-draft'
-import { aiLevel, aiLimitMessage, getAiStatus } from '@/lib/ai-usage'
+import { aiLevel, aiLimitMessage, getAiStatus, myLimitFull, myLimitMessage } from '@/lib/ai-usage'
 import { ensureEmailImages } from '@/lib/press-attachments'
 import { createArticleFromPress, deleteManualPress } from '../actions'
 
@@ -30,7 +30,7 @@ export default async function PressDetailPage({ params, searchParams }: { params
   ])
   const level = aiLevel(usage)
   // 한도를 다 썼고 추가 사용이 꺼져 있으면 AI 초안 버튼을 막는다
-  const aiBlocked = (level === 'full' || level === 'over') && !usage?.overage
+  const aiBlocked = ((level === 'full' || level === 'over') && !usage?.overage) || myLimitFull(usage)
 
   const ai = aiReady() && !aiBlocked
   const manual = r.source_key === MANUAL_SOURCE
@@ -101,12 +101,13 @@ export default async function PressDetailPage({ params, searchParams }: { params
         끝에 “{sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성” 문구가 붙습니다.
       </p>
 
-      {usage && level && (
+      {usage && (level || usage.mine_limit != null) && (
         <p
           role={level === 'ok' ? undefined : 'status'}
-          className={`mt-4 rounded-lg border px-4 py-2.5 text-[13px] ${level === 'ok' ? 'border-line bg-white text-muted' : level === 'near' ? 'border-draft/40 bg-draft/10 text-ink' : 'border-danger/30 bg-danger/5 font-medium text-danger'}`}
+          className={`mt-4 rounded-lg border px-4 py-2.5 text-[13px] ${!level || level === 'ok' ? 'border-line bg-white text-muted' : level === 'near' ? 'border-draft/40 bg-draft/10 text-ink' : 'border-danger/30 bg-danger/5 font-medium text-danger'}`}
         >
           {aiLimitMessage(usage)}
+          {myLimitMessage(usage) && <span className={`mt-0.5 block ${myLimitFull(usage) ? 'font-semibold text-danger' : ''}`}>{myLimitMessage(usage)}</span>}
         </p>
       )}
 

@@ -16,6 +16,8 @@ export type PublicArticle = {
   view_count: number
   is_featured: boolean
   author_name: string | null
+  // 기자명 옆 이메일 (기사마다, 기본은 언론사 대표 이메일)
+  author_email?: string | null
   category: { name: string; slug: string } | null
   tags: string[] | null
   meta_title?: string | null
@@ -63,13 +65,17 @@ const LIST_FIELDS =
   'id, title, excerpt, thumbnail_url, published_at, view_count, is_featured, tags, author:profiles!articles_author_id_fkey(full_name), category:categories(name, slug)'
 
 // article-manage.sql 실행 전 DB에는 byline 칸이 없으므로, 있을 때만 가져온다 (5분마다 다시 확인)
-let bylineCheck: { at: number; ok: boolean } | null = null
+// 기자 이메일(byline_email)도 newsroom-settings.sql 실행 뒤에만 있다
+let bylineCheck: { at: number; ok: boolean; email: boolean } | null = null
 async function listFields(supabase: ReturnType<typeof client>) {
   if (!bylineCheck || Date.now() - bylineCheck.at > 300_000) {
-    const { error } = await supabase.from('articles').select('byline').limit(1)
-    bylineCheck = { at: Date.now(), ok: !error }
+    const [{ error }, { error: emailError }] = await Promise.all([
+      supabase.from('articles').select('byline').limit(1),
+      supabase.from('articles').select('byline_email').limit(1),
+    ])
+    bylineCheck = { at: Date.now(), ok: !error, email: !emailError }
   }
-  return bylineCheck.ok ? `${LIST_FIELDS}, byline` : LIST_FIELDS
+  return `${LIST_FIELDS}${bylineCheck.ok ? ', byline' : ''}${bylineCheck.email ? ', byline_email' : ''}`
 }
 
 function client() {
@@ -87,6 +93,7 @@ function toPublic(row: any): PublicArticle {
     view_count: row.view_count ?? 0,
     is_featured: row.is_featured,
     author_name: row.byline?.trim() || row.author?.full_name || null,
+    author_email: row.byline_email ?? null,
     category: row.category ?? null,
     tags: row.tags ?? null,
     meta_title: row.meta_title ?? null,

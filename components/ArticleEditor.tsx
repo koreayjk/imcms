@@ -14,6 +14,9 @@ import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
 import PendingButton from './cms/PendingButton'
 import { deleteArticle } from '@/app/(main)/articles/actions'
+import { checkArticleLegal } from '@/app/(main)/articles/legal'
+import LegalReview from './cms/LegalReview'
+import type { LegalCheck } from '@/lib/legal-types'
 
 type Props = {
   article?: Article
@@ -29,6 +32,9 @@ type Props = {
   sourceOutletName: string | null
   // 수정할 때 원 작성자의 회원 이름 (편집장이 다른 기자 글을 고칠 때)
   articleAuthorName?: string | null
+  // 언론사 대표 이메일 (기자명 옆 이메일의 기본값). settingsReady: newsroom-settings.sql 실행 여부
+  outletEmail?: string | null
+  settingsReady?: boolean
 }
 
 type Mode = 'draft' | 'review' | 'publish'
@@ -44,7 +50,7 @@ function imagesIn(html: string): string[] {
   return Array.from(html.matchAll(IMG_SRC), (m) => m[1])
 }
 
-export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName }: Props) {
+export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName, outletEmail = null, settingsReady = false }: Props) {
   const router = useRouter()
   const editorRef = useRef<Editor | null>(null)
 
@@ -75,6 +81,14 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const defaultName = (article ? articleAuthorName : authorName) ?? ''
   const [byline, setByline] = useState(article?.byline?.trim() || defaultName)
   const shownName = useRef(byline)
+  // 기자명 옆 이메일: 기자는 언론사 대표 이메일로 고정, 편집장 이상은 기사마다 바꿀 수 있다
+  const savedEmail = (article as { byline_email?: string | null } | undefined)?.byline_email ?? null
+  const [bylineEmail, setBylineEmail] = useState(savedEmail ?? outletEmail ?? '')
+  // AI 법적 검수: 같은 내용으로 이미 검수했으면 다시 하지 않는다
+  const [checking, setChecking] = useState(false)
+  const [legal, setLegal] = useState<{ check: LegalCheck; key: string; mode: Mode } | null>(null)
+  const [legalOpen, setLegalOpen] = useState(false)
+  const legalModeRef = useRef<Mode>('review')
 
   const status: ArticleStatus = article?.status ?? 'draft'
   const isMine = !article || article.author_id === userId
@@ -106,14 +120,45 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     // 기자명이 회원 이름과 같으면 비워 둔다 (회원 이름을 바꾸면 기사에도 따라 바뀌도록)
     const customByline = byline.trim() && byline.trim() !== defaultName ? byline.trim() : null
     if (customByline || article?.byline !== undefined) payload.byline = customByline
+    // 기자는 보내지 않는다 (DB가 대표 이메일로 채운다)
+    if (settingsReady && isEditorPlus) payload.byline_email = bylineEmail.trim() || outletEmail || null
     return payload
   }
 
-  async function save(mode: Mode) {
+  // 승인신청·발행 전 AI 법적 검수. 문제가 보이면 확인창을 띄우고 멈춘다 (true = 계속 진행)
+  async function legalGate(mode: Mode): Promise<LegalCheck | null | false> {
+    // 같은 내용으로 이미 검수했으면 다시 하지 않는다 (확인할 곳이 있으면 결과 창만 다시 연다)
+    if (legal && legal.key === contentKey) {
+      if (!legal.check.issues.length) return legal.check
+      setLegal({ ...legal, mode })
+      setLegalOpen(true)
+      return false
+    }
+    legalModeRef.current = mode
+    setChecking(true)
+    setError('')
+    const r = await checkArticleLegal({ title: title.trim(), subtitle: subtitle.trim(), html, outletId: ownOutlet })
+    setChecking(false)
+    if (!r.ok) {
+      if (r.skipped) return null
+      return window.confirm(`AI 법적 검수를 하지 못했습니다: ${r.error}\n검수 없이 ${mode === 'publish' ? '발행' : '승인신청'}할까요?`) ? null : false
+    }
+    setLegal({ check: r.check, key: contentKey, mode })
+    if (r.check.issues.length) { setLegalOpen(true); return false }
+    return r.check
+  }
+
+  async function save(mode: Mode, confirmedLegal?: LegalCheck) {
     if (!title.trim()) { setError('제목을 입력해주세요.'); return }
     if (!charCount) { setError('본문을 입력해주세요.'); return }
     const chosenAt = fromKstInput(pubAt)
     if (pubAt && !chosenAt) { setError('발행 일시를 확인해 주세요.'); return }
+    let legalCheck: LegalCheck | null = confirmedLegal ?? null
+    if ((mode === 'review' || mode === 'publish') && !confirmedLegal) {
+      const g = await legalGate(mode)
+      if (g === false) return
+      legalCheck = g
+    }
     if (mode === 'publish') {
       const when = chosenAt ? new Date(chosenAt) : null
       const msg = when && when.getTime() > Date.now() + 60_000
@@ -127,6 +172,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     setSaving(mode)
 
     const payload = contentPayload()
+    if (legalCheck && settingsReady) { payload.legal_check = legalCheck; payload.legal_checked_at = legalCheck.checked_at ?? new Date().toISOString() }
     // 발행 전 기사는 정한 일시를 같이 저장해 두고(편집장이 승인할 때 그대로 쓴다), 발행된 기사는 일시만 고친다
     if (mode !== 'publish') payload.published_at = chosenAt ?? (status === 'published' ? article?.published_at ?? null : null)
 
@@ -185,7 +231,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   // ② 아직 발행 전(작성중·반려)인 기사는 1분마다 서버에도 조용히 저장 → 기사목록 “작성중”이 임시보관함
   //    발행된 기사·승인신청 중인 기사는 홈페이지·편집장 화면이 바뀌지 않도록 브라우저 백업만 한다
   const backupKey = article ? `im-autosave-${article.id}` : `im-autosave-new-${userId}-${outletId ?? 'none'}`
-  const contentKey = JSON.stringify([title, subtitle, html, categoryId, tags, byline, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl])
+  const contentKey = JSON.stringify([title, subtitle, html, categoryId, tags, byline, bylineEmail, pubAt, metaTitle, metaDesc, isFeatured, thumbnailUrl])
   const serverKey = useRef(contentKey)
   const [restore, setRestore] = useState<{ at: number; data: Record<string, unknown> } | null>(null)
   const canServerAutosave = !isCopy && (status === 'draft' || status === 'rejected')
@@ -341,6 +387,12 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </div>
           )}
 
+          {legal && !legalOpen && legal.check.issues.length > 0 && legal.key === contentKey && (
+            <div className="rounded border border-danger/30 bg-danger/5 px-4 py-3 text-[13px]">
+              <p className="flex flex-wrap items-center gap-2"><strong className="text-danger">AI 법적 검수: 확인할 곳 {legal.check.issues.length}개</strong><button type="button" onClick={() => setLegalOpen(true)} className="text-[12.5px] underline underline-offset-2">다시 보기</button></p>
+            </div>
+          )}
+
           {article?.ai_notes && (
             <div className="rounded border border-draft/40 bg-draft/10 px-4 py-3 text-[13px] leading-relaxed">
               <p className="font-semibold text-draft">AI 초안 — 발행 전에 확인하세요</p>
@@ -357,26 +409,75 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </select>
 
             <label htmlFor="byline" className="text-[13px] font-semibold">기자명</label>
-            <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
-              <div className="flex items-center rounded border border-line focus-within:border-ink">
-                <input
-                  id="byline"
-                  value={byline}
-                  onChange={(e) => setByline(e.target.value)}
-                  onBlur={() => syncBylineInBody()}
-                  maxLength={30}
-                  placeholder={defaultName || '기자 이름'}
-                  className="w-36 bg-transparent px-3 py-2 outline-none"
-                />
-                <span className="pr-3 text-muted">기자</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13.5px]">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center rounded border border-line focus-within:border-ink">
+                  <input
+                    id="byline"
+                    value={byline}
+                    onChange={(e) => setByline(e.target.value)}
+                    onBlur={() => syncBylineInBody()}
+                    maxLength={30}
+                    placeholder={defaultName || '기자 이름'}
+                    className="w-32 bg-transparent px-3 py-2 outline-none"
+                  />
+                  <span className="pr-3 text-muted">기자</span>
+                </div>
+                {settingsReady ? (
+                  isEditorPlus ? (
+                    <>
+                      <label htmlFor="byline-email" className="sr-only">기자 이메일</label>
+                      <input
+                        id="byline-email"
+                        type="email"
+                        value={bylineEmail}
+                        onChange={(e) => setBylineEmail(e.target.value)}
+                        placeholder={outletEmail ?? '기자 이메일'}
+                        maxLength={120}
+                        className="field-input py-2"
+                        style={{ width: 210 }}
+                      />
+                    </>
+                  ) : (
+                    <span title="언론사 대표 이메일 (편집장이 바꿀 수 있습니다)" className="max-w-full truncate rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">
+                      {savedEmail ?? outletEmail ?? '대표 이메일 미설정'}
+                    </span>
+                  )
+                ) : (
+                  isMine && authorEmail && <span className="max-w-full truncate rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">{authorEmail}</span>
+                )}
+                {byline.trim() && byline.trim() !== defaultName && (
+                  <button type="button" onClick={() => { setByline(defaultName); syncBylineInBody(defaultName) }} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">
+                    {defaultName}(으)로 되돌리기
+                  </button>
+                )}
               </div>
-              {isMine && authorEmail && <span className="max-w-full truncate rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">{authorEmail}</span>}
-              {byline.trim() && byline.trim() !== defaultName && (
-                <button type="button" onClick={() => { setByline(defaultName); syncBylineInBody(defaultName) }} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">
-                  {defaultName}(으)로 되돌리기
-                </button>
-              )}
+
+              <div className="flex flex-wrap items-center gap-2 md:ml-auto">
+                <label htmlFor="pub-at" className="text-[13px] font-semibold">발행 일시</label>
+                <input
+                  id="pub-at"
+                  type="datetime-local"
+                  value={pubAt}
+                  onChange={(e) => setPubAt(e.target.value)}
+                  title="비우면 발행하는 순간의 시각으로 정해집니다"
+                  className="field-input py-1.5"
+                  style={{ width: 'auto', maxWidth: 210 }}
+                />
+                {pubAt && <button type="button" onClick={() => setPubAt('')} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">비우기</button>}
+              </div>
             </div>
+            {(() => {
+              const t = fromKstInput(pubAt)
+              if (!t) return null
+              const diff = Date.parse(t) - Date.now()
+              const msg = diff > 60_000
+                ? <p className="text-[12px] font-semibold text-[#6D28D9]">예약 발행: {formatDateTime(t)}(한국 시간)에 홈페이지에 공개됩니다. 그 전까지는 보이지 않습니다.</p>
+                : diff < -60_000
+                  ? <p className="text-[12px] text-muted">지난 날짜로 발행됩니다. 기사 날짜와 목록 순서가 이 일시를 따릅니다.</p>
+                  : null
+              return msg && <><span />{msg}</>
+            })()}
           </div>
 
           <div className="space-y-3 border-t border-line pt-5">
@@ -433,33 +534,6 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               주요 기사로 지정 (홈페이지 톱 영역 우선 노출)
             </label>
 
-            <label htmlFor="pub-at" className="text-[13px] font-semibold">발행 일시</label>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  id="pub-at"
-                  type="datetime-local"
-                  value={pubAt}
-                  onChange={(e) => setPubAt(e.target.value)}
-                  className="field-input py-1.5"
-                  style={{ width: 'auto', maxWidth: 240 }}
-                />
-                <span className="text-[12px] text-muted">한국 시간</span>
-                {pubAt
-                  ? <button type="button" onClick={() => setPubAt('')} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">비우기 (발행하는 순간으로)</button>
-                  : <span className="text-[12px] text-muted">비워 두면 발행하는 순간</span>}
-              </div>
-              {(() => {
-                const t = fromKstInput(pubAt)
-                if (!t) return null
-                const diff = Date.parse(t) - Date.now()
-                return diff > 60_000
-                  ? <p className="mt-1 text-[12px] font-semibold text-[#6D28D9]">예약 발행: {formatDateTime(t)}에 홈페이지에 공개됩니다. 그 전까지는 보이지 않습니다.</p>
-                  : diff < -60_000
-                    ? <p className="mt-1 text-[12px] text-muted">지난 날짜로 발행됩니다. 기사 날짜와 목록 순서가 이 일시를 따릅니다.</p>
-                    : null
-              })()}
-            </div>
           </div>
 
           {isCopy ? (
@@ -528,6 +602,26 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
         </aside>
       </div>
 
+      {legalOpen && legal && (
+        <div role="dialog" aria-modal="true" aria-labelledby="legal-title" className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-0 md:items-center md:p-6">
+          <div className="max-h-[88vh] w-full max-w-[680px] overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl md:rounded-2xl md:p-7">
+            <h2 id="legal-title" className="text-[18px] font-bold">AI 법적 검수 결과</h2>
+            <p className="mb-4 mt-1 text-[13px] text-muted">명예훼손·개인정보·저작권(도용) 등 문제가 될 수 있는 부분입니다. 고친 뒤 다시 {legal.mode === 'publish' ? '발행' : '승인신청'}하거나, 확인했다면 그대로 진행할 수 있습니다.</p>
+            <LegalReview check={legal.check} />
+            <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-line pt-4">
+              <button type="button" onClick={() => setLegalOpen(false)} className="btn-primary px-5" autoFocus>기사 고치기</button>
+              <button
+                type="button"
+                onClick={() => { setLegalOpen(false); save(legal.mode, legal.check) }}
+                className="btn-secondary"
+              >
+                확인했습니다 · 그대로 {legal.mode === 'publish' ? '발행' : '승인신청'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
           {error ? (
@@ -553,13 +647,13 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               {saving === 'draft' ? '저장 중…' : '저장'}
             </button>
             {status !== 'published' && status !== 'in_review' && (
-              <button type="button" onClick={() => save('review')} disabled={!!saving} className="btn-review px-3 md:px-5">
-                {saving === 'review' ? '신청 중…' : '승인신청'}
+              <button type="button" onClick={() => save('review')} disabled={!!saving || checking} className="btn-review px-3 md:px-5">
+                {checking && legalModeRef.current === 'review' ? 'AI 검수 중…' : saving === 'review' ? '신청 중…' : '승인신청'}
               </button>
             )}
             {isEditorPlus && (
-              <button type="button" onClick={() => save('publish')} disabled={!!saving} className="btn-publish px-3 md:px-5">
-                {saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
+              <button type="button" onClick={() => save('publish')} disabled={!!saving || checking} className="btn-publish px-3 md:px-5">
+                {checking && legalModeRef.current === 'publish' ? 'AI 검수 중…' : saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
               </button>
             )}
           </div>

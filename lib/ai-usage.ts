@@ -3,7 +3,7 @@ import { EXTRA_AI_FEE } from './pricing'
 
 // 매체별 이번 달 AI 기사 초안 사용량 (supabase/ai-usage.sql)
 //   SQL 실행 전이면 함수가 없어서 한도 없이 쓰고 집계도 하지 않는다
-export type AiStatus = { plan: string | null; limit: number | null; used: number; overage: boolean; over: number }
+export type AiStatus = { plan: string | null; limit: number | null; used: number; overage: boolean; over: number; mine_used?: number; mine_limit?: number | null }
 
 export async function getAiStatus(supabase: SupabaseClient, outletId: string | null): Promise<AiStatus | null> {
   if (!outletId) return null
@@ -12,7 +12,7 @@ export async function getAiStatus(supabase: SupabaseClient, outletId: string | n
   return data as AiStatus
 }
 
-export type AiReserve = { ok: true; id: number | null; used?: number; limit?: number | null; overLimit?: boolean } | { ok: false; used: number; limit: number }
+export type AiReserve = { ok: true; id: number | null; used?: number; limit?: number | null; overLimit?: boolean } | { ok: false; used: number; limit: number; scope: 'member' | 'outlet' }
 
 // AI 초안을 쓰기 직전에 한 건을 잡는다 (한도를 다 썼고 추가 사용이 꺼져 있으면 ok:false)
 export async function reserveAi(supabase: SupabaseClient, outletId: string | null): Promise<AiReserve> {
@@ -23,8 +23,8 @@ export async function reserveAi(supabase: SupabaseClient, outletId: string | nul
     if (/ai_usage_reserve|schema cache|does not exist/i.test(error.message)) return { ok: true, id: null }
     throw new Error(error.message)
   }
-  const d = data as { ok: boolean; id?: number; used: number; limit: number | null; over_limit?: boolean }
-  return d.ok ? { ok: true, id: d.id ?? null, used: d.used, limit: d.limit, overLimit: d.over_limit } : { ok: false, used: d.used, limit: d.limit as number }
+  const d = data as { ok: boolean; id?: number; used: number; limit: number | null; over_limit?: boolean; scope?: 'member' | 'outlet' }
+  return d.ok ? { ok: true, id: d.id ?? null, used: d.used, limit: d.limit, overLimit: d.over_limit } : { ok: false, used: d.used, limit: d.limit as number, scope: d.scope ?? 'outlet' }
 }
 
 export async function finishAi(supabase: SupabaseClient, id: number | null, r: { model: { id: string }; inputTokens: number; outputTokens: number; costUsd: number }) {
@@ -36,6 +36,16 @@ export async function releaseAi(supabase: SupabaseClient, id: number | null) {
   if (id == null) return
   await supabase.rpc('ai_usage_release', { rid: id })
 }
+
+// 내 몫(편집장이 정했거나 자동 배분된 기자별 한도) 안내
+export function myLimitMessage(s: AiStatus | null) {
+  if (!s || s.mine_limit == null) return ''
+  const used = s.mine_used ?? 0
+  return used >= s.mine_limit
+    ? `이번 달 내 AI 초안 한도(${s.mine_limit}건)를 다 썼습니다. 더 필요하면 편집장에게 한도를 늘려 달라고 요청해 주세요.`
+    : `내 AI 초안 ${used}/${s.mine_limit}건`
+}
+export const myLimitFull = (s: AiStatus | null) => !!s && s.mine_limit != null && (s.mine_used ?? 0) >= s.mine_limit
 
 // 한도에 가까워졌는지·넘었는지 (화면 알림용). 한도가 없으면 null
 export function aiLevel(s: AiStatus | null): 'ok' | 'near' | 'full' | 'over' | null {

@@ -65,6 +65,7 @@ export default async function ArticlePage({ params }: Props) {
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-[13px] text-sub">
               <p className="tabular-nums">
                 {a.author_name && <span className="font-semibold text-body">{a.author_name} 기자</span>}
+                {a.author_email && <a href={`mailto:${a.author_email}`} className="ml-1.5 text-sub hover:text-brand">{a.author_email}</a>}
                 <span className="mx-2 text-rule" aria-hidden>|</span>
                 <span>입력 {formatDateTime(a.published_at)}</span>
                 {a.view_count > 0 && (
