@@ -33,7 +33,15 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   let { data: outlets } = outletRes
   // groups.sql 실행 전에는 그룹 연결이 없으므로 이름만
   if (outletRes.error) ({ data: outlets } = await outletQuery('id, name, domain'))
-  const list = ((outlets ?? []) as any[]).map((o) => ({ id: o.id as string, name: o.name as string, domain: (o.domain as string | null) ?? null, group: (o.publisher?.name as string | undefined) ?? null }))
+  let list = ((outlets ?? []) as any[]).map((o) => ({ id: o.id as string, name: o.name as string, domain: (o.domain as string | null) ?? null, group: (o.publisher?.name as string | undefined) ?? null, role: null as string | null }))
+  // 기자·편집장: 소속된 매체들 사이를 오간다 (매체마다 직급이 다를 수 있다, outlet-members.sql 전이면 지금 매체 하나)
+  if (!isGroupAdmin && !isStaff) {
+    const { data: mine } = await supabase.from('outlet_members').select('role, outlet:outlets(id, name, domain, publisher:publishers(name))').eq('profile_id', user.id).order('created_at')
+    const rows = ((mine ?? []) as any[]).filter((m) => m.outlet)
+    if (rows.length) {
+      list = rows.map((m) => ({ id: m.outlet.id as string, name: m.outlet.name as string, domain: (m.outlet.domain as string | null) ?? null, group: (m.outlet.publisher?.name as string | undefined) ?? null, role: m.role as string }))
+    }
+  }
   const current = list.find((o) => o.id === outletId) ?? null
 
   return (
@@ -46,7 +54,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           outletName={current?.name ?? null}
           groupName={current?.group ?? null}
           siteUrl={current?.domain ? `https://${current.domain}` : '/'}
-          outlets={isGroupAdmin ? list : []}
+          outlets={isGroupAdmin || list.length > 1 ? list : []}
           currentOutletId={outletId}
           userName={profile?.full_name ?? user.email ?? ''}
           role={profile?.role ?? null}

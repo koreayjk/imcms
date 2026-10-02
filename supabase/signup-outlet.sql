@@ -92,7 +92,8 @@ end $$;
 create or replace function public.admin_reject_user(target uuid)
 returns void language plpgsql security definer set search_path = public, auth as $$
 begin
-  if not (public.is_super() or (public.is_group_admin() and public.pending_publisher(target) = public.my_publisher())) then
+  -- 값이 비면(null) 조건 전체가 null이 되어 통과되지 않도록 coalesce로 거짓 처리
+  if not coalesce(public.is_super() or (public.is_group_admin() and public.pending_publisher(target) = public.my_publisher()), false) then
     raise exception '이 가입 신청을 거절할 권한이 없습니다.';
   end if;
   if target = auth.uid() or exists (select 1 from profiles where id = target and (approved or role = 'admin' or is_super)) then

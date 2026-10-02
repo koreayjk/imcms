@@ -75,6 +75,24 @@ export async function setMember(id: string, input: { role: UserRole; outletId: s
   return { ok: '저장했습니다.' }
 }
 
+// 기자·편집장의 소속 매체와 매체별 직급 (같은 그룹 매체만, outlet-members.sql)
+export type Membership = { outletId: string; role: 'reporter' | 'editor' }
+export async function setMemberships(id: string, items: Membership[], fullName?: string): Promise<FormState> {
+  const { supabase, user } = await groupContext()
+  if (id === user.id) return { error: '내 소속은 스스로 바꿀 수 없습니다.' }
+  if (!items.length) return { error: '소속 매체를 하나 이상 정해 주세요.' }
+  if (new Set(items.map((i) => i.outletId)).size !== items.length) return { error: '같은 매체가 두 번 들어 있습니다.' }
+  const { error } = await supabase.rpc('admin_set_memberships', {
+    target: id,
+    items: items.map((i) => ({ outlet_id: i.outletId, role: i.role })),
+  })
+  if (error) return { error: /admin_set_memberships|outlet_members/.test(error.message) ? '여러 매체 소속을 쓰려면 outlet-members.sql을 실행해 주세요.' : error.message }
+  const n = fullName?.trim().replace(/\s+/g, ' ').slice(0, 30)
+  if (n) await supabase.from('profiles').update({ full_name: n }).eq('id', id)
+  revalidatePath('/', 'layout')
+  return { ok: '저장했습니다.' }
+}
+
 export async function inviteMember(_prev: FormState, form: FormData): Promise<FormState> {
   const { supabase } = await groupContext()
   const email = String(form.get('email') ?? '').trim().toLowerCase()

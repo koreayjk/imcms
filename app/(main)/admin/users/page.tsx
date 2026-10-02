@@ -12,13 +12,20 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
   const { supabase, user, isSuper, isGroupAdmin, outletId } = await getCmsContext()
   if (!isGroupAdmin) redirect('/articles')
 
-  const [{ data: users }, outletsRes, { data: groups }, { data: authUsers, error: authError }, { data: invites }] = await Promise.all([
+  const [{ data: users }, outletsRes, { data: groups }, { data: authUsers, error: authError }, { data: invites }, membersRes] = await Promise.all([
     supabase.from('profiles').select('*').order('created_at'),
     supabase.from('outlets').select('id, name, publisher_id, publisher:publishers(name)').order('created_at'),
     supabase.from('publishers').select('id, name').order('created_at'),
     supabase.rpc('admin_list_users'),
     supabase.from('invitations').select('id, email, full_name, role, created_at, outlet:outlets(name)').is('accepted_at', null).order('created_at', { ascending: false }),
+    // 매체별 소속·직급 (outlet-members.sql 전이면 오류 → 예전처럼 매체 하나)
+    supabase.from('outlet_members').select('profile_id, outlet_id, role').order('created_at'),
   ])
+  const membershipsReady = !membersRes.error
+  const memberships: Record<string, { outletId: string; role: 'reporter' | 'editor' }[]> = {}
+  for (const m of (membersRes.data ?? []) as { profile_id: string; outlet_id: string; role: 'reporter' | 'editor' }[]) {
+    ;(memberships[m.profile_id] ??= []).push({ outletId: m.outlet_id, role: m.role })
+  }
   if (outletsRes.error) {
     return (
       <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
@@ -51,7 +58,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
         <h1 className="text-[22px] font-bold tracking-tight">회원 관리</h1>
         <p className="mt-1 text-[13px] text-muted">
           {isSuper ? '모든 그룹의 회원과 가입 신청을 관리합니다.' : '우리 그룹 회원의 역할과 매체를 정하고, 새 기자를 초대합니다.'}
-          {' '}기자 = 자기 기사 · 편집장 = 자기 매체 · 발행인 = 그룹의 모든 매체
+          {' '}기자 = 자기 기사 · 편집장 = 자기 매체 · 발행인 = 그룹의 모든 매체. 기자·편집장은 그룹 안 여러 매체에 소속되고 매체마다 직급을 따로 가질 수 있습니다.
         </p>
       </header>
 
@@ -150,7 +157,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { erro
       {sections.map((s) => (
         <section key={s.key}>
           <h2 className="mb-2 text-[15px] font-bold">{s.title} <span className="text-[12.5px] font-normal text-muted">{s.list.length}명</span></h2>
-          <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} />
+          <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} memberships={membershipsReady ? memberships : null} />
         </section>
       ))}
     </div>

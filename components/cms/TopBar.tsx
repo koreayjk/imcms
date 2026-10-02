@@ -11,7 +11,7 @@ import { ExternalIcon, SearchIcon } from './icons'
 type Props = {
   outletName: string | null
   groupName?: string | null
-  outlets?: { id: string; name: string; group: string | null }[]
+  outlets?: { id: string; name: string; group: string | null; role?: string | null }[]
   siteUrl?: string
   currentOutletId?: string | null
   userName: string
@@ -61,7 +61,7 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
               {!currentOutletId && <option value="">매체 선택</option>}
               {groups.map((g) => (
                 <optgroup key={g} label={g}>
-                  {outlets.filter((o) => (o.group ?? '그룹 없음') === g).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  {outlets.filter((o) => (o.group ?? '그룹 없음') === g).map((o) => <option key={o.id} value={o.id}>{o.name}{o.role ? ` (${ROLE_LABEL[o.role as UserRole] ?? o.role})` : ''}</option>)}
                 </optgroup>
               ))}
             </select>
