@@ -1,10 +1,9 @@
-// 메일 보내기 (Postmark). 보도자료 “메일로 받기”와 같은 Postmark 계정을 쓴다
-//   환경 변수: POSTMARK_SERVER_TOKEN, MAIL_FROM (예: "IM 뉴스룸 <noreply@보내는도메인>" — Postmark에서 확인한 도메인)
-//   POSTMARK_BROADCAST_STREAM: 뉴스레터용 스트림 ID (기본 "broadcast"). 알림 메일은 "outbound"
+// 메일 보내기. RESEND_API_KEY 가 있으면 Resend, 없고 POSTMARK_SERVER_TOKEN 이 있으면 Postmark
+//   환경 변수: RESEND_API_KEY, MAIL_FROM (예: "IM 뉴스룸 <noreply@보내는도메인>" — Resend에서 확인한 도메인)
+//   (Postmark를 쓸 때) POSTMARK_SERVER_TOKEN, POSTMARK_BROADCAST_STREAM(뉴스레터 스트림, 기본 "broadcast")
 //   설정 전이면 보내지 않고 조용히 넘어간다 (편집국 기능은 그대로 동작)
-const API = 'https://api.postmarkapp.com'
-
-export const mailReady = () => !!(process.env.POSTMARK_SERVER_TOKEN && process.env.MAIL_FROM)
+const provider = () => (process.env.RESEND_API_KEY ? 'resend' : process.env.POSTMARK_SERVER_TOKEN ? 'postmark' : null)
+export const mailReady = () => !!(provider() && process.env.MAIL_FROM)
 
 export type Mail = {
   to: string
@@ -25,10 +24,60 @@ function fromWithName(name?: string) {
   return `${name.replace(/["<>\r\n]/g, '').slice(0, 60)} <${addr}>`
 }
 
-// 여러 통을 500통씩 나눠 보낸다. 돌려주는 값: 보낸 수·실패 수·첫 오류
-export async function sendMails(mails: Mail[], stream: 'outbound' | 'broadcast' = 'outbound') {
-  const result = { sent: 0, failed: 0, error: null as string | null }
+type SendResult = { sent: number; failed: number; error: string | null }
+
+// 여러 통을 나눠 보낸다 (Resend 100통씩, Postmark 500통씩). 돌려주는 값: 보낸 수·실패 수·첫 오류
+export async function sendMails(mails: Mail[], stream: 'outbound' | 'broadcast' = 'outbound'): Promise<SendResult> {
+  const result: SendResult = { sent: 0, failed: 0, error: null }
   if (!mailReady() || !mails.length) return result
+  if (provider() === 'resend') await sendResend(mails, result)
+  else await sendPostmark(mails, stream, result)
+  return result
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+// Resend 태그는 영문·숫자·_·- 만
+const tagValue = (t: string) => t.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 256)
+
+async function sendResend(mails: Mail[], result: SendResult) {
+  for (let i = 0; i < mails.length; i += 100) {
+    const chunk = mails.slice(i, i + 100).map((m) => ({
+      from: fromWithName(m.fromName),
+      to: [m.to],
+      subject: m.subject.slice(0, 200),
+      html: m.html,
+      text: m.text,
+      ...(m.replyTo ? { reply_to: m.replyTo } : {}),
+      ...(m.headers ? { headers: m.headers } : {}),
+      ...(m.tag ? { tags: [{ name: 'type', value: tagValue(m.tag) }] } : {}),
+    }))
+    // 초당 요청 수 제한(기본 10회)에 걸리면 잠시 쉬고 다시 (최대 3번)
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const res = await fetch('https://api.resend.com/emails/batch', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'User-Agent': 'im-newsroom/1.0' },
+          body: JSON.stringify(chunk),
+          cache: 'no-store',
+        })
+        if (res.status === 429 && attempt < 3) { await sleep(1000 * (attempt + 1)); continue }
+        const data = await res.json().catch(() => null) as { data?: { id: string }[]; message?: string } | null
+        if (!res.ok) { result.failed += chunk.length; result.error ??= data?.message ?? `HTTP ${res.status}`; break }
+        const ok = data?.data?.length ?? chunk.length
+        result.sent += ok
+        result.failed += chunk.length - ok
+        break
+      } catch (e) {
+        result.failed += chunk.length
+        result.error ??= e instanceof Error ? e.message : '메일 서버에 연결하지 못했습니다.'
+        break
+      }
+    }
+    if (i + 100 < mails.length) await sleep(150)
+  }
+}
+
+async function sendPostmark(mails: Mail[], stream: 'outbound' | 'broadcast', result: SendResult) {
   const streamId = stream === 'broadcast' ? process.env.POSTMARK_BROADCAST_STREAM || 'broadcast' : 'outbound'
   for (let i = 0; i < mails.length; i += 500) {
     const chunk = mails.slice(i, i + 500).map((m) => ({
@@ -43,7 +92,7 @@ export async function sendMails(mails: Mail[], stream: 'outbound' | 'broadcast' 
       MessageStream: streamId,
     }))
     try {
-      const res = await fetch(`${API}/email/batch`, {
+      const res = await fetch('https://api.postmarkapp.com/email/batch', {
         method: 'POST',
         headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Postmark-Server-Token': process.env.POSTMARK_SERVER_TOKEN! },
         body: JSON.stringify(chunk),
@@ -64,7 +113,6 @@ export async function sendMails(mails: Mail[], stream: 'outbound' | 'broadcast' 
       result.error ??= e instanceof Error ? e.message : '메일 서버에 연결하지 못했습니다.'
     }
   }
-  return result
 }
 
 // ───────── 메일 본문 틀 ─────────

@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { parseInbound, type InboundMail } from '@/lib/press-email'
+import { resendInboundMail, verifyResendWebhook } from '@/lib/resend-inbound'
 
-// 메일 수신 서비스(Postmark 인바운드)가 메일 한 통마다 부른다. 주소의 ?key= 값을 DB 비밀 열쇠와 대조한다
+// 메일 수신 서비스가 메일 한 통마다 부른다. 주소의 ?key= 값을 DB 비밀 열쇠와 대조한다
+//   Resend(웹훅 email.received → 본문은 API로 다시 받음, RESEND_WEBHOOK_SECRET 이 있으면 서명도 확인) 또는 Postmark 인바운드 형식
 export const maxDuration = 30
 export const dynamic = 'force-dynamic'
 
@@ -10,11 +12,27 @@ export async function POST(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('key')
   if (!secret || !process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  let mail: InboundMail
+  const raw = await req.text()
+  let payload: (InboundMail & { type?: string; data?: { email_id?: string } }) | null = null
   try {
-    mail = await req.json()
+    payload = JSON.parse(raw)
   } catch {
     return NextResponse.json({ error: 'bad json' }, { status: 400 })
+  }
+  let mail: InboundMail
+  if (payload?.type) {
+    // Resend
+    if (payload.type !== 'email.received' || !payload.data?.email_id) return NextResponse.json({ result: 'ignored' })
+    const whSecret = process.env.RESEND_WEBHOOK_SECRET
+    if (whSecret && !verifyResendWebhook(raw, req.headers, whSecret)) return NextResponse.json({ error: 'bad signature' }, { status: 401 })
+    if (!process.env.RESEND_API_KEY) return NextResponse.json({ error: 'not configured' }, { status: 503 })
+    try {
+      mail = await resendInboundMail(payload.data.email_id)
+    } catch {
+      return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
+    }
+  } else {
+    mail = payload as InboundMail
   }
 
   const parsed = await parseInbound(mail)

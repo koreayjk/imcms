@@ -46,7 +46,7 @@ export default async function PrivacyPage() {
             <tr><td>Supabase Inc.</td><td>데이터베이스·사진 저장</td><td>일본 (도쿄 데이터센터)</td></tr>
             <tr><td>Vercel Inc.</td><td>홈페이지 호스팅·접속 기록</td><td>미국·일본 등</td></tr>
             <tr><td>Google LLC</td><td>편집국 회원 구글 계정 로그인</td><td>미국</td></tr>
-            <tr><td>Postmark (ActiveCampaign, LLC)</td><td>보도자료 메일 수신, 뉴스레터·알림 메일 발송</td><td>미국</td></tr>
+            <tr><td>Resend, Inc.</td><td>보도자료 메일 수신, 뉴스레터·알림 메일 발송</td><td>미국</td></tr>
           </tbody>
         </table>
         <p>이전 시기는 서비스 이용 시점이며, 이전 방법은 암호화된 네트워크 전송입니다. 보유 기간은 위 1항과 같습니다. 국외 이전을 원하지 않으면 기사제보는 전화로 해 주시기 바랍니다.</p>

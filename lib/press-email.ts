@@ -1,6 +1,6 @@
 import { escapeHtml, htmlToText, textToParagraphs } from './press'
 
-// 메일 수신 서비스(Postmark 인바운드 형식)가 보내는 메일 한 통
+// 받은 메일 한 통 (Postmark 인바운드 형식. Resend로 받은 메일도 이 형식으로 바꿔서 쓴다 — resend-inbound.ts)
 export type InboundMail = {
   From?: string
   FromName?: string

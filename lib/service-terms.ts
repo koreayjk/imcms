@@ -207,7 +207,7 @@ export const PROCESSORS: { name: string; country: string; what: string; items: s
   { name: 'Vercel Inc.', country: '미국 법인 · 처리 위치 일본(도쿄)·한국(서울)', what: '웹 서버 운영', items: '서비스 이용 중 오가는 정보, 접속 기록' },
   { name: 'Stripe, Inc.', country: '미국', what: '요금 결제 처리', items: '결제 금액, 담당자 이메일, 결제수단 정보(카드 번호는 Stripe만 보관)' },
   { name: 'Anthropic PBC · Google LLC', country: '미국', what: 'AI 기사 초안 처리 (AI 기능을 쓸 때만)', items: 'AI에 보내는 원문·지시문' },
-  { name: 'Postmark (ActiveCampaign, LLC)', country: '미국', what: '보도자료 메일 받기 (“메일로 받기”를 쓸 때만)', items: '받은 메일의 보낸 사람·내용·첨부' },
+  { name: 'Resend, Inc.', country: '미국', what: '알림·뉴스레터 메일 발송, 보도자료 메일 받기(“메일로 받기”를 쓸 때)', items: '받는 사람 이메일·이름, 메일 내용, 받은 메일의 보낸 사람·내용·첨부' },
 ]
 
 // ───────── 신청서의 개인정보 수집·이용 동의 ─────────
