@@ -165,7 +165,7 @@ begin
     insert into newsletter_subscribers (outlet_id, email, name, status, consent_at, source)
     values (o, lower(trim(p_email)), nullif(left(trim(p_name), 60), ''), 'pending', now(), 'web') returning token into t;
   else
-    update newsletter_subscribers set status = 'pending', consent_at = now(), token = encode(gen_random_bytes(18), 'hex'),
+    update newsletter_subscribers set status = 'pending', consent_at = now(), token = replace(gen_random_uuid()::text, '-', ''),
       name = coalesce(nullif(left(trim(p_name), 60), ''), name)
     where outlet_id = o and email = lower(trim(p_email)) returning token into t;
   end if;

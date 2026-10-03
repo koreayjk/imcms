@@ -4,6 +4,7 @@
 --   ※ 실행 후 맨 아래 결과에 나오는 열쇠를 Vercel 환경 변수 PAYMENT_DB_SECRET 에 넣어 주세요 (채팅·메일로 보내지 마세요)
 
 create extension if not exists pgcrypto;
+-- (Supabase는 pgcrypto를 extensions 스키마에 두므로, 함수 안에서는 기본 내장 gen_random_uuid()로 난수를 만든다)
 create schema if not exists private;
 revoke all on schema private from anon, authenticated;
 create table if not exists private.settings (key text primary key, value text not null);
@@ -71,7 +72,7 @@ begin
   if i.total <= 0 then raise exception '결제할 금액이 없습니다.'; end if;
   select name into outlet_name from outlets where id = i.outlet_id;
   oname := left(coalesce(outlet_name, '') || ' ' || to_char(i.month, 'YYYY년 FMMM월') || ' IM 뉴스룸 이용료', 100);
-  oid := 'IMN-' || to_char(now() at time zone 'Asia/Seoul', 'YYMMDD') || '-' || encode(gen_random_bytes(8), 'hex');
+  oid := 'IMN-' || to_char(now() at time zone 'Asia/Seoul', 'YYMMDD') || '-' || left(replace(gen_random_uuid()::text, '-', ''), 16);
   insert into payments (invoice_id, outlet_id, order_id, order_name, amount, kind, provider)
   values (i.id, i.outlet_id, oid, oname, i.total, case when p_kind = 'transfer' then 'transfer' else 'card' end,
     case when p_provider = 'toss' then 'toss' else 'stripe' end);
@@ -173,7 +174,7 @@ begin
   if not (coalesce(public.is_outlet_editor(o), false) or coalesce(public.is_staff(), false)) then raise exception '카드를 등록할 권한이 없습니다.'; end if;
   select customer_key into k from private.billing_keys where outlet_id = o;
   if k is null then
-    insert into private.settings (key, value) values ('autopay_ck_' || o::text, 'IMN_' || encode(gen_random_bytes(16), 'hex'))
+    insert into private.settings (key, value) values ('autopay_ck_' || o::text, 'IMN_' || replace(gen_random_uuid()::text, '-', ''))
     on conflict (key) do nothing;
     select value into k from private.settings where key = 'autopay_ck_' || o::text;
   end if;
@@ -248,7 +249,7 @@ begin
   select * into i from invoices where id = inv and status = 'unpaid';
   if i.id is null then raise exception '결제할 청구서가 없습니다.'; end if;
   oname := left(coalesce((select name from outlets where id = i.outlet_id), '') || ' ' || to_char(i.month, 'YYYY년 FMMM월') || ' IM 뉴스룸 이용료', 100);
-  oid := 'IMA-' || to_char(now() at time zone 'Asia/Seoul', 'YYMMDD') || '-' || encode(gen_random_bytes(8), 'hex');
+  oid := 'IMA-' || to_char(now() at time zone 'Asia/Seoul', 'YYMMDD') || '-' || left(replace(gen_random_uuid()::text, '-', ''), 16);
   insert into payments (invoice_id, outlet_id, order_id, order_name, amount, kind, provider, requested_by)
   values (i.id, i.outlet_id, oid, oname, i.total, 'autopay', case when p_provider = 'toss' then 'toss' else 'stripe' end, null);
   return jsonb_build_object('orderId', oid, 'orderName', oname, 'amount', i.total);
