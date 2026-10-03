@@ -9,6 +9,7 @@ import { formatDateTime, fromKstInput, isScheduled, toKstInput } from '@/lib/for
 import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@/lib/types'
 import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
+import PhotoSuggest from './editor/PhotoSuggest'
 import { loadWatermark, saveWatermark, uploadImage, type WatermarkPref } from './editor/upload'
 import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
@@ -682,6 +683,15 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             onInsertYoutube={insertYoutube}
             watermark={watermark}
             setWatermark={setWatermark}
+          />
+          {/* AI 검수가 고른 검색어로 공개 라이선스 사진을 찾아 준다 */}
+          <PhotoSuggest
+            keywords={legal?.check.photo_keywords ?? []}
+            fallback={tags.split(',').map((t) => t.trim()).filter(Boolean)[0] ?? ''}
+            onAdd={(img) => {
+              setImages((prev) => (prev.some((p) => p.url === img.url) ? prev : [...prev, img]))
+              if (!thumbnailUrl) setThumbnailUrl(img.url)
+            }}
           />
         </aside>
       </div>

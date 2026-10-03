@@ -28,7 +28,8 @@ const SYSTEM = `당신은 한국 언론사의 법무 검토 담당자입니다. 
 - severity: high = 소송·정정보도 청구 가능성이 큼, medium = 다듬는 게 좋음, low = 참고.
 - risk는 가장 심각한 문제를 기준으로 low / medium / high.
 - summary는 전체 판단을 한 문장으로 씁니다.
-- 모두 한국어로 씁니다.`
+- photo_keywords에는 이 기사에 어울리는 사진을 공개 사진 모음에서 찾을 영어 검색어를 2~4개 씁니다. 장소·건물·사물·행사·풍경처럼 사진으로 찾을 수 있는 말로, 짧게(1~4단어). 일반인 이름이나 특정 회사 상표는 넣지 않습니다.
+- photo_keywords를 뺀 나머지는 모두 한국어로 씁니다.`
 
 const SCHEMA = {
   type: 'object',
@@ -51,8 +52,9 @@ const SCHEMA = {
         additionalProperties: false,
       },
     },
+    photo_keywords: { type: 'array', items: { type: 'string' } },
   },
-  required: ['risk', 'summary', 'issues'],
+  required: ['risk', 'summary', 'issues', 'photo_keywords'],
   additionalProperties: false,
 } as const
 
@@ -78,7 +80,11 @@ function parse(text: string | undefined): LegalCheck {
     const v = JSON.parse(body) as LegalCheck
     const issues = Array.isArray(v.issues) ? v.issues.slice(0, 20) : []
     const risk = ['low', 'medium', 'high'].includes(v.risk) ? v.risk : issues.some((x) => x.severity === 'high') ? 'high' : issues.length ? 'medium' : 'low'
-    return { risk, summary: String(v.summary ?? ''), issues }
+    // 추천 사진 검색어 (영어, 짧게 최대 4개)
+    const photo_keywords = Array.isArray(v.photo_keywords)
+      ? v.photo_keywords.map((k) => String(k).replace(/[^\p{L}\p{N}\s'-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 40)).filter(Boolean).slice(0, 4)
+      : []
+    return { risk, summary: String(v.summary ?? ''), issues, photo_keywords }
   } catch {
     throw new AiDraftError('AI 검수 결과를 읽지 못했습니다. 다시 시도해 주세요.')
   }
