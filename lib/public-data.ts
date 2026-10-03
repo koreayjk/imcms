@@ -254,7 +254,7 @@ export async function getArticleData(site: SiteConfig, id: string) {
     return {
       source: null as ArticleSource | null,
       article,
-      related: all.filter((a) => a.category?.slug === article.category?.slug && a.id !== id).slice(0, 4),
+      ...splitRelated(article, all.filter((a) => a.id !== id), all.filter((a) => a.category?.slug === article.category?.slug && a.id !== id)),
       mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 8),
       latest: all.filter((a) => a.id !== id).slice(0, 5),
     }
@@ -272,21 +272,80 @@ export async function getArticleData(site: SiteConfig, id: string) {
     .maybeSingle()
   if (!data) return null
 
-  const [related, mostViewed, latest, source] = await Promise.all([
+  const tags = ((data as { tags?: string[] | null }).tags ?? []).filter(Boolean).slice(0, 10)
+  const [related, tagged, mostViewed, latest, source] = await Promise.all([
     data.category_id
-      ? published(scope).eq('category_id', data.category_id).neq('id', id).order('published_at', { ascending: false }).limit(4)
+      ? published(scope).eq('category_id', data.category_id).neq('id', id).order('published_at', { ascending: false }).limit(4 + RELATED_LINKS)
+      : Promise.resolve({ data: [] as any[] }),
+    tags.length
+      ? published(scope).overlaps('tags', tags).neq('id', id).order('published_at', { ascending: false }).limit(30)
       : Promise.resolve({ data: [] as any[] }),
     published(scope).order('view_count', { ascending: false }).limit(8),
     published(scope).neq('id', id).order('published_at', { ascending: false }).limit(5),
     sourceOf(scope.supabase, id),
   ])
+  const article = toPublic(data)
   return {
     source,
-    article: toPublic(data),
-    related: (related.data ?? []).map(toPublic),
+    article,
+    ...splitRelated(article, (tagged.data ?? []).map(toPublic), (related.data ?? []).map(toPublic)),
     mostViewed: (mostViewed.data ?? []).map(toPublic),
     latest: (latest.data ?? []).map(toPublic),
   }
+}
+
+const RELATED_LINKS = 4
+const RELATED_MIN = 3
+
+// 겹치는 태그 수가 많은 순, 같으면 최신순 (후보는 최신순으로 들어온다)
+function pickRelated(a: PublicArticle, pool: PublicArticle[]) {
+  const mine = new Set((a.tags ?? []).map((t) => t.trim()).filter(Boolean))
+  if (!mine.size) return []
+  return pool
+    .map((r, i) => ({ r, i, n: (r.tags ?? []).filter((t) => mine.has(t.trim())).length }))
+    .filter((x) => x.n > 0)
+    .sort((x, y) => y.n - x.n || x.i - y.i)
+    .slice(0, RELATED_LINKS)
+    .map((x) => x.r)
+}
+
+// 관련기사: 태그가 많이 겹치는 기사 → 모자라면 같은 섹션 최신 기사. 아래 '섹션 다른 기사'(related)와는 겹치지 않게
+function splitRelated(a: PublicArticle, tagged: PublicArticle[], sameSection: PublicArticle[]) {
+  const relatedLinks = pickRelated(a, tagged)
+  for (const r of sameSection) if (relatedLinks.length < RELATED_MIN && !relatedLinks.some((x) => x.id === r.id)) relatedLinks.push(r)
+  const linkIds = new Set(relatedLinks.map((r) => r.id))
+  return { relatedLinks, related: sameSection.filter((r) => !linkIds.has(r.id)).slice(0, 4) }
+}
+
+export const REPORTER_PAGE_SIZE = 15
+
+// 기자별 기사: 기사에 적힌 기자명이 같은 기사 (기자명을 따로 적지 않은 기사는 그 이름의 작성자 계정 기사)
+export async function getReporterArticles(site: SiteConfig, name: string, page: number) {
+  const from = (page - 1) * REPORTER_PAGE_SIZE
+  const who = name.trim().slice(0, 40)
+  const empty = { articles: [] as PublicArticle[], total: 0, mostViewed: [] as PublicArticle[] }
+  if (!who) return empty
+  if (isDemo) {
+    const all = demoArticles()
+    const list = all.filter((a) => a.author_name === who)
+    return { articles: list.slice(from, from + REPORTER_PAGE_SIZE), total: list.length, mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 8) }
+  }
+  const scope = await outletScope(site)
+  if (!scope) return empty
+  // 홈페이지 방문자는 기사를 발행한 기자의 프로필만 읽을 수 있다
+  const { data: people } = await scope.supabase.from('profiles').select('id').eq('full_name', who).limit(20)
+  const ids = (people ?? []).map((p) => p.id as string)
+  const hasByline = scope.fields.includes('byline')
+  if (!hasByline && !ids.length) return empty
+  const quoted = `"${who.replace(/["\\]/g, (c) => `\\${c}`)}"`
+  const filter = hasByline
+    ? [`byline.eq.${quoted}`, ...(ids.length ? [`and(byline.is.null,author_id.in.(${ids.join(',')}))`] : [])].join(',')
+    : `author_id.in.(${ids.join(',')})`
+  const [list, mostViewed] = await Promise.all([
+    published(scope).or(filter).order('published_at', { ascending: false }).range(from, from + REPORTER_PAGE_SIZE - 1),
+    published(scope).order('view_count', { ascending: false }).limit(8),
+  ])
+  return { articles: (list.data ?? []).map(toPublic), total: list.count ?? 0, mostViewed: (mostViewed.data ?? []).map(toPublic) }
 }
 
 // 기사 화면 오른쪽 (많이 본 기사·최신 기사). 기사 미리보기가 쓴다

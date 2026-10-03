@@ -38,7 +38,7 @@ export default async function ArticlePage({ params }: Props) {
   const site = await currentSite()
   const data = await getArticleData(site, params.id)
   if (!data) notFound()
-  const { article: a, related, mostViewed, latest, source } = data
+  const { article: a, related, relatedLinks, mostViewed, latest, source } = data
   const section = a.category ? findSection(site, a.category.slug) : undefined
 
   return (
@@ -52,6 +52,7 @@ export default async function ArticlePage({ params }: Props) {
           siteName={site.name}
           source={source}
           related={related}
+          relatedLinks={relatedLinks}
           bottomAd={<AdArea site={site} slot="article_bottom" className="mt-9" />}
         />
         <ArticleAside site={site} mostViewed={mostViewed} latest={latest} />
