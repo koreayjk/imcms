@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { notify } from '@/lib/notify'
+import { notifyInvoiceIssued } from '@/lib/invoice-mail'
 import { siteOrigin } from '@/lib/origin'
-import { formatDate } from '@/lib/format'
 import { NOTICE_CATEGORIES, TICKET_CATEGORIES, TICKET_STATUS, invoiceTotals, type InvoiceItem } from '@/lib/support'
 
 const text = (form: FormData, k: string, max: number) => String(form.get(k) ?? '').trim().slice(0, max)
@@ -160,27 +160,13 @@ export async function setTicketAssignee(id: string, form: FormData) {
   revalidatePath('/support', 'layout')
 }
 
-// 청구서 발행 안내 메일 (결제 담당자, 없으면 발행인). 자동결제를 등록한 매체는 결제 예정일도 알린다 (결제 7일 전 고지)
+// 청구서 발행 안내 메일 (lib/invoice-mail.ts)
 async function notifyInvoice(supabase: Awaited<ReturnType<typeof getCmsContext>>['supabase'], id: string) {
   const { data: inv } = await supabase.from('invoices').select('id, month, total, due_date, created_at, outlet_id, outlet:outlets(name)').eq('id', id).maybeSingle()
   if (!inv) return
   const { data: auto } = await supabase.from('outlet_autopay').select('card_company, card_number').eq('outlet_id', inv.outlet_id).eq('active', true).maybeSingle()
-  const outlet = (inv.outlet as unknown as { name: string } | null)?.name ?? ''
-  const monthText = `${Number(String(inv.month).slice(0, 4))}년 ${Number(String(inv.month).slice(5, 7))}월`
-  // 자동결제는 발행 7일 뒤부터 납부 기한 오전 10시에
-  const earliest = Date.parse(inv.created_at) + 7 * 864e5
-  const due = inv.due_date ? Date.parse(`${inv.due_date}T10:00:00+09:00`) : earliest
-  const chargeAt = new Date(Math.max(due, earliest)).toISOString()
-  await notify(supabase, 'invoice_issued', id, `invoice:${id}`, () => ({
-    subject: `[IM 뉴스룸] ${outlet} ${monthText} 청구서 (${Number(inv.total).toLocaleString('ko-KR')}원)`,
-    title: `${monthText} 청구서가 발행되었습니다`,
-    lines: [
-      `${outlet} · 청구 금액 ${Number(inv.total).toLocaleString('ko-KR')}원${inv.due_date ? ` · 납부 기한 ${formatDate(inv.due_date)}` : ''}`,
-      auto
-        ? `등록하신 결제수단(${auto.card_company ?? ''} ${auto.card_number ?? ''})으로 ${formatDate(chargeAt)}에 자동 결제됩니다. 바꾸거나 해지하려면 편집국 고객센터 → 결제 정보에서 할 수 있습니다.`
-        : '편집국 고객센터 → 청구서에서 카드·간편결제로 바로 결제할 수 있습니다.',
-    ],
-    button: { label: '청구서 보기', url: `${siteOrigin()}/support/invoices/${id}` },
-    footer: '이 메일은 IM 뉴스룸 이용료 청구 안내입니다.',
-  }))
+  await notifyInvoiceIssued(supabase, {
+    id, outletName: (inv.outlet as unknown as { name: string } | null)?.name ?? '', month: String(inv.month), total: Number(inv.total),
+    dueDate: inv.due_date, createdAt: inv.created_at, autopay: auto ?? null, origin: siteOrigin(),
+  })
 }

@@ -15,7 +15,10 @@ export default async function InvoicesPage() {
           <h1 className="text-[22px] font-extrabold tracking-tight">청구서</h1>
           <p className="mt-0.5 text-[12.5px] text-muted">{isStaff ? '모든 회원사의 청구서입니다.' : '우리 매체의 월별 청구서입니다. 편집장 이상만 볼 수 있습니다.'}</p>
         </div>
-        {isSuper && <Link href="/support/invoices/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[14px] font-bold text-white hover:opacity-90">+ 청구서 발행</Link>}
+        <div className="flex flex-wrap justify-end gap-2">
+          {isStaff && <Link href="/support/invoices/auto" className="rounded-full border border-line bg-white px-5 py-2 text-[14px] font-bold hover:border-ink">자동 청구</Link>}
+          {isSuper && <Link href="/support/invoices/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[14px] font-bold text-white hover:opacity-90">+ 청구서 발행</Link>}
+        </div>
       </div>
       <ul className="divide-y divide-line">
         {(data ?? []).map((i: any) => (
