@@ -160,7 +160,7 @@ export async function getHomeData(site: SiteConfig): Promise<HomeData> {
       site.sections.map((s) => [s.slug, all.filter((a) => a.category?.slug === s.slug)])
     )
     return {
-      latest: all.slice(0, 24),
+      latest: all.slice(0, 30),
       mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 8),
       bySection,
       pinned: emptyPinned(),
@@ -172,7 +172,7 @@ export async function getHomeData(site: SiteConfig): Promise<HomeData> {
 
   const [pinned, latest, mostViewed, ...sections] = await Promise.all([
     pinnedArticles(scope),
-    published(scope).order('published_at', { ascending: false }).limit(24),
+    published(scope).order('published_at', { ascending: false }).limit(30),
     published(scope).order('view_count', { ascending: false }).limit(8),
     ...site.sections.map((s) =>
       scope.catIds[s.slug]

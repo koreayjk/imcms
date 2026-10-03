@@ -64,7 +64,10 @@ export default async function HomePage() {
   const headline =
     pinned.headline[0] ?? take(1, (a) => a.is_featured && hasImage(a))[0] ?? take(1, hasImage)[0] ?? take(1)[0]
   const subTops = fill(pinned.top, hasImage)
-  const realtime = take(5)
+  // 실시간 뉴스: PC는 왼쪽 두 기사 높이에 맞춰 7건, 휴대폰은 5건
+  const realtime = take(7)
+  // 헤드라인 아래 작은 기사 4건 (가운데가 비어 보이지 않게)
+  const underHeadline = take(4)
   const major = fill(pinned.major, hasImage)
   const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
 
@@ -79,7 +82,7 @@ export default async function HomePage() {
           <div className="divide-y divide-rule">
             {subTops.map((a) => (
               <Link key={a.id} href={`/news/${a.id}`} className="headline-link group block py-5 first:pt-0">
-                <Thumb src={a.thumbnail_url} alt={a.title} ratio="5 / 3" />
+                <Thumb src={a.thumbnail_url} alt={a.title} ratio="4 / 3" />
                 <CategoryLabel article={a} className="mt-3" />
                 <h3 className="headline-text mt-1 line-clamp-2 text-[17px] font-bold leading-[1.4] tracking-[-0.02em]">{a.title}</h3>
                 {a.excerpt && <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.55] text-sub">{a.excerpt}</p>}
@@ -87,16 +90,33 @@ export default async function HomePage() {
             ))}
           </div>
 
-          <Link href={`/news/${headline.id}`} className="headline-link group block">
-            <Thumb src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" />
-            <div className="mt-5 px-4 text-center">
-              <CategoryLabel article={headline} />
-              <h2 className="headline-text mt-1.5 line-clamp-2 text-balance text-[30px] font-extrabold leading-[1.3] tracking-[-0.035em] text-body">
-                {headline.title}
-              </h2>
-              {headline.excerpt && <p className="mt-3 line-clamp-2 text-[15px] leading-[1.6] text-sub">{headline.excerpt}</p>}
-            </div>
-          </Link>
+          <div className="min-w-0">
+            <Link href={`/news/${headline.id}`} className="headline-link group block">
+              <Thumb src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" />
+              <div className="mt-5 px-4 text-center">
+                <CategoryLabel article={headline} />
+                <h2 className="headline-text mt-1.5 line-clamp-2 text-balance text-[30px] font-extrabold leading-[1.3] tracking-[-0.035em] text-body">
+                  {headline.title}
+                </h2>
+                {headline.excerpt && <p className="mt-3 line-clamp-2 text-[15px] leading-[1.6] text-sub">{headline.excerpt}</p>}
+              </div>
+            </Link>
+            {underHeadline.length > 0 && (
+              <ul className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-rule pt-4">
+                {underHeadline.map((a) => (
+                  <li key={a.id}>
+                    <Link href={`/news/${a.id}`} className="headline-link group flex gap-3">
+                      {a.thumbnail_url && <Thumb src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[88px] flex-shrink-0" />}
+                      <div className="min-w-0 flex-1">
+                        <CategoryLabel article={a} />
+                        <p className="headline-text mt-0.5 line-clamp-2 text-[14.5px] font-semibold leading-[1.45]">{a.title}</p>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           <aside>
             <SectionHeading title="실시간 뉴스" as="h3" />
@@ -146,7 +166,7 @@ export default async function HomePage() {
           <aside className="space-y-9">
             <div id="realtime" className="scroll-mt-28 lg:hidden">
               <SectionHeading title="실시간 뉴스" as="h3" />
-              <RealtimeList items={realtime} />
+              <RealtimeList items={realtime.slice(0, 5)} />
             </div>
             {/* 해운 운임지수 (홈페이지 설정에서 켠 매체만) */}
             {indexSeries && <IndexWidget series={indexSeries} />}
