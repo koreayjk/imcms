@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteBanner, saveBanner, setBannerActive, type AdInput, type AdState } from '@/app/(main)/admin/ads/actions'
 import { AD_SLOTS, slotOf, type AdSlotId } from '@/lib/ads'
+import AdSlotMap, { SLOT_COLOR, SLOT_NO, SlotThumb } from './AdSlotMap'
 import { formatDateTime, toKstInput } from '@/lib/format'
 import { uploadImage } from '@/components/editor/upload'
 
@@ -90,7 +91,12 @@ function BannerForm({ initial, outletId, isStaff, onDone }: { initial: AdInput; 
           <select value={f.slot} onChange={(e) => set('slot', e.target.value)} className="field-input">
             {AD_SLOTS.map((s) => <option key={s.id} value={s.id}>{s.label} — {s.where}</option>)}
           </select>
-          {slot && <span className="mt-1 block text-[12px] text-muted">권장 크기: {slot.size}</span>}
+          {slot && (
+            <span className="mt-2 flex items-center gap-3">
+              <SlotThumb id={slot.id} />
+              <span className="text-[12px] leading-relaxed text-muted">{slot.where}<br />권장 크기: {slot.size}</span>
+            </span>
+          )}
         </label>
         <label className="block text-[13px]">
           <span className="field-label">광고주·광고 이름</span>
@@ -180,13 +186,21 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
         </div>
       )}
 
+      {!editing && <AdSlotMap counts={Object.fromEntries(AD_SLOTS.map((s) => [s.id, banners.filter((b) => b.slot === s.id && statusOf(b, now).label === '게재 중').length]))} />}
+
       {AD_SLOTS.map((s) => {
         const list = banners.filter((b) => b.slot === s.id)
         return (
-          <section key={s.id} aria-labelledby={`slot-${s.id}`} className="rounded-xl border border-line bg-white">
-            <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-5 py-3">
-              <h2 id={`slot-${s.id}`} className="text-[15px] font-bold">{s.label} <span className="text-[12.5px] font-normal text-muted">· {s.where}</span></h2>
-              <span className="text-[12px] text-muted">권장 {s.size}</span>
+          <section key={s.id} id={`slot-card-${s.id}`} aria-labelledby={`slot-${s.id}`} className="scroll-mt-20 rounded-xl border border-line bg-white transition-shadow" style={{ ['--tw-ring-color' as string]: SLOT_COLOR[s.id] }}>
+            <header className="flex items-center gap-4 border-b border-line px-5 py-3">
+              <SlotThumb id={s.id} />
+              <div className="min-w-0 flex-1">
+                <h2 id={`slot-${s.id}`} className="flex flex-wrap items-center gap-2 text-[15px] font-bold">
+                  <span className="grid h-5 w-5 place-items-center rounded text-[11px] text-white" style={{ background: SLOT_COLOR[s.id] }}>{SLOT_NO[s.id]}</span>
+                  {s.label} <span className="text-[12.5px] font-normal text-muted">· {s.where}</span>
+                </h2>
+                <p className="mt-1 text-[12px] text-muted">권장 {s.size}</p>
+              </div>
             </header>
             {list.length ? (
               <ul className="divide-y divide-line">
