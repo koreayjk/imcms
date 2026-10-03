@@ -44,6 +44,7 @@ const SYSTEM = `당신은 한국 인터넷신문의 편집 기자입니다. 기�
 - 역피라미드 구조: 첫 문단에 누가·언제·무엇을·왜를 담고, 뒤로 갈수록 세부 내용을 둡니다.
 - 문의처, 연락처, 이메일, 웹사이트 주소, "○○ 소개" 같은 회사 소개 단락은 본문에서 뺍니다.
 - 날짜는 원문에 적힌 대로 씁니다. 요일이나 연도를 추측해 덧붙이지 않습니다.
+- "이 기사는 ○○에서 배포한 보도자료를 바탕으로 작성됐습니다" 같은 출처·작성 경위 문장은 쓰지 않습니다.
 
 형식
 - title: 기사 제목. 핵심만 담아 40자 안팎. 따옴표 인용은 꼭 필요할 때만.
@@ -75,6 +76,9 @@ function userPrompt(input: DraftInput) {
   return `출처: ${input.source}\n\n<보도자료 제목>\n${input.title}\n</보도자료 제목>\n\n<보도자료 본문>\n${input.text}\n</보도자료 본문>`
 }
 
+// "이 기사는 뉴스와이어에서 배포한 보도자료를 바탕으로 작성됐습니다" 류의 출처 안내 문단
+export const SOURCE_NOTE = /^[※*\s]*((이|본)\s*기사는\s*)?[^.]{0,40}보도자료를\s*(바탕으로|토대로|기반으로)\s*(작성|재구성)/
+
 function parseDraft(text: string | undefined): AiDraft {
   if (!text) throw new AiDraftError('AI 응답이 비어 있습니다. 다시 시도해 주세요.')
   // 가끔 ```json … ``` 으로 감싸거나 앞뒤에 말을 붙여 오므로 { … } 부분만 읽는다
@@ -83,7 +87,8 @@ function parseDraft(text: string | undefined): AiDraft {
   const to = body.lastIndexOf('}')
   try {
     const d = JSON.parse(from >= 0 && to > from ? body.slice(from, to + 1) : body) as AiDraft
-    const paragraphs = (d.paragraphs ?? []).map((x) => String(x).trim()).filter(Boolean)
+    // AI가 지시와 달리 출처 안내 문장을 붙여도 뺀다
+    const paragraphs = (d.paragraphs ?? []).map((x) => String(x).trim()).filter((x) => x && !(x.length < 120 && SOURCE_NOTE.test(x)))
     if (!d.title || !paragraphs.length) throw new Error('empty')
     return { title: String(d.title), subtitle: String(d.subtitle ?? ''), paragraphs, review_notes: (d.review_notes ?? []).map(String) }
   } catch {
