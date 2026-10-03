@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { PRODUCT, isProductHost } from '@/lib/product'
+import { isGdpaHost } from '@/lib/gdpa'
 
 // 로그인 없이 볼 수 있는 공개 경로
 function isPublicPath(pathname: string) {
@@ -17,6 +18,8 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/signup') ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith(PRODUCT.path) ||
+    // 글로벌디지털언론협회(GDPA) 사이트: 협회 회원 로그인은 사이트 안에서 따로 확인한다
+    pathname === '/gdpa' || pathname.startsWith('/gdpa/') ||
     // AI 초안 검토 링크: 토큰을 아는 사람만 (DB 함수로 확인)
     pathname.startsWith('/ai-review/') ||
     // 예약 수집: 로그인 대신 DB 비밀 열쇠로 확인한다
@@ -62,10 +65,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
-  // Supabase 미연결(미리보기) 상태에서는 공개 페이지만 샘플 데이터로 보여준다
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.next()
+  // GDPA 도메인으로 들어오면 /gdpa 아래 화면을 보여준다 (로그인 확인·결제 콜백 등 /api·/auth 는 그대로)
+  let rewriteTo: URL | null = null
+  {
+    const p = request.nextUrl.pathname
+    if (isGdpaHost(request.headers.get('host')) && !p.startsWith('/gdpa') && !p.startsWith('/api/') && !p.startsWith('/auth/') && !p.startsWith('/_next')) {
+      rewriteTo = request.nextUrl.clone()
+      rewriteTo.pathname = `/gdpa${p === '/' ? '' : p}`
+    }
+  }
+  const pass = () => (rewriteTo ? NextResponse.rewrite(rewriteTo, { request }) : NextResponse.next({ request }))
 
-  let supabaseResponse = NextResponse.next({ request })
+  // Supabase 미연결(미리보기) 상태에서는 공개 페이지만 샘플 데이터로 보여준다
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return pass()
+
+  let supabaseResponse = pass()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -75,7 +89,7 @@ export async function middleware(request: NextRequest) {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse = pass()
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -85,7 +99,8 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { pathname } = request.nextUrl
+  // GDPA 도메인의 화면은 모두 협회 사이트 경로로 본다
+  const pathname = rewriteTo ? rewriteTo.pathname : request.nextUrl.pathname
 
   // CMS 경로는 로그인 필요
   if (!user && !isPublicPath(pathname)) {

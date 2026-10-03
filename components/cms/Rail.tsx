@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase'
 import type { UserRole } from '@/lib/types'
-import { BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, UsersIcon, WriteIcon } from './icons'
+import { BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, GlobeIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, UsersIcon, WriteIcon } from './icons'
 
 type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'group' | 'outlets' | 'staff' | 'super' }
 
@@ -24,6 +24,7 @@ const ITEMS: Item[] = [
   { href: '/admin/settings', label: '설정·AI', icon: <GearIcon />, match: (p) => p.startsWith('/admin/settings') },
   { href: '/support', label: '고객센터', icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') },
   { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'staff' },
+  { href: '/admin/association', label: '협회', icon: <GlobeIcon />, match: (p) => p.startsWith('/admin/association'), minRole: 'staff' },
 ]
 
 type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number }
