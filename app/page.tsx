@@ -41,6 +41,8 @@ export default async function HomePage() {
           <p className="text-[18px] font-semibold text-body">아직 발행된 기사가 없습니다.</p>
           <p className="mt-2 text-[14px] text-sub">편집국에서 기사를 발행하면 이곳에 표시됩니다.</p>
         </div>
+        {/* 기사가 아직 없어도 첫 화면 팝업 광고는 띄운다 */}
+        <AdArea site={site} slot="popup" />
       </SiteFrame>
     )
   }
