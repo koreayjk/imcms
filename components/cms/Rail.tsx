@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase'
 import type { UserRole } from '@/lib/types'
 import { BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, UsersIcon, WriteIcon } from './icons'
@@ -34,6 +34,19 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
   const [more, setMore] = useState(false)
   useEffect(() => setMore(false), [pathname])
 
+  // 화면이 낮아 메뉴가 다 안 보이면 아래에 '메뉴 더 있음' 표시 (끝까지 내리면 사라진다)
+  const railRef = useRef<HTMLElement>(null)
+  const [hidden, setHidden] = useState(false)
+  const checkHidden = useCallback(() => {
+    const el = railRef.current
+    if (el) setHidden(el.scrollHeight - el.scrollTop - el.clientHeight > 4)
+  }, [])
+  useEffect(() => {
+    checkHidden()
+    window.addEventListener('resize', checkHidden)
+    return () => window.removeEventListener('resize', checkHidden)
+  }, [checkHidden])
+
   async function logout() {
     await createClient().auth.signOut()
     router.push('/login')
@@ -63,11 +76,16 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
 
   return (
     <>
-      <nav aria-label="편집국 메뉴" className="hidden w-[76px] shrink-0 flex-col overflow-y-auto bg-[#262A33] text-[#AEB4C0] md:flex">
-        <Link href="/newsroom" className="flex h-16 shrink-0 items-center justify-center bg-[#1C1F26] text-[13px] font-extrabold tracking-tight text-white">
+      <nav
+        ref={railRef}
+        onScroll={checkHidden}
+        aria-label="편집국 메뉴"
+        className="relative hidden w-[76px] shrink-0 flex-col overflow-y-auto bg-[#262A33] text-[#AEB4C0] [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden"
+      >
+        <Link href="/newsroom" className="flex h-14 shrink-0 items-center justify-center bg-[#1C1F26] text-[13px] font-extrabold tracking-tight text-white [@media(max-height:780px)]:h-12">
           IM
         </Link>
-        <ul className="flex-1 py-3">
+        <ul className="flex-1 py-2 [@media(max-height:780px)]:py-1">
           {items.map((item) => {
             const active = item.match(pathname)
             const n = badge(item.href)
@@ -76,7 +94,8 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
                 <Link
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`relative flex flex-col items-center gap-1 py-3.5 text-[11.5px] transition-colors ${
+                  // 화면 높이에 맞춰 간격을 줄인다 (큰 화면 → 노트북 → 낮은 화면)
+                  className={`relative flex flex-col items-center gap-1 py-2.5 text-[11.5px] leading-4 transition-colors [@media(min-height:781px)_and_(max-height:900px)]:gap-0.5 [@media(min-height:781px)_and_(max-height:900px)]:py-1.5 [@media(max-height:780px)]:gap-0.5 [@media(max-height:780px)]:py-1 ${
                     active ? 'bg-white/[0.06] text-[#F2B544]' : 'hover:bg-white/[0.04] hover:text-white'
                   }`}
                 >
@@ -93,6 +112,17 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
             )
           })}
         </ul>
+        {hidden && (
+          <button
+            type="button"
+            onClick={() => railRef.current?.scrollBy({ top: 240, behavior: 'smooth' })}
+            className="sticky bottom-0 -mt-12 flex h-12 w-full shrink-0 flex-col items-center justify-end bg-gradient-to-t from-[#262A33] via-[#262A33]/95 to-transparent pb-1.5 text-[10.5px] text-[#F2B544]"
+            aria-label="아래 메뉴 더 보기"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="m6 9 6 6 6-6" /></svg>
+            메뉴 더 있음
+          </button>
+        )}
       </nav>
 
       <nav
