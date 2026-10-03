@@ -139,6 +139,15 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <input type="checkbox" checked={!!s.indexWidget} onChange={(e) => set({ indexWidget: e.target.checked })} className="mt-1" />
               <span><strong>해운 운임지수 위젯</strong> (SCFI·KCCI 주간 그래프를 홈 오른쪽에 표시) <span className="block text-[12px] text-muted">켜면 편집국 “홈편집”에서 매주 지수 값을 입력할 수 있습니다.</span></span>
             </label>
+            <label className="flex items-start gap-2 text-[13.5px]">
+              <input type="checkbox" checked={s.homeLayout === 'bands'} onChange={(e) => set({ homeLayout: e.target.checked ? 'bands' : 'standard' })} className="mt-1" />
+              <span><strong>섹션 띠 배치</strong> (톱 기사 아래를 섹션 순서대로 띠처럼 쌓기) <span className="block text-[12px] text-muted">띠 순서·모양은 운영팀이 설정합니다{s.bands?.length ? ` (지금 ${s.bands.length}개 띠)` : ''}.</span></span>
+            </label>
+            <label className="flex items-start gap-2 text-[13.5px]">
+              <input type="checkbox" checked={!!s.pressForeign} onChange={(e) => set({ pressForeign: e.target.checked })} className="mt-1" />
+              <span><strong>해외 언론 자료 받기</strong> (보도자료함에 이스라엘 언론 등 영문 기사 요약을 함께 보여주고, AI가 출처를 밝힌 한국어 기사 초안으로 씁니다)</span>
+            </label>
+            <Field label="쇼핑몰 주소" hint="SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')"><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>
           </div>
         </div>
       </Card>

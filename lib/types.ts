@@ -30,6 +30,8 @@ export interface Category {
   name: string
   slug: string
   sort_order: number
+  // 2차 메뉴면 상위 섹션 slug (seed-israel-today.sql 등에서 categories.parent_slug 를 만든 뒤)
+  parent_slug?: string | null
 }
 
 export interface Article {

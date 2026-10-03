@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import type { SiteConfig } from '@/lib/sites'
+import { childSections, topSections, type SiteConfig } from '@/lib/sites'
 import Logo from './Logo'
 import { ChartTile, ClockTile, CloseIcon, CrownTile, MegaphoneTile, MenuIcon, PenTile, SearchIcon, UserIcon } from './icons'
 
@@ -11,6 +11,7 @@ type Props = { site: SiteConfig; current?: string }
 
 export default function MobileHeader({ site, current }: Props) {
   const [open, setOpen] = useState(false)
+  const tops = topSections(site)
   const pathname = usePathname()
   const router = useRouter()
   const mail = `mailto:${site.legal.email}`
@@ -86,8 +87,8 @@ export default function MobileHeader({ site, current }: Props) {
               {pathname === '/news' && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-gold" />}
             </Link>
           </li>
-          {site.sections.map((s) => {
-            const active = current === s.slug
+          {tops.map((s) => {
+            const active = current === s.slug || childSections(site, s.slug).some((k) => k.slug === current)
             return (
               <li key={s.slug}>
                 <Link
@@ -139,19 +140,38 @@ export default function MobileHeader({ site, current }: Props) {
                     전체기사
                   </Link>
                 </li>
-                {site.sections.map((s) => (
-                  <li key={s.slug}>
-                    <Link
-                      href={`/section/${s.slug}`}
-                      aria-current={current === s.slug ? 'page' : undefined}
-                      className={`block py-3 text-[18px] tracking-[-0.02em] ${
-                        current === s.slug ? 'font-bold text-brand' : s.specialty ? 'font-semibold text-brand' : 'text-body'
-                      }`}
-                    >
-                      {s.name}
-                    </Link>
-                  </li>
-                ))}
+                {tops.map((s) => {
+                  const kids = childSections(site, s.slug)
+                  return (
+                    // 2차 메뉴가 있는 섹션은 한 줄을 다 쓰고 아래에 작은 메뉴를 붙인다
+                    <li key={s.slug} className={kids.length ? 'col-span-2 border-b border-rule pb-2' : ''}>
+                      <Link
+                        href={`/section/${s.slug}`}
+                        aria-current={current === s.slug ? 'page' : undefined}
+                        className={`block py-3 text-[18px] tracking-[-0.02em] ${
+                          current === s.slug ? 'font-bold text-brand' : s.specialty ? 'font-semibold text-brand' : 'text-body'
+                        }`}
+                      >
+                        {s.name}
+                      </Link>
+                      {kids.length > 0 && (
+                        <ul className="-mt-1 flex flex-wrap gap-x-3 gap-y-1.5 pb-1">
+                          {kids.map((k) => (
+                            <li key={k.slug}>
+                              <Link
+                                href={`/section/${k.slug}`}
+                                aria-current={current === k.slug ? 'page' : undefined}
+                                className={`text-[14px] ${current === k.slug ? 'font-semibold text-brand' : 'text-sub'}`}
+                              >
+                                {k.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </nav>
 

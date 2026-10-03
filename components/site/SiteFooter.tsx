@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { SiteConfig } from '@/lib/sites'
+import { topSections, type SiteConfig } from '@/lib/sites'
 import Logo from './Logo'
 import { POLICIES } from '@/lib/policies'
 import NewsletterBox from './NewsletterBox'
@@ -13,7 +13,7 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
     <footer className="mt-14 border-t-4 border-brand bg-soft">
       <div className="border-b border-rule bg-white">
         <nav className="mx-auto flex max-w-[1200px] flex-wrap gap-x-5 gap-y-2 px-4 py-4 text-[13px] text-sub" aria-label="하단 메뉴">
-          {site.sections.map((s) => (
+          {topSections(site).map((s) => (
             <Link key={s.slug} href={`/section/${s.slug}`} className="hover:text-brand">{s.name}</Link>
           ))}
           <span className="hidden flex-1 lg:block" />

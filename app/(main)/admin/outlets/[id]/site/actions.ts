@@ -53,7 +53,14 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     indexable: !!s.indexable,
     pressKeywords: cut(s.pressKeywords, 2000),
     legal: Object.fromEntries(LEGAL_KEYS.map((k) => [k, cut(s.legal?.[k], k === 'address' ? 200 : 80)])) as SiteLegal,
+    homeLayout: s.homeLayout === 'bands' ? 'bands' : 'standard',
+    shopUrl: /^https?:\/\/\S+$/.test(cut(s.shopUrl, 300)) ? cut(s.shopUrl, 300) : undefined,
+    pressForeign: !!s.pressForeign,
   }
+  // 화면에 없는 설정(섹션 띠 순서 등)은 그대로 둔다
+  const { data: prev } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
+  const prevSite = ((prev as { site?: OutletSiteSettings | null } | null)?.site ?? {}) as OutletSiteSettings
+  if (Array.isArray(prevSite.bands)) site.bands = prevSite.bands
 
   const { error } = await supabase.from('outlets').update({ name, domain: domain || null, site }).eq('id', outletId)
   if (error) {

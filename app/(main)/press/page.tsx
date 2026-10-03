@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { NEWSWIRE_DAILY_FREE, PRESS_SOURCES } from '@/lib/press-sources'
+import { FOREIGN_PREFIX, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, isForeignSource } from '@/lib/press-sources'
 import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
@@ -38,7 +38,11 @@ export default async function PressPage({ searchParams }: Props) {
 
   const { data: outlet } = outletId ? await supabase.from('outlets').select('*').eq('id', outletId).single() : { data: null }
   // 매체 홈페이지 설정의 '보도자료 추천 키워드' (없으면 추천 탭은 직접 등록·메일 자료만)
-  const keywords = outlet ? buildSite(outlet as OutletRow, []).pressKeywords : []
+  const outletSite = outlet ? buildSite(outlet as OutletRow, []) : null
+  const keywords = outletSite?.pressKeywords ?? []
+  // 해외 언론(영문) 자료는 '해외 언론 자료 받기'를 켠 매체만 본다
+  const foreignOk = !!outletSite?.pressForeign
+  const PRESS_SOURCES = ALL_SOURCES.filter((x) => foreignOk || !isForeignSource(x.key))
 
   const tab = searchParams.tab === 'all' ? 'all' : 'rec'
   const src = searchParams.src === MANUAL_SOURCE || searchParams.src === 'email' ? searchParams.src : PRESS_SOURCES.find((s) => s.key === searchParams.src)?.key
@@ -50,6 +54,7 @@ export default async function PressPage({ searchParams }: Props) {
     .select('id, source_key, source_name, title, summary, link, published_at', { count: 'exact' })
     .order('published_at', { ascending: false, nullsFirst: false })
   if (src) query = query.eq('source_key', src)
+  if (!foreignOk) query = query.not('source_key', 'like', `${FOREIGN_PREFIX}%`)
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
   if (tab === 'rec' && keywords.length) query = query.or([`source_key.eq.${MANUAL_SOURCE}`, 'source_key.eq.email', ...keywords.map((k) => `title.ilike.*${k}*,summary.ilike.*${k}*`)].join(','))
 

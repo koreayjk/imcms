@@ -52,6 +52,24 @@ const SYSTEM = `당신은 한국 인터넷신문의 편집 기자입니다. 기�
 - paragraphs: 본문 문단 배열. 4~8개 문단, 문단마다 2~4문장. 바이라인([매체=기자])은 넣지 않습니다.
 - review_notes: 기자가 발행 전에 확인해야 할 점. 원문이 모호하거나 과장이 의심되는 주장, 확인이 필요한 수치, 원문과 제목의 강조점이 달라진 부분 등. 없으면 빈 배열.`
 
+// 해외 언론(영문) 기사 → 한국 독자용 기사 (번역이 아니라 사실만 골라 새로 쓰고, 출처 매체를 본문에 밝힌다)
+const SYSTEM_FOREIGN = `당신은 한국 인터넷신문의 국제부 기자입니다. 해외 언론의 영문 기사를 읽고, 한국 독자(특히 이스라엘과 성경에 관심 있는 한국 그리스도인)를 위한 한국어 기사를 새로 씁니다.
+
+원칙
+- 번역하지 않습니다. 원문 문장 순서를 따라가지 말고, 핵심 사실을 골라 한국 독자에게 필요한 순서로 다시 구성합니다.
+- 본문에 출처 매체를 반드시 밝힙니다(예: "예루살렘포스트에 따르면", "~라고 와이넷이 보도했다"). 칼럼·분석 기사라면 "○○는 칼럼에서 ~라고 주장했다"처럼 필자의 주장으로 씁니다.
+- 원문에 있는 사실만 씁니다. 숫자·날짜·인물·직함·인용을 만들거나 추측하지 않습니다. "목요일" 같은 요일은 확실할 때만 날짜로 바꿉니다.
+- 직접 인용은 기사당 3개 이하, 한 문장 이내로 원문 뜻 그대로 옮기고 발언자를 밝힙니다.
+- 전쟁·분쟁·정치 사안은 주장마다 주체를 밝힙니다(예: "이스라엘군은 ~라고 주장했다"). 한쪽을 일방적으로 편들거나 혐오하는 표현을 쓰지 않습니다.
+- 기사체로 씁니다: "~했다", "~밝혔다". 원문 매체의 사진·광고·구독 안내는 다루지 않습니다.
+- "이 기사는 ~를 바탕으로 작성됐습니다" 같은 출처 안내 문장은 쓰지 않습니다(출처는 본문 문장 속에서 밝힙니다).
+
+형식
+- title: 한국어 제목, 40자 안팎. 과장 없이.
+- subtitle: 부제목 한두 문장.
+- paragraphs: 본문 문단 배열. 5~8개 문단, 문단마다 2~4문장. 바이라인은 넣지 않습니다.
+- review_notes: 기자가 확인해야 할 점. 원문끼리 다른 수치, 요일→날짜로 바꾼 곳, 고유명사 한국어 표기, 번역이 애매한 표현, 원문이 후원·홍보성 기사로 보이는지 등. 없으면 빈 배열.`
+
 const SCHEMA = {
   type: 'object',
   properties: {
@@ -69,10 +87,14 @@ const { additionalProperties: _omit, ...GEMINI_SCHEMA } = SCHEMA
 
 export class AiDraftError extends Error {}
 
-export type DraftInput = { title: string; text: string; source: string }
+// foreign: 해외 언론 기사 (출처를 밝힌 한국어 기사로 새로 쓴다)
+export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; link?: string }
 export type DraftResult = { draft: AiDraft; model: AiModel; ms: number; inputTokens: number; outputTokens: number; costUsd: number }
 
 function userPrompt(input: DraftInput) {
+  if (input.foreign) {
+    return `출처 매체: ${input.source}${input.link ? `\n원문 주소: ${input.link}` : ''}\n\n<원문 제목>\n${input.title}\n</원문 제목>\n\n<원문 본문 (영문)>\n${input.text}\n</원문 본문>`
+  }
   return `출처: ${input.source}\n\n<보도자료 제목>\n${input.title}\n</보도자료 제목>\n\n<보도자료 본문>\n${input.text}\n</보도자료 본문>`
 }
 
@@ -108,7 +130,7 @@ async function withAnthropic(model: AiModel, input: DraftInput, budgetMs = 50_00
       // 안전 필터가 거절하면 서버가 알맞은 모델로 다시 시도한다
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      system: SYSTEM,
+      system: input.foreign ? SYSTEM_FOREIGN : SYSTEM,
       messages: [{ role: 'user', content: userPrompt(input) }],
     })
   } catch (e) {
@@ -143,7 +165,7 @@ const REWRITE_HINT = '\n\n주의: 원문 문장을 길게 그대로 옮기지 �
 
 function geminiPayload(input: DraftInput, hint = '') {
   return JSON.stringify({
-    system_instruction: { parts: [{ text: SYSTEM }] },
+    system_instruction: { parts: [{ text: input.foreign ? SYSTEM_FOREIGN : SYSTEM }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt(input) + hint }] }],
     generationConfig: {
       // REST에서는 enum 이름(대문자)으로 보내야 한다 (API 참조 문서의 ThinkingLevel·MimeType)

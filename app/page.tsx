@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { currentSite, getHomeData, getIndexSeries, isDemo, type PublicArticle } from '@/lib/public-data'
+import { topSections } from '@/lib/sites'
 import IndexWidget from '@/components/site/IndexWidget'
 import { formatDate, formatShort } from '@/lib/format'
 import SiteFrame from '@/components/site/SiteFrame'
@@ -10,6 +11,7 @@ import SpecialtyTabs from '@/components/site/SpecialtyTabs'
 import Thumb from '@/components/site/Thumb'
 import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
 import AdArea from '@/components/site/AdArea'
+import HomeBands from '@/components/site/HomeBands'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
@@ -71,8 +73,10 @@ export default async function HomePage() {
   const major = fill(pinned.major, hasImage)
   const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
 
-  const specialty = site.sections.filter((s) => s.specialty)
-  const general = site.sections.filter((s) => !s.specialty)
+  // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
+  const bandsMode = site.homeLayout === 'bands' && !!site.bands?.length
+  const specialty = topSections(site).filter((s) => s.specialty)
+  const general = topSections(site).filter((s) => !s.specialty)
 
   return (
     <SiteFrame site={site}>
@@ -140,6 +144,8 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {!bandsMode && (
+          <>
         {/* ── 주요뉴스 + 많이 본 뉴스 ── */}
         <div className="grid gap-10 py-8 lg:grid-cols-[1fr_300px]">
           <section id="major" className="scroll-mt-28">
@@ -177,7 +183,9 @@ export default async function HomePage() {
             <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
           </aside>
         </div>
-        <AdArea site={site} slot="home_middle" className="pb-8" />
+          </>
+        )}
+        {!bandsMode && <AdArea site={site} slot="home_middle" className="pb-8" />}
       </div>
       <AdArea site={site} slot="popup" />
 
@@ -200,6 +208,20 @@ export default async function HomePage() {
         </section>
       )}
 
+      {bandsMode && (
+        <HomeBands
+          site={site}
+          bands={site.bands!}
+          bySection={bySection}
+          mostViewed={mostViewed}
+          used={used}
+          ad={<AdArea site={site} slot="home_middle" className="mx-auto max-w-[1200px] px-4 pb-8" />}
+          sidebarAd={<AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />}
+        />
+      )}
+
+      {!bandsMode && (
+        <>
       {/* ── 전문뉴스 (매체 설정의 전문 섹션) ── */}
       <section aria-labelledby="specialty-title" className="border-y border-rule bg-soft py-9">
         <div className="mx-auto max-w-[1200px] px-4">
@@ -276,6 +298,8 @@ export default async function HomePage() {
           )
         })}
       </div>
+        </>
+      )}
     </SiteFrame>
   )
 }

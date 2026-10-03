@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { SiteConfig } from '@/lib/sites'
+import { childSections, topSections, type SiteConfig } from '@/lib/sites'
 import { formatToday } from '@/lib/format'
 import Logo from './Logo'
 import MobileHeader from './MobileHeader'
@@ -12,6 +12,7 @@ type Props = { site: SiteConfig; current?: string }
 
 export default function SiteHeader({ site, current }: Props) {
   const mail = `mailto:${site.legal.email}`
+  const tops = topSections(site)
   return (
     <header>
       {/* PC */}
@@ -41,14 +42,15 @@ export default function SiteHeader({ site, current }: Props) {
                   {current === ALL_NEWS && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
                 </Link>
               </li>
-              {site.sections.map((s, i) => {
-                const active = current === s.slug
-                const firstSpecialty = s.specialty && !site.sections[i - 1]?.specialty
+              {tops.map((s, i) => {
+                const kids = childSections(site, s.slug)
+                const active = current === s.slug || kids.some((k) => k.slug === current)
+                const firstSpecialty = s.specialty && !tops[i - 1]?.specialty
                 return (
-                  <li key={s.slug} className={firstSpecialty ? 'ml-2 border-l border-rule pl-2' : ''}>
+                  <li key={s.slug} className={`group relative ${firstSpecialty ? 'ml-2 border-l border-rule pl-2' : ''}`}>
                     <Link
                       href={`/section/${s.slug}`}
-                      aria-current={active ? 'page' : undefined}
+                      aria-current={current === s.slug ? 'page' : undefined}
                       className={`relative block px-[12px] py-2 text-[16.5px] font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${
                         active ? 'text-brand' : 'text-body'
                       }`}
@@ -56,6 +58,22 @@ export default function SiteHeader({ site, current }: Props) {
                       {s.name}
                       {active && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
                     </Link>
+                    {/* 2차 메뉴: 마우스를 올리거나 키보드로 들어가면 펼친다 */}
+                    {kids.length > 0 && (
+                      <ul className="invisible absolute left-1/2 top-full z-30 min-w-[168px] -translate-x-1/2 border border-rule border-t-[3px] border-t-brand bg-white py-1.5 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                        {kids.map((k) => (
+                          <li key={k.slug}>
+                            <Link
+                              href={`/section/${k.slug}`}
+                              aria-current={current === k.slug ? 'page' : undefined}
+                              className={`block whitespace-nowrap px-4 py-2 text-[14.5px] hover:bg-soft hover:text-brand ${current === k.slug ? 'font-semibold text-brand' : 'text-body'}`}
+                            >
+                              {k.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 )
               })}

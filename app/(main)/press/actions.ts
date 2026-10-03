@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
+import { isForeignSource } from '@/lib/press-sources'
 import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, refreshPress, sourceLabel, textToParagraphs, type PressRelease } from '@/lib/press'
 import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
@@ -57,6 +58,9 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   const { data } = await supabase.from('press_releases').select('*').eq('id', id).single()
   if (!data) throw new Error('보도자료를 찾을 수 없습니다.')
   const r = await ensureFullBody(supabase, data as PressRelease)
+  // 해외 언론 기사는 그 언론사 저작물이라 원문 그대로 올리지 않는다 (AI가 출처를 밝힌 한국어 기사로 새로 쓴다)
+  const foreign = isForeignSource(r.source_key)
+  if (foreign && mode === 'raw') redirect(`/press/${id}?error=${encodeURIComponent('해외 언론 기사는 원문 그대로 올릴 수 없습니다. AI 기사로 만들어 주세요.')}`)
   const original = r.body_html?.trim() || `<p>${escapeHtml(r.summary ?? '')}</p>`
 
   let title = r.title
@@ -74,7 +78,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       redirect(`/press/${id}?error=${encodeURIComponent(msg)}`)
     }
     try {
-      const result = await draftFromPressRelease({ title: r.title, text: htmlToText(original) || r.summary || '', source: sourceLabel(r) })
+      const result = await draftFromPressRelease({ title: r.title, text: htmlToText(original) || r.summary || '', source: sourceLabel(r), foreign: isForeignSource(r.source_key), link: r.link })
       await finishAi(supabase, slot.id, result)
       const draft = result.draft
       title = draft.title
@@ -83,6 +87,8 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       // 원문 사진은 첫 문단 뒤에 그대로 둔다
       body = [paras[0], ...photoBlocks(original), ...paras.slice(1)].join('')
       aiNotes = draft.review_notes.length ? draft.review_notes.map((n) => `• ${n}`).join('\n') : null
+      // 해외 언론: 확인용 원문 주소를 메모에 남긴다 (본문에는 넣지 않는다)
+      if (foreign) aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• 원문(${sourceLabel(r)}): ${r.link}`
     } catch (e) {
       // AI가 실패하면 잡아 둔 한 건을 돌려준다 (한도에서 빠진다)
       await releaseAi(supabase, slot.id)

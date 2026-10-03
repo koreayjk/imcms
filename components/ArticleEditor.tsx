@@ -482,7 +482,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             <label htmlFor="section" className="text-[13px] font-semibold">섹션 <span className="text-danger" aria-hidden>*</span></label>
             <select id="section" required aria-required="true" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); if (e.target.value && /섹션/.test(error)) setError('') }} className={`field-input max-w-xs ${!categoryId && /섹션/.test(error) ? 'border-danger' : ''}`}>
               <option value="">섹션 선택</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {/* 2차 메뉴는 상위 섹션 바로 아래에 '상위 › 하위' 로 */}
+              {orderedCategories(categories).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
 
             <label htmlFor="byline" className="text-[13px] font-semibold">기자명</label>
@@ -811,4 +812,16 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       </div>
     </div>
   )
+}
+
+// 섹션 고르기 목록: 1차 섹션 다음에 그 2차 메뉴를 붙인다
+function orderedCategories(categories: Category[]) {
+  const slugs = new Set(categories.map((c) => c.slug))
+  const isTop = (c: Category) => !c.parent_slug || !slugs.has(c.parent_slug)
+  const out: { id: string; label: string }[] = []
+  for (const top of categories.filter(isTop)) {
+    out.push({ id: top.id, label: top.name })
+    for (const k of categories.filter((c) => c.parent_slug === top.slug)) out.push({ id: k.id, label: `${top.name} › ${k.name}` })
+  }
+  return out
 }

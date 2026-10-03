@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies, headers } from 'next/headers'
 import { unstable_cache } from 'next/cache'
-import { demoArticles } from './demo-articles'
-import { SITES, buildSite, resolveSite, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
+import { demoArticles, demoSite } from './demo-articles'
+import { SITES, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
 import { normalizeLayout, type SlotKey } from './home-layout'
 import { INDEX_WEEKS, type IndexKey, type IndexSeries } from './market-index'
 
@@ -51,7 +51,7 @@ const loadSite = unstable_cache(
 )
 
 export async function currentSite(): Promise<SiteConfig> {
-  if (isDemo) return SITES[0]
+  if (isDemo) return demoSite()
   const host = (headers().get('host') ?? '').split(':')[0].toLowerCase()
   const previewId = cookies().get(PREVIEW_COOKIE)?.value ?? null
   try {
@@ -63,7 +63,7 @@ export async function currentSite(): Promise<SiteConfig> {
 
 // 기사 미리보기용: 접속한 주소와 상관없이 그 매체의 홈페이지 설정을 쓴다 ("도메인 연결 전" 띠는 빼고)
 export async function siteForOutlet(outletId: string): Promise<SiteConfig> {
-  if (isDemo) return SITES[0]
+  if (isDemo) return demoSite()
   const site = await loadSite('#outlet', outletId).catch(() => null)
   return site ? { ...site, preview: false } : resolveSite('')
 }
@@ -157,7 +157,10 @@ export async function getHomeData(site: SiteConfig): Promise<HomeData> {
   if (isDemo) {
     const all = demoArticles()
     const bySection = Object.fromEntries(
-      site.sections.map((s) => [s.slug, all.filter((a) => a.category?.slug === s.slug)])
+      topSections(site).map((s) => {
+        const fam = sectionFamily(site, s.slug)
+        return [s.slug, all.filter((a) => !!a.category && fam.includes(a.category.slug))]
+      })
     )
     return {
       latest: all.slice(0, 30),
@@ -169,34 +172,45 @@ export async function getHomeData(site: SiteConfig): Promise<HomeData> {
 
   const scope = await outletScope(site)
   if (!scope) return { latest: [], mostViewed: [], bySection: {}, pinned: emptyPinned() }
+  const tops = topSections(site)
 
   const [pinned, latest, mostViewed, ...sections] = await Promise.all([
     pinnedArticles(scope),
     published(scope).order('published_at', { ascending: false }).limit(30),
     published(scope).order('view_count', { ascending: false }).limit(8),
-    ...site.sections.map((s) =>
-      scope.catIds[s.slug]
-        ? published(scope).eq('category_id', scope.catIds[s.slug]).order('published_at', { ascending: false }).limit(5)
+    // 1차 섹션마다 (2차 메뉴 기사 포함)
+    ...tops.map((s) => {
+      const ids = familyIds(site, scope.catIds, s.slug)
+      return ids.length
+        ? published(scope).in('category_id', ids).order('published_at', { ascending: false }).limit(SECTION_HOME_LIMIT)
         : Promise.resolve({ data: [] as any[] })
-    ),
+    }),
   ])
 
   return {
     pinned,
     latest: (latest.data ?? []).map(toPublic),
     mostViewed: (mostViewed.data ?? []).map(toPublic),
-    bySection: Object.fromEntries(site.sections.map((s, i) => [s.slug, (sections[i].data ?? []).map(toPublic)])),
+    bySection: Object.fromEntries(tops.map((s, i) => [s.slug, (sections[i].data ?? []).map(toPublic)])),
   }
 }
 
 export const SECTION_PAGE_SIZE = 15
+// 홈에서 섹션마다 가져오는 기사 수 (섹션 띠 배치는 더 많이 쓴다)
+const SECTION_HOME_LIMIT = 8
+
+// 섹션과 그 2차 메뉴의 DB id
+function familyIds(site: SiteConfig, catIds: Record<string, string>, slug: string) {
+  return sectionFamily(site, slug).map((x) => catIds[x]).filter(Boolean)
+}
 
 // slug 가 null 이면 모든 섹션 (전체기사)
 export async function getSectionData(site: SiteConfig, slug: string | null, page: number) {
   const from = (page - 1) * SECTION_PAGE_SIZE
   if (isDemo) {
     const all = demoArticles()
-    const list = slug ? all.filter((a) => a.category?.slug === slug) : all
+    const fam = slug ? sectionFamily(site, slug) : null
+    const list = fam ? all.filter((a) => !!a.category && fam.includes(a.category.slug)) : all
     return {
       articles: list.slice(from, from + SECTION_PAGE_SIZE),
       total: list.length,
@@ -205,10 +219,10 @@ export async function getSectionData(site: SiteConfig, slug: string | null, page
   }
 
   const scope = await outletScope(site)
-  const catId = slug ? scope?.catIds[slug] : null
-  if (!scope || (slug && !catId)) return { articles: [], total: 0, mostViewed: [] }
+  const ids = slug && scope ? familyIds(site, scope.catIds, slug) : null
+  if (!scope || (ids && !ids.length)) return { articles: [], total: 0, mostViewed: [] }
 
-  const listQuery = catId ? published(scope).eq('category_id', catId) : published(scope)
+  const listQuery = ids ? published(scope).in('category_id', ids) : published(scope)
   const [list, mostViewed] = await Promise.all([
     listQuery.order('published_at', { ascending: false }).range(from, from + SECTION_PAGE_SIZE - 1),
     published(scope).order('view_count', { ascending: false }).limit(8),

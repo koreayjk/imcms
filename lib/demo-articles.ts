@@ -1,4 +1,19 @@
+import { readFileSync } from 'fs'
 import type { PublicArticle } from './public-data'
+import { SITES, type SiteConfig } from './sites'
+
+// 개발용: IM_DEMO_FILE 에 {site, articles} JSON 경로를 주면 샘플 대신 그 매체·기사로 화면을 띄운다 (DB 없이 새 매체 확인)
+let override: { site: SiteConfig; articles: PublicArticle[] } | null | undefined
+function demoOverride() {
+  if (override !== undefined) return override
+  try {
+    override = process.env.IM_DEMO_FILE ? JSON.parse(readFileSync(process.env.IM_DEMO_FILE, 'utf8')) : null
+  } catch {
+    override = null
+  }
+  return override
+}
+export const demoSite = (): SiteConfig => demoOverride()?.site ?? SITES[0]
 
 const SAMPLES: Record<string, string[]> = {
   'health-welfare': [
@@ -70,6 +85,8 @@ let cache: PublicArticle[] | null = null
 
 export function demoArticles(): PublicArticle[] {
   if (cache) return cache
+  const o = demoOverride()
+  if (o) return (cache = o.articles)
   const now = Date.now()
   const out: PublicArticle[] = []
   for (let i = 0; i < 5; i++) {

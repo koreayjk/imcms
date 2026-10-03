@@ -120,7 +120,11 @@ export default function CategoryManager({
                   />
                 ) : (
                   <div>
-                    <span className="text-sm font-medium">{cat.name}</span>
+                    <span className="text-sm font-medium">
+                      {cat.parent_slug && <span className="mr-1 text-muted" title={`${items.find((x) => x.slug === cat.parent_slug)?.name ?? cat.parent_slug}의 2차 메뉴`}>↳</span>}
+                      {cat.name}
+                      {cat.parent_slug && <span className="ml-1.5 text-xs font-normal text-muted">{items.find((x) => x.slug === cat.parent_slug)?.name ?? ''} 하위</span>}
+                    </span>
                     <span className="ml-2 text-xs text-muted font-mono">{cat.slug}</span>
                   </div>
                 )}

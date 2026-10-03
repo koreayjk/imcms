@@ -9,6 +9,7 @@ import { aiReady } from '@/lib/ai-draft'
 import { aiLevel, aiLimitMessage, getAiStatus, myLimitFull, myLimitMessage } from '@/lib/ai-usage'
 import { ensureEmailImages } from '@/lib/press-attachments'
 import { createArticleFromPress, deleteManualPress } from '../actions'
+import { isForeignSource } from '@/lib/press-sources'
 
 export const preferredRegion = 'icn1'
 // AI 초안은 최대 50초까지 기다린다
@@ -35,6 +36,8 @@ export default async function PressDetailPage({ params, searchParams }: { params
   const ai = aiReady() && !aiBlocked
   const manual = r.source_key === MANUAL_SOURCE
   const emailed = r.source_key === 'email'
+  // 해외 언론: 원문 그대로는 막고, AI가 출처를 밝힌 한국어 기사로 새로 쓴다
+  const foreign = isForeignSource(r.source_key)
 
   return (
     <div className="mx-auto max-w-[900px] px-4 py-5 md:px-8 md:py-8 pb-28 md:pb-28">
@@ -113,16 +116,18 @@ export default async function PressDetailPage({ params, searchParams }: { params
       <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[900px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
           <p className="hidden flex-1 text-[12.5px] leading-relaxed text-muted md:block">
-            {ai
+            {foreign ? '해외 언론 기사입니다. AI가 번역이 아니라 출처를 밝힌 한국어 기사로 새로 쓰고, 원문 주소는 확인 메모에 남깁니다. 원문 사진은 쓰지 않습니다.' : ai
               ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.'
               : aiBlocked ? '이번 달 AI 사용 한도를 다 썼습니다. 원문 그대로 기사 만들기는 쓸 수 있습니다.'
               : 'AI 초안은 관리자가 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)를 설정하면 쓸 수 있습니다.'}{' '}
-            사진은 우리 저장소로 옮겨집니다.
+            {!foreign && '사진은 우리 저장소로 옮겨집니다.'}
           </p>
           <Link href="/press" className="btn-secondary hidden md:inline-flex">목록</Link>
-          <form action={createArticleFromPress.bind(null, r.id, 'raw')} className="flex-1 md:flex-none">
-            <PendingButton pending="만드는 중…" className="btn-secondary w-full whitespace-nowrap px-3 md:w-auto">원문 그대로<span className="hidden md:inline"> 기사로</span></PendingButton>
-          </form>
+          {!foreign && (
+            <form action={createArticleFromPress.bind(null, r.id, 'raw')} className="flex-1 md:flex-none">
+              <PendingButton pending="만드는 중…" className="btn-secondary w-full whitespace-nowrap px-3 md:w-auto">원문 그대로<span className="hidden md:inline"> 기사로</span></PendingButton>
+            </form>
+          )}
           <form action={createArticleFromPress.bind(null, r.id, 'ai')} className="flex-[1.4] md:flex-none">
             <PendingButton pending="AI가 쓰는 중…" className="btn-publish w-full whitespace-nowrap px-3 md:w-auto md:px-5" disabled={!ai}>AI 초안<span className="hidden md:inline">으로 기사</span> 만들기</PendingButton>
           </form>

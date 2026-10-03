@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { PRESS_SOURCES, findPressSource, type PressSource } from './press-sources'
+import { PRESS_SOURCES, findPressSource, isForeignSource, type PressSource } from './press-sources'
 
 const UA = 'Mozilla/5.0 (compatible; IMCMS-PressReader/1.0)'
 const STALE_MS = 10 * 60 * 1000
@@ -193,6 +193,18 @@ export function newswireBody(page: string) {
 //   예전 방식으로 읽어 세로 사진 등을 놓친 보도자료(사진 없음 + image_url 비어 있음)도 한 번 다시 읽는다.
 //   다시 읽은 뒤 사진이 없으면 image_url을 ''로 두어 다음부터는 다시 읽지 않는다
 export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease): Promise<PressRelease> {
+  if (findPressSource(r.source_key)?.kind === 'foreign') {
+    // 해외 언론: 본문 글만 (사진은 그 언론사 저작물이라 가져오지 않는다)
+    if (r.body_html) return r
+    try {
+      const html = foreignBody(await fetchText(r.link, 8000))
+      if (!html) return r
+      await supabase.from('press_releases').update({ body_html: html, image_url: '' }).eq('id', r.id)
+      return { ...r, body_html: html, image_url: '' }
+    } catch {
+      return r
+    }
+  }
   if (findPressSource(r.source_key)?.kind !== 'newswire') return r
   const missedPhotos = !!r.body_html && r.image_url === null && !/<img\b|data-youtube-video/.test(r.body_html)
   if (r.body_html && !missedPhotos) return r
@@ -205,6 +217,39 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease):
   } catch {
     return r
   }
+}
+
+// 해외 언론 기사 페이지에서 본문 글만: 구조화 데이터(JSON-LD)의 articleBody → 없으면 긴 <p> 문단
+export function foreignBody(page: string) {
+  const find = (v: unknown): string | null => {
+    if (!v || typeof v !== 'object') return null
+    if (Array.isArray(v)) { for (const x of v) { const f = find(x); if (f) return f } return null }
+    const o = v as Record<string, unknown>
+    if (typeof o.articleBody === 'string' && o.articleBody.trim().length > 200) return o.articleBody
+    for (const k of Object.keys(o)) { const f = find(o[k]); if (f) return f }
+    return null
+  }
+  let text: string | null = null
+  for (const m of page.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { text = find(JSON.parse(m[1])) } catch { /* 깨진 JSON 은 건너뛴다 */ }
+    if (text) break
+  }
+  const clean = (list: string[]) => list.map((p) => p.replace(/\s+/g, ' ').trim()).filter((p) => p.length >= 40 && !/^(Sign up|Subscribe|Advertisement|Read more|Click here)/i.test(p))
+  // articleBody 는 줄바꿈 없이 한 덩어리인 곳이 많아, 문장 3개씩 묶어 문단으로 나눈다
+  const fromLd = (() => {
+    if (!text) return []
+    const body = decode(text.replace(/<[^>]+>/g, ' '))
+    if (/\n/.test(body)) return clean(body.split(/\n+/))
+    const sentences = body.replace(/([.!?][”"’]?)(?=[A-Z“"‘])/g, '$1 ').split(/(?<=[.!?][”"’]?)\s+(?=[A-Z“"‘])/)
+    const out: string[] = []
+    for (let i = 0; i < sentences.length; i += 3) out.push(sentences.slice(i, i + 3).join(' '))
+    return clean(out)
+  })()
+  const fromP = clean(Array.from(page.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi), (m) => stripTags(m[1])))
+  const size = (l: string[]) => l.reduce((n, p) => n + p.length, 0)
+  const paras = size(fromLd) >= size(fromP) ? fromLd : fromP
+  if (!paras.length) return null
+  return paras.slice(0, 40).map((p) => `<p>${escapeHtml(p)}</p>`).join('')
 }
 
 // AI에 보낼 본문: 사진·태그는 빼고 문단만 남긴다
@@ -226,6 +271,7 @@ export function htmlToText(html: string) {
 export function sourceLabel(r: Pick<PressRelease, 'source_key' | 'source_name'>) {
   if (r.source_key.startsWith('nw-')) return '뉴스와이어'
   if (r.source_key.startsWith('kr-')) return '정책브리핑'
+  if (isForeignSource(r.source_key)) return findPressSource(r.source_key)?.outlet ?? r.source_name.replace(/^해외 · /, '')
   return r.source_name
 }
 

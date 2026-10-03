@@ -3,7 +3,13 @@ export type SectionConfig = {
   name: string
   description?: string
   specialty?: boolean
+  // 2차 메뉴: 상위 섹션 slug (없으면 1차 메뉴)
+  parent?: string
 }
+
+// 홈 배치 'bands': 1차 섹션을 차례로 띠처럼 쌓는다 (Israel Today 등). style 로 띠 모양을 고른다
+export type HomeBandStyle = 'news' | 'brief' | 'feature' | 'grid' | 'video' | 'shop'
+export type HomeBand = { slug: string; style: HomeBandStyle; title?: string; tagline?: string }
 
 export type LogoMode = 'mark' | 'full' | 'text'
 
@@ -50,6 +56,13 @@ export type SiteConfig = {
   // 보도자료함 "추천" 탭: 제목·요약에 이 단어가 있으면 이 매체와 관련 있는 보도자료로 본다
   pressKeywords: string[]
   legal: SiteLegal
+  // 홈 배치: standard(기본) / bands(섹션 띠)
+  homeLayout?: 'standard' | 'bands'
+  bands?: HomeBand[]
+  // SHOP 띠·메뉴에서 연결할 쇼핑몰 주소 (없으면 '준비 중')
+  shopUrl?: string
+  // 보도자료함에 해외 언론(영문) 자료도 보여줄지
+  pressForeign?: boolean
 }
 
 export const SITES: SiteConfig[] = [
@@ -107,6 +120,21 @@ export function findSection(site: SiteConfig, slug: string) {
   return site.sections.find((s) => s.slug === slug)
 }
 
+// 1차 메뉴 (상위 섹션이 없거나, 상위 섹션이 사라진 2차 메뉴)
+export function topSections(site: SiteConfig) {
+  const slugs = new Set(site.sections.map((s) => s.slug))
+  return site.sections.filter((s) => !s.parent || !slugs.has(s.parent))
+}
+
+export function childSections(site: SiteConfig, slug: string) {
+  return site.sections.filter((s) => s.parent === slug)
+}
+
+// 섹션 + 그 아래 2차 메뉴 slug (섹션 기사 목록·홈 띠는 하위 메뉴 기사까지 함께 보여준다)
+export function sectionFamily(site: SiteConfig, slug: string) {
+  return [slug, ...childSections(site, slug).map((s) => s.slug)]
+}
+
 // ───────── DB 설정 → 사이트 ─────────
 
 export type OutletSiteSettings = {
@@ -124,10 +152,14 @@ export type OutletSiteSettings = {
   indexable?: boolean
   pressKeywords?: string
   legal?: Partial<SiteLegal>
+  homeLayout?: 'standard' | 'bands'
+  bands?: HomeBand[]
+  shopUrl?: string
+  pressForeign?: boolean
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }
-export type CategoryRow = { slug: string; name: string; sort_order?: number | null; specialty?: boolean | null; description?: string | null }
+export type CategoryRow = { slug: string; name: string; sort_order?: number | null; specialty?: boolean | null; description?: string | null; parent_slug?: string | null }
 
 const HEX = /^#[0-9a-f]{6}$/i
 export const DEFAULT_COLORS = { brand: '#1F3A5F', accent: '#C9A227' }
@@ -160,6 +192,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
           name: c.name,
           specialty: c.specialty ?? old?.specialty ?? false,
           description: c.description ?? old?.description ?? undefined,
+          parent: c.parent_slug || undefined,
         }
       })
     : code?.sections ?? []
@@ -187,5 +220,9 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     sections,
     pressKeywords: keywords,
     legal: { ...EMPTY_LEGAL, ...(code?.legal ?? {}), ...(s.legal ?? {}) },
+    homeLayout: s.homeLayout === 'bands' ? 'bands' : 'standard',
+    bands: Array.isArray(s.bands) ? s.bands.filter((b) => b && typeof b.slug === 'string') : undefined,
+    shopUrl: typeof s.shopUrl === 'string' && /^https?:\/\//.test(s.shopUrl) ? s.shopUrl : undefined,
+    pressForeign: !!s.pressForeign,
   }
 }
