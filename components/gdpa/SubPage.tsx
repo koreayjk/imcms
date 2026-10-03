@@ -2,6 +2,9 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { GDPA_MENU } from '@/lib/gdpa'
 
+// 메뉴별 머리 사진 (public/gdpa/photos)
+const PHOTO: Record<string, string> = { '/about': 'mission', '/members': 'partnership', '/activity': 'seminar', '/news': 'newspaper', '/notice': 'camera' }
+
 // 하위 페이지 틀: 메뉴 이름 띠 + 같은 메뉴의 하위 탭 + 본문
 export default function SubPage({ base, section, title, current, children, wide = false }: {
   base: string
@@ -14,11 +17,12 @@ export default function SubPage({ base, section, title, current, children, wide 
   const menu = GDPA_MENU.find((m) => m.href === section)
   return (
     <>
-      <div className="relative overflow-hidden bg-[var(--g-navy)] text-white">
-        <svg aria-hidden className="absolute -right-24 -top-24 h-[360px] w-[360px] opacity-[0.08]" viewBox="0 0 100 100"><g fill="none" stroke="white" strokeWidth="0.8"><circle cx="50" cy="50" r="48" /><ellipse cx="50" cy="50" rx="18" ry="48" /><ellipse cx="50" cy="50" rx="34" ry="48" /><path d="M2 50h96M8 26h84M8 74h84M50 2v96" /></g></svg>
-        <div className="relative mx-auto max-w-[1200px] px-4 py-10 md:py-14">
-          <p className="text-[12.5px] tracking-[0.2em] text-[var(--g-gold)]">{menu?.label ?? ''}</p>
-          <h1 className="mt-2 text-[28px] font-extrabold tracking-[-0.03em] md:text-[36px]">{title}</h1>
+      <div className="relative isolate overflow-hidden bg-[var(--g-navy)] text-white">
+        <img src={`/gdpa/photos/${PHOTO[section] ?? 'newspaper'}.jpg`} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover opacity-35 grayscale" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,28,51,.96)_0%,rgba(13,43,78,.85)_55%,rgba(13,43,78,.6)_100%)]" />
+        <div className="relative mx-auto max-w-[1200px] px-4 py-12 md:py-20">
+          <p className="flex items-center gap-3 text-[12px] font-semibold tracking-[0.24em] text-[var(--g-gold)]"><span className="h-px w-8 bg-current" aria-hidden />{menu?.label ?? ''}</p>
+          <h1 className="mt-3 text-[30px] font-extrabold tracking-[-0.035em] md:text-[42px]">{title}</h1>
         </div>
       </div>
       {menu?.children && (
