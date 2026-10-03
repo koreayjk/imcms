@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { SOLO } from '@/lib/groups'
 
 export type FormState = { error?: string; ok?: string }
 
@@ -52,8 +53,15 @@ export async function createOutlet(_prev: FormState, form: FormData): Promise<Fo
   if (!name) return { error: '매체 이름을 적어주세요.' }
   if (!publisher_id) return { error: '어느 그룹의 매체인지 골라주세요.' }
 
-  const { data, error } = await supabase.from('outlets').insert({ name, domain: domain || null, publisher_id }).select('id').single()
+  // 개별 매체: 매체를 만든 뒤 그 매체만 담는 숨은 그룹으로 옮긴다
+  const solo = publisher_id === SOLO
+  if (solo && !isSuper) return { error: '개별 매체는 총관리자만 만들 수 있습니다.' }
+  const { data, error } = await supabase.from('outlets').insert({ name, domain: domain || null, publisher_id: solo ? null : publisher_id }).select('id').single()
   if (error || !data) return { error: `만들지 못했습니다: ${error?.message ?? ''}` }
+  if (solo) {
+    const { error: sErr } = await supabase.rpc('outlet_make_solo', { o: data.id })
+    if (sErr) return { error: missingSql(sErr.message) ?? `매체는 만들었지만 개별 매체로 옮기지 못했습니다: ${sErr.message}` }
+  }
   await supabase.from('categories').insert(DEFAULT_SECTIONS.map((c, i) => ({ ...c, outlet_id: data.id, sort_order: i + 1 })))
   // 총관리자는 아직 작업 매체가 없으면 방금 만든 매체로
   if (isSuper && !outletId) await supabase.from('profiles').update({ outlet_id: data.id }).eq('id', user.id)
@@ -61,13 +69,37 @@ export async function createOutlet(_prev: FormState, form: FormData): Promise<Fo
   return { ok: `‘${name}’을(를) 만들었습니다. 기본 섹션 4개(정치·경제·사회·문화)가 들어 있습니다.` }
 }
 
+// publisher_id: 옮길 그룹 id 또는 SOLO(개별 매체). 바뀔 때만 넘긴다
 export async function updateOutlet(id: string, input: { name: string; domain: string; publisher_id?: string }): Promise<FormState> {
-  const { supabase } = await staffContext()
+  const { supabase, isSuper } = await staffContext()
   const row: Record<string, unknown> = { name: input.name.trim().slice(0, 80), domain: cleanDomain(input.domain.trim()) || null }
   if (!row.name) return { error: '매체 이름을 적어주세요.' }
-  if (input.publisher_id) row.publisher_id = input.publisher_id
   const { error } = await supabase.from('outlets').update(row).eq('id', id)
   if (error) return { error: error.message }
+  if (input.publisher_id) {
+    // 그룹을 바꾸면 그 매체 발행인의 권한 범위도 바뀌므로 총관리자만 (DB 함수에서도 막는다)
+    if (!isSuper) return { error: '그룹은 총관리자만 바꿀 수 있습니다. 이름·도메인은 저장했습니다.' }
+    const { error: gErr } = input.publisher_id === SOLO
+      ? await supabase.rpc('outlet_make_solo', { o: id })
+      : await supabase.rpc('outlet_move', { o: id, g: input.publisher_id })
+    if (gErr) return { error: missingSql(gErr.message) ?? gErr.message }
+  }
   revalidatePath('/', 'layout')
   return { ok: '저장했습니다.' }
+}
+
+// 그룹 지우기 (총관리자): 안의 매체는 모두 개별 매체로 옮긴다
+export async function deleteGroup(id: string): Promise<FormState> {
+  const { supabase, isSuper } = await staffContext()
+  if (!isSuper) return { error: '총관리자만 그룹을 지울 수 있습니다.' }
+  const { data, error } = await supabase.rpc('delete_group', { g: id })
+  if (error) return { error: missingSql(error.message) ?? error.message }
+  revalidatePath('/', 'layout')
+  return { ok: Number(data) ? `그룹을 지우고 매체 ${data}개를 개별 매체로 옮겼습니다.` : '그룹을 지웠습니다.' }
+}
+
+function missingSql(message: string) {
+  return /outlet_make_solo|outlet_move|delete_group|solo/.test(message) && /function|column|schema cache/.test(message)
+    ? '총관리자가 Supabase에서 group-solo.sql을 먼저 실행해 주세요.'
+    : null
 }

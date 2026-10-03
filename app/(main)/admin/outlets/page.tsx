@@ -3,11 +3,11 @@ import { getCmsContext } from '@/lib/cms'
 import GroupOutlets from '@/components/cms/GroupOutlets'
 
 export default async function OutletsPage() {
-  const { supabase, isStaff, isGroupAdmin, publisherId, outletId } = await getCmsContext()
+  const { supabase, isStaff, isSuper, isGroupAdmin, publisherId, outletId } = await getCmsContext()
   if (!isGroupAdmin && !isStaff) redirect('/articles')
 
   const [{ data: groups, error }, { data: outlets }, { data: members }] = await Promise.all([
-    supabase.from('publishers').select('id, name').order('created_at'),
+    supabase.from('publishers').select('*').order('created_at'),
     supabase.from('outlets').select('id, name, domain, publisher_id').order('created_at'),
     supabase.from('profiles').select('outlet_id'),
   ])
@@ -46,7 +46,7 @@ export default async function OutletsPage() {
           </p>
         )}
       </header>
-      <GroupOutlets groups={groups ?? []} outlets={list} canManage={isStaff} myGroupId={publisherId} currentOutletId={outletId} />
+      <GroupOutlets groups={(groups ?? []).map((g: any) => ({ id: g.id as string, name: g.name as string, solo: !!g.solo }))} outlets={list} canManage={isStaff} isSuper={isSuper} myGroupId={publisherId} currentOutletId={outletId} />
     </div>
   )
 }
