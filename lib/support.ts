@@ -33,11 +33,11 @@ export function won(n: number | null | undefined) {
 
 export type InvoiceItem = { name: string; qty: number; unit_price: number }
 
-// 공급가액·부가세(10%)·합계
+// 단가는 부가세 포함 금액이다 (요금표와 같은 기준). 합계에서 공급가액·부가세를 거꾸로 나눈다
 export function invoiceTotals(items: InvoiceItem[]) {
-  const supply = items.reduce((s, i) => s + Math.round((i.qty || 0) * (i.unit_price || 0)), 0)
-  const vat = Math.round(supply * 0.1)
-  return { supply, vat, total: supply + vat }
+  const total = items.reduce((s, i) => s + Math.round((i.qty || 0) * (i.unit_price || 0)), 0)
+  const supply = Math.round(total / 1.1)
+  return { supply, vat: total - supply, total }
 }
 
 export function monthLabel(d: string) {

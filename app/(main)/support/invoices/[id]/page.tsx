@@ -77,7 +77,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
         <table className="mt-8 w-full min-w-[480px] text-[14px]">
           <thead>
             <tr className="border-y border-ink/80 bg-[#F8F9FA] text-left text-[12.5px]">
-              <th className="px-3 py-2.5 font-semibold">항목</th><th className="w-20 px-3 py-2.5 text-right font-semibold">수량</th><th className="w-32 px-3 py-2.5 text-right font-semibold">단가</th><th className="w-36 px-3 py-2.5 text-right font-semibold">금액</th>
+              <th className="px-3 py-2.5 font-semibold">항목</th><th className="w-20 px-3 py-2.5 text-right font-semibold">수량</th><th className="w-32 px-3 py-2.5 text-right font-semibold">단가 (VAT 포함)</th><th className="w-36 px-3 py-2.5 text-right font-semibold">금액</th>
             </tr>
           </thead>
           <tbody className="tabular-nums">
@@ -94,6 +94,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           <div className="flex justify-between"><dt className="text-muted">공급가액</dt><dd>{won(inv.supply_amount)}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">부가세</dt><dd>{won(inv.vat)}</dd></div>
           <div className="flex justify-between border-t-2 border-ink pt-2 text-[20px] font-extrabold"><dt>합계</dt><dd>{won(inv.total)}</dd></div>
+          <p className="text-right text-[12px] text-muted">부가세 포함 금액입니다</p>
         </dl>
 
         {(inv.due_date || inv.memo) && (
