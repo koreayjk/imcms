@@ -106,7 +106,6 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
     : { data: null }
   const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${profile?.full_name ?? ''} 기자]&nbsp;`
   body = body.startsWith('<p>') ? body.replace(/^<p>/, `<p>${byline}`) : `<p>${byline}</p>${body}`
-  body += `<p><em>※ 이 기사는 ${sourceLabel(r)}에서 배포한 보도자료를 바탕으로 작성됐습니다.</em></p>`
 
   const row: Record<string, unknown> = {
     title,

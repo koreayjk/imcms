@@ -222,7 +222,7 @@ export function htmlToText(html: string) {
     .join('\n\n')
 }
 
-// 기사 끝 "○○에서 배포한 보도자료" 문구에 들어갈 이름
+// 보도자료를 낸 곳 이름 (AI 초안에 출처로 알려 준다)
 export function sourceLabel(r: Pick<PressRelease, 'source_key' | 'source_name'>) {
   if (r.source_key.startsWith('nw-')) return '뉴스와이어'
   if (r.source_key.startsWith('kr-')) return '정책브리핑'
