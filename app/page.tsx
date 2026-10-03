@@ -20,7 +20,8 @@ export async function generateMetadata(): Promise<Metadata> {
     description: site.description,
     icons: { icon: site.logoMark },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
-    openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website' },
+    openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website', images: site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined },
+    twitter: { card: site.ogImage ? 'summary_large_image' : 'summary' },
     alternates: { types: { 'application/rss+xml': [{ url: '/rss.xml', title: site.name }] } },
     // 네이버 서치어드바이저·구글 서치콘솔 소유 확인 (홈페이지 설정에서 넣는다)
     verification: {

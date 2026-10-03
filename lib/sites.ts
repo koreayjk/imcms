@@ -63,6 +63,15 @@ export type SiteConfig = {
   shopUrl?: string
   // 보도자료함에 해외 언론(영문) 자료도 보여줄지
   pressForeign?: boolean
+  // 카카오톡·페이스북 등에 링크를 올릴 때 나오는 대표 이미지 (1200×630 PNG/JPG)
+  ogImage?: string
+}
+
+// public/sites/<폴더>/og.png 가 있는 매체: 로고가 이 폴더에 있으면 대표 이미지도 자동으로 쓴다
+const OG_DIRS = ['thecaretimes', 'shippingtimes', 'israeltoday']
+export function defaultOgImage(logo?: string) {
+  const dir = logo?.match(/^\/sites\/([a-z0-9-]+)\//)?.[1]
+  return dir && OG_DIRS.includes(dir) ? `/sites/${dir}/og.png` : undefined
 }
 
 export const SITES: SiteConfig[] = [
@@ -78,6 +87,7 @@ export const SITES: SiteConfig[] = [
     description: '보건·복지, 병원·의료, 요양·시니어케어, 돌봄산업 전문 인터넷신문',
     specialtyTitle: '케어 전문뉴스',
     logoMark: '/sites/thecaretimes/logo-mark.png',
+    ogImage: '/sites/thecaretimes/og.png',
     colors: { brand: '#02472F', brandDark: '#01321F', gold: '#D3A82B', goldInk: '#8C6D12' },
     sections: [
       { slug: 'politics', name: '정치' },
@@ -156,6 +166,7 @@ export type OutletSiteSettings = {
   bands?: HomeBand[]
   shopUrl?: string
   pressForeign?: boolean
+  ogImage?: string
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }
@@ -224,5 +235,6 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     bands: Array.isArray(s.bands) ? s.bands.filter((b) => b && typeof b.slug === 'string') : undefined,
     shopUrl: typeof s.shopUrl === 'string' && /^https?:\/\//.test(s.shopUrl) ? s.shopUrl : undefined,
     pressForeign: !!s.pressForeign,
+    ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
   }
 }

@@ -29,8 +29,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       siteName: site.name,
       type: 'article',
-      images: a.thumbnail_url ? [a.thumbnail_url] : undefined,
+      // 기사 사진이 없으면 매체 대표 이미지
+      images: a.thumbnail_url ? [a.thumbnail_url] : site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined,
     },
+    twitter: { card: a.thumbnail_url || site.ogImage ? 'summary_large_image' : 'summary' },
   }
 }
 

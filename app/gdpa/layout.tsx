@@ -9,7 +9,8 @@ export const metadata: Metadata = {
   title: { default: `${GDPA.short} ${GDPA.name}`, template: `%s | ${GDPA.short} ${GDPA.name}` },
   description: GDPA.description,
   icons: { icon: '/gdpa/logo-mark.svg' },
-  openGraph: { title: `${GDPA.short} ${GDPA.name}`, description: GDPA.description, siteName: GDPA.name, locale: 'ko_KR', type: 'website' },
+  openGraph: { title: `${GDPA.short} ${GDPA.name}`, description: GDPA.description, siteName: GDPA.name, locale: 'ko_KR', type: 'website', images: [{ url: '/gdpa/og.png', width: 1200, height: 630 }] },
+  twitter: { card: 'summary_large_image' },
 }
 
 // 협회 색: 남색(신뢰) + 금색(권위)
