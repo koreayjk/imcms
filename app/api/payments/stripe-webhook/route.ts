@@ -12,7 +12,11 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   const whSecret = process.env.STRIPE_WEBHOOK_SECRET
-  if (!stripeReady() || !whSecret || !process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.json({ error: 'not configured' }, { status: 503 })
+  if (!stripeReady() || !whSecret || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    // 설정 확인용: 빠진 환경 변수 '이름'만 알려 준다 (값은 절대 보내지 않는다)
+    const missing = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'PAYMENT_DB_SECRET', 'NEXT_PUBLIC_SUPABASE_URL'].filter((k) => !process.env[k])
+    return NextResponse.json({ error: 'not configured', missing }, { status: 503 })
+  }
   const body = await req.text()
   let event: Stripe.Event
   try {
