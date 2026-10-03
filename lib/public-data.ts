@@ -191,11 +191,12 @@ export async function getHomeData(site: SiteConfig): Promise<HomeData> {
 
 export const SECTION_PAGE_SIZE = 15
 
-export async function getSectionData(site: SiteConfig, slug: string, page: number) {
+// slug 가 null 이면 모든 섹션 (전체기사)
+export async function getSectionData(site: SiteConfig, slug: string | null, page: number) {
   const from = (page - 1) * SECTION_PAGE_SIZE
   if (isDemo) {
     const all = demoArticles()
-    const list = all.filter((a) => a.category?.slug === slug)
+    const list = slug ? all.filter((a) => a.category?.slug === slug) : all
     return {
       articles: list.slice(from, from + SECTION_PAGE_SIZE),
       total: list.length,
@@ -204,11 +205,12 @@ export async function getSectionData(site: SiteConfig, slug: string, page: numbe
   }
 
   const scope = await outletScope(site)
-  const catId = scope?.catIds[slug]
-  if (!scope || !catId) return { articles: [], total: 0, mostViewed: [] }
+  const catId = slug ? scope?.catIds[slug] : null
+  if (!scope || (slug && !catId)) return { articles: [], total: 0, mostViewed: [] }
 
+  const listQuery = catId ? published(scope).eq('category_id', catId) : published(scope)
   const [list, mostViewed] = await Promise.all([
-    published(scope).eq('category_id', catId).order('published_at', { ascending: false }).range(from, from + SECTION_PAGE_SIZE - 1),
+    listQuery.order('published_at', { ascending: false }).range(from, from + SECTION_PAGE_SIZE - 1),
     published(scope).order('view_count', { ascending: false }).limit(8),
   ])
   return {

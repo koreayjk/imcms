@@ -7,6 +7,7 @@ import { PRODUCT, isProductHost } from '@/lib/product'
 function isPublicPath(pathname: string) {
   return (
     pathname === '/' ||
+    pathname === '/news' ||
     pathname.startsWith('/news/') ||
     pathname.startsWith('/section/') ||
     pathname === '/search' ||

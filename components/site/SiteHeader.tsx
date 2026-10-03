@@ -5,6 +5,9 @@ import Logo from './Logo'
 import MobileHeader from './MobileHeader'
 import { SearchIcon } from './icons'
 
+// 전체기사 메뉴의 current 값 (섹션 slug와 겹치지 않게)
+export const ALL_NEWS = '__all'
+
 type Props = { site: SiteConfig; current?: string }
 
 export default function SiteHeader({ site, current }: Props) {
@@ -28,6 +31,16 @@ export default function SiteHeader({ site, current }: Props) {
           <Logo site={site} size="lg" />
           <nav className="flex flex-1 justify-end" aria-label="주요 섹션">
             <ul className="flex items-center">
+              <li>
+                <Link
+                  href="/news"
+                  aria-current={current === ALL_NEWS ? 'page' : undefined}
+                  className={`relative block px-[12px] py-2 text-[16.5px] font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${current === ALL_NEWS ? 'text-brand' : 'text-body'}`}
+                >
+                  전체기사
+                  {current === ALL_NEWS && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
+                </Link>
+              </li>
               {site.sections.map((s, i) => {
                 const active = current === s.slug
                 const firstSpecialty = s.specialty && !site.sections[i - 1]?.specialty

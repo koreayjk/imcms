@@ -76,6 +76,16 @@ export default function MobileHeader({ site, current }: Props) {
               {pathname === '/' && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-gold" />}
             </Link>
           </li>
+          <li>
+            <Link
+              href="/news"
+              aria-current={pathname === '/news' ? 'page' : undefined}
+              className={`relative block whitespace-nowrap px-3 py-3 text-[15px] ${pathname === '/news' ? 'font-bold text-white' : 'text-white/75'}`}
+            >
+              전체기사
+              {pathname === '/news' && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-gold" />}
+            </Link>
+          </li>
           {site.sections.map((s) => {
             const active = current === s.slug
             return (
@@ -124,6 +134,11 @@ export default function MobileHeader({ site, current }: Props) {
 
             <nav aria-label="전체 섹션" className="bg-white px-5 pb-6 pt-4">
               <ul className="grid grid-cols-2 gap-x-4">
+                <li>
+                  <Link href="/news" aria-current={pathname === '/news' ? 'page' : undefined} className={`block py-3 text-[18px] tracking-[-0.02em] ${pathname === '/news' ? 'font-bold text-brand' : 'text-body'}`}>
+                    전체기사
+                  </Link>
+                </li>
                 {site.sections.map((s) => (
                   <li key={s.slug}>
                     <Link
