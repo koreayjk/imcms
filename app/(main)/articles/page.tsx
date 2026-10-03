@@ -5,6 +5,7 @@ import { ImageIcon } from '@/components/cms/icons'
 import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import PendingButton from '@/components/cms/PendingButton'
 import { deleteArticle } from './actions'
+import CopyLinkButton from '@/components/cms/CopyLinkButton'
 
 const TABS: (ArticleStatus | 'all')[] = ['all', 'draft', 'in_review', 'rejected', 'published']
 const PAGE_SIZE = 30
@@ -124,7 +125,8 @@ export default async function ArticlesPage({ searchParams }: Props) {
                 <time className="hidden w-[118px] shrink-0 text-right text-[12.5px] tabular-nums text-muted md:block">
                   {formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)}
                 </time>
-                <div className="flex w-full shrink-0 justify-end gap-4 text-[13px] md:w-[72px] md:gap-2.5 md:text-[12.5px] md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                <div className="flex w-full shrink-0 justify-end gap-4 text-[13px] md:w-[120px] md:gap-2.5 md:text-[12.5px] md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                  <CopyLinkButton articleId={a.id} label="링크" className="whitespace-nowrap text-muted hover:text-ink" />
                   <Link href={`/articles/${a.id}/edit`} className="text-muted hover:text-ink">수정</Link>
                   {(a.author_id === user.id || isEditorPlus) && (
                     <form action={deleteArticle.bind(null, a.id)}>

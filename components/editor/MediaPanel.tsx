@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { ImageIcon, VideoIcon } from '@/components/cms/icons'
-import { uploadImage } from './upload'
+import { uploadImage, type WatermarkPref } from './upload'
 
 export type LibraryImage = { url: string; caption: string }
 
@@ -14,9 +14,11 @@ type Props = {
   onInsertImage: (img: LibraryImage) => void
   onSetThumbnail: (url: string) => void
   onInsertYoutube: (url: string) => boolean
+  watermark: WatermarkPref
+  setWatermark: (v: WatermarkPref) => void
 }
 
-export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, onInsertImage, onSetThumbnail, onInsertYoutube }: Props) {
+export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, onInsertImage, onSetThumbnail, onInsertYoutube, watermark, setWatermark }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState(0)
@@ -30,7 +32,7 @@ export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, 
     setUploading((n) => n + list.length)
     for (const file of list) {
       try {
-        const url = await uploadImage(file, outletId)
+        const url = await uploadImage(file, outletId, watermark.on ? watermark.text : null)
         setImages((prev) => [...prev, { url, caption: '' }])
         if (!thumbnailUrl) onSetThumbnail(url)
       } catch (e) {
@@ -68,6 +70,20 @@ export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, 
           {uploading > 0 ? `올리는 중… (${uploading}장)` : <>사진을 끌어다 놓거나 <b className="text-ink">클릭</b>해서 선택하세요<br />여러 장 가능 · 큰 사진은 자동으로 줄여서 올립니다</>}
         </button>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { handleFiles(e.target.files); e.target.value = '' }} />
+        {/* 워터마크: 켜 두면 이제부터 올리는 사진 오른쪽 아래에 글자가 들어간다 (이미 올린 사진은 그대로) */}
+        <div className="mt-2.5 rounded border border-line bg-paper px-3 py-2 text-[12.5px]">
+          <label className="flex cursor-pointer items-center gap-2 font-semibold">
+            <input type="checkbox" checked={watermark.on} onChange={(e) => setWatermark({ ...watermark, on: e.target.checked })} />
+            사진에 워터마크 넣기
+          </label>
+          {watermark.on && (
+            <div className="mt-1.5">
+              <label htmlFor="wm-text" className="sr-only">워터마크 글자</label>
+              <input id="wm-text" value={watermark.text} maxLength={30} onChange={(e) => setWatermark({ ...watermark, text: e.target.value })} className="field-input py-1.5 text-[12.5px]" />
+              <p className="mt-1 text-[11.5px] leading-snug text-muted">이제부터 올리는 사진 오른쪽 아래에 들어갑니다. 이미 올린 사진·보도자료 사진에는 들어가지 않습니다.</p>
+            </div>
+          )}
+        </div>
 
         {images.length > 0 && (
           <ul className="mt-3 space-y-3">

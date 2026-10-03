@@ -8,6 +8,8 @@ function isPublicPath(pathname: string) {
   return (
     pathname === '/' ||
     pathname === '/news' ||
+    // 기사 미리보기 링크: 서버가 만든 서명이 맞을 때만 보인다
+    pathname.startsWith('/p/') ||
     pathname.startsWith('/news/') ||
     pathname.startsWith('/section/') ||
     pathname === '/search' ||

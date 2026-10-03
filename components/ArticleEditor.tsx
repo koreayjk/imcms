@@ -9,7 +9,7 @@ import { formatDateTime, fromKstInput, isScheduled, toKstInput } from '@/lib/for
 import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@/lib/types'
 import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
-import { uploadImage } from './editor/upload'
+import { loadWatermark, saveWatermark, uploadImage, type WatermarkPref } from './editor/upload'
 import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
 import PendingButton from './cms/PendingButton'
@@ -17,6 +17,7 @@ import { deleteArticle } from '@/app/(main)/articles/actions'
 import { checkArticleLegal } from '@/app/(main)/articles/legal'
 import LegalDecide, { type Decision } from './cms/LegalDecide'
 import LegalReview from './cms/LegalReview'
+import CopyLinkButton from './cms/CopyLinkButton'
 import type { LegalCheck } from '@/lib/legal-types'
 import { canReplaceInEditor, findInText, replaceInEditor, replaceInText } from '@/lib/editor-replace'
 import { PREVIEW_STORE, type ArticlePreviewData } from '@/lib/article-preview'
@@ -77,7 +78,13 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   // 발행 일시: 비우면 발행하는 순간, 지정하면 그 시각 (지난 시각 = 그 날짜로, 앞으로의 시각 = 예약 발행)
   const [pubAt, setPubAt] = useState(toKstInput(article?.published_at))
   const [syndicateTo, setSyndicateTo] = useState<string[]>(article?.syndicate_to ?? [])
+  // 함께 송고할 때 매체마다 AI로 문장을 바꿔 올릴지 (기본 켜짐)
+  const [rewriteCopies, setRewriteCopies] = useState(true)
   const [showSeo, setShowSeo] = useState(false)
+  // 사진 워터마크 (기본 글자: ⓒ 매체 이름)
+  const [watermark, setWatermarkState] = useState<WatermarkPref>({ on: false, text: `ⓒ ${outletName ?? ''}`.trim() })
+  useEffect(() => { setWatermarkState(loadWatermark(`ⓒ ${outletName ?? ''}`.trim())) }, [outletName])
+  const setWatermark = (v: WatermarkPref) => { setWatermarkState(v); saveWatermark(v) }
   const [saving, setSaving] = useState<Mode | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -141,8 +148,14 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     setLegal({ check: r.check, key: legalKey })
     setLegalOpen(true)
   }
-  function validate() {
+  // forSubmit: 승인신청·발행할 때는 섹션도 꼭 골라야 한다 (저장·미리보기는 섹션 없이도 된다)
+  function validate(forSubmit = false) {
     if (!title.trim()) { setError('제목을 입력해주세요.'); return false }
+    if (forSubmit && !categoryId) {
+      setError('섹션을 골라 주세요. 섹션이 없으면 승인신청·발행할 수 없습니다.')
+      document.getElementById('section')?.focus()
+      return false
+    }
     if (!charCount) { setError('본문을 입력해주세요.'); return false }
     if (pubAt && !fromKstInput(pubAt)) { setError('발행 일시를 확인해 주세요.'); return false }
     return true
@@ -150,7 +163,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
   // 승인신청·발행: 홈페이지 모양 미리보기 → 제출 (AI 검수는 원할 때 따로)
   function submit(mode: 'review' | 'publish') {
-    if (!validate()) return
+    if (!validate(true)) return
     openPreview(mode)
   }
 
@@ -201,7 +214,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
   async function save(mode: Mode) {
     const legalCheck = mode === 'draft' ? null : currentLegal
-    if (!validate()) return
+    if (!validate(mode !== 'draft')) return
     const chosenAt = fromKstInput(pubAt)
     // 지금 발행은 미리보기에서 확인했으니 다시 묻지 않고, 예약·지난 날짜만 한 번 더 확인한다
     if (mode === 'publish' && chosenAt) {
@@ -255,7 +268,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     const livePublished = mode === 'publish' || (mode === 'draft' && status === 'published')
     if (id && livePublished && !isCopy && syndicateTo.length) {
       try {
-        const summary = describe(await syndicate(id))
+        const summary = describe(await syndicate(id, { rewrite: rewriteCopies }))
         if (summary) window.alert(summary)
       } catch (e) {
         window.alert(`함께 송고 중 문제가 생겼습니다: ${e instanceof Error ? e.message : ''}`)
@@ -419,6 +432,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               ? <span className="status-badge status-scheduled px-2.5 py-1 text-[12.5px]">예약 · {formatDateTime(article.published_at)} 공개</span>
               : <span className={`status-badge status-${status} px-2.5 py-1 text-[12.5px]`}>{STATUS_LABEL[status]}</span>}
             {savedAt && <span className="text-[12px] text-muted">{savedAt} 저장됨</span>}
+            {article?.id
+              ? <CopyLinkButton articleId={article.id} label="🔗 기사 링크 복사" className="rounded border border-line px-2 py-0.5 text-[12px] text-muted hover:border-ink hover:text-ink" />
+              : <span className="text-[11.5px] text-muted">저장하면 기사 링크를 받을 수 있습니다</span>}
             <span className="text-[11.5px] text-muted md:ml-auto" aria-live="polite">
               {tempSavedAt && contentKey !== serverKey.current
                 ? `${new Date(tempSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 이 브라우저에 임시 저장됨 · “저장”을 눌러야 기사목록에 들어갑니다`
@@ -463,8 +479,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
           )}
 
           <div className="grid grid-cols-[64px_1fr] items-center gap-x-3 gap-y-3">
-            <label htmlFor="section" className="text-[13px] font-semibold">섹션</label>
-            <select id="section" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="field-input max-w-xs">
+            <label htmlFor="section" className="text-[13px] font-semibold">섹션 <span className="text-danger" aria-hidden>*</span></label>
+            <select id="section" required aria-required="true" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); if (e.target.value && /섹션/.test(error)) setError('') }} className={`field-input max-w-xs ${!categoryId && /섹션/.test(error) ? 'border-danger' : ''}`}>
               <option value="">섹션 선택</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -573,7 +589,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               onReady={onReady}
               advanced={isEditorPlus}
               onUploadImage={async (file) => {
-                const url = await uploadImage(file, outletId)
+                const url = await uploadImage(file, outletId, watermark.on ? watermark.text : null)
                 setImages((prev) => [...prev, { url, caption: '' }])
                 if (!thumbnailUrl) setThumbnailUrl(url)
                 return url
@@ -621,6 +637,10 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                   )
                 })}
               </div>
+              <label className="mt-3 flex cursor-pointer items-start gap-2 text-[13px]">
+                <input type="checkbox" checked={rewriteCopies} onChange={(e) => setRewriteCopies(e.target.checked)} className="mt-0.5" />
+                <span><strong className="font-semibold">AI로 문장을 바꿔서 올리기</strong> <span className="text-muted">— 매체마다 제목·본문 표현을 다르게 바꿉니다(사실·숫자·인용은 그대로). 매체 하나에 AI 사용 1회</span></span>
+              </label>
               <p className="mt-2 text-[12px] leading-relaxed text-muted">
                 발행될 때 선택한 매체에 바이라인과 섹션을 맞춰 사본이 올라갑니다. 사본에는 이 기사를 원본으로 알리는 표시가 들어가 검색엔진에서 중복 기사로 처리되지 않습니다.
               </p>
@@ -659,6 +679,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             onInsertImage={insertImage}
             onSetThumbnail={setThumbnailUrl}
             onInsertYoutube={insertYoutube}
+            watermark={watermark}
+            setWatermark={setWatermark}
           />
         </aside>
       </div>
@@ -711,6 +733,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                 <button key={d} type="button" aria-pressed={previewDevice === d} onClick={() => setPreviewDevice(d)} className={`rounded px-3 py-1 ${previewDevice === d ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>{label}</button>
               ))}
             </div>
+            {article?.id && <CopyLinkButton articleId={article.id} className="btn-secondary hidden px-3 md:inline-flex md:px-4" />}
             <button type="button" onClick={() => setPreview(null)} className="btn-secondary px-3 md:px-4" autoFocus={!preview.mode}>
               {preview.mode ? '← 고치러 가기' : '닫기'}
             </button>

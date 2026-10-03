@@ -39,6 +39,8 @@ body {
 
 /* 기사 본문 — 편집기, 편집국 보기, 홈페이지가 같은 모양을 쓴다 */
 .article-content > * + * { margin-top: 1.25em; }
+/* 문단 기본 정렬은 양쪽 정렬 (기사 화면에서 따로 왼쪽·가운데·오른쪽을 정한 문단은 그 정렬) */
+.article-content p, .article-content li { text-align: justify; }
 .article-content h2 { font-size: 1.25em; font-weight: 800; line-height: 1.45; margin-top: 1.8em; }
 .article-content h3 { font-size: 1.08em; font-weight: 700; line-height: 1.5; margin-top: 1.5em; }
 .article-content blockquote {

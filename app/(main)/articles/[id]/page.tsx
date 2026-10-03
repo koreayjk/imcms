@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import ReviewActions from '@/components/ReviewActions'
+import CopyLinkButton from '@/components/cms/CopyLinkButton'
 import { getCmsContext } from '@/lib/cms'
 import { sanitizeBody } from '@/lib/article-html'
 import { formatDateTime, isScheduled } from '@/lib/format'
@@ -10,6 +11,9 @@ import RevisionHistory, { type Revision } from '@/components/cms/RevisionHistory
 import LegalReview from '@/components/cms/LegalReview'
 import type { LegalCheck } from '@/lib/legal-types'
 import { deleteArticle } from '../actions'
+
+// 승인하면서 함께 송고할 때 AI로 문장을 바꾸므로 넉넉하게 기다린다
+export const maxDuration = 60
 
 export default async function ArticleDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
   const { supabase, user, isEditorPlus } = await getCmsContext()
@@ -48,7 +52,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
       {canReview && (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg md:gap-4 border border-review/30 bg-review/5 px-5 py-4">
           <p className="text-[14px] font-medium text-review">승인신청된 기사입니다. 내용을 확인하고 승인하거나 반려하세요.</p>
-          <ReviewActions articleId={article.id} presetAt={article.published_at} />
+          <ReviewActions articleId={article.id} presetAt={article.published_at} hasSection={!!article.category_id} />
         </div>
       )}
 
@@ -125,6 +129,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
               </PendingButton>
             </form>
           )}
+          <CopyLinkButton articleId={article.id} className="btn-secondary" />
           {canEdit && <Link href={`/articles/${article.id}/edit`} className="btn-primary">수정</Link>}
         </div>
       </div>

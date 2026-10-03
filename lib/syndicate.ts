@@ -1,11 +1,13 @@
 import { createClient } from './supabase'
+import { rewriteForOutlet } from '@/app/(main)/articles/rewrite'
 
-export type SyndicateResult = { created: string[]; updated: string[]; warnings: string[] }
+export type SyndicateResult = { created: string[]; updated: string[]; warnings: string[]; rewritten?: string[] }
 
 // 발행된 원본을 syndicate_to 매체들에 사본으로 올리거나, 이미 있는 사본을 원본 내용으로 갱신한다
-export async function syndicate(articleId: string): Promise<SyndicateResult> {
+//   rewrite: 사본의 제목·부제·본문 글을 매체마다 AI로 다시 써서 올린다 (같은 글이 그대로 겹치지 않게). 실패하면 원문 그대로
+export async function syndicate(articleId: string, { rewrite = true }: { rewrite?: boolean } = {}): Promise<SyndicateResult> {
   const supabase = createClient()
-  const result: SyndicateResult = { created: [], updated: [], warnings: [] }
+  const result: SyndicateResult = { created: [], updated: [], warnings: [], rewritten: [] }
 
   const { data: src, error } = await supabase
     .from('articles')
@@ -27,6 +29,18 @@ export async function syndicate(articleId: string): Promise<SyndicateResult> {
   const srcCategory = src.category as unknown as { slug: string; name: string } | null
   const srcOutletName = (src.outlet as unknown as { name: string } | null)?.name
 
+  // 매체마다 AI 변환은 동시에 (매체 수만큼 기다리지 않게)
+  const rewrites = new Map<string, Awaited<ReturnType<typeof rewriteForOutlet>>>()
+  if (rewrite) {
+    await Promise.all((outlets ?? []).map(async (o) => {
+      try {
+        rewrites.set(o.id, await rewriteForOutlet({ sourceOutletId: src.outlet_id, sourceOutletName: srcOutletName ?? null, outletName: o.name, title: src.title, excerpt: src.excerpt, body: src.body }))
+      } catch {
+        rewrites.set(o.id, { ok: false, error: 'AI로 바꾸지 못했습니다' })
+      }
+    }))
+  }
+
   for (const outlet of outlets ?? []) {
     const outletCats = (cats ?? []).filter((c) => c.outlet_id === outlet.id)
     const cat = srcCategory
@@ -34,11 +48,13 @@ export async function syndicate(articleId: string): Promise<SyndicateResult> {
       : undefined
     if (srcCategory && !cat) result.warnings.push(`${outlet.name}: '${srcCategory.name}' 섹션이 없어 섹션 없이 올렸습니다.`)
 
-    const body = srcOutletName ? (src.body as string).replace(`[${srcOutletName}=`, `[${outlet.name}=`) : src.body
+    const rw = rewrites.get(outlet.id)
+    if (rw && !rw.ok) result.warnings.push(`${outlet.name}: AI로 문장을 바꾸지 못해 원문 그대로 올렸습니다 (${rw.error})`)
+    const body = rw?.ok ? rw.body : srcOutletName ? (src.body as string).replace(`[${srcOutletName}=`, `[${outlet.name}=`) : src.body
     const content: Record<string, unknown> = {
-      title: src.title,
+      title: rw?.ok ? rw.title : src.title,
       body,
-      excerpt: src.excerpt,
+      excerpt: rw?.ok ? rw.excerpt : src.excerpt,
       thumbnail_url: src.thumbnail_url,
       tags: src.tags,
       meta_title: src.meta_title,
@@ -48,6 +64,7 @@ export async function syndicate(articleId: string): Promise<SyndicateResult> {
     // 원본 발행 일시(예약 포함)를 사본도 따라간다
     if (src.published_at) content.published_at = src.published_at
 
+    if (rw?.ok) result.rewritten!.push(outlet.name)
     const existing = (copies ?? []).find((c) => c.outlet_id === outlet.id)
     if (existing) {
       const { error: e } = await supabase.from('articles').update(content).eq('id', existing.id)
@@ -73,6 +90,7 @@ export async function syndicate(articleId: string): Promise<SyndicateResult> {
 export function describe(r: SyndicateResult) {
   const lines: string[] = []
   if (r.created.length) lines.push(`함께 송고: ${r.created.join(', ')}`)
+  if (r.rewritten?.length) lines.push(`AI로 문장을 바꿔 올림: ${r.rewritten.join(', ')}`)
   if (r.updated.length) lines.push(`사본 갱신: ${r.updated.join(', ')}`)
   lines.push(...r.warnings)
   return lines.join('\n')

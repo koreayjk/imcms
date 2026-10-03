@@ -7,7 +7,7 @@ import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
 
 // presetAt: 기자가 정해 둔 발행 일시 (있으면 그 시각으로 발행 — 앞으로의 시각이면 예약 발행)
-export default function ReviewActions({ articleId, presetAt = null }: { articleId: string; presetAt?: string | null }) {
+export default function ReviewActions({ articleId, presetAt = null, hasSection = true }: { articleId: string; presetAt?: string | null; hasSection?: boolean }) {
   const [showReject, setShowReject] = useState(false)
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,6 +15,7 @@ export default function ReviewActions({ articleId, presetAt = null }: { articleI
   const supabase = createClient()
 
   async function approve() {
+    if (!hasSection) { window.alert('섹션이 정해지지 않은 기사는 발행할 수 없습니다. 수정 화면에서 섹션을 고른 뒤 승인해 주세요.'); return }
     const scheduled = presetAt && Date.parse(presetAt) > Date.now()
     if (scheduled && !window.confirm(`기자가 정한 발행 일시(${new Date(presetAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})로 예약 발행합니다. 그 전까지는 홈페이지에 보이지 않습니다.`)) return
     setLoading(true)

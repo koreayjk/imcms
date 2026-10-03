@@ -15,7 +15,7 @@ export async function GET() {
         'User-agent: *',
         'Allow: /',
         // 편집국·내부 경로는 수집하지 않는다
-        ...['/newsroom', '/articles', '/press', '/admin', '/support', '/account', '/login', '/signup', '/pending', '/api/', '/ai-review/', '/search'].map((p) => `Disallow: ${p}`),
+        ...['/newsroom', '/articles', '/press', '/admin', '/support', '/account', '/login', '/signup', '/pending', '/api/', '/ai-review/', '/search', '/p/'].map((p) => `Disallow: ${p}`),
         '',
         `Sitemap: ${base}/sitemap.xml`,
         `Sitemap: ${base}/news-sitemap.xml`,

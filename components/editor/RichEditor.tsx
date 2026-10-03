@@ -151,6 +151,7 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
   const inTable = editor.isActive('table')
   const block = editor.isActive('heading', { level: 2 }) ? 'h2' : editor.isActive('heading', { level: 3 }) ? 'h3' : editor.isActive('heading', { level: 4 }) ? 'h4' : 'p'
   const fontSize = (editor.getAttributes('textStyle').fontSize as string | undefined) ?? ''
+  const align = ((editor.isActive('heading') ? editor.getAttributes('heading') : editor.getAttributes('paragraph')).textAlign as string | null) || 'justify'
 
   const setLink = () => {
     const prev = editor.getAttributes('link').href as string | undefined
@@ -214,9 +215,11 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
           <Btn label="굵게 (Ctrl+B)" active={editor.isActive('bold')} onClick={() => chain().toggleBold().run()}><b>B</b></Btn>
           <Btn label="밑줄 (Ctrl+U)" active={editor.isActive('underline')} onClick={() => chain().toggleUnderline().run()}><u>U</u></Btn>
           <Sep />
-          <Btn label="왼쪽 정렬" active={editor.isActive({ textAlign: 'left' })} onClick={() => chain().setTextAlign('left').run()}><AlignIcon kind="left" /></Btn>
-          <Btn label="가운데 정렬" active={editor.isActive({ textAlign: 'center' })} onClick={() => chain().setTextAlign('center').run()}><AlignIcon kind="center" /></Btn>
-          <Btn label="오른쪽 정렬" active={editor.isActive({ textAlign: 'right' })} onClick={() => chain().setTextAlign('right').run()}><AlignIcon kind="right" /></Btn>
+          {/* 기본은 양쪽 정렬(정렬을 따로 정하지 않은 문단). 양쪽 정렬을 누르면 기본으로 되돌린다 */}
+          <Btn label="양쪽 정렬 (기본)" active={align === 'justify'} onClick={() => chain().unsetTextAlign().run()}><AlignIcon kind="justify" /></Btn>
+          <Btn label="왼쪽 정렬" active={align === 'left'} onClick={() => chain().setTextAlign('left').run()}><AlignIcon kind="left" /></Btn>
+          <Btn label="가운데 정렬" active={align === 'center'} onClick={() => chain().setTextAlign('center').run()}><AlignIcon kind="center" /></Btn>
+          <Btn label="오른쪽 정렬" active={align === 'right'} onClick={() => chain().setTextAlign('right').run()}><AlignIcon kind="right" /></Btn>
           <Sep />
           <Btn label="글머리 목록" active={editor.isActive('bulletList')} onClick={() => chain().toggleBulletList().run()}>• 목록</Btn>
           <Btn label="링크" active={editor.isActive('link')} onClick={setLink}>🔗 링크</Btn>
@@ -261,7 +264,6 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
             <Btn label="번호 목록" active={editor.isActive('orderedList')} onClick={() => chain().toggleOrderedList().run()}>1. 목록</Btn>
             <Btn label="인용문" active={editor.isActive('blockquote')} onClick={() => chain().toggleBlockquote().run()}>“ 인용</Btn>
             <Btn label="구분선" onClick={() => chain().setHorizontalRule().run()}>구분선</Btn>
-            <Btn label="양쪽 정렬" active={editor.isActive({ textAlign: 'justify' })} onClick={() => chain().setTextAlign('justify').run()}><AlignIcon kind="justify" /></Btn>
             <Btn label="서식 지우기" onClick={() => chain().unsetAllMarks().clearNodes().run()}>서식 지우기</Btn>
             <Btn label={full ? '전체 화면 끝내기 (Esc)' : '전체 화면으로 쓰기'} active={full} onClick={() => setFull(!full)}>{full ? '⤡ 작게' : '⤢ 크게'}</Btn>
             {advanced && (
