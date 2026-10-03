@@ -38,7 +38,7 @@ export default function SpecialtyTabs({ tabs, title = '전문뉴스' }: { tabs: 
         {lead ? (
           <>
             <Link href={`/news/${lead.id}`} className="group block">
-              <Thumb src={lead.thumbnail_url} alt={lead.title} ratio="16 / 9" />
+              <Thumb sizes="(max-width: 768px) 100vw, 720px" src={lead.thumbnail_url} alt={lead.title} ratio="16 / 9" />
               <p className="mt-3 text-[17px] font-bold leading-[1.4]">{lead.title}</p>
             </Link>
             <ul className="mt-3 divide-y divide-rule border-t border-rule">

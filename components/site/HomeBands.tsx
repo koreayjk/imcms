@@ -115,7 +115,7 @@ function NewsBand({ title, href, items, subs }: BandProps) {
       <div className="mb-4"><SubLinks subs={subs} /></div>
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         <Link href={`/news/${lead.id}`} className="headline-link group block">
-          <Thumb src={lead.thumbnail_url} alt={lead.title} ratio="16 / 10" />
+          <Thumb sizes="(max-width: 768px) 100vw, 720px" src={lead.thumbnail_url} alt={lead.title} ratio="16 / 10" />
           <CategoryLabel article={lead} className="mt-3" />
           <h3 className="headline-text mt-1 line-clamp-2 text-[22px] font-extrabold leading-[1.35] tracking-[-0.03em]">{lead.title}</h3>
           {lead.excerpt && <p className="mt-2 line-clamp-2 text-[14px] leading-[1.6] text-sub">{lead.excerpt}</p>}
@@ -129,7 +129,7 @@ function NewsBand({ title, href, items, subs }: BandProps) {
                   <p className="headline-text mt-0.5 line-clamp-2 text-[16px] font-bold leading-[1.42] tracking-[-0.02em]">{a.title}</p>
                   <time dateTime={a.published_at ?? undefined} className="mt-1 block text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at)}</time>
                 </div>
-                {a.thumbnail_url && <Thumb src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[112px] flex-shrink-0" />}
+                {a.thumbnail_url && <Thumb sizes="120px" src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[112px] flex-shrink-0" />}
               </Link>
             </li>
           ))}

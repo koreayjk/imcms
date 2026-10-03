@@ -42,9 +42,13 @@ export async function runBillingNow() {
   if (!process.env.PAYMENT_DB_SECRET) back('PAYMENT_DB_SECRET 설정이 없습니다.', 'error')
   let msg = ''
   try {
-    const r = await runBilling(supabase, kstToday().slice(0, 7), siteOrigin())
+    // 매체가 많으면 한 번에 다 못 만든다: 50초 안에 만든 만큼만 만들고, 남은 곳은 버튼을 다시 누르면 이어서 만든다
+    const r = await runBilling(supabase, kstToday().slice(0, 7), siteOrigin(), Date.now() + 50_000)
     msg = r.created.length ? `청구서 ${r.created.length}건을 만들었습니다.` : '새로 만들 청구서가 없습니다.'
-    if (r.skipped.length) msg += ` (건너뜀: ${r.skipped.map((s) => `${s.outlet} – ${s.reason}`).join(', ')})`
+    if (r.pending) msg += ` 아직 ${r.pending}곳이 남았습니다. 버튼을 한 번 더 눌러 주세요.`
+    // '이미 있음'은 빼고, 문제가 있는 곳만 (많으면 앞의 5곳만)
+    const issues = r.skipped.filter((s) => !s.reason.includes('이미 있음'))
+    if (issues.length) msg += ` (건너뜀: ${issues.slice(0, 5).map((s) => `${s.outlet} – ${s.reason}`).join(', ')}${issues.length > 5 ? ` 외 ${issues.length - 5}곳` : ''})`
   } catch (e) {
     back(`만들지 못했습니다: ${e instanceof Error ? e.message : String(e)}`, 'error')
   }

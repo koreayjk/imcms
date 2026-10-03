@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { SOLO } from '@/lib/groups'
+import { connectDomain } from '@/lib/vercel-domains'
 
 export type FormState = { error?: string; ok?: string }
 
@@ -66,7 +67,9 @@ export async function createOutlet(_prev: FormState, form: FormData): Promise<Fo
   // 총관리자는 아직 작업 매체가 없으면 방금 만든 매체로
   if (isSuper && !outletId) await supabase.from('profiles').update({ outlet_id: data.id }).eq('id', user.id)
   revalidatePath('/', 'layout')
-  return { ok: `‘${name}’을(를) 만들었습니다. 기본 섹션 4개(정치·경제·사회·문화)가 들어 있습니다.` }
+  // 도메인을 넣었으면 Vercel에도 등록 (VERCEL_API_TOKEN 이 있을 때)
+  const dErr = await connectDomain(domain || null)
+  return { ok: `‘${name}’을(를) 만들었습니다. 기본 섹션 4개(정치·경제·사회·문화)가 들어 있습니다.${dErr ? ` (도메인 연결: ${dErr})` : ''}` }
 }
 
 // publisher_id: 옮길 그룹 id 또는 SOLO(개별 매체). 바뀔 때만 넘긴다
@@ -76,6 +79,8 @@ export async function updateOutlet(id: string, input: { name: string; domain: st
   if (!row.name) return { error: '매체 이름을 적어주세요.' }
   const { error } = await supabase.from('outlets').update(row).eq('id', id)
   if (error) return { error: error.message }
+  // 도메인을 Vercel에도 등록 (VERCEL_API_TOKEN 이 있을 때). 실패해도 저장은 된 상태
+  const dErr = await connectDomain(row.domain as string | null)
   if (input.publisher_id) {
     // 그룹을 바꾸면 그 매체 발행인의 권한 범위도 바뀌므로 총관리자만 (DB 함수에서도 막는다)
     if (!isSuper) return { error: '그룹은 총관리자만 바꿀 수 있습니다. 이름·도메인은 저장했습니다.' }
@@ -85,6 +90,7 @@ export async function updateOutlet(id: string, input: { name: string; domain: st
     if (gErr) return { error: missingSql(gErr.message) ?? gErr.message }
   }
   revalidatePath('/', 'layout')
+  if (dErr) return { error: `저장했지만 도메인을 Vercel에 연결하지 못했습니다: ${dErr}` }
   return { ok: '저장했습니다.' }
 }
 

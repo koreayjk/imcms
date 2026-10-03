@@ -5,6 +5,8 @@ import { reporterHref } from '@/lib/reporter'
 import { formatDateTime } from '@/lib/format'
 import SectionHeading from './SectionHeading'
 import Thumb from './Thumb'
+import OptImg from './OptImg'
+import { optimizeBodyImages } from '@/lib/image-url'
 import ShareButton from './ShareButton'
 
 // 홈페이지 기사 본문 (제목·부제·기자·본문·관련기사·태그·기자 정보·섹션 다른 기사). 실제 기사 화면과 기사쓰기 미리보기가 같이 쓴다
@@ -53,13 +55,13 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
 
       {a.thumbnail_url && !/<img\s/i.test(bodyHtml) && (
         <figure className="mt-7">
-          <img src={a.thumbnail_url} alt={a.title} className="w-full" />
+          <OptImg src={a.thumbnail_url} alt={a.title} className="w-full" />
         </figure>
       )}
 
       <div
         className="article-content mt-7 text-[17px] leading-[1.95] text-body lg:text-[17.5px]"
-        dangerouslySetInnerHTML={{ __html: bodyHtml }}
+        dangerouslySetInnerHTML={{ __html: optimizeBodyImages(bodyHtml) }}
       />
 
       {relatedLinks.length > 0 && (

@@ -5,7 +5,7 @@ import { billingReady, chargeBilling, paymentDbSecret, TossError } from '@/lib/t
 import { stripe, stripeMessage, stripeReady } from '@/lib/stripe-pay'
 import { recordStripeIntent } from '@/lib/stripe-record'
 
-// 매일 오전 10시(한국) Supabase 예약 작업(payments.sql)이 부른다: 납부 기한이 된 미납 청구서를 등록된 결제수단으로 결제
+// 매일 오전 10시~10시 45분(한국) 15분마다 Supabase 예약 작업(payments.sql·scale.sql)이 부른다: 납부 기한이 된 미납 청구서를 등록된 결제수단으로 결제
 //   예약 작업 열쇠(press_cron_secret)로 확인하고, 결제 기록은 PAYMENT_DB_SECRET 으로만 남긴다. 청구서마다 하루 한 번만 시도
 export const maxDuration = 300
 export const dynamic = 'force-dynamic'
@@ -25,8 +25,12 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const results: { invoice: string; ok: boolean; message?: string }[] = []
+  // 5분 제한 안에 끝나도록 4분이 지나면 새 결제를 시작하지 않는다 (남은 청구서는 15분 뒤 예약 실행이 이어서. 하루 한 번만 시도하는 규칙은 그대로)
+  const deadline = Date.now() + 240_000
+  let pending = 0
   // 한 번에 하나씩 (결제사 응답이 늦을 수 있다)
   for (const d of (due ?? []) as Due[]) {
+    if (Date.now() > deadline) { pending++; continue }
     const provider = d.provider === 'toss' ? 'toss' : 'stripe'
     if ((provider === 'stripe' && !stripeReady()) || (provider === 'toss' && !billingReady())) continue
     const { data: order, error: oErr } = await supabase.rpc('autopay_start', { secret, inv: d.invoice_id, p_provider: provider })
@@ -67,5 +71,5 @@ export async function GET(req: NextRequest) {
       await fail(e instanceof TossError ? e.message : '결제 서버 오류')
     }
   }
-  return NextResponse.json({ ok: true, charged: results.filter((r) => r.ok).length, results })
+  return NextResponse.json({ ok: true, charged: results.filter((r) => r.ok).length, pending, results })
 }

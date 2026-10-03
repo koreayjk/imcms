@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
 import type { LogoMode, OutletSiteSettings, SiteLegal } from '@/lib/sites'
+import { connectDomain } from '@/lib/vercel-domains'
 
 export type SitePayload = {
   name: string
@@ -74,5 +75,19 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
 
   revalidateTag('sites')
   revalidatePath('/', 'layout')
+  // 도메인을 Vercel에도 등록 (VERCEL_API_TOKEN 이 있을 때)
+  const dErr = await connectDomain(domain || null)
+  if (dErr) return { error: `저장했지만 도메인을 Vercel에 연결하지 못했습니다: ${dErr}` }
   return { ok: '저장했습니다. 홈페이지에 바로 반영됩니다.' }
+}
+
+// 도메인 다시 연결 (홈페이지 설정 화면의 '도메인 연결' 칸)
+export async function reconnectDomain(outletId: string): Promise<{ error?: string; ok?: string }> {
+  const { supabase, isStaff } = await getCmsContext()
+  if (!isStaff) return { error: '운영팀만 할 수 있습니다.' }
+  const { data } = await supabase.from('outlets').select('domain').eq('id', outletId).maybeSingle()
+  if (!data?.domain) return { error: '먼저 도메인을 저장해 주세요.' }
+  const err = await connectDomain(data.domain)
+  revalidatePath(`/admin/outlets/${outletId}/site`)
+  return err ? { error: err } : { ok: 'Vercel에 등록했습니다. 아래 DNS 설정을 확인해 주세요.' }
 }

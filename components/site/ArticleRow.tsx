@@ -18,7 +18,7 @@ export default function ArticleRow({ article: a, showCategory = false }: { artic
           </p>
         </div>
         {a.thumbnail_url && (
-          <Thumb src={a.thumbnail_url} alt={a.title} ratio="3 / 2" className="w-[108px] flex-shrink-0 lg:w-[200px]" />
+          <Thumb sizes="(max-width: 1023px) 108px, 200px" src={a.thumbnail_url} alt={a.title} ratio="3 / 2" className="w-[108px] flex-shrink-0 lg:w-[200px]" />
         )}
       </Link>
     </li>

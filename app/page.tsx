@@ -99,7 +99,7 @@ export default async function HomePage() {
 
           <div className="min-w-0">
             <Link href={`/news/${headline.id}`} className="headline-link group block">
-              <Thumb src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" />
+              <Thumb sizes="(max-width: 768px) 100vw, 720px" src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" />
               <div className="mt-5 px-4 text-center">
                 <CategoryLabel article={headline} />
                 <h2 className="headline-text mt-1.5 line-clamp-2 text-balance text-[30px] font-extrabold leading-[1.3] tracking-[-0.035em] text-body">
@@ -113,7 +113,7 @@ export default async function HomePage() {
                 {underHeadline.map((a) => (
                   <li key={a.id}>
                     <Link href={`/news/${a.id}`} className="headline-link group flex gap-3">
-                      {a.thumbnail_url && <Thumb src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[88px] flex-shrink-0" />}
+                      {a.thumbnail_url && <Thumb sizes="120px" src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[88px] flex-shrink-0" />}
                       <div className="min-w-0 flex-1">
                         <CategoryLabel article={a} />
                         <p className="headline-text mt-0.5 line-clamp-2 text-[14.5px] font-semibold leading-[1.45]">{a.title}</p>
@@ -157,7 +157,7 @@ export default async function HomePage() {
               {major.map((a) => (
                 <li key={a.id} className="py-4 first:pt-0 lg:py-0">
                   <Link href={`/news/${a.id}`} className="headline-link group flex gap-3.5 lg:block">
-                    <Thumb src={a.thumbnail_url} alt={a.title} ratio="3 / 2" className="w-[118px] flex-shrink-0 lg:w-full" />
+                    <Thumb sizes="(max-width: 1023px) 118px, 300px" src={a.thumbnail_url} alt={a.title} ratio="3 / 2" className="w-[118px] flex-shrink-0 lg:w-full" />
                     <div className="min-w-0 flex-1 lg:mt-3">
                       <CategoryLabel article={a} className="hidden lg:block" />
                       <h3 className="headline-text line-clamp-2 text-[16px] font-bold leading-[1.42] tracking-[-0.02em] lg:mt-1">{a.title}</h3>
@@ -288,7 +288,7 @@ export default async function HomePage() {
                 <>
                   <Link href={`/news/${lead.id}`} className="headline-link group flex gap-3 lg:block">
                     {lead.thumbnail_url && (
-                      <Thumb src={lead.thumbnail_url} alt={lead.title} ratio="3 / 2" className="w-[118px] flex-shrink-0 lg:w-full" />
+                      <Thumb sizes="(max-width: 1023px) 118px, 300px" src={lead.thumbnail_url} alt={lead.title} ratio="3 / 2" className="w-[118px] flex-shrink-0 lg:w-full" />
                     )}
                     <p className="headline-text line-clamp-2 text-[15.5px] font-bold leading-[1.42] lg:mt-3">{lead.title}</p>
                   </Link>
@@ -319,7 +319,7 @@ function RealtimeList({ items }: { items: PublicArticle[] }) {
               </time>
               <p className="mt-0.5 line-clamp-2 text-[14.5px] leading-[1.45] group-hover:underline underline-offset-2">{a.title}</p>
             </div>
-            {a.thumbnail_url && <Thumb src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[84px] flex-shrink-0" />}
+            {a.thumbnail_url && <Thumb sizes="120px" src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[84px] flex-shrink-0" />}
           </Link>
         </li>
       ))}

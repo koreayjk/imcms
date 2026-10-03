@@ -3,6 +3,8 @@ import { notFound, redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { SITES, type OutletSiteSettings } from '@/lib/sites'
 import SiteSettingsForm from '@/components/cms/SiteSettingsForm'
+import DomainPanel from '@/components/cms/DomainPanel'
+import { domainStatus } from '@/lib/vercel-domains'
 
 export default async function SiteSettingsPage({ params }: { params: { id: string } }) {
   const { supabase, isStaff } = await getCmsContext()
@@ -40,6 +42,7 @@ export default async function SiteSettingsPage({ params }: { params: { id: strin
       </nav>
       <h1 className="mb-1 text-[22px] font-bold tracking-tight">{outlet.name} 홈페이지 설정</h1>
       <p className="mb-6 text-[13px] text-muted">로고·색·하단 정보·도메인을 정하면 이 매체의 신문 홈페이지가 만들어집니다.</p>
+      <DomainPanel outletId={outlet.id} domain={outlet.domain} status={outlet.domain ? await domainStatus(outlet.domain) : { state: 'off' }} />
       <SiteSettingsForm
         outlet={{ id: outlet.id, name: outlet.name, domain: outlet.domain, site: outlet.site as OutletSiteSettings }}
         sections={(cats ?? []) as any}

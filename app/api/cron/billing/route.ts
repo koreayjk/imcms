@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { kstToday, runBilling } from '@/lib/billing'
 import { siteOrigin } from '@/lib/origin'
 
-// 매일 0시 30분(한국) Supabase 예약 작업(billing-auto.sql)이 부른다: 자동 청구를 켠 매체의 이번 달 청구서가 없으면 만든다
+// 매일 0시~0시 50분(한국) 10분마다 Supabase 예약 작업(billing-auto.sql·scale.sql)이 부른다: 자동 청구를 켠 매체의 이번 달 청구서가 없으면 만든다
 //   예약 작업 열쇠(press_cron_secret)로 확인하고, 청구서는 PAYMENT_DB_SECRET 으로만 만든다
 export const maxDuration = 120
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
   if (!process.env.PAYMENT_DB_SECRET) return NextResponse.json({ ok: true, skipped: 'PAYMENT_DB_SECRET 없음' })
 
   try {
-    const result = await runBilling(supabase, kstToday().slice(0, 7), siteOrigin())
+    // 2분 제한 안에 끝나도록 100초가 지나면 멈춘다 (남은 매체는 다음 예약 실행이 이어서)
+    const result = await runBilling(supabase, kstToday().slice(0, 7), siteOrigin(), Date.now() + 100_000)
     return NextResponse.json({ ok: true, ...result })
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 })

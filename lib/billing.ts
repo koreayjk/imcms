@@ -91,12 +91,15 @@ export async function billingTargets(supabase: SupabaseClient, month: string) {
 }
 
 // 이번 달 청구서 만들기 (이미 있는 매체는 건너뛴다). 만든 청구서마다 안내 메일
-export async function runBilling(supabase: SupabaseClient, month: string, origin: string) {
+//   deadline(시각, ms)을 넘기면 멈추고 남은 매체 수를 pending 으로 돌려준다 → 예약 작업이 몇 분 뒤 다시 불러 이어서 만든다
+export async function runBilling(supabase: SupabaseClient, month: string, origin: string, deadline = Number.POSITIVE_INFINITY) {
   const targets = await billingTargets(supabase, month)
   const created: { outlet: string; id: string; total: number }[] = []
   const skipped: { outlet: string; reason: string }[] = []
   const due = dueDate(month)
+  let pending = 0
   for (const t of targets) {
+    if (Date.now() > deadline) { if (!t.has_invoice) pending++; continue }
     if (t.has_invoice) { skipped.push({ outlet: t.name, reason: '이번 달 청구서가 이미 있음' }); continue }
     const { items, totals, clearSetup } = billingItems(t, month)
     if (!items.length || totals.total <= 0) { skipped.push({ outlet: t.name, reason: '청구할 항목 없음' }); continue }
@@ -113,5 +116,5 @@ export async function runBilling(supabase: SupabaseClient, month: string, origin
       createdAt: new Date().toISOString(), autopay: t.autopay, origin,
     })
   }
-  return { created, skipped }
+  return { created, skipped, pending }
 }
