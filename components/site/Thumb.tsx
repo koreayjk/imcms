@@ -9,14 +9,15 @@ type Props = {
   className?: string
 }
 
-// 칸 비율과 사진 비율이 많이 다르면(세로 포스터, 아주 긴 가로 사진) 잘라내지 않고 통째로 보여 준다
+// 칸 비율과 사진 비율이 다르면(세로 포스터, 긴 가로 사진 등) 잘라내지 않고 통째로 보여 준다
 //   남는 자리는 같은 사진을 흐리게 깔아 채운다. 비율이 비슷하면 지금처럼 칸을 꽉 채운다
 function needsFit(img: HTMLImageElement, ratio: string) {
   const [w, h] = ratio.split('/').map((n) => Number(n.trim()))
   if (!img.naturalWidth || !img.naturalHeight || !w || !h) return false
   const box = w / h
   const pic = img.naturalWidth / img.naturalHeight
-  return pic < box * 0.75 || pic > box * 1.7
+  // 12% 넘게 다르면 통째로 (보도자료 사진은 글자가 들어 있는 경우가 많아 조금만 잘려도 티가 난다)
+  return pic < box * 0.88 || pic > box * 1.12
 }
 
 export default function Thumb({ src, alt, ratio = '16 / 10', className = '' }: Props) {
