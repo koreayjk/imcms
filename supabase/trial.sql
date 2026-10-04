@@ -31,7 +31,12 @@ declare g uuid; o uuid;
 begin
   select id into o from outlets where site->>'trial' = 'true' limit 1;
   if o is null then
-    insert into publishers (name, solo) values ('IM 체험 그룹', false) returning id into g;
+    -- group-solo.sql 을 실행한 DB에만 solo 칸이 있다
+    if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'publishers' and column_name = 'solo') then
+      execute 'insert into publishers (name, solo) values ($1, false) returning id' into g using 'IM 체험 그룹';
+    else
+      insert into publishers (name) values ('IM 체험 그룹') returning id into g;
+    end if;
     insert into outlets (name, domain, publisher_id, site, ai_monthly_limit)
     values ('IM 체험뉴스', 'imnews-demo.vercel.app', g, jsonb_build_object(
       'trial', true,
@@ -104,17 +109,31 @@ begin
   if m->>'site' is distinct from 'trial' then return new; end if;
   o := public.trial_outlet();
   if o is null then return new; end if;
-  update profiles set
-    outlet_id = o, approved = true, role = 'reporter', publisher_id = null, requested_outlet_id = null,
-    trial_until = now() + interval '7 days',
-    full_name = left(coalesce(nullif(trim(m->>'full_name'), ''), split_part(new.email, '@', 1)), 30)
-  where id = new.id;
-  insert into ai_member_limits (outlet_id, profile_id, monthly_limit) values (o, new.id, 30)
-  on conflict (outlet_id, profile_id) do update set monthly_limit = 30;
-  insert into trial_signups (user_id, email, name, company, position, phone, agreed_at)
-  values (new.id, new.email, left(m->>'full_name', 30), left(m->>'company', 80), left(m->>'position', 40), left(m->>'phone', 30),
-          coalesce(nullif(m->>'agreed_at', '')::timestamptz, now()))
-  on conflict (user_id) do nothing;
+  -- 체험 처리에서 문제가 생겨도 회원가입 자체는 막지 않는다 (그 경우 일반 가입처럼 승인 대기)
+  begin
+    update profiles set
+      outlet_id = o, approved = true, role = 'reporter', publisher_id = null,
+      trial_until = now() + interval '7 days',
+      full_name = left(coalesce(nullif(trim(m->>'full_name'), ''), split_part(new.email, '@', 1)), 30)
+    where id = new.id;
+    -- signup-outlet.sql 의 신청 매체 칸 (없으면 건너뜀)
+    begin
+      execute 'update profiles set requested_outlet_id = null where id = $1' using new.id;
+    exception when undefined_column then null;
+    end;
+    -- newsroom-settings.sql 의 기자별 AI 한도 (없으면 매체 한도만 적용)
+    begin
+      execute 'insert into ai_member_limits (outlet_id, profile_id, monthly_limit) values ($1, $2, 30)
+               on conflict (outlet_id, profile_id) do update set monthly_limit = 30' using o, new.id;
+    exception when undefined_table then null;
+    end;
+    insert into trial_signups (user_id, email, name, company, position, phone, agreed_at)
+    values (new.id, new.email, left(m->>'full_name', 30), left(m->>'company', 80), left(m->>'position', 40), left(m->>'phone', 30),
+            coalesce(nullif(m->>'agreed_at', '')::timestamptz, now()))
+    on conflict (user_id) do nothing;
+  exception when others then
+    raise warning 'trial signup % failed: %', new.id, sqlerrm;
+  end;
   return new;
 end $$;
 drop trigger if exists zz_trial_signup on auth.users;
@@ -210,12 +229,21 @@ begin
 end $$;
 drop trigger if exists trial_guard on categories;
 create trigger trial_guard before insert or update or delete on categories for each row execute function public.trial_readonly_guard('섹션을 바꿀 수 없습니다. 정식 이용 때 자유롭게 바꿀 수 있습니다.');
-drop trigger if exists trial_guard on ai_member_limits;
-create trigger trial_guard before insert or update or delete on ai_member_limits for each row execute function public.trial_readonly_guard('AI 한도를 바꿀 수 없습니다.');
-drop trigger if exists trial_guard on invitations;
-create trigger trial_guard before insert or update or delete on invitations for each row execute function public.trial_readonly_guard('회원을 초대할 수 없습니다. 정식 이용 때 기자를 초대할 수 있습니다.');
-drop trigger if exists trial_guard on newsletter_subscribers;
-create trigger trial_guard before insert or update or delete on newsletter_subscribers for each row execute function public.trial_readonly_guard('뉴스레터 구독자를 바꿀 수 없습니다.');
+-- (표가 없는 DB면 건너뛴다)
+do $$
+declare t record;
+begin
+  for t in select * from (values
+    ('ai_member_limits', 'AI 한도를 바꿀 수 없습니다.'),
+    ('invitations', '회원을 초대할 수 없습니다. 정식 이용 때 기자를 초대할 수 있습니다.'),
+    ('newsletter_subscribers', '뉴스레터 구독자를 바꿀 수 없습니다.')
+  ) as x(tbl, msg) loop
+    if to_regclass('public.' || t.tbl) is not null then
+      execute format('drop trigger if exists trial_guard on %I', t.tbl);
+      execute format('create trigger trial_guard before insert or update or delete on %I for each row execute function public.trial_readonly_guard(%L)', t.tbl, t.msg);
+    end if;
+  end loop;
+end $$;
 
 -- 매체별 소속(outlet_members)도 체험 계정은 바꿀 수 없다
 do $$
@@ -227,31 +255,39 @@ begin
 end $$;
 
 -- 회원 관리 화면: 체험 그룹장에게는 다른 체험자의 이메일을 보여주지 않고, 가입 거절도 못 하게 한다
---   (signup-outlet.sql 의 같은 함수에 체험 조건만 더한 것. signup-outlet.sql 을 다시 실행했다면 이 파일도 다시 실행)
-create or replace function public.admin_list_users()
-returns table (id uuid, email text, provider text, last_sign_in_at timestamptz)
-language plpgsql stable security definer set search_path = public, auth as $$
+--   (groups.sql·signup-outlet.sql 의 같은 함수에 체험 조건만 더한 것. 그 파일들을 다시 실행했다면 이 파일도 다시 실행)
+do $$
+declare has_pending boolean := to_regprocedure('public.pending_publisher(uuid)') is not null;
 begin
-  if not public.is_group_admin() then raise exception '발행인 또는 총관리자만 볼 수 있습니다.'; end if;
-  return query
-    select u.id, u.email::text, coalesce(u.raw_app_meta_data->>'provider', 'email'), u.last_sign_in_at
-    from auth.users u
-    where (public.is_super() or public.profile_publisher(u.id) = public.my_publisher() or public.pending_publisher(u.id) = public.my_publisher())
-      and (not public.is_trial_user(auth.uid()) or u.id = auth.uid());
-end $$;
+  execute format($f$
+    create or replace function public.admin_list_users()
+    returns table (id uuid, email text, provider text, last_sign_in_at timestamptz)
+    language plpgsql stable security definer set search_path = public, auth as $b$
+    begin
+      if not public.is_group_admin() then raise exception '발행인 또는 총관리자만 볼 수 있습니다.'; end if;
+      return query
+        select u.id, u.email::text, coalesce(u.raw_app_meta_data->>'provider', 'email'), u.last_sign_in_at
+        from auth.users u
+        where (public.is_super() or public.profile_publisher(u.id) = public.my_publisher() %s)
+          and (not public.is_trial_user(auth.uid()) or u.id = auth.uid());
+    end $b$;
+  $f$, case when has_pending then 'or public.pending_publisher(u.id) = public.my_publisher()' else '' end);
 
-create or replace function public.admin_reject_user(target uuid)
-returns void language plpgsql security definer set search_path = public, auth as $$
-begin
-  if public.is_trial_user(auth.uid()) then raise exception '체험 계정에서는 가입 신청을 처리할 수 없습니다.'; end if;
-  -- 값이 비면(null) 조건 전체가 null이 되어 통과되지 않도록 coalesce로 거짓 처리
-  if not coalesce(public.is_super() or (public.is_group_admin() and public.pending_publisher(target) = public.my_publisher()), false) then
-    raise exception '이 가입 신청을 거절할 권한이 없습니다.';
-  end if;
-  if target = auth.uid() or exists (select 1 from profiles where id = target and (approved or role = 'admin' or is_super)) then
-    raise exception '승인 대기 중인 계정만 거절할 수 있습니다.';
-  end if;
-  delete from auth.users where id = target;
+  execute format($f$
+    create or replace function public.admin_reject_user(target uuid)
+    returns void language plpgsql security definer set search_path = public, auth as $b$
+    begin
+      if public.is_trial_user(auth.uid()) then raise exception '체험 계정에서는 가입 신청을 처리할 수 없습니다.'; end if;
+      -- 값이 비면(null) 조건 전체가 null이 되어 통과되지 않도록 coalesce로 거짓 처리
+      if not coalesce(public.is_super() %s, false) then
+        raise exception '이 가입 신청을 거절할 권한이 없습니다.';
+      end if;
+      if target = auth.uid() or exists (select 1 from profiles where id = target and (approved or role = 'admin' or is_super)) then
+        raise exception '승인 대기 중인 계정만 거절할 수 있습니다.';
+      end if;
+      delete from auth.users where id = target;
+    end $b$;
+  $f$, case when has_pending then 'or (public.is_group_admin() and public.pending_publisher(target) = public.my_publisher())' else '' end);
 end $$;
 
 -- 5) 매일 새벽 정리
