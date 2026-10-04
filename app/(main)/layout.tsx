@@ -1,4 +1,5 @@
 import Rail from '@/components/cms/Rail'
+import { outletHomeUrl } from '@/lib/product'
 import TopBar from '@/components/cms/TopBar'
 import TrialBar from '@/components/cms/TrialBar'
 import { getCmsContext } from '@/lib/cms'
@@ -55,7 +56,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         <TopBar
           outletName={current?.name ?? null}
           groupName={current?.group ?? null}
-          siteUrl={current?.domain ? `https://${current.domain}` : '/'}
+          siteUrl={current ? outletHomeUrl({ id: outletId ?? '', domain: current.domain }) : '/'}
           outlets={isGroupAdmin || list.length > 1 ? list : []}
           currentOutletId={outletId}
           userName={profile?.full_name ?? user.email ?? ''}

@@ -18,7 +18,8 @@ const GRID: Record<SlotKey, string> = {
   pick: 'grid-cols-2 md:grid-cols-4',
 }
 
-export default function HomeBoard({ outletId, initialLayout, articles, savedAt }: {
+export default function HomeBoard({ outletId, siteUrl = '/', initialLayout, articles, savedAt }: {
+  siteUrl?: string
   outletId: string
   initialLayout: HomeLayout
   articles: BoardArticle[]
@@ -202,7 +203,7 @@ export default function HomeBoard({ outletId, initialLayout, articles, savedAt }
           {message && <p role="status" className={`text-[13px] ${message.ok ? 'text-muted' : 'text-danger'}`}>{message.text}</p>}
           {dirty && <span className="text-[13px] font-semibold text-draft">저장하지 않은 변경이 있습니다</span>}
           <div className="ml-auto flex gap-2">
-            <a href="/" target="_blank" rel="noopener" className="btn-secondary">홈페이지 보기 ↗</a>
+            <a href={siteUrl} target="_blank" rel="noopener" className="btn-secondary">홈페이지 보기 ↗</a>
             <button type="button" onClick={() => setLayout(JSON.parse(baseline))} disabled={!dirty || saving} className="btn-secondary">되돌리기</button>
             <button type="button" onClick={save} disabled={!dirty || saving} className="btn-publish px-6">{saving ? '저장 중…' : '저장'}</button>
           </div>

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { outletHomeUrl } from '@/lib/product'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime, isScheduled } from '@/lib/format'
@@ -16,7 +17,7 @@ const CARDS: { status: ArticleStatus; tone: string; note: string }[] = [
 type Props = { searchParams: { tab?: string } }
 
 export default async function NewsroomPage({ searchParams }: Props) {
-  const { supabase, user, outletId, isEditorPlus, isStaff, isSuper } = await getCmsContext()
+  const { supabase, user, outletId, isEditorPlus, isStaff, isSuper, trial } = await getCmsContext()
   // 매체에 속하지 않은 매니저는 대시보드가 첫 화면
   if (isStaff && !isSuper && !outletId) redirect('/admin/dashboard')
   const tab = (CARDS.find((c) => c.status === searchParams.tab)?.status ?? 'draft') as ArticleStatus
@@ -43,8 +44,9 @@ export default async function NewsroomPage({ searchParams }: Props) {
       ? scoped(supabase.from('articles').select('id, title, updated_at, author:profiles!articles_author_id_fkey(full_name)'))
           .eq('status', 'in_review').order('updated_at', { ascending: true }).limit(6)
       : Promise.resolve({ data: [] as any[] }),
-    scoped(supabase.from('articles').select('id, title, view_count'))
-      .eq('status', 'published').order('view_count', { ascending: false }).limit(5),
+    // 많이 본 기사는 역할과 상관없이 우리 신문 전체에서 고른다 (기자도 신문 전체 반응을 본다)
+    (outletId ? supabase.from('articles').select('id, title, view_count').eq('outlet_id', outletId) : supabase.from('articles').select('id, title, view_count'))
+      .eq('status', 'published').lte('published_at', new Date().toISOString()).order('view_count', { ascending: false }).limit(5),
     // 고객센터 소식 (support.sql 전이면 비어 있다)
     supabase.from('support_notices').select('id, title, category, created_at').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     supabase.from('support_tickets').select('id, title, status, last_staff_reply_at, requester_read_at').eq('requester_id', user.id).order('updated_at', { ascending: false }).limit(3),
@@ -55,6 +57,13 @@ export default async function NewsroomPage({ searchParams }: Props) {
   const aiAlert = aiUsage && (aiLvl === 'near' || aiLvl === 'full' || aiLvl === 'over') ? aiLvl : null
 
   const rows = (list.data ?? []) as any[]
+  // 체험 기자 화면: 내 기사만 세므로, 체험신문 전체에 이미 발행된 기사 수를 함께 알려 준다
+  const trialPublished = trial && !isEditorPlus && outletId
+    ? (await supabase.from('articles').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId).eq('status', 'published')).count ?? 0
+    : null
+  const trialSite = trialPublished !== null
+    ? outletHomeUrl((await supabase.from('outlets').select('id, domain').eq('id', outletId!).maybeSingle()).data)
+    : '/'
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
@@ -65,6 +74,13 @@ export default async function NewsroomPage({ searchParams }: Props) {
         </div>
         <Link href="/articles/new" className="btn-primary shrink-0 px-4 py-2.5 md:px-5">+ 기사쓰기</Link>
       </div>
+
+      {trialPublished !== null && (
+        <p className="mb-4 rounded-lg border border-[#1F4FD0]/20 bg-[#EEF3FD] px-5 py-3 text-[13.5px] leading-relaxed text-[#14306E]">
+          기자 화면에는 <b>내가 쓴 기사</b>만 셉니다. IM 체험뉴스에는 지금 <b>발행 기사 {trialPublished.toLocaleString()}건</b>이 있어요.
+          맨 위에서 <b>편집장</b>으로 바꾸면 편집국 전체 현황을, <a href={trialSite} target="_blank" rel="noopener" className="font-semibold underline underline-offset-2">홈페이지</a>에서 독자 화면을 볼 수 있어요.
+        </p>
+      )}
 
       {aiAlert && aiUsage && (
         <div role="status" className={`mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border px-5 py-3 text-[13.5px] ${aiAlert === 'near' ? 'border-draft/40 bg-draft/10' : 'border-danger/30 bg-danger/5 text-danger'}`}>

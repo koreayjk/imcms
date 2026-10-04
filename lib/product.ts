@@ -36,6 +36,14 @@ export function appLink(path: string) {
   return PRODUCT.appLive ? `${PRODUCT.appUrl}${path}` : path
 }
 
+// 편집국에서 여는 매체 홈페이지 주소: 도메인이 있으면 그 주소, 없으면 미리보기
+//   (편집국 주소 app.imnewsroom.com 의 첫 화면은 편집국이라, 미리보기는 imcms.vercel.app 에서 연다)
+export function outletHomeUrl(o: { id: string; domain?: string | null } | null | undefined, path = '/') {
+  if (!o) return path
+  if (o.domain) return `https://${o.domain}${path}`
+  return `${PRODUCT.appLive ? 'https://imcms.vercel.app' : ''}${path}?preview_outlet=${o.id}`
+}
+
 // 소개 사이트(imnewsroom.com)에서 편집국 주소로 넘길 경로
 export const APP_PATHS = ['/login', '/signup', '/trial', '/pending', '/newsroom', '/articles', '/press', '/admin', '/support', '/account']
 

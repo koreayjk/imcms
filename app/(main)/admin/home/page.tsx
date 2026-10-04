@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { outletHomeUrl } from '@/lib/product'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { normalizeLayout } from '@/lib/home-layout'
@@ -10,7 +11,7 @@ export default async function HomeEditPage() {
   const { supabase, outletId, isEditorPlus } = await getCmsContext()
   if (!isEditorPlus) redirect('/newsroom')
 
-  const { data: outlets } = await supabase.from('outlets').select('id, name, site').order('created_at')
+  const { data: outlets } = await supabase.from('outlets').select('id, name, domain, site').order('created_at')
   const outlet = outlets?.find((o) => o.id === outletId) ?? outlets?.[0]
   if (!outlet) {
     return <p className="px-4 py-10 md:px-8 md:py-16 text-center text-muted">등록된 매체가 없습니다. 매체 관리에서 먼저 매체를 등록하세요.</p>
@@ -54,7 +55,7 @@ export default async function HomeEditPage() {
           편집판 저장 공간이 아직 없습니다. Supabase에서 <code>supabase/home-layout.sql</code>을 실행해 주세요.
         </p>
       ) : (
-        <HomeBoard outletId={outlet.id} initialLayout={layout} articles={articles} savedAt={saved?.updated_at ?? null} />
+        <HomeBoard outletId={outlet.id} siteUrl={outletHomeUrl(outlet as { id: string; domain?: string | null })} initialLayout={layout} articles={articles} savedAt={saved?.updated_at ?? null} />
       )}
     </div>
   )

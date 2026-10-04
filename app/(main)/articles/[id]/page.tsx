@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { outletHomeUrl } from '@/lib/product'
 import Link from 'next/link'
 import ReviewActions from '@/components/ReviewActions'
 import CopyLinkButton from '@/components/cms/CopyLinkButton'
@@ -21,7 +22,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
   const [{ data: article }, { data: revs }] = await Promise.all([
     supabase
       .from('articles')
-      .select('*, author:profiles!articles_author_id_fkey(id, full_name), category:categories(name)')
+      .select('*, author:profiles!articles_author_id_fkey(id, full_name), category:categories(name), outlet:outlets(id, domain)')
       .eq('id', params.id)
       .single(),
     // article-revisions.sql 실행 전이면 표가 없어 빈 목록
@@ -132,7 +133,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
         <Link href="/articles" className="text-[13px] text-muted hover:text-ink">← 목록으로</Link>
         <div className="flex gap-2">
           {article.status === 'published' && (
-            <a href={`/news/${article.id}`} target="_blank" rel="noopener" className="btn-secondary">홈페이지에서 보기 ↗</a>
+            <a href={outletHomeUrl((article as { outlet?: { id: string; domain: string | null } | null }).outlet, `/news/${article.id}`)} target="_blank" rel="noopener" className="btn-secondary">홈페이지에서 보기 ↗</a>
           )}
           {canDelete && (
             <form action={deleteArticle.bind(null, article.id)}>
