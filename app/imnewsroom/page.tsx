@@ -170,6 +170,7 @@ export default function ProductHome() {
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link href="/login" className="hidden rounded-md px-3 py-2 text-[13.5px] text-white/70 hover:text-white sm:block">편집국 로그인</Link>
+            <Link href="/trial" className="hidden rounded-lg border border-white/25 px-3.5 py-2 text-[13.5px] font-semibold text-white hover:bg-white/10 sm:block">무료 체험</Link>
             <a href="#apply" className="rounded-lg bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-4 py-2 text-[13.5px] font-bold text-white shadow-[0_6px_20px_-6px_rgba(229,72,58,0.8)] hover:brightness-110">베타 신청</a>
           </div>
         </div>
@@ -204,9 +205,9 @@ export default function ProductHome() {
                 <a href="#apply" className="rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-7 py-4 text-[16px] font-bold text-white shadow-[0_12px_30px_-8px_rgba(229,72,58,0.8)] transition hover:-translate-y-0.5 hover:brightness-110">
                   베타 고객사 신청 →
                 </a>
-                <a href="#showcase" className="rounded-xl border border-white/20 bg-white/5 px-7 py-4 text-[16px] font-semibold text-white backdrop-blur transition hover:bg-white/10">
-                  완성 화면 보기
-                </a>
+                <Link href="/trial" className="rounded-xl border border-white/20 bg-white/5 px-7 py-4 text-[16px] font-semibold text-white backdrop-blur transition hover:bg-white/10">
+                  1주일 무료 체험
+                </Link>
               </div>
               <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] text-white/60">
                 <li>✓ 설치 없이 웹에서</li>

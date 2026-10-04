@@ -65,6 +65,8 @@ export type SiteConfig = {
   pressForeign?: boolean
   // 카카오톡·페이스북 등에 링크를 올릴 때 나오는 대표 이미지 (1200×630 PNG/JPG)
   ogImage?: string
+  // IM 뉴스룸 체험용 신문 (trial.sql) — 홈페이지 맨 위에 체험판 안내 띠
+  trial?: boolean
 }
 
 // public/sites/<폴더>/og.png 가 있는 매체: 로고가 이 폴더에 있으면 대표 이미지도 자동으로 쓴다
@@ -167,6 +169,7 @@ export type OutletSiteSettings = {
   shopUrl?: string
   pressForeign?: boolean
   ogImage?: string
+  trial?: boolean
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }
@@ -236,5 +239,6 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     shopUrl: typeof s.shopUrl === 'string' && /^https?:\/\//.test(s.shopUrl) ? s.shopUrl : undefined,
     pressForeign: !!s.pressForeign,
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
+    trial: s.trial === true,
   }
 }

@@ -9,7 +9,8 @@ import { siteOrigin } from '@/lib/origin'
 const STATUS = { submitted: 'in_review', rejected: 'rejected', published: 'published' } as const
 
 export async function notifyArticle(id: string, event: keyof typeof STATUS) {
-  const { supabase, user, profile } = await getCmsContext()
+  const { supabase, user, profile, trial } = await getCmsContext()
+  if (trial) return
   const { data: a } = await supabase.from('articles').select('id, title, status, author_id, reject_reason, outlet:outlets(name)').eq('id', id).maybeSingle()
   if (!a || a.status !== STATUS[event]) return
   if (event === 'submitted' && a.author_id !== user.id) return

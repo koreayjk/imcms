@@ -10,8 +10,37 @@ import { appointStaff, approveUser, cancelInvite, rejectUser } from './actions'
 type AuthInfo = { id: string; email: string; provider: string; last_sign_in_at: string | null }
 
 export default async function UsersPage({ searchParams }: { searchParams: { error?: string } }) {
-  const { supabase, user, isSuper, isGroupAdmin, outletId } = await getCmsContext()
+  const { supabase, user, isSuper, isGroupAdmin, outletId, trial, profile } = await getCmsContext()
   if (!isGroupAdmin) redirect('/articles')
+  // 체험 그룹장: 다른 체험자의 정보는 보여주지 않고, 이 화면에서 하는 일만 안내한다
+  if (trial) {
+    return (
+      <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
+        <h1 className="text-[22px] font-extrabold tracking-tight">회원 관리</h1>
+        <div className="mt-5 rounded-lg border border-[#1F3A5F]/25 bg-[#EEF3F9] px-5 py-4 text-[14px] leading-[1.75] text-[#1F3A5F]">
+          <p className="font-bold">체험 중에는 회원 관리 화면을 미리 보기만 할 수 있어요.</p>
+          <p className="mt-1">다른 체험자의 정보를 보호하려고 목록에는 내 계정만 보입니다.</p>
+        </div>
+        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+          {[
+            ['가입 승인', '우리 매체로 가입 신청한 기자를 확인하고 승인하거나 거절합니다.'],
+            ['기자 초대', '이메일로 기자를 초대하면 가입과 동시에 우리 매체 소속이 됩니다.'],
+            ['역할 지정', '기자 · 편집장을 정하고, 매체마다 다른 역할을 줄 수 있습니다.'],
+            ['기자별 AI 한도', '기자마다 한 달 AI 사용 횟수를 정해 비용을 관리합니다.'],
+          ].map(([t, d]) => (
+            <li key={t} className="rounded-lg border border-line bg-white p-4">
+              <p className="font-bold">{t}</p>
+              <p className="mt-1 text-[13px] leading-[1.7] text-muted">{d}</p>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-6 rounded-lg border border-line bg-white px-5 py-4">
+          <p className="font-semibold">{profile?.full_name ?? user.email}</p>
+          <p className="mt-0.5 text-[12.5px] text-muted">{user.email} · 그룹장(체험)</p>
+        </div>
+      </div>
+    )
+  }
 
   const [{ data: users }, outletsRes, { data: groups }, { data: authUsers, error: authError }, { data: invites }, membersRes] = await Promise.all([
     supabase.from('profiles').select('*').order('created_at'),

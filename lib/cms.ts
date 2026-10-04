@@ -17,6 +17,12 @@ export const getCmsContext = cache(async function getCmsContext() {
 
   const role = (profile?.role ?? 'reporter') as UserRole
   if (!isApproved(profile)) redirect('/pending')
+  // 체험 계정 (trial.sql): 기간이 끝나면 정식 신청 안내로
+  const trialUntil = (profile?.trial_until as string | null | undefined) ?? null
+  if (trialUntil && Date.parse(trialUntil) < Date.now()) redirect('/trial/ended')
+  const trial = trialUntil
+    ? { until: trialUntil, daysLeft: Math.max(0, Math.ceil((Date.parse(trialUntil) - Date.now()) / 86_400_000)), role }
+    : null
 
   const outletId = (profile?.outlet_id as string | null) ?? null
   // groups.sql 실행 전 DB에는 is_super·publisher_id 칸이 없다 → 예전처럼 관리자 = 총관리자로 본다
@@ -37,6 +43,8 @@ export const getCmsContext = cache(async function getCmsContext() {
     isStaff,
     publisherId: (profile?.publisher_id as string | null) ?? null,
     isEditorPlus: role === 'editor' || role === 'admin' || isSuper,
+    // 체험 계정이면 남은 기간·지금 역할 (아니면 null)
+    trial,
   }
 })
 

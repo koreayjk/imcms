@@ -22,6 +22,12 @@ export default function SiteFrame({ site, current, children }: Props) {
           미리보기 화면입니다 — 표시된 기사는 레이아웃 확인용 샘플이며 실제 기사가 아닙니다.
         </div>
       )}
+      {site.trial && (
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#1F3A5F] px-4 py-2 text-center text-[12.5px] text-white">
+          <span><strong>IM 뉴스룸 체험용 신문</strong>입니다 — 기사는 샘플이거나 체험 중인 분이 쓴 연습 기사입니다.</span>
+          <a href={`${process.env.NEXT_PUBLIC_CMS_URL ?? 'https://imcms.vercel.app'}/trial`} className="rounded bg-white px-2.5 py-0.5 font-semibold text-[#1F3A5F] hover:bg-white/90">나도 1주일 무료 체험 →</a>
+        </div>
+      )}
       {site.preview && (
         <div className="flex items-center justify-center gap-3 bg-[#1C1F26] px-4 py-2 text-[12.5px] text-white">
           <span><strong>{site.name}</strong> 미리보기 — 도메인을 연결하기 전 화면입니다.</span>

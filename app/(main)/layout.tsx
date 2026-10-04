@@ -1,10 +1,11 @@
 import Rail from '@/components/cms/Rail'
 import TopBar from '@/components/cms/TopBar'
+import TrialBar from '@/components/cms/TrialBar'
 import { getCmsContext } from '@/lib/cms'
 import { hasUnreadReply } from '@/lib/support'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin } = await getCmsContext()
+  const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin, trial } = await getCmsContext()
 
   // 알림 숫자와 매체 목록은 한꺼번에 가져온다 (하나씩 기다리면 그만큼 느려진다)
   // 승인 대기 가입자: 총관리자는 전체, 발행인은 우리 그룹 매체로 신청한 사람 (DB 권한이 보이는 만큼만 센다)
@@ -50,6 +51,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
+        {trial && <TrialBar role={trial.role} daysLeft={trial.daysLeft} />}
         <TopBar
           outletName={current?.name ?? null}
           groupName={current?.group ?? null}

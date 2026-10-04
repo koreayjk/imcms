@@ -16,7 +16,7 @@ import { deleteArticle } from '../actions'
 export const maxDuration = 60
 
 export default async function ArticleDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
-  const { supabase, user, isEditorPlus } = await getCmsContext()
+  const { supabase, user, isEditorPlus, trial } = await getCmsContext()
 
   const [{ data: article }, { data: revs }] = await Promise.all([
     supabase
@@ -34,7 +34,10 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
   ])
   if (!article) notFound()
 
-  const canEdit = article.author_id === user.id || isEditorPlus
+  // 체험용 샘플 기사(trial.sql)는 누구도 고치거나 지울 수 없다. 체험 계정은 본인 기사만 지운다
+  const sample = !!article.is_sample
+  const canEdit = !sample && (article.author_id === user.id || isEditorPlus)
+  const canDelete = canEdit && (!trial || article.author_id === user.id)
   const canReview = isEditorPlus && article.status === 'in_review'
 
   return (
@@ -45,6 +48,9 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
         <span className="max-w-md truncate text-ink">{article.title}</span>
       </nav>
 
+      {sample && (
+        <p className="mb-5 rounded-lg border border-[#1F3A5F]/25 bg-[#1F3A5F]/5 px-5 py-3.5 text-[13.5px] text-[#1F3A5F]">🔒 체험용 샘플 기사입니다. 수정·삭제할 수 없어요. 기사쓰기에서 새 기사를 써서 체험해 보세요.</p>
+      )}
       {searchParams.error && (
         <p role="alert" className="mb-5 rounded-lg border border-danger/30 bg-danger/5 px-5 py-3.5 text-[13.5px] text-danger">{searchParams.error}</p>
       )}
@@ -118,7 +124,7 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
           {article.status === 'published' && (
             <a href={`/news/${article.id}`} target="_blank" rel="noopener" className="btn-secondary">홈페이지에서 보기 ↗</a>
           )}
-          {canEdit && (
+          {canDelete && (
             <form action={deleteArticle.bind(null, article.id)}>
               <PendingButton
                 pending="삭제 중…"

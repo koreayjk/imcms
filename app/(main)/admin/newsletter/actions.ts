@@ -78,6 +78,7 @@ export async function sendTestNewsletter(d: Draft): Promise<NlState> {
 // 구독자 전체에게 발송 (요금제별 한 번에 보낼 수 있는 인원까지)
 export async function sendNewsletter(d: Draft): Promise<NlState> {
   try {
+    if ((await getCmsContext()).trial) return { error: '체험 중에는 구독자에게 보낼 수 없습니다. “나에게 시험 발송”으로 받아 보세요.' }
     const c = await outletContext()
     if (!mailReady()) return { error: '메일 발송이 아직 설정되지 않았습니다. 운영팀에 문의해 주세요.' }
     const r = await render(c, d)

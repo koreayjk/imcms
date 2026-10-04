@@ -13,6 +13,8 @@ export default async function EditArticlePage({ params }: { params: { id: string
   const { data: article } = await supabase.from('articles').select('*').eq('id', params.id).single()
   if (!article) notFound()
   if (article.author_id !== user.id && !isEditorPlus) redirect('/articles')
+  // 체험용 샘플 기사는 고칠 수 없다 (trial.sql)
+  if (article.is_sample) redirect(`/articles/${article.id}`)
 
   const scope = article.outlet_id ?? outletId
   const [{ data: categories }, { data: outlets }, { data: copies }, { data: source }, { data: author }] = await Promise.all([

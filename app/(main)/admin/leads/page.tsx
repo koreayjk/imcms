@@ -9,13 +9,27 @@ type Props = { searchParams: { tab?: string } }
 export default async function LeadsPage({ searchParams }: Props) {
   const { supabase, user, isStaff } = await getCmsContext()
   if (!isStaff) redirect('/newsroom')
-  const tab = ['mine', 'open', 'done'].includes(searchParams.tab ?? '') ? searchParams.tab : 'open'
+  const tab = ['mine', 'open', 'done', 'trial'].includes(searchParams.tab ?? '') ? searchParams.tab : 'open'
 
-  const [{ data, error }, { data: staffRows }, { data: groups }] = await Promise.all([
+  const [{ data, error }, { data: staffRows }, { data: groups }, trialRes] = await Promise.all([
     supabase.from('beta_requests').select('*').order('created_at', { ascending: false }).limit(300),
     supabase.from('profiles').select('id, full_name, is_super, is_staff'),
     supabase.from('publishers').select('id, name'),
+    // 1주일 무료 체험 신청자 (trial.sql 전이면 표가 없어 탭을 숨긴다)
+    supabase.from('trial_signups').select('*').order('created_at', { ascending: false }).limit(300),
   ])
+  type TrialRow = { user_id: string; email: string | null; name: string | null; company: string | null; position: string | null; phone: string | null; created_at: string }
+  const trials = (trialRes.data ?? []) as TrialRow[]
+  const { data: trialProfiles } = trials.length
+    ? await supabase.from('profiles').select('id, trial_until').in('id', trials.map((t) => t.user_id))
+    : { data: [] }
+  const trialUntil = new Map(((trialProfiles ?? []) as { id: string; trial_until: string | null }[]).map((p) => [p.id, p.trial_until]))
+  const trialState = (id: string) => {
+    const u = trialUntil.get(id)
+    if (!u) return '계정 삭제됨'
+    const days = Math.ceil((Date.parse(u) - Date.now()) / 86_400_000)
+    return days > 0 ? `체험 중 · ${days}일 남음` : '체험 끝남'
+  }
   const staff = ((staffRows ?? []) as any[]).filter((p) => p.is_super || p.is_staff).map((p) => ({ id: p.id as string, name: p.full_name as string }))
   const groupName = new Map((groups ?? []).map((g) => [g.id as string, g.name as string]))
   const all = (data ?? []) as Lead[]
@@ -27,6 +41,7 @@ export default async function LeadsPage({ searchParams }: Props) {
     { key: 'open', label: '처리할 상담', n: all.filter((l) => l.status !== 'done').length },
     { key: 'mine', label: '내 담당', n: all.filter((l) => l.assigned_to === user.id && l.status !== 'done').length },
     { key: 'done', label: '완료', n: all.filter((l) => l.status === 'done').length },
+    ...(trialRes.error ? [] : [{ key: 'trial', label: '무료 체험', n: trials.length }]),
   ]
 
   return (
@@ -44,7 +59,30 @@ export default async function LeadsPage({ searchParams }: Props) {
           </a>
         ))}
       </nav>
-      {error ? (
+      {tab === 'trial' ? (
+        trials.length ? (
+          <div className="overflow-x-auto rounded-lg border border-line bg-white">
+            <table className="w-full min-w-[760px] text-[13.5px]">
+              <thead className="bg-paper text-left text-[12.5px] text-muted">
+                <tr><th className="px-4 py-2.5">신청일</th><th className="px-4 py-2.5">이름</th><th className="px-4 py-2.5">언론사 · 직함</th><th className="px-4 py-2.5">연락처</th><th className="px-4 py-2.5">상태</th></tr>
+              </thead>
+              <tbody>
+                {trials.map((t) => (
+                  <tr key={t.user_id} className="border-t border-line">
+                    <td className="px-4 py-3 tabular-nums text-muted">{formatDateTime(t.created_at)}</td>
+                    <td className="px-4 py-3 font-semibold">{t.name}</td>
+                    <td className="px-4 py-3">{t.company}{t.position ? ` · ${t.position}` : ''}</td>
+                    <td className="px-4 py-3"><a href={`tel:${t.phone ?? ''}`} className="hover:underline">{t.phone}</a><br /><a href={`mailto:${t.email ?? ''}`} className="text-muted hover:underline">{t.email}</a></td>
+                    <td className="px-4 py-3">{trialState(t.user_id)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="rounded-lg border border-line bg-white px-5 py-16 text-center text-sm text-muted">아직 체험 신청이 없습니다.</p>
+        )
+      ) : error ? (
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">신청서를 받으려면 Supabase에서 <code>supabase/beta-requests.sql</code>을 실행해 주세요.</p>
       ) : rows.length ? (
         <ul className="space-y-3">

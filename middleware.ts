@@ -16,6 +16,8 @@ function isPublicPath(pathname: string) {
     pathname === '/search' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
+    // 체험 신청·체험 종료 안내 (trial.sql)
+    pathname === '/trial' || pathname.startsWith('/trial/') ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith(PRODUCT.path) ||
     // 글로벌디지털언론협회(GDPA) 사이트: 협회 회원 로그인은 사이트 안에서 따로 확인한다
