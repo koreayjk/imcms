@@ -31,8 +31,17 @@ export async function saveOutletPlan(form: FormData) {
     updated_at: new Date().toISOString(),
   })
   if (error) back(/outlet_plans/.test(error.message) ? 'Supabase에서 billing-auto.sql을 먼저 실행해 주세요.' : `저장하지 못했습니다: ${error.message}`, 'error')
+  // 추가 매체는 베이직 사양 (AI 월 300회·뉴스레터 회당 2,000명 등) — 요금제를 베이직으로 맞춘다
+  let note = ''
+  if (bill_to) {
+    const { data: cur } = await supabase.from('outlets').select('plan').eq('id', outlet_id).maybeSingle()
+    if (cur && cur.plan !== 'basic') {
+      const { error: e } = await supabase.from('outlets').update({ plan: 'basic' }).eq('id', outlet_id)
+      note = e ? ` (요금제를 베이직으로 바꾸지 못했습니다: ${e.message})` : ' 추가 매체라 요금제를 베이직으로 맞췄습니다.'
+    }
+  }
   revalidatePath('/support/invoices/auto')
-  back('저장했습니다.')
+  back(`저장했습니다.${note}`)
 }
 
 // 이번 달 청구서 지금 만들기 (총관리자). 이미 있는 매체는 건너뛴다

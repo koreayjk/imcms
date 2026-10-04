@@ -67,7 +67,7 @@ export function billingItems(t: BillingTarget, month: string) {
     }
   }
 
-  // 지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다). 추가 매체는 본 매체 한도를 함께 쓰므로 합쳐서 한 번에 센다
+  // 지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다). 본 매체와 추가 매체가 넘긴 횟수를 합쳐 한 번에 센다
   const prev = label(m - 1)
   const over = t.over_count + t.children.reduce((n, c) => n + c.over_count, 0)
   if (over > 0) items.push({ name: `AI 추가 사용${t.children.length ? ' (추가 매체 포함)' : ''} (${prev} ${over.toLocaleString('ko-KR')}회, 100회마다)`, qty: aiQty(over), unit_price: EXTRA_AI_FEE })

@@ -175,7 +175,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
 
       <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-2">
         {[
-          ['매체 추가', `${won(EXTRA_OUTLET_FEE)}/월`, '프리미엄 전용 · 매체 2개까지 포함, 3번째 매체부터 매체마다 (AI 한도는 함께 사용)'],
+          ['매체 추가', `${won(EXTRA_OUTLET_FEE)}/월`, '프리미엄 전용 · 매체 2개까지 포함, 3번째 매체부터 매체마다 (추가 매체는 베이직 사양)'],
           ['AI 사용 추가', won(EXTRA_AI_FEE), '월 한도(초안·법적 검수)를 넘으면 100회마다'],
         ].map(([k, v, d]) => (
           <div key={k} className="rounded-lg bg-white p-5 ring-1 ring-black/5">

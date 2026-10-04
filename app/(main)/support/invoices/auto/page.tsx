@@ -63,7 +63,7 @@ export default async function AutoBillingPage({ searchParams }: Props) {
         <ul className="mt-1 list-disc space-y-0.5 pl-5">
           <li>요금제 월 이용료 (요금제는 <Link href="/admin/ai-usage" className="text-[#2F6BF0] underline">AI 사용량</Link> 화면에서 정합니다) · 베타 반값이면 {Math.round(BETA_RATE * 100)}%</li>
           <li>1년 결제는 첫 청구 월부터 12개월마다 한 번, {ANNUAL_MONTHS}개월 값</li>
-          <li>추가 매체(프리미엄 전용): &lsquo;청구 받을 매체&rsquo;를 고른 매체는 그 매체 청구서에 월 {won(EXTRA_OUTLET_FEE)}으로 붙습니다 (프리미엄은 {PREMIUM_INCLUDED_EXTRA}개 포함). 추가 매체는 본 매체의 AI 한도를 함께 씁니다</li>
+          <li>추가 매체(프리미엄 전용): &lsquo;청구 받을 매체&rsquo;를 고른 매체는 그 매체 청구서에 월 {won(EXTRA_OUTLET_FEE)}으로 붙습니다 (프리미엄은 {PREMIUM_INCLUDED_EXTRA}개 포함). 추가 매체로 저장하면 그 매체 요금제는 베이직으로 맞춰집니다 (AI 월 300회 등)</li>
           <li>지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다) · 세팅비 {won(SETUP_FEE)}는 체크한 경우 다음 청구서에 한 번</li>
         </ul>
         {isSuper && !missingSql && (
