@@ -1,6 +1,7 @@
 -- IM 체험뉴스 샘플 기사 더 넣기 (Supabase SQL 에디터에서 실행, trial.sql 다음. 여러 번 실행해도 된다 — 같은 제목은 건너뛴다)
---   우리 매체(더케어타임즈·Shipping Times·Israel Today)의 발행·승인대기 기사 중 사진(표지 그림) 있는 기사를 매체마다 최대 30건 복사
---   섹션: 더케어타임즈 → 건강·복지·사회(경제·문화), Shipping Times → 경제·산업, Israel Today 현지 뉴스 → 국제, 성지·문화 → 문화
+--   우리 매체(더케어타임즈·Shipping Times)의 발행·승인대기 기사 중 사진(표지 그림) 있는 기사를 매체마다 최대 30건 복사
+--   섹션: 더케어타임즈 → 건강·복지·사회(경제·문화), Shipping Times → 경제·산업·국제
+--   Israel Today 기사는 넣지 않는다 (원문 사진이 없다)
 --   본문의 [매체=기자] 표시는 [IM 체험뉴스=샘플 기자]로 바꾸고, 모두 '샘플 기사'(수정·삭제 불가)로 넣는다
 --   건강·복지·산업은 '전문 섹션'으로 지정해 홈에 전문뉴스 줄이 보이게 한다
 
@@ -17,13 +18,11 @@ begin
     from articles a
     join outlets so on so.id = a.outlet_id
     left join categories c on c.id = a.category_id
-    where so.name in ('더케어타임즈', 'Shipping Times', 'Israel Today')
+    where so.name in ('더케어타임즈', 'Shipping Times')
       and a.status in ('published', 'in_review')
       and a.thumbnail_url is not null
       and a.source_article_id is null
       and coalesce(c.slug, '') not in ('opinion', 'shop', 'video')
-      -- Israel Today 는 현지 뉴스·성지 기사만 (말씀·선교 교육 기사는 일반 신문 샘플로 맞지 않는다)
-      and (so.name <> 'Israel Today' or coalesce(c.slug, '') ~ '^(israel|holyland)')
       and not exists (select 1 from articles t where t.outlet_id = o and t.title = a.title)
   ), picked as (
     select s.*,
@@ -35,8 +34,8 @@ begin
                -- 복지·돌봄 기사 셋 중 하나는 사회 섹션으로 (사회 섹션이 비지 않게)
                when s.n % 3 = 0 then 'society'
                else 'health' end
-        when s.src_outlet = 'Shipping Times' then case when s.n % 2 = 0 then 'industry' else 'economy' end
-        else case when s.src_slug ~ '^holyland' then 'culture' else 'world' end
+        -- Shipping Times: 셋 중 하나는 국제(해외 해운·무역 소식)
+        else case when s.n % 3 = 0 then 'world' when s.n % 2 = 0 then 'industry' else 'economy' end
       end as slug
     from src s
     where s.n <= 30

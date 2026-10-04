@@ -81,15 +81,15 @@ begin
     from articles a
     join outlets so on so.id = a.outlet_id
     left join categories c on c.id = a.category_id
-    where so.name in ('더케어타임즈', 'Shipping Times', 'Israel Today')
+    where so.name in ('더케어타임즈', 'Shipping Times')
       and a.status = 'published' and a.published_at <= now()
       and a.thumbnail_url is not null and a.source_article_id is null
   ), picked as (
     select s.*,
       case
         when s.src_outlet = '더케어타임즈' then case when s.src_slug in ('politics', 'society') then 'society' when s.src_slug = 'economy' then 'economy' when s.src_slug = 'culture' then 'culture' else 'health' end
-        when s.src_outlet = 'Shipping Times' then case when s.n % 2 = 0 then 'industry' else 'economy' end
-        else case when s.src_slug ~ '(culture|holy|art|video)' then 'culture' else 'world' end
+        -- Shipping Times: 셋 중 하나는 국제(해외 해운·무역 소식)
+        else case when s.n % 3 = 0 then 'world' when s.n % 2 = 0 then 'industry' else 'economy' end
       end as slug
     from src s where s.n <= 12
   )
