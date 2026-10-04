@@ -225,7 +225,8 @@ export default async function HomePage() {
 
       {!bandsMode && (
         <>
-      {/* ── 전문뉴스 (매체 설정의 전문 섹션) ── */}
+      {/* ── 전문뉴스 (매체 설정의 전문 섹션, 없으면 이 줄을 통째로 뺀다) ── */}
+      {specialty.length > 0 && (
       <section aria-labelledby="specialty-title" className="border-y border-rule bg-soft py-9">
         <div className="mx-auto max-w-[1200px] px-4">
           <div className="mb-6 flex items-end justify-between gap-4">
@@ -276,6 +277,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ── 종합 섹션 ── */}
       <div className="mx-auto grid max-w-[1200px] gap-10 px-4 pt-9 sm:grid-cols-2 lg:grid-cols-4 lg:gap-7">

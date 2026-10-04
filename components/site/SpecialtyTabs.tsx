@@ -9,7 +9,8 @@ type Tab = { slug: string; name: string; description?: string; articles: PublicA
 
 export default function SpecialtyTabs({ tabs, title = '전문뉴스' }: { tabs: Tab[]; title?: string }) {
   const [active, setActive] = useState(0)
-  const tab = tabs[active]
+  const tab = tabs[active] ?? tabs[0]
+  if (!tab) return null
   const [lead, ...rest] = tab.articles
 
   return (
