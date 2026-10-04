@@ -46,6 +46,7 @@ export default async function PendingPage() {
             ? <>{requestedName} 발행인이 승인하면 바로 기사를 쓸 수 있습니다. 승인 후 이 화면을 새로 고치세요.</>
             : <>소속 매체를 정하면 그 매체 발행인이, 정하지 않으면 IM 뉴스룸 관리자가 승인합니다. 승인 후 이 화면을 새로 고치세요.</>}
         </p>
+        <p className="mt-3 text-[13px] text-muted">1주일 무료 체험을 하려던 거라면 <a href="/trial/complete" className="font-semibold text-ink underline underline-offset-2">체험 계정 만들기</a>로 이어서 하세요.</p>
         <div className="mt-5 flex justify-center gap-2">
           <a href="/newsroom" className="btn-primary">새로 고침</a>
           <SignOutButton />

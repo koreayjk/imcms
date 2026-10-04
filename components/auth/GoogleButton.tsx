@@ -15,15 +15,18 @@ function GoogleMark() {
 }
 
 // requestedOutlet: 가입 화면에서 고른 소속 매체 ('unknown' = 모름). undefined면 로그인 버튼
-export default function GoogleButton({ label, requestedOutlet }: { label: string; requestedOutlet?: string }) {
+// next: 로그인 뒤 갈 곳, before: 구글로 가기 전 확인 (false면 가지 않는다)
+export default function GoogleButton({ label, requestedOutlet, next, before }: { label: string; requestedOutlet?: string; next?: string; before?: () => boolean }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function start() {
     setError('')
     if (requestedOutlet === '') { setError('먼저 소속 매체를 골라 주세요.'); return }
+    if (before && !before()) return
     setLoading(true)
     const back = new URL('/auth/callback', window.location.origin)
+    if (next) back.searchParams.set('next', next)
     if (requestedOutlet && requestedOutlet !== 'unknown') back.searchParams.set('outlet', requestedOutlet)
     const { error } = await createClient().auth.signInWithOAuth({
       provider: 'google',

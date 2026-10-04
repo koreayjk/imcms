@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import TrialSignupForm from '@/components/auth/TrialSignupForm'
+import { isApproved } from '@/lib/cms'
 
 export const metadata: Metadata = { title: '1주일 무료 체험 | IM 뉴스룸', robots: { index: false, follow: false } }
 
@@ -20,9 +21,16 @@ const RULES = [
 
 export default async function TrialPage() {
   let loggedIn = false
+  // 구글로 들어왔지만 체험 계정 만들기를 마치지 않은 회원 (승인 전 일반 회원)
+  let unfinished = false
   if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
     const supabase = await createServerSupabaseClient()
-    loggedIn = !!(await supabase.auth.getUser()).data.user
+    const user = (await supabase.auth.getUser()).data.user
+    loggedIn = !!user
+    if (user) {
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+      unfinished = !!p && !p.trial_until && !isApproved(p)
+    }
   }
   const demo = process.env.NEXT_PUBLIC_TRIAL_SITE_URL ?? 'https://imnews-demo.vercel.app'
 
@@ -53,7 +61,13 @@ export default async function TrialPage() {
         </div>
 
         <div>
-          {loggedIn ? (
+          {unfinished ? (
+            <div className="rounded-lg border border-line bg-white p-6 text-center">
+              <p className="font-bold">체험 계정 만들기를 마쳐 주세요</p>
+              <p className="mt-2 text-[14px] text-muted">소속 언론사와 연락처를 적으면 바로 체험을 시작합니다.</p>
+              <Link href="/trial/complete" className="btn-primary mt-4 inline-block">이어서 하기</Link>
+            </div>
+          ) : loggedIn ? (
             <div className="rounded-lg border border-line bg-white p-6 text-center">
               <p className="font-bold">이미 로그인돼 있습니다</p>
               <p className="mt-2 text-[14px] text-muted">체험 계정이면 편집국에서 바로 이어서 쓰면 됩니다.</p>
