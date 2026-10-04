@@ -57,7 +57,7 @@ export function PressInboxMock() {
                   {!r.manual && <span className="rounded bg-[#E4E6EA]/70 px-1 py-px">{r.src}</span>}
                   <span className="tabular-nums">{r.time}</span>
                   {r.used && <span className="rounded bg-[#1E7D4D]/10 px-1 py-px font-semibold text-[#1E7D4D]">기사화됨</span>}
-                  {r.hot && <span className="rounded bg-[#E5483A] px-1 py-px font-semibold text-white">NEW</span>}
+                  {r.hot && <span className="rounded bg-[#B0452E] px-1 py-px font-semibold text-white">NEW</span>}
                 </div>
                 <p className="mt-1 truncate text-[12.5px] font-semibold">{r.title}</p>
               </li>
@@ -95,7 +95,7 @@ export function HomeBoardMock() {
         <span className="rounded bg-[#1E7D4D] px-2.5 py-1 text-[10.5px] font-semibold text-white">홈페이지에 반영</span>
       </div>
       <div className="grid grid-cols-4 gap-2">
-        <Slot label="헤드라인" title="요양병원 간병비 급여화 시범사업, 참여 기관 확대 논의" tone="border-[#E5483A] text-[#E5483A]" className="col-span-2 row-span-2 min-h-[120px]" />
+        <Slot label="헤드라인" title="요양병원 간병비 급여화 시범사업, 참여 기관 확대 논의" tone="border-[#B0452E] text-[#B0452E]" className="col-span-2 row-span-2 min-h-[120px]" />
         <Slot label="톱 1" title="대학병원 응급실 운영 현황…야간 전문의 확보가 관건" tone="border-[#F2B544] text-[#9A6B00]" />
         <Slot label="톱 2" title="기초생활보장 부양의무자 기준 완화" tone="border-[#F2B544] text-[#9A6B00]" />
         <Slot label="주요" title="돌봄 로봇·센서 도입 확산" tone="border-[#3B82F6] text-[#2563EB]" />
@@ -133,7 +133,7 @@ export function SyndicateVisual() {
           <path key={x} d={`M260 0 C 260 45, ${x} 45, ${x} 90`} fill="none" stroke="url(#synd)" strokeWidth="2.5" className="pn-dash" style={{ animationDelay: `${i * 200}ms` }} />
         ))}
         <defs>
-          <linearGradient id="synd" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#F5B83D" /><stop offset="1" stopColor="#E5483A" /></linearGradient>
+          <linearGradient id="synd" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#D4B483" /><stop offset="1" stopColor="#B8925A" /></linearGradient>
         </defs>
       </svg>
       <div className="grid grid-cols-3 gap-2.5">
@@ -143,7 +143,7 @@ export function SyndicateVisual() {
             <div className="space-y-1 p-2.5">
               <span className="block h-1.5 w-full rounded bg-[#E4E6EA]" />
               <span className="block h-1.5 w-4/5 rounded bg-[#E4E6EA]" />
-              <span className={`mt-1.5 inline-block rounded px-1.5 py-px text-[9.5px] font-bold ${o.note === '원본' ? 'bg-[#1E7D4D]/10 text-[#1E7D4D]' : 'bg-[#F5B83D]/20 text-[#8A5A00]'}`}>{o.note}</span>
+              <span className={`mt-1.5 inline-block rounded px-1.5 py-px text-[9.5px] font-bold ${o.note === '원본' ? 'bg-[#1E7D4D]/10 text-[#1E7D4D]' : 'bg-[#F3EDE3] text-[#8C6A35]'}`}>{o.note}</span>
             </div>
           </div>
         ))}
@@ -184,7 +184,7 @@ export function MailForwardVisual() {
   )
   const Arrow = ({ label }: { label: string }) => (
     <div className="flex items-center gap-2 py-1.5 pl-8 text-[11px] font-semibold text-[#8C929B]">
-      <svg width="14" height="26" viewBox="0 0 14 26" aria-hidden><path d="M7 0v22M2 17l5 6 5-6" fill="none" stroke="#F5A524" strokeWidth="2" className="pn-dash" /></svg>
+      <svg width="14" height="26" viewBox="0 0 14 26" aria-hidden><path d="M7 0v22M2 17l5 6 5-6" fill="none" stroke="#B8925A" strokeWidth="2" className="pn-dash" /></svg>
       {label}
     </div>
   )
@@ -193,11 +193,11 @@ export function MailForwardVisual() {
     <div className="mt-8 max-w-[420px]">
       <Node title="기자 지메일" sub="[보도자료] ○○군, 경로당 냉난방비 지원 확대" color="#EA4335">{mail}</Node>
       <Arrow label="필터: 제목에 ‘보도자료’ → 자동 전달" />
-      <Node title="내 전용 주소" sub="press+hong…@imnewsroom" color="#8B5CF6">
+      <Node title="내 전용 주소" sub="press+hong…@imnewsroom" color="#0F1115">
         <span className="text-[12px] font-black">IM</span>
       </Node>
       <Arrow label="보낸 기관·제목 자동 정리, 사진 첨부 저장" />
-      <Node title="보도자료함" sub="메일 · ○○군청 기획홍보실 · 방금" color="#10B981">
+      <Node title="보도자료함" sub="메일 · ○○군청 기획홍보실 · 방금" color="#3F7D5C">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden><path d="M3 13h5l1.5 3h5L16 13h5M5.5 5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5l2.5-8Z" /></svg>
       </Node>
     </div>
@@ -209,14 +209,14 @@ export function SupportMock() {
   const tickets = [
     { s: '완료', cls: 'bg-[#E4E6EA] text-[#5B616B]', cat: '디자인', title: '메인 상단 배너 자리를 만들어 주세요' },
     { s: '진행', cls: 'bg-[#2d6ca8]/10 text-[#2d6ca8]', cat: '기능·개발', title: '기사 목록에 조회수 정렬을 추가해 주세요', reply: true },
-    { s: '접수', cls: 'bg-[#E5483A]/10 text-[#E5483A]', cat: '오류·장애', title: '사진 설명이 모바일에서 잘려 보입니다' },
+    { s: '접수', cls: 'bg-[#B0452E]/10 text-[#B0452E]', cat: '오류·장애', title: '사진 설명이 모바일에서 잘려 보입니다' },
   ]
   return (
     <div className="overflow-hidden rounded-xl border border-black/10 bg-[#F4F5F7] text-[#14171C] shadow-[0_30px_80px_-25px_rgba(11,16,32,0.45)]">
       <div className="flex items-center gap-5 border-b border-[#E4E6EA] bg-white px-5 text-[12.5px]">
         <strong className="py-3 text-[13.5px]">고객센터</strong>
         {['업무요청', '공지', '청구서', '결제 정보'].map((t, i) => (
-          <span key={t} className={`py-3 ${i === 0 ? '-mb-px border-b-2 border-[#E5483A] font-bold' : 'text-[#8C929B]'}`}>{t}</span>
+          <span key={t} className={`py-3 ${i === 0 ? '-mb-px border-b-2 border-[#B0452E] font-bold' : 'text-[#8C929B]'}`}>{t}</span>
         ))}
       </div>
       <div className="grid gap-2.5 p-4 sm:grid-cols-3">
@@ -225,7 +225,7 @@ export function SupportMock() {
             <div className="flex items-center gap-1 text-[10px]">
               <span className={`rounded px-1.5 py-px font-bold ${t.cls}`}>{t.s}</span>
               <span className="text-[#8C929B]">{t.cat}</span>
-              {t.reply && <span className="ml-auto rounded bg-[#E5483A] px-1 py-px font-bold text-white">새 답변</span>}
+              {t.reply && <span className="ml-auto rounded bg-[#B0452E] px-1 py-px font-bold text-white">새 답변</span>}
             </div>
             <p className="mt-2 text-[12.5px] font-bold leading-snug">{t.title}</p>
           </div>
@@ -233,7 +233,7 @@ export function SupportMock() {
       </div>
       <div className="mx-4 mb-4 rounded-xl bg-[#EEF2F8] p-3.5">
         <p className="flex items-center gap-2 text-[11.5px]">
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-[#F5B83D] to-[#E5483A] text-[9px] font-bold text-white">IM</span>
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-[#0F1115] text-[9px] font-bold text-white">IM</span>
           <strong>IM 뉴스룸 운영팀</strong>
           <span className="ml-auto text-[#8C929B]">방금</span>
         </p>
@@ -250,7 +250,7 @@ export function SupportMock() {
 // 그룹·권한: 한 사람이 여러 매체에서 다른 직급을 갖고, 상단바에서 매체를 바꾼다
 export function TeamMock() {
   const people = [
-    { name: '김발행', tag: '발행인', tagCls: 'bg-[#F5A524] text-[#3B2A00]', roles: [['그룹 전체 매체', '관리']] },
+    { name: '김발행', tag: '발행인', tagCls: 'bg-[#F3EDE3] text-[#8C6A35]', roles: [['그룹 전체 매체', '관리']] },
     { name: '이편집', tag: '매체별 직급', tagCls: 'bg-[#6366F1]/10 text-[#4F46E5]', roles: [['케어타임즈', '편집장'], ['시니어경제', '기자']] },
     { name: '박기자', tag: '매체별 직급', tagCls: 'bg-[#6366F1]/10 text-[#4F46E5]', roles: [['시니어경제', '기자']] },
   ]
@@ -274,10 +274,10 @@ export function TeamMock() {
             </span>
           </div>
         ))}
-        <div className="flex items-center gap-2 rounded-xl border border-dashed border-[#F5A524]/60 bg-[#FFF8EA] p-3 text-[12px]">
-          <span className="rounded bg-[#E5483A] px-1.5 py-px text-[10px] font-bold text-white">가입 신청</span>
+        <div className="flex items-center gap-2 rounded-xl border border-dashed border-[#B8925A]/50 bg-[#FAF8F4] p-3 text-[12px]">
+          <span className="rounded bg-[#B0452E] px-1.5 py-px text-[10px] font-bold text-white">가입 신청</span>
           <span>최신입 · <strong>케어타임즈</strong> 기자로 가입</span>
-          <span className="ml-auto rounded bg-[#10B981] px-2 py-0.5 text-[11px] font-bold text-white">발행인 승인</span>
+          <span className="ml-auto rounded bg-[#3F7D5C] px-2 py-0.5 text-[11px] font-bold text-white">발행인 승인</span>
         </div>
       </div>
     </div>

@@ -123,7 +123,7 @@ const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메�
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[#F5B83D] to-[#E5483A] text-[11px] font-black tracking-tight text-white shadow-[0_4px_14px_-4px_rgba(229,72,58,0.7)]">IM</span>
+      <span className={`grid h-8 w-8 place-items-center rounded-md text-[11px] font-black tracking-tight ${dark ? 'bg-white text-[#0F1115]' : 'bg-[#0F1115] text-white'}`}>IM</span>
       <span className={`text-[18px] font-extrabold tracking-[-0.02em] ${dark ? 'text-white' : ''}`}>뉴스룸</span>
     </span>
   )
@@ -131,8 +131,8 @@ function Logo({ dark = false }: { dark?: boolean }) {
 
 function Eyebrow({ icon, color, children }: { icon: Icon; color: string; children: React.ReactNode }) {
   return (
-    <p className="inline-flex items-center gap-2 text-[13.5px] font-bold" style={{ color }}>
-      <span className="grid h-8 w-8 place-items-center rounded-lg text-white" style={{ background: color }}><Glyph name={icon} className="h-[18px] w-[18px]" /></span>
+    <p className="inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-[0.06em]" style={{ color }}>
+      <Glyph name={icon} className="h-[17px] w-[17px]" />
       {children}
     </p>
   )
@@ -141,7 +141,7 @@ function Eyebrow({ icon, color, children }: { icon: Icon; color: string; childre
 function Check({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
   return (
     <li className={`flex gap-3 text-[15.5px] leading-relaxed ${dark ? 'text-white/80' : 'text-[#3B4048]'}`}>
-      <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#10B981] text-[11px] font-bold text-white">✓</span>
+      <span className={`mt-[3px] shrink-0 text-[14px] font-bold ${dark ? 'text-[#D4B483]' : 'text-[#8C6A35]'}`} aria-hidden>✓</span>
       <span>{children}</span>
     </li>
   )
@@ -154,7 +154,8 @@ const DEMO_INDEX: IndexSeries = {
   kcci: weeks('2026-07-13', [2350.62, 2331.1, 2290.4, 2302.8, 2260.3, 2231.5, 2205.9, 2188.2, 2150.6, 2131.2, 2110.4, 2096.64]),
 }
 
-const H2 = 'text-[30px] font-extrabold leading-[1.25] tracking-[-0.03em] [text-wrap:balance] sm:text-[40px]'
+// 큰 제목은 명조(신문 제목처럼), 본문은 고딕
+const H2 = 'text-[30px] font-bold leading-[1.32] tracking-[-0.025em] [font-family:var(--serif)] [text-wrap:balance] sm:text-[40px]'
 
 // 1주일 무료 체험 버튼 (소개 페이지 곳곳에)
 function TrialButton({ className = '', children = '1주일 무료 체험 시작 →' }: { className?: string; children?: React.ReactNode }) {
@@ -165,12 +166,12 @@ function TrialButton({ className = '', children = '1주일 무료 체험 시작 
 function TrialStrip({ beta }: { beta: boolean }) {
   return (
     <div className="px-4 sm:px-6">
-      <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 rounded-2xl border border-[#F5A524]/40 bg-gradient-to-r from-[#FFF7E8] to-[#FFEDEA] px-6 py-6 text-center sm:flex-row sm:justify-between sm:text-left">
-        <p className="text-[17px] font-bold leading-snug tracking-[-0.02em] text-[#14171C] sm:text-[19px]">
+      <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 border-y border-[#E6E4DF] px-2 py-7 text-center sm:flex-row sm:justify-between sm:text-left">
+        <p className="text-[18px] font-bold leading-snug tracking-[-0.02em] text-[#0F1115] [font-family:var(--serif)] sm:text-[21px]">
           말로 듣는 것보다 직접 써 보는 게 빠릅니다.
           <span className="block text-[14.5px] font-medium text-[#5B616B]">{beta ? `첫 1주일은 무료, ${BETA_END_LABEL}까지 가입하면 모든 요금 반값` : '첫 1주일은 무료로 모든 기능을 써 보세요'}</span>
         </p>
-        <TrialButton className="shrink-0 rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-6 py-3.5 text-[15.5px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(229,72,58,0.8)] transition hover:-translate-y-0.5 hover:brightness-110" />
+        <TrialButton className="shrink-0 rounded-md bg-[#0F1115] px-6 py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#2A2D33]" />
       </div>
     </div>
   )
@@ -183,9 +184,9 @@ export default function ProductHome() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-[#14171C] [word-break:keep-all]" style={{ ['--serif' as string]: "'Noto Serif KR', Georgia, serif" }}>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&display=swap" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700;900&display=swap" />
 
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#0B1020]/75 backdrop-blur-md">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#0F1115]/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-4 sm:px-6">
           <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo dark /></a>
           <nav className="ml-auto hidden items-center gap-7 text-[14px] text-white/70 md:flex" aria-label="소개 메뉴">
@@ -201,42 +202,36 @@ export default function ProductHome() {
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link href="/login" className="hidden rounded-md px-3 py-2 text-[13.5px] text-white/70 hover:text-white sm:block">편집국 로그인</Link>
-            <a href="#apply" className="hidden rounded-lg border border-white/25 px-3.5 py-2 text-[13.5px] font-semibold text-white hover:bg-white/10 sm:block">{beta ? '베타 신청' : '서비스 신청'}</a>
-            <TrialButton className="rounded-lg bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-4 py-2 text-[13.5px] font-bold text-white shadow-[0_6px_20px_-6px_rgba(229,72,58,0.8)] hover:brightness-110">1주일 무료 체험</TrialButton>
+            <a href="#apply" className="hidden rounded-md border border-white/25 px-3.5 py-2 text-[13.5px] font-semibold text-white hover:bg-white/10 sm:block">{beta ? '베타 신청' : '서비스 신청'}</a>
+            <TrialButton className="rounded-md bg-white px-4 py-2 text-[13.5px] font-bold text-[#0F1115] hover:bg-white/90">1주일 무료 체험</TrialButton>
           </div>
         </div>
       </header>
 
       <main id="top">
         {/* ─── 첫 화면 ─── */}
-        <section className="relative isolate overflow-hidden bg-[#0B1020] pb-40 pt-32 text-white sm:pt-36">
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-            <div className="absolute -left-40 -top-40 h-[560px] w-[560px] rounded-full bg-[#E5483A]/30 blur-[120px]" />
-            <div className="absolute right-[-10%] top-10 h-[520px] w-[520px] rounded-full bg-[#6366F1]/30 blur-[120px]" />
-            <div className="absolute bottom-[-20%] left-1/3 h-[480px] w-[480px] rounded-full bg-[#F5A524]/20 blur-[120px]" />
-            <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-          </div>
+        <section className="relative isolate overflow-hidden bg-[#0F1115] pb-40 pt-32 text-white sm:pt-36">
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_75%_20%,#1E222A_0%,transparent_70%)]" aria-hidden />
 
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.15fr]">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[12.5px] font-semibold text-white/85 backdrop-blur">
-                <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E5483A] opacity-75" /><span className="relative h-2 w-2 rounded-full bg-[#E5483A]" /></span>
+              <p className="inline-flex items-center gap-2.5 border-l-2 border-[#B8925A] pl-3 text-[13px] font-medium tracking-[0.02em] text-white/80">
                 {beta ? <>출시 기념 베타 · 1주일 무료 + {BETA_END_LABEL}까지 반값<span className="hidden sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
               </p>
-              <h1 className="mt-7 text-[42px] font-extrabold leading-[1.14] tracking-[-0.04em] sm:text-[56px] xl:text-[60px]">
+              <h1 className="mt-7 text-[40px] font-bold leading-[1.22] tracking-[-0.03em] [font-family:var(--serif)] sm:text-[54px] xl:text-[58px]">
                 1인 언론사에도
                 <br />
-                <span className="bg-gradient-to-r from-[#FFD27A] via-[#F5A524] to-[#FF6B5B] bg-clip-text text-transparent sm:whitespace-nowrap">뉴스룸이 생깁니다.</span>
+                <span className="text-[#D4B483] sm:whitespace-nowrap">뉴스룸이 생깁니다.</span>
               </h1>
               <p className="mt-6 max-w-[32em] text-[17.5px] leading-[1.75] text-white/70">
                 보도자료 수집부터 AI 기사 초안, 승인, 발행, 여러 매체 동시 송고까지.
                 반복 업무는 {PRODUCT.name}이 맡고, 기자는 취재와 확인에 집중합니다.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <TrialButton className="rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-7 py-4 text-[16px] font-bold text-white shadow-[0_12px_30px_-8px_rgba(229,72,58,0.8)] transition hover:-translate-y-0.5 hover:brightness-110">
+                <TrialButton className="rounded-md bg-white px-7 py-4 text-[16px] font-bold text-[#0F1115] transition hover:bg-white/90">
                   1주일 무료 체험 시작 →
                 </TrialButton>
-                <a href="#apply" className="rounded-xl border border-white/20 bg-white/5 px-7 py-4 text-[16px] font-semibold text-white backdrop-blur transition hover:bg-white/10">
+                <a href="#apply" className="rounded-md border border-white/25 px-7 py-4 text-[16px] font-semibold text-white transition hover:bg-white/10">
                   {beta ? '베타 신청 (반값)' : '서비스 신청'}
                 </a>
               </div>
@@ -253,15 +248,15 @@ export default function ProductHome() {
               <Browser src={`${IMG}/site-pc.jpg`} alt="IM 뉴스룸으로 만든 신문 사이트 PC 화면 (샘플 기사)" eager className="relative" />
               <Phone src={`${IMG}/site-mobile.jpg`} alt="같은 신문 사이트의 휴대폰 화면" eager className="absolute -bottom-10 -left-4 w-[30%] sm:-left-10 lg:-bottom-16" />
               <div className="pn-float absolute -right-2 -top-6 rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] sm:-right-8">
-                <p className="flex items-center gap-2 text-[12px] font-bold"><span className="h-2 w-2 rounded-full bg-[#E5483A]" />새 보도자료</p>
+                <p className="flex items-center gap-2 text-[12px] font-bold"><span className="h-2 w-2 rounded-full bg-[#B8925A]" />새 보도자료</p>
                 <p className="mt-0.5 text-[22px] font-extrabold tabular-nums">23<span className="text-[13px] font-semibold text-[#8C929B]">건</span></p>
               </div>
               <div className="pn-float absolute -right-3 bottom-8 rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] sm:-right-10" style={{ animationDelay: '1.2s' }}>
-                <p className="flex items-center gap-2 text-[12.5px] font-bold"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#8B5CF6] text-[10px] text-white">AI</span>기사 초안 완성</p>
+                <p className="flex items-center gap-2 text-[12.5px] font-bold"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#0F1115] text-[9px] text-white">AI</span>기사 초안 완성</p>
                 <p className="mt-0.5 text-[11.5px] text-[#5B616B]">확인 메모 2건</p>
               </div>
               <div className="pn-float absolute left-[28%] top-[42%] hidden rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] sm:block" style={{ animationDelay: '2.4s' }}>
-                <p className="flex items-center gap-2 text-[12.5px] font-bold"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#10B981] text-[10px] text-white">✓</span>3개 매체 송고 완료</p>
+                <p className="flex items-center gap-2 text-[12.5px] font-bold"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#3F7D5C] text-[10px] text-white">✓</span>3개 매체 송고 완료</p>
               </div>
             </div>
           </div>
@@ -269,15 +264,15 @@ export default function ProductHome() {
 
         {/* ─── 숫자 띠 ─── */}
         <section className="relative z-10 -mt-24 px-4 sm:px-6">
-          <div className="mx-auto grid max-w-[1100px] grid-cols-2 overflow-hidden rounded-2xl bg-white shadow-[0_30px_60px_-20px_rgba(11,16,32,0.35)] ring-1 ring-black/5 md:grid-cols-4">
+          <div className="mx-auto grid max-w-[1100px] grid-cols-2 overflow-hidden rounded-lg bg-white shadow-[0_24px_50px_-28px_rgba(15,17,21,0.45)] ring-1 ring-black/5 md:grid-cols-4">
             {[
-              { n: 15, s: '곳', label: '보도자료 출처 자동 연결', color: '#E5483A' },
-              { n: 30, s: '분', label: '마다 새 보도자료 수집', color: '#F5A524' },
-              { n: 0, s: '원', label: '설치비', color: '#8B5CF6' },
-              { n: 1, s: '개', label: '계정으로 여러 매체 운영', color: '#10B981' },
+              { n: 15, s: '곳', label: '보도자료 출처 자동 연결', color: '#0F1115' },
+              { n: 30, s: '분', label: '마다 새 보도자료 수집', color: '#0F1115' },
+              { n: 0, s: '원', label: '설치비', color: '#0F1115' },
+              { n: 1, s: '개', label: '계정으로 여러 매체 운영', color: '#0F1115' },
             ].map((x, i) => (
               <div key={x.label} className={`px-6 py-7 text-center ${i % 2 ? '' : 'border-r'} border-[#EEF0F3] md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
-                <p className="text-[38px] font-black tracking-[-0.03em] sm:text-[46px]" style={{ color: x.color }}><CountUp to={x.n} suffix={x.s} /></p>
+                <p className="text-[36px] font-bold tracking-[-0.02em] [font-family:var(--serif)] sm:text-[44px]" style={{ color: x.color }}><CountUp to={x.n} suffix={x.s} /></p>
                 <p className="mt-1 text-[13.5px] font-medium text-[#5B616B]">{x.label}</p>
               </div>
             ))}
@@ -288,16 +283,16 @@ export default function ProductHome() {
         <div className="mt-16 overflow-hidden border-y border-[#EEF0F3] py-4" aria-hidden>
           <div className="pn-marquee flex w-max gap-10 text-[15px] font-bold text-[#8C929B]">
             {[...MARQUEE, ...MARQUEE].map((m, i) => (
-              <span key={i} className="flex items-center gap-10">{m}<span className="text-[#F5A524]">✦</span></span>
+              <span key={i} className="flex items-center gap-10">{m}<span className="text-[#B8925A]">·</span></span>
             ))}
           </div>
         </div>
 
         {/* ─── 함께 송고 ─── */}
-        <section id="multi" className="relative isolate scroll-mt-16 overflow-hidden bg-gradient-to-br from-[#111831] via-[#1B1440] to-[#2A1230] text-white">
+        <section id="multi" className="relative isolate scroll-mt-16 overflow-hidden bg-[#15171C] text-white">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-2">
             <Reveal>
-              <Eyebrow icon="share" color="#F5A524">여러 매체 함께 송고</Eyebrow>
+              <Eyebrow icon="share" color="#D4B483">여러 매체 함께 송고</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>매체가 몇 개든,<br />로그인은 한 번.</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-white/70">매체마다 CMS를 따로 계약하고 따로 로그인할 필요가 없습니다. 여러 매체를 운영한다면 기사 한 건을 골라서 다른 매체에도 한 번에 올립니다. 사본에는 원본 표시가 붙어 검색엔진이 중복 문서로 보지 않습니다.</p>
               <ul className="mt-7 space-y-3">
@@ -311,10 +306,10 @@ export default function ProductHome() {
         </section>
 
         {/* ─── 그룹·권한 ─── */}
-        <section id="team" className="scroll-mt-16 bg-[#F4F5F7]">
+        <section id="team" className="scroll-mt-16 bg-[#F5F5F3]">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.95fr_1.05fr]">
             <Reveal>
-              <Eyebrow icon="users" color="#6366F1">그룹 · 권한</Eyebrow>
+              <Eyebrow icon="users" color="#8C6A35">그룹 · 권한</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>발행인·편집장·기자,<br />매체마다 다른 직급까지.</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">여러 매체를 가진 발행인은 그룹 전체를, 편집장은 자기 매체를, 기자는 자기 기사를 봅니다. 한 사람이 여러 매체에서 일하면 매체마다 직급을 따로 줄 수 있습니다.</p>
               <ul className="mt-7 space-y-3">
@@ -329,16 +324,12 @@ export default function ProductHome() {
         </section>
 
         {/* ─── AI 초안 ─── */}
-        <section id="ai" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0B1020] text-white">
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-            <div className="absolute right-0 top-0 h-[480px] w-[480px] rounded-full bg-[#8B5CF6]/30 blur-[120px]" />
-            <div className="absolute bottom-0 left-0 h-[420px] w-[420px] rounded-full bg-[#E5483A]/20 blur-[120px]" />
-          </div>
+        <section id="ai" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0F1115] text-white">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.05fr_0.95fr]">
             <Reveal className="order-2 lg:order-1"><ProofDemo /></Reveal>
             <Reveal delay={150} className="order-1 lg:order-2">
-              <Eyebrow icon="spark" color="#A78BFA">AI 기사 초안</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>AI가 다듬되,<br /><span className="bg-gradient-to-r from-[#C4B5FD] to-[#F9A8D4] bg-clip-text text-transparent">없는 사실은 만들지 않습니다.</span></h2>
+              <Eyebrow icon="spark" color="#D4B483">AI 기사 초안</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>AI가 다듬되,<br /><span className="text-[#D4B483]">없는 사실은 만들지 않습니다.</span></h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-white/70">버튼 한 번이면 AI가 보도자료를 기사체로 다시 씁니다. 그럴듯하게 “고급스럽게 다듬기”보다 중요한 건 오보를 내지 않는 것. 원문에 없는 숫자·인용·인물은 쓰지 않고, 과장이 의심되는 곳은 기자에게 메모로 알려줍니다.</p>
               <ul className="mt-7 space-y-3">
                 <Check dark>원문에 없는 숫자·인용문·인물은 만들지 않음</Check>
@@ -359,7 +350,7 @@ export default function ProductHome() {
         <section id="press" className="scroll-mt-16">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
             <Reveal>
-              <Eyebrow icon="inbox" color="#E5483A">보도자료함</Eyebrow>
+              <Eyebrow icon="inbox" color="#8C6A35">보도자료함</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>보도자료를 찾으러 다니지 마세요.<br />메일함까지 알아서 모입니다.</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">뉴스와이어와 정책브리핑의 보도자료가 30분마다 들어오고, <strong>기자 메일함으로 온 보도자료</strong>도 자동으로 같은 함에 쌓입니다. 우리 매체 분야에 맞는 것만 추천 탭에 뜹니다.</p>
               <ul className="mt-7 space-y-3">
@@ -375,11 +366,11 @@ export default function ProductHome() {
         </section>
 
         {/* ─── 홈 편집판 + 승인 ─── */}
-        <section className="bg-[#F4F5F7]">
+        <section className="bg-[#F5F5F3]">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
             <Reveal className="order-2 lg:order-1"><HomeBoardMock /></Reveal>
             <Reveal delay={150} className="order-1 lg:order-2">
-              <Eyebrow icon="layout" color="#3B82F6">홈 편집판 · 승인 흐름</Eyebrow>
+              <Eyebrow icon="layout" color="#8C6A35">홈 편집판 · 승인 흐름</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>첫 화면은<br />편집장이 정합니다.</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">헤드라인, 톱, 주요 기사, 추천 자리에 어떤 기사를 둘지 고르고 “반영”을 누르면 끝. 비워 둔 자리는 최신 기사로 채워집니다.</p>
               <div className="mt-7 rounded-xl border border-[#E4E6EA] bg-white p-5">
@@ -395,7 +386,7 @@ export default function ProductHome() {
         <section id="support" className="scroll-mt-16">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
             <Reveal>
-              <Eyebrow icon="headset" color="#EC4899">고객센터 내장</Eyebrow>
+              <Eyebrow icon="headset" color="#8C6A35">고객센터 내장</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>요청·공지·청구서까지<br />편집국 화면 안에서.</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">
                 따로 된 회원사 사이트에 다시 로그인할 필요가 없습니다. 기사를 쓰던 화면의 “고객센터” 메뉴에서 바로 요청하고, 답변이 오면 메뉴에 숫자로 알려드립니다.
@@ -435,7 +426,7 @@ export default function ProductHome() {
               </div>
             </Reveal>
             <Reveal className="order-1 lg:order-2">
-              <Eyebrow icon="chart" color="#0B4D3B">전문지 맞춤</Eyebrow>
+              <Eyebrow icon="chart" color="#8C6A35">전문지 맞춤</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>해운지는 해운지답게,<br />의료지는 의료지답게.</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">같은 {PRODUCT.name}이라도 매체마다 로고·색·섹션·첫 화면이 다릅니다. 업계 사람들이 매일 찾아오게 만드는 분야별 위젯도 붙일 수 있습니다.</p>
               <ul className="mt-7 space-y-3">
@@ -449,13 +440,10 @@ export default function ProductHome() {
         </section>
 
         {/* ─── 완성 화면 ─── */}
-        <section id="showcase" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0B1020] text-white">
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-            <div className="absolute left-1/2 top-1/3 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-[#02472F]/50 blur-[140px]" />
-          </div>
+        <section id="showcase" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0F1115] text-white">
           <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
             <Reveal className="text-center">
-              <p className="text-[13.5px] font-bold tracking-[0.08em] text-[#F5B83D]">완성 화면</p>
+              <p className="text-[13px] font-semibold tracking-[0.06em] text-[#D4B483]">완성 화면</p>
               <h2 className={`mt-3 ${H2}`}>이런 신문이 만들어집니다</h2>
               <p className="mx-auto mt-4 max-w-[36em] text-[17px] leading-[1.8] text-white/70">
                 저희가 운영하는 보건·복지·요양 전문지 <strong className="text-white">더케어타임즈</strong>의 실제 디자인입니다. 매체 로고와 색을 입혀 우리 신문만의 모습으로 바꿉니다.
@@ -472,7 +460,7 @@ export default function ProductHome() {
                 { t: '매체 색상·로고 적용', d: '같은 틀, 우리 신문만의 모습' },
               ].map((x, i) => (
                 <Reveal key={x.t} delay={i * 100}>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur">
+                  <div className="h-full border-t border-white/15 pt-5">
                     <p className="text-[16.5px] font-bold">{x.t}</p>
                     <p className="mt-1 text-[14px] text-white/60">{x.d}</p>
                   </div>
@@ -493,9 +481,8 @@ export default function ProductHome() {
             <ol className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {STEPS.map((s, i) => (
                 <Reveal key={s.title} delay={i * 90}>
-                  <li className="relative h-full overflow-hidden rounded-2xl border border-[#EEF0F3] bg-white p-6 shadow-[0_10px_30px_-15px_rgba(11,16,32,0.25)]">
-                    <span className="absolute inset-x-0 top-0 h-1.5" style={{ background: s.color }} />
-                    <p className="text-[42px] font-black leading-none tabular-nums" style={{ color: s.color }}>{i + 1}</p>
+                  <li className="relative h-full border-t-2 border-[#0F1115] pt-5">
+                    <p className="text-[40px] font-bold leading-none tabular-nums text-[#B8925A] [font-family:var(--serif)]">{i + 1}</p>
                     <p className="mt-4 text-[21px] font-extrabold tracking-[-0.02em]">{s.title}</p>
                     <p className="mt-2 text-[14px] leading-[1.7] text-[#5B616B]">{s.body}</p>
                   </li>
@@ -506,15 +493,15 @@ export default function ProductHome() {
         </section>
 
         {/* ─── 기능 모음 ─── */}
-        <section className="bg-[#F4F5F7]">
+        <section className="bg-[#F5F5F3]">
           <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
             <Reveal className="text-center"><h2 className={H2}>편집국에 필요한 것은 다 있습니다</h2></Reveal>
             <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {FEATURES.map((f, i) => (
                 <Reveal key={f.title} delay={(i % 4) * 80}>
-                  <div className="group h-full rounded-2xl bg-white p-6 shadow-[0_10px_30px_-18px_rgba(11,16,32,0.3)] ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-[0_20px_40px_-18px_rgba(11,16,32,0.35)]">
-                    <span className="grid h-12 w-12 place-items-center rounded-xl text-white shadow-[0_8px_20px_-8px_currentColor]" style={{ background: f.color, color: f.color }}>
-                      <Glyph name={f.icon} className="text-white" />
+                  <div className="group h-full rounded-lg bg-white p-6 ring-1 ring-[#E6E4DF] transition hover:ring-[#0F1115]/40">
+                    <span className="grid h-11 w-11 place-items-center rounded-md border border-[#E6E4DF] text-[#0F1115] transition group-hover:border-[#B8925A] group-hover:text-[#8C6A35]">
+                      <Glyph name={f.icon} className="h-[22px] w-[22px]" />
                     </span>
                     <p className="mt-5 text-[17px] font-bold">{f.title}</p>
                     <p className="mt-1.5 text-[14px] leading-relaxed text-[#5B616B]">{f.body}</p>
@@ -529,7 +516,7 @@ export default function ProductHome() {
         <section>
           <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 py-24 sm:px-6 md:grid-cols-[1fr_1.2fr]">
             <Reveal>
-              <Eyebrow icon="cloud" color="#10B981">직접 운영하며 만듭니다</Eyebrow>
+              <Eyebrow icon="cloud" color="#8C6A35">직접 운영하며 만듭니다</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>저희 매체가<br />먼저 씁니다.</h2>
             </Reveal>
             <Reveal delay={150}>
@@ -544,7 +531,7 @@ export default function ProductHome() {
         <div className="py-16"><TrialStrip beta={beta} /></div>
 
         {/* ─── 요금 ─── */}
-        <section id="pricing" className="scroll-mt-16 bg-[#F4F5F7]">
+        <section id="pricing" className="scroll-mt-16 bg-[#F5F5F3]">
           <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
             <Reveal className="text-center">
               <h2 className={H2}>필요한 건 기본으로, 요금은 가볍게</h2>
@@ -557,36 +544,35 @@ export default function ProductHome() {
         {/* ─── 베타 모집: 1주일 무료 → 12월 30일까지 반값 → 2027년 1월 정상가 ─── */}
         {beta && (
           <section id="beta" className="scroll-mt-16 px-4 sm:px-6">
-            <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F5A524] via-[#EF6B3A] to-[#D93B4A] px-6 py-16 text-white shadow-[0_40px_80px_-30px_rgba(217,59,74,0.7)] sm:px-14">
-              <div className="pointer-events-none absolute -right-20 -top-20 -z-10 h-[360px] w-[360px] rounded-full bg-white/15 blur-2xl" aria-hidden />
+            <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-xl bg-[#0F1115] px-6 py-16 text-white sm:px-14">
               <div className="flex flex-wrap items-end justify-between gap-6">
                 <div>
-                  <p className="text-[13.5px] font-bold tracking-[0.08em] text-white/85">출시 기념 베타 · 마감까지 D-{daysLeft}</p>
-                  <h2 className="mt-3 text-[32px] font-extrabold leading-[1.25] tracking-[-0.03em] sm:text-[44px]">지금 가입하면<br />첫 1주일은 무료입니다</h2>
-                  <p className="mt-4 max-w-[34em] text-[16px] leading-[1.75] text-white/85">정식 출시 전 베타 기간입니다. {BETA_END_LABEL}까지 가입한 신문사는 12월분까지 모든 요금이 반값이고, {REGULAR_FROM_LABEL}부터 정상가로 바뀝니다.</p>
+                  <p className="text-[13px] font-semibold tracking-[0.06em] text-[#D4B483]">출시 기념 베타 · 마감까지 D-{daysLeft}</p>
+                  <h2 className="mt-4 text-[32px] font-bold leading-[1.3] tracking-[-0.025em] [font-family:var(--serif)] sm:text-[44px]">지금 가입하면<br />첫 1주일은 무료입니다</h2>
+                  <p className="mt-4 max-w-[34em] text-[16px] leading-[1.75] text-white/70">정식 출시 전 베타 기간입니다. {BETA_END_LABEL}까지 가입한 신문사는 12월분까지 모든 요금이 반값이고, {REGULAR_FROM_LABEL}부터 정상가로 바뀝니다.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <TrialButton className="rounded-xl bg-white px-7 py-4 text-[16px] font-bold text-[#D93B4A] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5" />
-                  <a href="#apply" className="rounded-xl border border-white/60 px-7 py-4 text-[16px] font-bold text-white transition hover:bg-white/10">바로 베타 신청</a>
+                  <TrialButton className="rounded-md bg-white px-7 py-4 text-[16px] font-bold text-[#0F1115] transition hover:bg-white/90" />
+                  <a href="#apply" className="rounded-md border border-white/25 px-7 py-4 text-[16px] font-semibold text-white transition hover:bg-white/10">바로 베타 신청</a>
                 </div>
               </div>
-              <ol className="mt-12 grid gap-3 md:grid-cols-3">
+              <ol className="mt-14 grid gap-8 md:grid-cols-3 md:gap-6">
                 {[
                   { when: '가입 후 7일', t: '1주일 무료 체험', d: '카드 등록 없이 모든 기능을 기자·편집장·그룹장으로 써 보기' },
                   { when: `~ 2026년 ${BETA_END_LABEL}`, t: '모든 요금 반값', d: '12월분 이용료까지 반값 · 세팅비 무료 · 기존 기사 이전 지원' },
                   { when: `${REGULAR_FROM_LABEL}부터`, t: '정상가', d: '베이직 월 110,000원부터 (VAT 포함)' },
                 ].map((b, i) => (
-                  <li key={b.t} className={`rounded-2xl p-5 ring-1 backdrop-blur ${i < 2 ? 'bg-white/15 ring-white/30' : 'bg-black/10 ring-white/15'}`}>
-                    <p className="text-[12.5px] font-bold tracking-[0.04em] text-white/75">{b.when}</p>
-                    <p className="mt-1 text-[21px] font-extrabold">{b.t}</p>
-                    <p className="mt-1 text-[14px] leading-relaxed text-white/85">{b.d}</p>
+                  <li key={b.t} className={`border-t pt-5 ${i < 2 ? 'border-[#B8925A]' : 'border-white/20'}`}>
+                    <p className={`text-[12.5px] font-semibold tracking-[0.04em] ${i < 2 ? 'text-[#D4B483]' : 'text-white/50'}`}>{b.when}</p>
+                    <p className="mt-2 text-[22px] font-bold [font-family:var(--serif)]">{b.t}</p>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-white/65">{b.d}</p>
                   </li>
                 ))}
               </ol>
             </Reveal>
             <div className="mx-auto mt-10 grid max-w-[1200px] gap-3 text-center text-[14.5px] text-[#3B4048] sm:grid-cols-3">
               {['기자 1~5명이 매일 기사를 내는 인터넷신문', '매체를 두 개 이상 운영하는 발행인', '창간을 준비하며 프로그램을 고르는 곳'].map((t) => (
-                <p key={t} className="rounded-xl border border-[#EEF0F3] px-4 py-3.5">👉 {t}</p>
+                <p key={t} className="border-b border-[#E6E4DF] px-4 py-3.5">{t}</p>
               ))}
             </div>
           </section>
@@ -596,12 +582,12 @@ export default function ProductHome() {
         <section id="faq" className="scroll-mt-16">
           <div className="mx-auto max-w-[860px] px-4 py-24 sm:px-6">
             <Reveal className="text-center"><h2 className={H2}>자주 묻는 질문</h2></Reveal>
-            <div className="mt-10 space-y-3">
+            <div className="mt-10 border-t border-[#E6E4DF]">
               {FAQ_ALL.map((f) => (
-                <details key={f.q} className="group rounded-2xl border border-[#EEF0F3] bg-white px-6 py-5 shadow-[0_6px_20px_-14px_rgba(11,16,32,0.3)] open:ring-2 open:ring-[#F5A524]/40">
+                <details key={f.q} className="group border-b border-[#E6E4DF] px-1 py-5">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16.5px] font-bold [&::-webkit-details-marker]:hidden">
-                    <span><span className="mr-2 text-[#E5483A]">Q.</span>{f.q}</span>
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#F4F5F7] text-[18px] font-normal text-[#5B616B] transition-transform group-open:rotate-45" aria-hidden>+</span>
+                    <span><span className="mr-2 text-[#B8925A] [font-family:var(--serif)]">Q.</span>{f.q}</span>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#F5F5F3] text-[18px] font-normal text-[#5B616B] transition-transform group-open:rotate-45" aria-hidden>+</span>
                   </summary>
                   <p className="mt-3 pl-7 text-[15px] leading-[1.8] text-[#3B4048]">{f.a}</p>
                 </details>
@@ -611,11 +597,7 @@ export default function ProductHome() {
         </section>
 
         {/* ─── 신청 ─── */}
-        <section id="apply" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0B1020] text-white">
-          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-            <div className="absolute -left-20 top-20 h-[420px] w-[420px] rounded-full bg-[#E5483A]/25 blur-[120px]" />
-            <div className="absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-[#6366F1]/25 blur-[120px]" />
-          </div>
+        <section id="apply" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0F1115] text-white">
           <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-24 sm:px-6 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <h2 className={H2}>서비스 신청</h2>
@@ -628,10 +610,10 @@ export default function ProductHome() {
                 <Check dark>쓰던 도메인 그대로</Check>
                 <Check dark>기존 기사 이전 지원</Check>
               </ul>
-              <div className="mt-8 rounded-2xl bg-white/5 p-5 ring-1 ring-white/10">
+              <div className="mt-10 border-t border-white/15 pt-6">
                 <p className="text-[15px] font-bold">아직 고민 중이라면</p>
                 <p className="mt-1 text-[14px] text-white/65">카드 등록 없이 1주일 동안 모든 기능을 먼저 써 보세요.</p>
-                <TrialButton className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-5 py-3 text-[15px] font-bold text-white hover:brightness-110" />
+                <TrialButton className="mt-4 inline-block rounded-md bg-white px-5 py-3 text-[15px] font-bold text-[#0F1115] hover:bg-white/90" />
               </div>
             </div>
             <div className="text-[#14171C]"><ApplyForm /></div>
@@ -640,8 +622,8 @@ export default function ProductHome() {
       </main>
 
       {/* 휴대폰: 화면 아래 고정 버튼 */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0B1020]/90 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-md sm:hidden">
-        <TrialButton className="block rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] py-3.5 text-center text-[15.5px] font-bold text-white">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0F1115]/92 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-md sm:hidden">
+        <TrialButton className="block rounded-md bg-white py-3.5 text-center text-[15.5px] font-bold text-[#0F1115]">
           {beta ? `1주일 무료 체험 · ${BETA_END_LABEL}까지 반값` : '1주일 무료 체험 시작'}
         </TrialButton>
       </div>
