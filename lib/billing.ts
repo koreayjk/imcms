@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ANNUAL_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, SETUP_FEE, BETA_LAST_MONTH, annualPrice, betaRateFor, planById } from './pricing'
+import { ANNUAL_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, BETA_LAST_MONTH, annualPrice, betaRateFor, planById } from './pricing'
 import { invoiceTotals, type InvoiceItem } from './support'
 import { paymentDbSecret } from './toss'
 import { notifyInvoiceIssued } from './invoice-mail'
@@ -25,7 +25,6 @@ export type BillingTarget = {
 }
 
 export const DUE_DAY = 10
-export const PREMIUM_INCLUDED_EXTRA = 2
 
 const ym = (d: string) => Number(d.slice(0, 4)) * 12 + Number(d.slice(5, 7)) - 1
 const label = (n: number) => `${Math.floor(n / 12)}년 ${(n % 12) + 1}월`
@@ -59,7 +58,7 @@ export function billingItems(t: BillingTarget, month: string) {
         ? { name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${annualBeta})`, qty: 1, unit_price: annualPrice(monthly, month, beta) }
         : { name: `IM 뉴스룸 ${planName} (${label(m)}${betaTag})`, qty: 1, unit_price: Math.round(monthly * rate) })
     }
-    // 프리미엄은 같은 그룹 매체 3개까지 포함 (본 매체 + 추가 2개는 무료)
+    // 매체 추가는 프리미엄 전용: 추가 매체 1개 포함, 그다음부터 매체마다 (맞춤 금액이면 포함 없이 모두 청구)
     const included = t.plan === 'premium' && t.custom_monthly == null ? PREMIUM_INCLUDED_EXTRA : 0
     for (const c of t.children.slice(included)) {
       items.push(annual
@@ -68,12 +67,10 @@ export function billingItems(t: BillingTarget, month: string) {
     }
   }
 
-  // 지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다)
+  // 지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다). 추가 매체는 본 매체 한도를 함께 쓰므로 합쳐서 한 번에 센다
   const prev = label(m - 1)
-  const ai = [{ name: t.name, over: t.over_count, self: true }, ...t.children.map((c) => ({ name: c.name, over: c.over_count, self: false }))]
-  for (const a of ai) {
-    if (a.over > 0) items.push({ name: `AI 추가 사용${a.self ? '' : ` · ${a.name}`} (${prev} ${a.over.toLocaleString('ko-KR')}회, 100회마다)`, qty: aiQty(a.over), unit_price: EXTRA_AI_FEE })
-  }
+  const over = t.over_count + t.children.reduce((n, c) => n + c.over_count, 0)
+  if (over > 0) items.push({ name: `AI 추가 사용${t.children.length ? ' (추가 매체 포함)' : ''} (${prev} ${over.toLocaleString('ko-KR')}회, 100회마다)`, qty: aiQty(over), unit_price: EXTRA_AI_FEE })
 
   const setup = t.setup_fee_pending
   if (setup) items.push({ name: '세팅비 (처음 한 번)', qty: 1, unit_price: SETUP_FEE })

@@ -44,7 +44,9 @@ export const SETUP_ITEMS: [string, string][] = [
   ['포털 검색 등록 준비', '사이트맵·RSS 생성, 네이버·구글 소유 확인 연결'],
   ['사용법 안내', '기사 쓰기·승인·홈 편집·보도자료·AI 초안 사용법 1:1 안내'],
 ]
-export const EXTRA_OUTLET_FEE = 33_000
+// 매체 추가: 프리미엄 전용. 프리미엄은 추가 매체 1개 포함(매체 2개), 그다음부터 매체마다. AI 한도는 본 매체와 함께 쓴다 (ai-shared-pool.sql)
+export const EXTRA_OUTLET_FEE = 90_000
+export const PREMIUM_INCLUDED_EXTRA = 1
 export const EXTRA_AI_FEE = 11_000 // 100회마다 (AI 초안·법적 검수 합계)
 
 export type PlanId = 'basic' | 'standard' | 'premium' | 'enterprise'
@@ -84,7 +86,7 @@ export const PLANS: Plan[] = [
     for: '방문자가 많거나 매체를 여럿 운영하는 언론사',
     monthly: 230_000,
     specs: [['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '회당 10,000명']],
-    extras: ['홈페이지 맞춤 수정 지원', '같은 그룹 매체 3개까지 포함', '우선 지원'],
+    extras: ['홈페이지 맞춤 수정 지원', '여러 매체 운영 · 매체 2개 포함', '우선 지원'],
   },
   {
     id: 'enterprise',

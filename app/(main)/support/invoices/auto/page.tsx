@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { billingItems, billingTargets, dueDate, kstToday, type BillingTarget } from '@/lib/billing'
-import { ANNUAL_MONTHS, BETA_RATE, EXTRA_OUTLET_FEE, SETUP_FEE, planById } from '@/lib/pricing'
+import { ANNUAL_MONTHS, BETA_RATE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, planById } from '@/lib/pricing'
 import { monthLabel, won } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import { runBillingNow, saveOutletPlan } from './actions'
@@ -63,7 +63,7 @@ export default async function AutoBillingPage({ searchParams }: Props) {
         <ul className="mt-1 list-disc space-y-0.5 pl-5">
           <li>요금제 월 이용료 (요금제는 <Link href="/admin/ai-usage" className="text-[#2F6BF0] underline">AI 사용량</Link> 화면에서 정합니다) · 베타 반값이면 {Math.round(BETA_RATE * 100)}%</li>
           <li>1년 결제는 첫 청구 월부터 12개월마다 한 번, {ANNUAL_MONTHS}개월 값</li>
-          <li>추가 매체: &lsquo;청구 받을 매체&rsquo;를 고른 매체는 그 매체 청구서에 월 {won(EXTRA_OUTLET_FEE)}으로 붙습니다 (프리미엄은 2개까지 무료)</li>
+          <li>추가 매체(프리미엄 전용): &lsquo;청구 받을 매체&rsquo;를 고른 매체는 그 매체 청구서에 월 {won(EXTRA_OUTLET_FEE)}으로 붙습니다 (프리미엄은 {PREMIUM_INCLUDED_EXTRA}개 포함). 추가 매체는 본 매체의 AI 한도를 함께 씁니다</li>
           <li>지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다) · 세팅비 {won(SETUP_FEE)}는 체크한 경우 다음 청구서에 한 번</li>
         </ul>
         {isSuper && !missingSql && (
@@ -92,6 +92,14 @@ export default async function AutoBillingPage({ searchParams }: Props) {
               </div>
 
               {p?.auto && parent && <p className="mt-2 text-[13px] text-muted">{parent} 청구서에 추가 매체로 함께 청구됩니다.</p>}
+              {p?.bill_to && (() => {
+                // 매체 추가는 프리미엄 전용 (맞춤 금액 고객은 예외)
+                const root = (outlets ?? []).find((x) => x.id === p.bill_to)
+                const rootPlan = plans.get(p.bill_to)
+                return root && root.plan !== 'premium' && rootPlan?.custom_monthly == null
+                  ? <p role="alert" className="mt-2 rounded bg-danger/10 px-3 py-2 text-[12.5px] text-danger">⚠ {root.name}은(는) 프리미엄 요금제가 아닙니다. 매체 추가는 프리미엄 전용이니 요금제를 바꾸거나 맞춤 금액으로 정해 주세요.</p>
+                  : null
+              })()}
               {pv && (
                 <div className="mt-3 rounded-lg border border-line px-4 py-3 text-[13px]">
                   <p className="flex flex-wrap justify-between gap-2 font-semibold">

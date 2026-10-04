@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { PRODUCT, appLink, isProductHost } from '@/lib/product'
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, PLANS, REGULAR_FROM_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, EXTRA_OUTLET_FEE, PLANS, REGULAR_FROM_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
@@ -119,6 +119,7 @@ function pricingFaq(beta: boolean) {
     { q: '요금은 얼마인가요?', a: `베이직 월 110,000원, 스탠다드 월 150,000원, 프리미엄 월 230,000원이고 모두 부가세(VAT) 포함 금액입니다. 기자 계정은 모든 요금제에서 무제한이고, AI 사용 횟수(초안·법적 검수)·저장 용량에 따라 나뉩니다.${beta ? ` 지금 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 2026년 12월분까지 반값입니다.` : ''}` },
     { q: '1년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로 씁니다.${beta ? ` 베타 기간에는 12개월 중 2026년 12월분까지를 반값으로 계산한 뒤 ${ANNUAL_FREE}를 적용합니다. 예: 지금 베이직 1년 ${won(planCharge(PLANS[0], 'annual', true)!.price)}.` : ''}` },
     { q: '세팅비는 무엇인가요?', a: `처음 개통할 때 한 번만 내는 150,000원(VAT 포함)입니다. 편집국·홈페이지 개설, 로고·색 등 맞춤 적용, 법정 표기·정책 페이지, 도메인 연결, 기존 기사·사진 옮기기와 옛 주소 연결, 포털 검색 등록 준비, 사용법 1:1 안내가 들어 있습니다.${beta ? ` 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 세팅비는 무료입니다.` : ''}` },
+    { q: '매체를 여러 개 운영할 수 있나요?', a: `네. 여러 매체 운영은 프리미엄 요금제에서 쓸 수 있습니다. 프리미엄에는 매체 2개가 포함되고, 3번째 매체부터 매체마다 월 ${won(EXTRA_OUTLET_FEE)}(VAT 포함)입니다. 그룹장 화면에서 여러 매체를 한 번에 관리하고 기사를 여러 매체에 동시에 송고할 수 있으며, AI 한도는 매체들이 함께 씁니다. 매체가 아주 많으면 엔터프라이즈로 상담해 주세요.` },
   ]
 }
 
