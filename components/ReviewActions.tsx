@@ -6,9 +6,11 @@ import { createClient } from '@/lib/supabase'
 import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
 import { refreshArticlePages } from '@/app/(main)/articles/refresh'
+import { trialPublish } from '@/app/(main)/articles/moderation'
 
 // presetAt: 기자가 정해 둔 발행 일시 (있으면 그 시각으로 발행 — 앞으로의 시각이면 예약 발행)
-export default function ReviewActions({ articleId, presetAt = null, hasSection = true }: { articleId: string; presetAt?: string | null; hasSection?: boolean }) {
+// moderated: 체험 계정 — 서버가 욕설·혐오·선정성을 검사한 뒤 발행한다 (trial-moderation.sql)
+export default function ReviewActions({ articleId, presetAt = null, hasSection = true, moderated = false }: { articleId: string; presetAt?: string | null; hasSection?: boolean; moderated?: boolean }) {
   const [showReject, setShowReject] = useState(false)
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,13 +22,26 @@ export default function ReviewActions({ articleId, presetAt = null, hasSection =
     const scheduled = presetAt && Date.parse(presetAt) > Date.now()
     if (scheduled && !window.confirm(`기자가 정한 발행 일시(${new Date(presetAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})로 예약 발행합니다. 그 전까지는 홈페이지에 보이지 않습니다.`)) return
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('articles').update({
-      status: 'published',
-      published_at: presetAt ?? new Date().toISOString(),
-      reviewed_by: user?.id ?? null,
-      reject_reason: null,
-    }).eq('id', articleId)
+    let error: { message: string } | null = null
+    if (moderated) {
+      const r = await trialPublish(articleId, presetAt)
+      if (!r.ok) {
+        window.alert(r.held
+          ? `욕설·혐오·선정적 표현이 있을 수 있어 바로 발행되지 않았습니다.\n총관리자가 확인한 뒤 발행됩니다.\n\n사유: ${r.note}`
+          : `승인하지 못했습니다: ${r.error}`)
+        router.refresh()
+        setLoading(false)
+        return
+      }
+    } else {
+      const { data: { user } } = await supabase.auth.getUser()
+      ;({ error } = await supabase.from('articles').update({
+        status: 'published',
+        published_at: presetAt ?? new Date().toISOString(),
+        reviewed_by: user?.id ?? null,
+        reject_reason: null,
+      }).eq('id', articleId))
+    }
     if (error) {
       window.alert(`승인하지 못했습니다: ${error.message}`)
     } else {

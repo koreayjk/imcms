@@ -6,7 +6,7 @@ import { outletEmailOf } from '@/lib/outlet-email'
 export const maxDuration = 60
 
 export default async function NewArticlePage() {
-  const { supabase, user, profile, outletId, isEditorPlus } = await getCmsContext()
+  const { supabase, user, profile, outletId, isEditorPlus, trial } = await getCmsContext()
 
   const [{ data: categories }, { data: outlets }] = await Promise.all([
     outletId
@@ -28,6 +28,7 @@ export default async function NewArticlePage() {
         authorName={profile?.full_name ?? ''}
         authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}
+        moderated={!!trial}
         outlets={outlets ?? []}
         syndicatedOutletIds={[]}
         outletEmail={contact.email}

@@ -24,6 +24,12 @@ export default async function LeadsPage({ searchParams }: Props) {
     ? await supabase.from('profiles').select('id, trial_until').in('id', trials.map((t) => t.user_id))
     : { data: [] }
   const trialUntil = new Map(((trialProfiles ?? []) as { id: string; trial_until: string | null }[]).map((p) => [p.id, p.trial_until]))
+  // 체험신문 발행 전 검사에 걸려 총관리자 확인을 기다리는 기사 (trial-moderation.sql 전이면 칸이 없어 빈 목록)
+  type HeldRow = { id: string; title: string; moderation_note: string | null; updated_at: string; author: { full_name: string | null } | null }
+  const { data: heldData } = await supabase.from('articles')
+    .select('id, title, moderation_note, updated_at, author:profiles!articles_author_id_fkey(full_name)')
+    .eq('moderation_hold', true).eq('status', 'in_review').order('updated_at', { ascending: false }).limit(50)
+  const held = (heldData ?? []) as unknown as HeldRow[]
   const trialState = (id: string) => {
     const u = trialUntil.get(id)
     if (!u) return '계정 삭제됨'
@@ -41,7 +47,7 @@ export default async function LeadsPage({ searchParams }: Props) {
     { key: 'open', label: '처리할 상담', n: all.filter((l) => l.status !== 'done').length },
     { key: 'mine', label: '내 담당', n: all.filter((l) => l.assigned_to === user.id && l.status !== 'done').length },
     { key: 'done', label: '완료', n: all.filter((l) => l.status === 'done').length },
-    ...(trialRes.error ? [] : [{ key: 'trial', label: '무료 체험', n: trials.length }]),
+    ...(trialRes.error ? [] : [{ key: 'trial', label: held.length ? `무료 체험 · 확인 ${held.length}` : '무료 체험', n: trials.length }]),
   ]
 
   return (
@@ -59,6 +65,21 @@ export default async function LeadsPage({ searchParams }: Props) {
           </a>
         ))}
       </nav>
+      {tab === 'trial' && held.length > 0 && (
+        <section aria-labelledby="held-title" className="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-5 py-4">
+          <h2 id="held-title" className="text-[14.5px] font-bold text-danger">총관리자 확인을 기다리는 체험 기사 {held.length}건</h2>
+          <p className="mt-1 text-[12.5px] text-muted">발행 전 검사에서 욕설·혐오·선정적 표현이 있을 수 있다고 나온 기사입니다. 열어서 승인하면 발행되고, 반려하거나 지울 수 있습니다.</p>
+          <ul className="mt-3 divide-y divide-danger/15 text-[13.5px]">
+            {held.map((h) => (
+              <li key={h.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2">
+                <a href={`/articles/${h.id}`} className="font-semibold hover:underline">{h.title}</a>
+                <span className="text-[12.5px] text-muted">{h.author?.full_name ?? ''} · {formatDateTime(h.updated_at)}</span>
+                {h.moderation_note && <span className="w-full text-[12.5px] text-danger">{h.moderation_note}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {tab === 'trial' ? (
         trials.length ? (
           <div className="overflow-x-auto rounded-lg border border-line bg-white">

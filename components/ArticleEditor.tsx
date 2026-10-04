@@ -17,6 +17,7 @@ import { notifyArticle } from '@/app/(main)/articles/notify'
 import PendingButton from './cms/PendingButton'
 import { deleteArticle } from '@/app/(main)/articles/actions'
 import { checkArticleLegal } from '@/app/(main)/articles/legal'
+import { trialPublish } from '@/app/(main)/articles/moderation'
 import LegalDecide, { type Decision } from './cms/LegalDecide'
 import LegalReview from './cms/LegalReview'
 import CopyLinkButton from './cms/CopyLinkButton'
@@ -33,6 +34,8 @@ type Props = {
   authorName: string
   authorEmail: string | null
   isEditorPlus?: boolean
+  // 체험 계정: 발행 전 욕설·혐오·선정성 검사를 거친다 (trial-moderation.sql)
+  moderated?: boolean
   outlets: { id: string; name: string }[]
   syndicatedOutletIds: string[]
   sourceOutletName: string | null
@@ -56,7 +59,7 @@ function imagesIn(html: string): string[] {
   return Array.from(html.matchAll(IMG_SRC), (m) => m[1])
 }
 
-export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName, outletEmail = null, settingsReady = false }: Props) {
+export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, moderated = false, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName, outletEmail = null, settingsReady = false }: Props) {
   const router = useRouter()
   const editorRef = useRef<Editor | null>(null)
 
@@ -246,6 +249,10 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     } else if (!article) {
       payload.status = 'draft'
     }
+    // 체험신문: 발행(발행된 기사 고치기 포함)은 승인대기로 먼저 저장하고, 서버가 검사한 뒤 발행한다
+    const checkThenPublish = moderated && (mode === 'publish' || (mode === 'draft' && status === 'published'))
+    const publishAt = (payload.published_at as string | null | undefined) ?? null
+    if (checkThenPublish) payload.status = 'in_review'
 
     const supabase = createClient()
     let id = article?.id ?? draftId
@@ -264,10 +271,21 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     setTempSavedAt(null)
     serverKey.current = contentKey
 
+    let published = mode === 'publish' || (mode === 'draft' && status === 'published')
+    if (id && checkThenPublish) {
+      const r = await trialPublish(id, publishAt)
+      if (!r.ok) {
+        published = false
+        window.alert(r.held
+          ? `욕설·혐오·선정적 표현이 있을 수 있어 바로 발행되지 않았습니다.\n총관리자가 확인한 뒤 발행됩니다.\n\n사유: ${r.note}`
+          : `저장은 했지만 발행하지 못했습니다 (승인대기로 저장됨).\n${r.error}`)
+      }
+    }
+
     // 승인신청이면 편집장들에게 알림 메일 (메일 설정 전이면 아무 일도 하지 않는다)
     if (id && mode === 'review') notifyArticle(id, 'submitted').catch(() => {})
 
-    const livePublished = mode === 'publish' || (mode === 'draft' && status === 'published')
+    const livePublished = published
     if (id && livePublished && !isCopy && syndicateTo.length) {
       try {
         const summary = describe(await syndicate(id, { rewrite: rewriteCopies }))

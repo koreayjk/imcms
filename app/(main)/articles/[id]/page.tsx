@@ -38,7 +38,9 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
   const sample = !!article.is_sample
   const canEdit = !sample && (article.author_id === user.id || isEditorPlus)
   const canDelete = canEdit && (!trial || article.author_id === user.id)
-  const canReview = isEditorPlus && article.status === 'in_review'
+  // 체험신문 발행 전 검사(trial-moderation.sql)에 걸려 총관리자 확인을 기다리는 기사: 체험 계정은 승인할 수 없다
+  const held = !!(article as { moderation_hold?: boolean }).moderation_hold
+  const canReview = isEditorPlus && article.status === 'in_review' && !(held && trial)
 
   return (
     <div className="mx-auto max-w-[860px] px-4 py-5 md:px-8 md:py-8">
@@ -55,10 +57,18 @@ export default async function ArticleDetailPage({ params, searchParams }: { para
         <p role="alert" className="mb-5 rounded-lg border border-danger/30 bg-danger/5 px-5 py-3.5 text-[13.5px] text-danger">{searchParams.error}</p>
       )}
 
+      {held && article.status === 'in_review' && (
+        <p role="status" className="mb-5 rounded-lg border border-danger/30 bg-danger/5 px-5 py-3.5 text-[13.5px] text-danger">
+          ⚠ 발행 전 검사에서 욕설·혐오·선정적 표현이 있을 수 있다고 나와 <strong>총관리자 확인</strong>을 기다리고 있습니다.
+          {(article as { moderation_note?: string | null }).moderation_note && <span className="mt-1 block text-[12.5px]">사유: {(article as { moderation_note: string }).moderation_note}</span>}
+          {!trial && <span className="mt-1 block text-[12.5px]">총관리자가 승인하면 발행되고, 반려하거나 지울 수도 있습니다.</span>}
+        </p>
+      )}
+
       {canReview && (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg md:gap-4 border border-review/30 bg-review/5 px-5 py-4">
           <p className="text-[14px] font-medium text-review">승인신청된 기사입니다. 내용을 확인하고 승인하거나 반려하세요.</p>
-          <ReviewActions articleId={article.id} presetAt={article.published_at} hasSection={!!article.category_id} />
+          <ReviewActions articleId={article.id} presetAt={article.published_at} hasSection={!!article.category_id} moderated={!!trial} />
         </div>
       )}
 

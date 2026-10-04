@@ -8,7 +8,7 @@ import { outletEmailOf } from '@/lib/outlet-email'
 export const maxDuration = 60
 
 export default async function EditArticlePage({ params }: { params: { id: string } }) {
-  const { supabase, user, profile, outletId, isEditorPlus } = await getCmsContext()
+  const { supabase, user, profile, outletId, isEditorPlus, trial } = await getCmsContext()
 
   const { data: article } = await supabase.from('articles').select('*').eq('id', params.id).single()
   if (!article) notFound()
@@ -46,6 +46,7 @@ export default async function EditArticlePage({ params }: { params: { id: string
         authorName={profile?.full_name ?? ''}
         authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}
+        moderated={!!trial}
         outlets={outlets ?? []}
         syndicatedOutletIds={(copies ?? []).map((c) => c.outlet_id as string)}
         outletEmail={contact.email}
