@@ -169,7 +169,7 @@ function TrialStrip({ beta }: { beta: boolean }) {
       <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 border-y border-[#E3E7EE] px-2 py-7 text-center sm:flex-row sm:justify-between sm:text-left">
         <p className="text-[18px] font-bold leading-snug tracking-[-0.02em] text-[#0F1115] [font-family:var(--serif)] sm:text-[21px]">
           말로 듣는 것보다 직접 써 보는 게 빠릅니다.
-          <span className="block text-[14.5px] font-medium text-[#5B616B]">{beta ? `첫 1주일은 무료, ${BETA_END_LABEL}까지 가입하면 모든 요금 반값` : '첫 1주일은 무료로 모든 기능을 써 보세요'}</span>
+          <span className="block text-[14.5px] font-medium text-[#5B616B]">{beta ? <>첫 1주일은 무료, <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입하면 모든 요금 반값</b></> : '첫 1주일은 무료로 모든 기능을 써 보세요'}</span>
         </p>
         <TrialButton className="shrink-0 rounded-md bg-[#1F4FD0] px-6 py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#193FAA]" />
       </div>
@@ -215,8 +215,8 @@ export default function ProductHome() {
 
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.15fr]">
             <div>
-              <p className="inline-flex items-center gap-2.5 border-l-2 border-[#1F4FD0] pl-3 text-[13px] font-medium tracking-[0.02em] text-[#5B616B]">
-                {beta ? <>출시 기념 베타 · 1주일 무료 + {BETA_END_LABEL}까지 반값<span className="hidden sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
+              <p className="inline-flex items-center gap-2.5 border-l-2 border-[#E8590C] pl-3 text-[13px] font-medium tracking-[0.02em] text-[#5B616B]">
+                {beta ? <>출시 기념 베타 · 1주일 무료 + <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 반값</b><span className="hidden font-semibold text-[#C2410C] sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
               </p>
               <h1 className="mt-7 text-[40px] font-bold leading-[1.22] tracking-[-0.03em] [font-family:var(--serif)] sm:text-[54px] xl:text-[58px]">
                 1인 언론사에도
@@ -547,7 +547,7 @@ export default function ProductHome() {
             <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-xl bg-[#EEF3FD] ring-1 ring-[#D9E1EE] px-6 py-16 text-[#0F1115] sm:px-14">
               <div className="flex flex-wrap items-end justify-between gap-6">
                 <div>
-                  <p className="text-[13px] font-semibold tracking-[0.06em] text-[#1F4FD0]">출시 기념 베타 · 마감까지 D-{daysLeft}</p>
+                  <p className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-[0.06em] text-[#C2410C]"><span className="rounded bg-[#E8590C] px-1.5 py-0.5 text-[11.5px] tracking-normal text-white">D-{daysLeft}</span>출시 기념 베타 · {BETA_END_LABEL} 마감</p>
                   <h2 className="mt-4 text-[32px] font-bold leading-[1.3] tracking-[-0.025em] [font-family:var(--serif)] sm:text-[44px]">지금 가입하면<br />첫 1주일은 무료입니다</h2>
                   <p className="mt-4 max-w-[34em] text-[16px] leading-[1.75] text-[#5B616B]">정식 출시 전 베타 기간입니다. {BETA_END_LABEL}까지 가입한 신문사는 12월분까지 모든 요금이 반값이고, {REGULAR_FROM_LABEL}부터 정상가로 바뀝니다.</p>
                 </div>
@@ -562,8 +562,8 @@ export default function ProductHome() {
                   { when: `~ 2026년 ${BETA_END_LABEL}`, t: '모든 요금 반값', d: '12월분 이용료까지 반값 · 세팅비 무료 · 기존 기사 이전 지원' },
                   { when: `${REGULAR_FROM_LABEL}부터`, t: '정상가', d: '베이직 월 110,000원부터 (VAT 포함)' },
                 ].map((b, i) => (
-                  <li key={b.t} className={`border-t pt-5 ${i < 2 ? 'border-[#1F4FD0]' : 'border-[#D9E1EE]'}`}>
-                    <p className={`text-[12.5px] font-semibold tracking-[0.04em] ${i < 2 ? 'text-[#1F4FD0]' : 'text-[#5B616B]'}`}>{b.when}</p>
+                  <li key={b.t} className={`border-t-2 pt-5 ${i === 0 ? 'border-[#1F4FD0]' : i === 1 ? 'border-[#E8590C]' : 'border-[#D9E1EE]'}`}>
+                    <p className={`text-[12.5px] font-semibold tracking-[0.04em] ${i === 0 ? 'text-[#1F4FD0]' : i === 1 ? 'text-[#C2410C]' : 'text-[#5B616B]'}`}>{b.when}</p>
                     <p className="mt-2 text-[22px] font-bold [font-family:var(--serif)]">{b.t}</p>
                     <p className="mt-1.5 text-[14px] leading-relaxed text-[#5B616B]">{b.d}</p>
                   </li>

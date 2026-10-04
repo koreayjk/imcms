@@ -42,8 +42,8 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       {BETA && (
         <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-lg bg-[#EEF3FD] ring-1 ring-[#D9E1EE] px-7 py-6 text-center text-[#0F1115] sm:flex-row sm:justify-between sm:text-left">
           <span>
-            <span className="block text-[12.5px] font-semibold tracking-[0.06em] text-[#1F4FD0]">출시 기념 베타 · 마감까지 D-{daysLeft}</span>
-            <span className="mt-1 block text-[20px] font-bold tracking-[-0.02em] [font-family:var(--serif)] sm:text-[23px]">1주일 무료 체험 → {BETA_END_LABEL}까지 모든 요금 반값</span>
+            <span className="inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.06em] text-[#C2410C]"><span className="rounded bg-[#E8590C] px-1.5 py-0.5 text-[11px] tracking-normal text-white">D-{daysLeft}</span>출시 기념 베타</span>
+            <span className="mt-1 block text-[20px] font-bold tracking-[-0.02em] [font-family:var(--serif)] sm:text-[23px]">1주일 무료 체험 → {BETA_END_LABEL}까지 <span className="text-[#C2410C]">모든 요금 반값</span></span>
             <span className="mt-1 block text-[13px] text-[#5B616B]">{REGULAR_FROM_LABEL}부터 정상가로 바뀝니다</span>
           </span>
           <span className="flex shrink-0 flex-wrap justify-center gap-2">
@@ -100,7 +100,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                   <p className="pt-3 text-[28px] font-extrabold tracking-[-0.02em] text-[#9AA0A8]">별도 문의</p>
                 ) : (
                   <>
-                    {BETA && <p className="text-[14px] tabular-nums text-[#9AA0A8]"><s>{won(regular!)}</s> <span className="ml-1 rounded bg-[#EEF3FD] px-1.5 py-0.5 text-[12px] font-bold text-[#14306E]">{annual ? '12월분까지 반값' : '베타 반값'}</span></p>}
+                    {BETA && <p className="text-[14px] tabular-nums text-[#9AA0A8]"><s>{won(regular!)}</s> <span className="ml-1 rounded bg-[#FFF3EB] px-1.5 py-0.5 text-[12px] font-bold text-[#C2410C]">{annual ? '12월분까지 반값' : '베타 반값'}</span></p>}
                     <p className="mt-1 tabular-nums">
                       <span className="text-[32px] font-extrabold tracking-[-0.03em]">{won(price)}</span>
                       <span className="ml-1 text-[14px] font-semibold text-[#5B616B]">/{annual ? '년' : '월'}</span>
@@ -158,7 +158,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
             {BETA && <span className="mr-2 text-[15px] text-[#9AA0A8]"><s>{won(SETUP_FEE)}</s></span>}
             <span className="text-[26px] font-extrabold tracking-[-0.02em]">{BETA ? '0원' : won(SETUP_FEE)}</span>
             <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[4px] text-[11.5px] font-semibold text-[#5B616B]">VAT 포함</span>
-            {BETA && <span className="ml-2 inline-block whitespace-nowrap rounded bg-[#EEF3FD] px-2 py-0.5 align-[4px] text-[12px] font-bold text-[#14306E]">베타 기간 신청 무료</span>}
+            {BETA && <span className="ml-2 inline-block whitespace-nowrap rounded bg-[#FFF3EB] px-2 py-0.5 align-[4px] text-[12px] font-bold text-[#C2410C]">베타 기간 신청 무료</span>}
           </p>
         </div>
         <ul className="mt-5 grid gap-x-6 gap-y-3 text-[14px] sm:grid-cols-2">
