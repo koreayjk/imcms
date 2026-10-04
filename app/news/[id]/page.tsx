@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { currentSite, getArticleData } from '@/lib/public-data'
-import { findSection } from '@/lib/sites'
+import { findSection, siteIcon } from '@/lib/sites'
 import SiteFrame from '@/components/site/SiteFrame'
 import { sanitizeBody } from '@/lib/article-html'
 import ViewCounter from './ViewCounter'
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${title} | ${site.name}`,
     description,
-    icons: { icon: site.logoMark },
+    icons: { icon: siteIcon(site) },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
     alternates: data.source?.url ? { canonical: data.source.url } : undefined,
     openGraph: {

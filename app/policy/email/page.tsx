@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { currentSite } from '@/lib/public-data'
 import PolicyPage from '@/components/site/PolicyPage'
+import { siteIcon } from '@/lib/sites'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
-  return { title: `이메일무단수집거부 | ${site.name}`, icons: { icon: site.logoMark } }
+  return { title: `이메일무단수집거부 | ${site.name}`, icons: { icon: siteIcon(site) } }
 }
 
 export default async function EmailPolicyPage() {

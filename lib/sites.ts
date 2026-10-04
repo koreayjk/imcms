@@ -76,6 +76,9 @@ export function defaultOgImage(logo?: string) {
   return dir && OG_DIRS.includes(dir) ? `/sites/${dir}/og.png` : undefined
 }
 
+// 브라우저 탭 아이콘: 로고가 없으면 매체 이름 첫 글자 아이콘 (app/site-icon.svg)
+export const siteIcon = (site: SiteConfig) => site.logoMark || '/site-icon.svg'
+
 export const SITES: SiteConfig[] = [
   {
     key: 'thecaretimes',

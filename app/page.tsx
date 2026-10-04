@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { currentSite, getHomeData, getIndexSeries, isDemo, type PublicArticle } from '@/lib/public-data'
-import { topSections } from '@/lib/sites'
+import { topSections, siteIcon } from '@/lib/sites'
 import IndexWidget from '@/components/site/IndexWidget'
 import { formatDate, formatShort } from '@/lib/format'
 import SiteFrame from '@/components/site/SiteFrame'
@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${site.name} | ${site.nameEn}`,
     description: site.description,
-    icons: { icon: site.logoMark },
+    icons: { icon: siteIcon(site) },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
     openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website', images: site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined },
     twitter: { card: site.ogImage ? 'summary_large_image' : 'summary' },

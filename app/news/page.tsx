@@ -6,6 +6,7 @@ import SiteFrame from '@/components/site/SiteFrame'
 import MostViewed from '@/components/site/MostViewed'
 import ArticleRow from '@/components/site/ArticleRow'
 import { ALL_NEWS } from '@/components/site/SiteHeader'
+import { siteIcon } from '@/lib/sites'
 
 type Props = { searchParams: { page?: string } }
 
@@ -14,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `전체기사 | ${site.name}`,
     description: site.description,
-    icons: { icon: site.logoMark },
+    icons: { icon: siteIcon(site) },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
   }
 }

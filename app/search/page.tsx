@@ -2,12 +2,13 @@ import type { Metadata } from 'next'
 import { currentSite, searchArticles } from '@/lib/public-data'
 import SiteFrame from '@/components/site/SiteFrame'
 import ArticleRow from '@/components/site/ArticleRow'
+import { siteIcon } from '@/lib/sites'
 
 type Props = { searchParams: { q?: string } }
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
-  return { title: `기사 검색 | ${site.name}`, icons: { icon: site.logoMark }, robots: { index: false } }
+  return { title: `기사 검색 | ${site.name}`, icons: { icon: siteIcon(site) }, robots: { index: false } }
 }
 
 export default async function SearchPage({ searchParams }: Props) {

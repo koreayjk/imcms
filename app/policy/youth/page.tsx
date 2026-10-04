@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { currentSite } from '@/lib/public-data'
 import PolicyPage, { officer } from '@/components/site/PolicyPage'
+import { siteIcon } from '@/lib/sites'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
-  return { title: `청소년보호정책 | ${site.name}`, icons: { icon: site.logoMark } }
+  return { title: `청소년보호정책 | ${site.name}`, icons: { icon: siteIcon(site) } }
 }
 
 const EFFECTIVE = '2026년 10월 2일'

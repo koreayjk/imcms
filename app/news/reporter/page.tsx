@@ -6,6 +6,7 @@ import { reporterHref } from '@/lib/reporter'
 import SiteFrame from '@/components/site/SiteFrame'
 import MostViewed from '@/components/site/MostViewed'
 import ArticleRow from '@/components/site/ArticleRow'
+import { siteIcon } from '@/lib/sites'
 
 type Props = { searchParams: { name?: string; page?: string } }
 
@@ -17,7 +18,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   return {
     title: `${name ? `${name} 기자` : '기자'} 기사 | ${site.name}`,
     description: name ? `${site.name} ${name} 기자가 쓴 기사` : site.description,
-    icons: { icon: site.logoMark },
+    icons: { icon: siteIcon(site) },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
   }
 }

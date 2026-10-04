@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { currentSite, getSectionData, SECTION_PAGE_SIZE } from '@/lib/public-data'
-import { childSections, findSection } from '@/lib/sites'
+import { childSections, findSection, siteIcon } from '@/lib/sites'
 import SiteFrame from '@/components/site/SiteFrame'
 import MostViewed from '@/components/site/MostViewed'
 import ArticleRow from '@/components/site/ArticleRow'
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: section ? `${section.name} | ${site.name}` : site.name,
     description: section?.description ?? site.description,
-    icons: { icon: site.logoMark },
+    icons: { icon: siteIcon(site) },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
   }
 }
