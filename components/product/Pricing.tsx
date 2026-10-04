@@ -188,7 +188,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
 
       <p className="mt-5 text-center text-[12.5px] leading-relaxed text-[#8A9099]">
         모든 금액은 부가세(VAT) 포함입니다. * 전송량은 일반적인 언론사 사용 기준으로 제한 없이 쓰며, 아주 큰 트래픽이 계속되면 요금제를 함께 정합니다. 배너·팝업 디자인은 운영팀이 만들어 드리는 건수이고, 직접 만든 배너는 개수 제한 없이 올릴 수 있습니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
-        {BETA && ` 베타 반값은 ${BETA_END_LABEL}까지 신청한 신문사의 2026년 12월분 이용료까지 적용되고, ${REGULAR_FROM_LABEL}분부터 정상가입니다. 1년 결제는 12개월 중 12월분까지만 반값으로 계산합니다.`}
+        {BETA && ` 베타 반값은 ${BETA_END_LABEL}까지 신청한 신문사의 2026년 12월분 이용료까지 적용되고, ${REGULAR_FROM_LABEL}분부터 정상가입니다. 1년 결제는 12개월 중 12월분까지만 반값으로 계산합니다. 매체 추가·AI 추가 사용 요금은 베타 기간에도 정상가입니다.`}
       </p>
     </div>
   )
