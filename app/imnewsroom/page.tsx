@@ -154,8 +154,7 @@ const DEMO_INDEX: IndexSeries = {
   kcci: weeks('2026-07-13', [2350.62, 2331.1, 2290.4, 2302.8, 2260.3, 2231.5, 2205.9, 2188.2, 2150.6, 2131.2, 2110.4, 2096.64]),
 }
 
-// 큰 제목은 명조(신문 제목처럼), 본문은 고딕
-const H2 = 'text-[30px] font-bold leading-[1.32] tracking-[-0.025em] [font-family:var(--serif)] [text-wrap:balance] sm:text-[40px]'
+const H2 = 'text-[30px] font-extrabold leading-[1.25] tracking-[-0.03em] [text-wrap:balance] sm:text-[40px]'
 
 // 1주일 무료 체험 버튼 (소개 페이지 곳곳에)
 function TrialButton({ className = '', children = '1주일 무료 체험 시작 →' }: { className?: string; children?: React.ReactNode }) {
@@ -167,7 +166,7 @@ function TrialStrip({ beta }: { beta: boolean }) {
   return (
     <div className="px-4 sm:px-6">
       <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 border-y border-[#E3E7EE] px-2 py-7 text-center sm:flex-row sm:justify-between sm:text-left">
-        <p className="text-[18px] font-bold leading-snug tracking-[-0.02em] text-[#0F1115] [font-family:var(--serif)] sm:text-[21px]">
+        <p className="text-[18px] font-extrabold leading-snug tracking-[-0.03em] text-[#0F1115] sm:text-[21px]">
           말로 듣는 것보다 직접 써 보는 게 빠릅니다.
           <span className="block text-[14.5px] font-medium text-[#5B616B]">{beta ? <>첫 1주일은 무료, <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입하면 모든 요금 반값</b></> : '첫 1주일은 무료로 모든 기능을 써 보세요'}</span>
         </p>
@@ -184,7 +183,7 @@ export default function ProductHome() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-[#14171C] [word-break:keep-all]" style={{ ['--serif' as string]: "'Noto Serif KR', Georgia, serif" }}>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700;900&display=swap" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&display=swap" />
 
       <header className="fixed inset-x-0 top-0 z-40 border-b border-[#D9E1EE] bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-4 sm:px-6">
@@ -218,7 +217,7 @@ export default function ProductHome() {
               <p className="inline-flex items-center gap-2.5 border-l-2 border-[#E8590C] pl-3 text-[13px] font-medium tracking-[0.02em] text-[#5B616B]">
                 {beta ? <>출시 기념 베타 · 1주일 무료 + <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 반값</b><span className="hidden font-semibold text-[#C2410C] sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
               </p>
-              <h1 className="mt-7 text-[40px] font-bold leading-[1.22] tracking-[-0.03em] [font-family:var(--serif)] sm:text-[54px] xl:text-[58px]">
+              <h1 className="mt-7 text-[42px] font-extrabold leading-[1.14] tracking-[-0.04em] sm:text-[56px] xl:text-[60px]">
                 1인 언론사에도
                 <br />
                 <span className="text-[#1F4FD0] sm:whitespace-nowrap">뉴스룸이 생깁니다.</span>
@@ -272,7 +271,7 @@ export default function ProductHome() {
               { n: 1, s: '개', label: '계정으로 여러 매체 운영', color: '#0F1115' },
             ].map((x, i) => (
               <div key={x.label} className={`px-6 py-7 text-center ${i % 2 ? '' : 'border-r'} border-[#EEF0F3] md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
-                <p className="text-[36px] font-bold tracking-[-0.02em] [font-family:var(--serif)] sm:text-[44px]" style={{ color: x.color }}><CountUp to={x.n} suffix={x.s} /></p>
+                <p className="text-[38px] font-black tracking-[-0.03em] sm:text-[46px]" style={{ color: x.color }}><CountUp to={x.n} suffix={x.s} /></p>
                 <p className="mt-1 text-[13.5px] font-medium text-[#5B616B]">{x.label}</p>
               </div>
             ))}
@@ -482,7 +481,7 @@ export default function ProductHome() {
               {STEPS.map((s, i) => (
                 <Reveal key={s.title} delay={i * 90}>
                   <li className="relative h-full border-t-2 border-[#1F4FD0] pt-5">
-                    <p className="text-[40px] font-bold leading-none tabular-nums text-[#1F4FD0] [font-family:var(--serif)]">{i + 1}</p>
+                    <p className="text-[42px] font-black leading-none tabular-nums text-[#1F4FD0]">{i + 1}</p>
                     <p className="mt-4 text-[21px] font-extrabold tracking-[-0.02em]">{s.title}</p>
                     <p className="mt-2 text-[14px] leading-[1.7] text-[#5B616B]">{s.body}</p>
                   </li>
@@ -548,7 +547,7 @@ export default function ProductHome() {
               <div className="flex flex-wrap items-end justify-between gap-6">
                 <div>
                   <p className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-[0.06em] text-[#C2410C]"><span className="rounded bg-[#E8590C] px-1.5 py-0.5 text-[11.5px] tracking-normal text-white">D-{daysLeft}</span>출시 기념 베타 · {BETA_END_LABEL} 마감</p>
-                  <h2 className="mt-4 text-[32px] font-bold leading-[1.3] tracking-[-0.025em] [font-family:var(--serif)] sm:text-[44px]">지금 가입하면<br />첫 1주일은 무료입니다</h2>
+                  <h2 className="mt-4 text-[32px] font-extrabold leading-[1.25] tracking-[-0.03em] sm:text-[44px]">지금 가입하면<br />첫 1주일은 무료입니다</h2>
                   <p className="mt-4 max-w-[34em] text-[16px] leading-[1.75] text-[#5B616B]">정식 출시 전 베타 기간입니다. {BETA_END_LABEL}까지 가입한 신문사는 12월분까지 모든 요금이 반값이고, {REGULAR_FROM_LABEL}부터 정상가로 바뀝니다.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -564,7 +563,7 @@ export default function ProductHome() {
                 ].map((b, i) => (
                   <li key={b.t} className={`border-t-2 pt-5 ${i === 0 ? 'border-[#1F4FD0]' : i === 1 ? 'border-[#E8590C]' : 'border-[#D9E1EE]'}`}>
                     <p className={`text-[12.5px] font-semibold tracking-[0.04em] ${i === 0 ? 'text-[#1F4FD0]' : i === 1 ? 'text-[#C2410C]' : 'text-[#5B616B]'}`}>{b.when}</p>
-                    <p className="mt-2 text-[22px] font-bold [font-family:var(--serif)]">{b.t}</p>
+                    <p className="mt-2 text-[22px] font-extrabold tracking-[-0.02em]">{b.t}</p>
                     <p className="mt-1.5 text-[14px] leading-relaxed text-[#5B616B]">{b.d}</p>
                   </li>
                 ))}
@@ -586,7 +585,7 @@ export default function ProductHome() {
               {FAQ_ALL.map((f) => (
                 <details key={f.q} className="group border-b border-[#E3E7EE] px-1 py-5">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16.5px] font-bold [&::-webkit-details-marker]:hidden">
-                    <span><span className="mr-2 text-[#1F4FD0] [font-family:var(--serif)]">Q.</span>{f.q}</span>
+                    <span><span className="mr-2 text-[#1F4FD0]">Q.</span>{f.q}</span>
                     <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#F6F8FB] text-[18px] font-normal text-[#5B616B] transition-transform group-open:rotate-45" aria-hidden>+</span>
                   </summary>
                   <p className="mt-3 pl-7 text-[15px] leading-[1.8] text-[#3B4048]">{f.a}</p>

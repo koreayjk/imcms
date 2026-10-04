@@ -43,7 +43,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
         <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-lg bg-[#EEF3FD] ring-1 ring-[#D9E1EE] px-7 py-6 text-center text-[#0F1115] sm:flex-row sm:justify-between sm:text-left">
           <span>
             <span className="inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.06em] text-[#C2410C]"><span className="rounded bg-[#E8590C] px-1.5 py-0.5 text-[11px] tracking-normal text-white">D-{daysLeft}</span>출시 기념 베타</span>
-            <span className="mt-1 block text-[20px] font-bold tracking-[-0.02em] [font-family:var(--serif)] sm:text-[23px]">1주일 무료 체험 → {BETA_END_LABEL}까지 <span className="text-[#C2410C]">모든 요금 반값</span></span>
+            <span className="mt-1 block text-[21px] font-extrabold tracking-[-0.02em] sm:text-[24px]">1주일 무료 체험 → {BETA_END_LABEL}까지 <span className="text-[#C2410C]">모든 요금 반값</span></span>
             <span className="mt-1 block text-[13px] text-[#5B616B]">{REGULAR_FROM_LABEL}부터 정상가로 바뀝니다</span>
           </span>
           <span className="flex shrink-0 flex-wrap justify-center gap-2">
