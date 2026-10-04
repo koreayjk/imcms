@@ -6,6 +6,8 @@ export const PRODUCT = {
   domains: ['imnewsroom.com', 'www.imnewsroom.com', 'imnewsroom.co.kr', 'www.imnewsroom.co.kr'],
   // 대표 주소 (검색엔진·공유 링크에 쓴다)
   url: 'https://imnewsroom.com',
+  // 카카오톡·SNS 공유 미리보기 그림 (1200×630)
+  ogImage: '/imnewsroom/og.png',
   // 미리보기 주소 (도메인 연결 전에도 imcms.vercel.app/imnewsroom 으로 볼 수 있다)
   path: '/imnewsroom',
   // 제품 도메인으로 들어온 경우에만 검색 수집을 허락한다 (imcms.vercel.app/imnewsroom 미리보기는 막는다)

@@ -16,9 +16,13 @@ export const dynamic = 'force-dynamic'
 
 export function generateMetadata(): Metadata {
   const indexable = PRODUCT.indexable && isProductHost(headers().get('host'))
+  const title = `${PRODUCT.name} — 1인 언론사에도 뉴스룸이 생깁니다`
+  const description = '보도자료 자동 수집, AI 기사 초안, 기자·편집장 승인, 여러 매체 동시 송고까지. 인터넷신문을 위한 AI 편집국 클라우드.'
   return {
-    title: `${PRODUCT.name} — 1인 언론사에도 뉴스룸이 생깁니다`,
-    description: '보도자료 자동 수집, AI 기사 초안, 기자·편집장 승인, 여러 매체 동시 송고까지. 인터넷신문을 위한 AI 편집국 클라우드.',
+    title,
+    description,
+    openGraph: { type: 'website', siteName: PRODUCT.name, title, description, locale: 'ko_KR', images: [{ url: PRODUCT.ogImage, width: 1200, height: 630 }] },
+    twitter: { card: 'summary_large_image', title, description, images: [PRODUCT.ogImage] },
     ...(indexable ? { robots: { index: true, follow: true }, alternates: { canonical: `${PRODUCT.url}/` } } : {}),
   }
 }
