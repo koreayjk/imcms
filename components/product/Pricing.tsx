@@ -118,7 +118,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                 onClick={() => pick(p.id)}
                 className={`mt-5 rounded-md px-4 py-3 text-center text-[15px] font-bold transition ${p.pick ? 'bg-[#1F4FD0] text-white hover:bg-[#193FAA]' : 'bg-white text-[#14306E] ring-1 ring-[#D9E1EE] hover:bg-[#EEF3FD]'}`}
               >
-                {price == null ? '상담 신청' : BETA ? '베타 신청하기' : '신청하기'}
+                {price == null ? '상담 신청' : '신청하기'}
               </a>
               {price != null && <a href="/trial" className="mt-2 text-center text-[13.5px] font-semibold text-[#5B616B] underline-offset-4 hover:text-[#14171C] hover:underline">먼저 1주일 무료 체험 →</a>}
 

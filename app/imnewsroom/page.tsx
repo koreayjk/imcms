@@ -97,7 +97,7 @@ const FAQ = [
   { q: '발행 전 기사를 취재원이나 편집장에게 미리 보여줄 수 있나요?', a: '네. 저장만 하면 “기사 링크 복사”로 미리보기 링크를 받을 수 있습니다. 받은 사람은 로그인 없이 실제 홈페이지 모양으로 볼 수 있고, 검색엔진에는 노출되지 않습니다. 발행되면 같은 링크가 실제 기사로 연결됩니다.' },
   { q: '쓰다가 컴퓨터가 꺼지면 어떻게 되나요?', a: '쓰는 내용은 고칠 때마다 그 브라우저에 자동으로 임시 저장됩니다. 다시 기사쓰기를 열면 쓰던 내용이 그대로 나옵니다. “저장”을 누르면 기사목록에 들어갑니다.' },
   { q: '지금 쓰는 도메인을 그대로 쓸 수 있나요?', a: '네. 도메인을 산 곳에서 연결 주소만 바꾸면 됩니다. 저희가 설정 방법을 안내해 드립니다.' },
-  { q: '기존 프로그램에 있는 기사를 옮길 수 있나요?', a: '베타 고객사는 저희가 직접 옮겨 드립니다. 기존 프로그램에서 내보낼 수 있는 형식에 따라 방법이 달라서, 상담할 때 함께 확인합니다.' },
+  { q: '기존 프로그램에 있는 기사를 옮길 수 있나요?', a: '네. 신청하시면 저희가 직접 옮겨 드립니다. 기존 프로그램에서 내보낼 수 있는 형식에 따라 방법이 달라서, 상담할 때 함께 확인합니다.' },
   { q: '서버나 프로그램을 설치해야 하나요?', a: '아니요. 웹브라우저에서 로그인해 바로 씁니다. 서버, 백업, 보안 업데이트는 저희가 관리합니다.' },
   { q: '보도자료를 자유롭게 기사로 써도 되나요?', a: '배포처 약관을 따라야 합니다. 예를 들어 뉴스와이어는 언론사가 하루 5건을 넘게 쓰려면 사전 허락이 필요합니다. 보도자료함에 오늘 사용한 건수가 표시됩니다.' },
   { q: '기자 메일로 받은 보도자료도 모을 수 있나요?', a: '네. 기자마다 전용 전달 주소가 생기고, 지메일에서 “보도자료” 메일만 그 주소로 자동 전달하도록 한 번 설정하면 됩니다. 네이버·다음 메일은 자동 전달 기능이 없어 “전달” 버튼으로 보내면 됩니다. 설정 방법은 화면에서 단계별로 안내합니다.' },
@@ -197,11 +197,11 @@ export default function ProductHome() {
             <a href="#vertical" className="hover:text-[#0F1115]">전문지</a>
             <a href="#showcase" className="hover:text-[#0F1115]">디자인</a>
             <a href="#pricing" className="hover:text-[#0F1115]">요금</a>
-            {beta && <a href="#beta" className="hover:text-[#0F1115]">베타 모집</a>}
+            {beta && <a href="#beta" className="hover:text-[#0F1115]">베타 혜택</a>}
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link href="/login" className="hidden rounded-md px-3 py-2 text-[13.5px] text-[#5B616B] hover:text-[#0F1115] sm:block">편집국 로그인</Link>
-            <a href="#apply" className="hidden rounded-md border border-[#D9E1EE] bg-white px-3.5 py-2 text-[13.5px] font-semibold text-[#14306E] hover:bg-[#EEF3FD] sm:block">{beta ? '베타 신청' : '서비스 신청'}</a>
+            <a href="#apply" className="hidden rounded-md border border-[#D9E1EE] bg-white px-3.5 py-2 text-[13.5px] font-semibold text-[#14306E] hover:bg-[#EEF3FD] sm:block">서비스 신청</a>
             <TrialButton className="rounded-md bg-[#1F4FD0] px-4 py-2 text-[13.5px] font-bold text-white hover:bg-[#193FAA]">1주일 무료 체험</TrialButton>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function ProductHome() {
                   1주일 무료 체험 시작 →
                 </TrialButton>
                 <a href="#apply" className="rounded-md border border-[#D9E1EE] bg-white px-7 py-4 text-[16px] font-semibold text-[#14306E] transition hover:bg-[#EEF3FD]">
-                  {beta ? '베타 신청 (반값)' : '서비스 신청'}
+                  서비스 신청
                 </a>
               </div>
               <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] text-[#5B616B]">
@@ -540,7 +540,7 @@ export default function ProductHome() {
           </div>
         </section>
 
-        {/* ─── 베타 모집: 1주일 무료 → 12월 30일까지 반값 → 2027년 1월 정상가 ─── */}
+        {/* ─── 베타 기간: 1주일 무료 → 12월 30일까지 반값 → 2027년 1월 정상가 ─── */}
         {beta && (
           <section id="beta" className="scroll-mt-16 px-4 sm:px-6">
             <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-xl bg-[#EEF3FD] ring-1 ring-[#D9E1EE] px-6 py-16 text-[#0F1115] sm:px-14">
@@ -552,7 +552,7 @@ export default function ProductHome() {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <TrialButton className="rounded-md bg-[#1F4FD0] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#193FAA]" />
-                  <a href="#apply" className="rounded-md border border-[#D9E1EE] bg-white px-7 py-4 text-[16px] font-semibold text-[#14306E] transition hover:bg-[#EEF3FD]">바로 베타 신청</a>
+                  <a href="#apply" className="rounded-md border border-[#D9E1EE] bg-white px-7 py-4 text-[16px] font-semibold text-[#14306E] transition hover:bg-[#EEF3FD]">서비스 신청</a>
                 </div>
               </div>
               <ol className="mt-14 grid gap-8 md:grid-cols-3 md:gap-6">
@@ -569,11 +569,6 @@ export default function ProductHome() {
                 ))}
               </ol>
             </Reveal>
-            <div className="mx-auto mt-10 grid max-w-[1200px] gap-3 text-center text-[14.5px] text-[#3B4048] sm:grid-cols-3">
-              {['기자 1~5명이 매일 기사를 내는 인터넷신문', '매체를 두 개 이상 운영하는 발행인', '창간을 준비하며 프로그램을 고르는 곳'].map((t) => (
-                <p key={t} className="border-b border-[#E3E7EE] px-4 py-3.5">{t}</p>
-              ))}
-            </div>
           </section>
         )}
 
