@@ -1,10 +1,21 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import { PRODUCT, isProductHost } from '@/lib/product'
 import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import TrialSignupForm from '@/components/auth/TrialSignupForm'
 import { isApproved } from '@/lib/cms'
 
-export const metadata: Metadata = { title: '1주일 무료 체험 | IM 뉴스룸', robots: { index: false, follow: false } }
+// 제품 도메인(imnewsroom.com)으로 들어온 경우에만 검색에 노출한다
+export function generateMetadata(): Metadata {
+  const indexable = PRODUCT.indexable && isProductHost(headers().get('host'))
+  return {
+    title: '1주일 무료 체험 | IM 뉴스룸',
+    description: '샘플 기사가 채워진 체험용 신문에서 기자·편집장·그룹장 역할을 바꿔 가며 IM 뉴스룸을 7일 동안 무료로 써 보세요.',
+    robots: indexable ? { index: true, follow: true } : { index: false, follow: false },
+    ...(indexable ? { alternates: { canonical: `${PRODUCT.url}/trial` } } : {}),
+  }
+}
 
 const TRY = [
   ['기자', '기사 쓰기, 보도자료로 AI 초안 만들기, AI 법적 검수, 사진 넣기, 승인신청'],

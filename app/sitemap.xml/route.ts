@@ -1,11 +1,17 @@
 import { headers } from 'next/headers'
 import { currentSite, getFeedArticles, siteBaseUrl } from '@/lib/public-data'
 import { xml, xmlResponse } from '@/lib/xml'
+import { PRODUCT, PRODUCT_PAGES, isProductHost } from '@/lib/product'
 
 export const dynamic = 'force-dynamic'
 
 // 매체별 사이트맵: 첫 화면·섹션·최근 기사 1,000건
 export async function GET() {
+  // IM 뉴스룸 제품 홈페이지 도메인: 소개·체험·약관 화면
+  if (isProductHost(headers().get('host'))) {
+    const urls = PRODUCT_PAGES.map((p) => `<url><loc>${PRODUCT.url}${p === '/' ? '/' : p}</loc><priority>${p === '/' ? '1.0' : '0.5'}</priority></url>`)
+    return xmlResponse(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`)
+  }
   const site = await currentSite()
   const base = siteBaseUrl(site, headers().get('host'))
   const articles = await getFeedArticles(site, 1000)

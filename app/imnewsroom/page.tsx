@@ -19,7 +19,7 @@ export function generateMetadata(): Metadata {
   return {
     title: `${PRODUCT.name} — 1인 언론사에도 뉴스룸이 생깁니다`,
     description: '보도자료 자동 수집, AI 기사 초안, 기자·편집장 승인, 여러 매체 동시 송고까지. 인터넷신문을 위한 AI 편집국 클라우드.',
-    ...(indexable ? { robots: { index: true, follow: true } } : {}),
+    ...(indexable ? { robots: { index: true, follow: true }, alternates: { canonical: `${PRODUCT.url}/` } } : {}),
   }
 }
 
