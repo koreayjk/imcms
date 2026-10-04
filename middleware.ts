@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { PRODUCT, isProductHost } from '@/lib/product'
+import { APP_PATHS, PRODUCT, isAppHost, isProductHost } from '@/lib/product'
 import { isGdpaHost } from '@/lib/gdpa'
 
 // 로그인 없이 볼 수 있는 공개 경로
@@ -58,6 +58,19 @@ export async function middleware(request: NextRequest) {
     if (previewParam === 'clear' || !/^[0-9a-f-]{36}$/.test(previewParam)) res.cookies.delete('im_site_preview')
     else res.cookies.set('im_site_preview', previewParam, { path: '/', maxAge: 60 * 60 * 24, sameSite: 'lax' })
     return res
+  }
+
+  // 편집국 주소(app.imnewsroom.com)의 첫 화면은 편집국 (로그인 전이면 로그인 화면으로 넘어간다)
+  const host = request.headers.get('host')
+  if (isAppHost(host) && request.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/newsroom', request.url))
+  }
+  // 소개 사이트(imnewsroom.com)에서 연 로그인·체험·편집국 화면은 편집국 주소로 (로그인은 주소마다 따로라 한 곳으로 모은다)
+  if (PRODUCT.appLive && isProductHost(host)) {
+    const p = request.nextUrl.pathname
+    if (APP_PATHS.some((x) => p === x || p.startsWith(`${x}/`))) {
+      return NextResponse.redirect(`${PRODUCT.appUrl}${p}${request.nextUrl.search}`)
+    }
   }
 
   // 제품 홈페이지 도메인으로 들어온 첫 화면은 IM 뉴스룸 소개 페이지로 보여준다

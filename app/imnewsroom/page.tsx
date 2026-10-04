@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Link from 'next/link'
-import { PRODUCT, isProductHost } from '@/lib/product'
+import { PRODUCT, appLink, isProductHost } from '@/lib/product'
 import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, PLANS, REGULAR_FROM_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
@@ -162,7 +162,7 @@ const H2 = 'text-[30px] font-extrabold leading-[1.25] tracking-[-0.03em] [text-w
 
 // 1주일 무료 체험 버튼 (소개 페이지 곳곳에)
 function TrialButton({ className = '', children = '1주일 무료 체험 시작 →' }: { className?: string; children?: React.ReactNode }) {
-  return <Link href="/trial" className={className}>{children}</Link>
+  return <Link href={appLink('/trial')} className={className}>{children}</Link>
 }
 
 // 섹션 사이 띠: 지금 바로 1주일 무료로
@@ -204,7 +204,7 @@ export default function ProductHome() {
             {beta && <a href="#beta" className="hover:text-[#0F1115]">베타 혜택</a>}
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
-            <Link href="/login" className="hidden rounded-md px-3 py-2 text-[13.5px] text-[#5B616B] hover:text-[#0F1115] sm:block">편집국 로그인</Link>
+            <Link href={appLink('/login')} className="hidden rounded-md px-3 py-2 text-[13.5px] text-[#5B616B] hover:text-[#0F1115] sm:block">편집국 로그인</Link>
             <a href="#apply" className="hidden rounded-md border border-[#D9E1EE] bg-white px-3.5 py-2 text-[13.5px] font-semibold text-[#14306E] hover:bg-[#EEF3FD] sm:block">서비스 신청</a>
             <TrialButton className="rounded-md bg-[#1F4FD0] px-4 py-2 text-[13.5px] font-bold text-white hover:bg-[#193FAA]">1주일 무료 체험</TrialButton>
           </div>
@@ -633,7 +633,7 @@ export default function ProductHome() {
             <span>인터넷신문을 위한 AI 편집국</span>
           </div>
           <div className="flex gap-5">
-            <Link href="/login" className="hover:text-[#0F1115]">편집국 로그인</Link>
+            <Link href={appLink('/login')} className="hover:text-[#0F1115]">편집국 로그인</Link>
             <a href="#apply" className="hover:text-[#0F1115]">서비스 신청</a>
             <Link href={`${PRODUCT.path}/terms`} className="hover:text-[#0F1115]">이용약관</Link>
             <Link href={`${PRODUCT.path}/privacy`} className="font-semibold text-[#5B616B] hover:text-[#0F1115]">개인정보처리방침</Link>

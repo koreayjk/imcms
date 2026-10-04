@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { appLink } from '@/lib/product'
 
 import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, REGULAR_FROM_LABEL, SETUP_FEE, SETUP_ITEMS, betaDaysLeft, isBeta, planCharge, won, type PlanId } from '@/lib/pricing'
 
@@ -47,7 +48,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
             <span className="mt-1 block text-[13px] text-[#5B616B]">{REGULAR_FROM_LABEL}부터 정상가로 바뀝니다</span>
           </span>
           <span className="flex shrink-0 flex-wrap justify-center gap-2">
-            <a href="/trial" className="rounded-md bg-[#1F4FD0] px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#193FAA]">1주일 무료 체험 →</a>
+            <a href={appLink('/trial')} className="rounded-md bg-[#1F4FD0] px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#193FAA]">1주일 무료 체험 →</a>
             <a href={applyHref} className="rounded-md border border-[#D9E1EE] bg-white px-5 py-3 text-[15px] font-semibold text-[#14306E] transition hover:bg-[#EEF3FD]">바로 신청</a>
           </span>
         </div>
@@ -120,7 +121,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               >
                 {price == null ? '상담 신청' : '신청하기'}
               </a>
-              {price != null && <a href="/trial" className="mt-2 text-center text-[13.5px] font-semibold text-[#5B616B] underline-offset-4 hover:text-[#14171C] hover:underline">먼저 1주일 무료 체험 →</a>}
+              {price != null && <a href={appLink('/trial')} className="mt-2 text-center text-[13.5px] font-semibold text-[#5B616B] underline-offset-4 hover:text-[#14171C] hover:underline">먼저 1주일 무료 체험 →</a>}
 
               <dl className="mt-6 space-y-2 border-t border-[#EEF0F3] pt-5 text-[14px]">
                 {p.specs.map(([k, v]) => (

@@ -1,12 +1,17 @@
 import { headers } from 'next/headers'
 import { currentSite, siteBaseUrl } from '@/lib/public-data'
-import { PRODUCT, isProductHost } from '@/lib/product'
+import { PRODUCT, isAppHost, isProductHost } from '@/lib/product'
 
 export const dynamic = 'force-dynamic'
 
 // 매체별 robots.txt: 홈페이지 설정에서 “검색 허용”을 켠 매체만 수집을 허락한다 (오픈 전에는 전부 막음)
 export async function GET() {
   const host = (headers().get('host') ?? '').split(':')[0].toLowerCase()
+  // 편집국 주소: 체험 신청 화면만 수집
+  if (isAppHost(host)) {
+    const body = PRODUCT.indexable ? 'User-agent: *\nAllow: /trial$\nDisallow: /' : 'User-agent: *\nDisallow: /'
+    return new Response(body + '\n', { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, s-maxage=600' } })
+  }
   // IM 뉴스룸 제품 홈페이지 도메인: 소개·체험 화면만 수집
   if (isProductHost(host)) {
     const body = PRODUCT.indexable

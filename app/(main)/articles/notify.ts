@@ -2,7 +2,7 @@
 
 import { getCmsContext } from '@/lib/cms'
 import { notify } from '@/lib/notify'
-import { siteOrigin } from '@/lib/origin'
+import { cmsOrigin } from '@/lib/origin'
 
 // 기사 상태가 바뀐 뒤 화면에서 부른다: 승인신청 → 편집장들, 반려·승인 → 쓴 기자
 //   실제 기사 상태가 그 일과 맞을 때만, 같은 일은 10분에 한 번만 알린다
@@ -17,7 +17,7 @@ export async function notifyArticle(id: string, event: keyof typeof STATUS) {
   if (event !== 'submitted' && a.author_id === user.id) return
   const outlet = (a.outlet as unknown as { name: string } | null)?.name ?? ''
   const who = (profile?.full_name as string | undefined) ?? ''
-  const url = `${siteOrigin()}/articles/${id}`
+  const url = `${cmsOrigin()}/articles/${id}`
   const slot = Math.floor(Date.now() / 600_000)
   const kind = event === 'submitted' ? 'article_submitted' : event === 'rejected' ? 'article_rejected' : 'article_published'
   await notify(supabase, kind, id, `${kind}:${id}:${slot}`, () =>

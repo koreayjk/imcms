@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { notify } from '@/lib/notify'
 import { notifyInvoiceIssued } from '@/lib/invoice-mail'
-import { siteOrigin } from '@/lib/origin'
+import { cmsOrigin } from '@/lib/origin'
 import { NOTICE_CATEGORIES, TICKET_CATEGORIES, TICKET_STATUS, invoiceTotals, type InvoiceItem } from '@/lib/support'
 
 const text = (form: FormData, k: string, max: number) => String(form.get(k) ?? '').trim().slice(0, max)
@@ -50,7 +50,7 @@ export async function addReply(ticketId: string, body: string): Promise<{ id?: s
   const { data: t } = await supabase.from('support_tickets').select('title, requester_id').eq('id', ticketId).maybeSingle()
   if (t) {
     const staffReply = isStaff && t.requester_id !== user.id
-    const url = `${siteOrigin()}/support/tickets/${ticketId}`
+    const url = `${cmsOrigin()}/support/tickets/${ticketId}`
     await notify(supabase, staffReply ? 'ticket_staff_reply' : 'ticket_customer_reply', ticketId, `reply:${data.id}`, () => ({
       subject: staffReply ? `[IM 뉴스룸] 업무요청에 답변이 왔습니다: ${t.title}` : `[업무요청 답글] ${t.title}`,
       title: staffReply ? '업무요청에 답변이 왔습니다' : '업무요청에 답글이 달렸습니다',
@@ -167,6 +167,6 @@ async function notifyInvoice(supabase: Awaited<ReturnType<typeof getCmsContext>>
   const { data: auto } = await supabase.from('outlet_autopay').select('card_company, card_number').eq('outlet_id', inv.outlet_id).eq('active', true).maybeSingle()
   await notifyInvoiceIssued(supabase, {
     id, outletName: (inv.outlet as unknown as { name: string } | null)?.name ?? '', month: String(inv.month), total: Number(inv.total),
-    dueDate: inv.due_date, createdAt: inv.created_at, autopay: auto ?? null, origin: siteOrigin(),
+    dueDate: inv.due_date, createdAt: inv.created_at, autopay: auto ?? null, origin: cmsOrigin(),
   })
 }

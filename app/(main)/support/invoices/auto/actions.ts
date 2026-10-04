@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { kstToday, runBilling } from '@/lib/billing'
-import { siteOrigin } from '@/lib/origin'
+import { cmsOrigin } from '@/lib/origin'
 
 const back = (msg: string, kind: 'ok' | 'error' = 'ok') => redirect(`/support/invoices/auto?${kind}=${encodeURIComponent(msg)}`)
 
@@ -43,7 +43,7 @@ export async function runBillingNow() {
   let msg = ''
   try {
     // 매체가 많으면 한 번에 다 못 만든다: 50초 안에 만든 만큼만 만들고, 남은 곳은 버튼을 다시 누르면 이어서 만든다
-    const r = await runBilling(supabase, kstToday().slice(0, 7), siteOrigin(), Date.now() + 50_000)
+    const r = await runBilling(supabase, kstToday().slice(0, 7), cmsOrigin(), Date.now() + 50_000)
     msg = r.created.length ? `청구서 ${r.created.length}건을 만들었습니다.` : '새로 만들 청구서가 없습니다.'
     if (r.pending) msg += ` 아직 ${r.pending}곳이 남았습니다. 버튼을 한 번 더 눌러 주세요.`
     // '이미 있음'은 빼고, 문제가 있는 곳만 (많으면 앞의 5곳만)

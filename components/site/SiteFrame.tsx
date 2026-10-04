@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { PRODUCT } from '@/lib/product'
 import type { SiteConfig } from '@/lib/sites'
 import { isDemo } from '@/lib/public-data'
 import SiteHeader from './SiteHeader'
@@ -25,7 +26,7 @@ export default function SiteFrame({ site, current, children }: Props) {
       {site.trial && (
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#1F3A5F] px-4 py-2 text-center text-[12.5px] text-white">
           <span><strong>IM 뉴스룸 체험용 신문</strong>입니다 — 기사는 샘플이거나 체험 중인 분이 쓴 연습 기사입니다.</span>
-          <a href={`${process.env.NEXT_PUBLIC_CMS_URL ?? 'https://imcms.vercel.app'}/trial`} className="rounded bg-white px-2.5 py-0.5 font-semibold text-[#1F3A5F] hover:bg-white/90">나도 1주일 무료 체험 →</a>
+          <a href={`${PRODUCT.appLive ? PRODUCT.appUrl : 'https://imcms.vercel.app'}/trial`} className="rounded bg-white px-2.5 py-0.5 font-semibold text-[#1F3A5F] hover:bg-white/90">나도 1주일 무료 체험 →</a>
         </div>
       )}
       {site.preview && (

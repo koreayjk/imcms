@@ -1,21 +1,22 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
-import { PRODUCT, isProductHost } from '@/lib/product'
+import { PRODUCT, isAppHost, isProductHost } from '@/lib/product'
 import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import TrialSignupForm from '@/components/auth/TrialSignupForm'
 import { isApproved } from '@/lib/cms'
 
-// 제품 도메인(imnewsroom.com)으로 들어온 경우에만 검색에 노출한다
+// 소개 사이트·편집국 주소(imnewsroom.com, app.imnewsroom.com)로 들어온 경우에만 검색에 노출한다
 export function generateMetadata(): Metadata {
-  const indexable = PRODUCT.indexable && isProductHost(headers().get('host'))
+  const host = headers().get('host')
+  const indexable = PRODUCT.indexable && (isProductHost(host) || isAppHost(host))
   return {
     title: '1주일 무료 체험 | IM 뉴스룸',
     description: '샘플 기사가 채워진 체험용 신문에서 기자·편집장·그룹장 역할을 바꿔 가며 IM 뉴스룸을 7일 동안 무료로 써 보세요.',
     robots: indexable ? { index: true, follow: true } : { index: false, follow: false },
     openGraph: { type: 'website', siteName: PRODUCT.name, title: '1주일 무료 체험 | IM 뉴스룸', description: '카드 등록 없이 7일 동안 IM 뉴스룸을 우리 신문처럼 써 보세요.', locale: 'ko_KR', images: [{ url: PRODUCT.ogImage, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', images: [PRODUCT.ogImage] },
-    ...(indexable ? { alternates: { canonical: `${PRODUCT.url}/trial` } } : {}),
+    ...(indexable ? { alternates: { canonical: `${PRODUCT.appLive ? PRODUCT.appUrl : PRODUCT.url}/trial` } } : {}),
   }
 }
 

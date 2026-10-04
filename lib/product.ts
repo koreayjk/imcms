@@ -6,6 +6,11 @@ export const PRODUCT = {
   domains: ['imnewsroom.com', 'www.imnewsroom.com', 'imnewsroom.co.kr', 'www.imnewsroom.co.kr'],
   // 대표 주소 (검색엔진·공유 링크에 쓴다)
   url: 'https://imnewsroom.com',
+  // 편집국 주소 (로그인·기사 쓰기·체험 가입). appLive 를 켜면 소개 사이트의 로그인·체험 링크, 메일 속 편집국 링크가
+  //   이 주소로 가고 imnewsroom.com 의 편집국 화면은 이 주소로 넘어간다 (로그인은 주소마다 따로라 한 곳으로 모은다)
+  appHost: 'app.imnewsroom.com',
+  appUrl: 'https://app.imnewsroom.com',
+  appLive: false,
   // 카카오톡·SNS 공유 미리보기 그림 (1200×630)
   ogImage: '/imnewsroom/og.png',
   // 미리보기 주소 (도메인 연결 전에도 imcms.vercel.app/imnewsroom 으로 볼 수 있다)
@@ -21,6 +26,18 @@ export function isProductHost(host: string | null | undefined) {
   const h = (host ?? '').split(':')[0].toLowerCase()
   return PRODUCT.domains.includes(h)
 }
+
+export function isAppHost(host: string | null | undefined) {
+  return (host ?? '').split(':')[0].toLowerCase() === PRODUCT.appHost
+}
+
+// 편집국 화면 링크 (appLive 전에는 지금 주소 기준)
+export function appLink(path: string) {
+  return PRODUCT.appLive ? `${PRODUCT.appUrl}${path}` : path
+}
+
+// 소개 사이트(imnewsroom.com)에서 편집국 주소로 넘길 경로
+export const APP_PATHS = ['/login', '/signup', '/trial', '/pending', '/newsroom', '/articles', '/press', '/admin', '/support', '/account']
 
 // 청구서의 공급자(운영사) 정보 — 미국 법인 IM America Group Corp 의 상호(DBA) IM Genesis 가 IM 뉴스룸을 운영한다
 //   주소는 청구서(그 고객사만 볼 수 있음)에만 나온다
