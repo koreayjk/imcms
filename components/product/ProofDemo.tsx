@@ -30,7 +30,7 @@ export default function ProofDemo() {
 
       {/* 화살표 */}
       <div className="flex justify-center py-2.5" aria-hidden>
-        <span className="proof-rise flex items-center gap-2 rounded-full bg-[#0F1115] ring-1 ring-white/20 px-3 py-1 text-[11.5px] font-semibold text-white shadow-[0_6px_18px_-6px_rgba(139,92,246,0.8)]" style={{ animationDelay: '1700ms' }}>
+        <span className="proof-rise flex items-center gap-2 rounded-full bg-[#1F4FD0] px-3 py-1 text-[11.5px] font-semibold text-white shadow-[0_6px_18px_-6px_rgba(139,92,246,0.8)]" style={{ animationDelay: '1700ms' }}>
           <span className="h-1.5 w-1.5 rounded-full bg-white" />
           AI가 기사체로 다시 씀
         </span>

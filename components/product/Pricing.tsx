@@ -40,15 +40,15 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
   return (
     <div>
       {BETA && (
-        <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-lg bg-[#0F1115] px-7 py-6 text-center text-white sm:flex-row sm:justify-between sm:text-left">
+        <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-lg bg-[#EEF3FD] ring-1 ring-[#D9E1EE] px-7 py-6 text-center text-[#0F1115] sm:flex-row sm:justify-between sm:text-left">
           <span>
-            <span className="block text-[12.5px] font-semibold tracking-[0.06em] text-[#D4B483]">출시 기념 베타 · 마감까지 D-{daysLeft}</span>
+            <span className="block text-[12.5px] font-semibold tracking-[0.06em] text-[#1F4FD0]">출시 기념 베타 · 마감까지 D-{daysLeft}</span>
             <span className="mt-1 block text-[20px] font-bold tracking-[-0.02em] [font-family:var(--serif)] sm:text-[23px]">1주일 무료 체험 → {BETA_END_LABEL}까지 모든 요금 반값</span>
-            <span className="mt-1 block text-[13px] text-white/60">{REGULAR_FROM_LABEL}부터 정상가로 바뀝니다</span>
+            <span className="mt-1 block text-[13px] text-[#5B616B]">{REGULAR_FROM_LABEL}부터 정상가로 바뀝니다</span>
           </span>
           <span className="flex shrink-0 flex-wrap justify-center gap-2">
-            <a href="/trial" className="rounded-md bg-white px-5 py-3 text-[15px] font-bold text-[#0F1115] transition hover:bg-white/90">1주일 무료 체험 →</a>
-            <a href={applyHref} className="rounded-md border border-white/25 px-5 py-3 text-[15px] font-semibold text-white transition hover:bg-white/10">바로 신청</a>
+            <a href="/trial" className="rounded-md bg-[#1F4FD0] px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#193FAA]">1주일 무료 체험 →</a>
+            <a href={applyHref} className="rounded-md border border-[#D9E1EE] bg-white px-5 py-3 text-[15px] font-semibold text-[#14306E] transition hover:bg-[#EEF3FD]">바로 신청</a>
           </span>
         </div>
       )}
@@ -70,11 +70,11 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
             className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-[15px] font-bold transition ${annual ? 'bg-white text-[#14171C] shadow-[0_4px_14px_-6px_rgba(11,16,32,0.4)]' : 'text-[#5B616B] hover:text-[#14171C]'}`}
           >
             1년 한 번에 결제
-            <span className="rounded-full bg-[#F3EDE3] px-2 py-0.5 text-[12px] font-bold text-[#8C6A35]">{ANNUAL_FREE}</span>
+            <span className="rounded-full bg-[#EEF3FD] px-2 py-0.5 text-[12px] font-bold text-[#14306E]">{ANNUAL_FREE}</span>
           </button>
         </div>
         <p className="text-[14px] text-[#5B616B]">
-          {annual ? <>1년 요금을 한 번에 내시면 <strong className="text-[#8C6A35]">12개월을 {ANNUAL_MONTHS}개월 값</strong>으로 씁니다.</> : '매달 결제하고 언제든 해지할 수 있습니다.'}
+          {annual ? <>1년 요금을 한 번에 내시면 <strong className="text-[#14306E]">12개월을 {ANNUAL_MONTHS}개월 값</strong>으로 씁니다.</> : '매달 결제하고 언제든 해지할 수 있습니다.'}
         </p>
       </div>
 
@@ -89,9 +89,9 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
           return (
             <div
               key={p.name}
-              className={`relative flex flex-col rounded-lg bg-white p-6 ${p.pick ? 'ring-2 ring-[#0F1115] shadow-[0_24px_50px_-28px_rgba(15,17,21,0.45)]' : 'ring-1 ring-black/5 shadow-[0_10px_30px_-18px_rgba(11,16,32,0.3)]'}`}
+              className={`relative flex flex-col rounded-lg bg-white p-6 ${p.pick ? 'ring-2 ring-[#1F4FD0] shadow-[0_24px_50px_-28px_rgba(15,17,21,0.45)]' : 'ring-1 ring-black/5 shadow-[0_10px_30px_-18px_rgba(11,16,32,0.3)]'}`}
             >
-              {p.pick && <span className="absolute -top-3 left-6 rounded-full bg-[#0F1115] px-3 py-1 text-[12px] font-bold text-white">추천</span>}
+              {p.pick && <span className="absolute -top-3 left-6 rounded-full bg-[#1F4FD0] px-3 py-1 text-[12px] font-bold text-white">추천</span>}
               <p className="text-[19px] font-extrabold tracking-[-0.02em]">{p.name}</p>
               <p className="mt-1 min-h-[42px] text-[13.5px] leading-snug text-[#5B616B]">{p.for}</p>
 
@@ -100,14 +100,14 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                   <p className="pt-3 text-[28px] font-extrabold tracking-[-0.02em] text-[#9AA0A8]">별도 문의</p>
                 ) : (
                   <>
-                    {BETA && <p className="text-[14px] tabular-nums text-[#9AA0A8]"><s>{won(regular!)}</s> <span className="ml-1 rounded bg-[#F3EDE3] px-1.5 py-0.5 text-[12px] font-bold text-[#8C6A35]">{annual ? '12월분까지 반값' : '베타 반값'}</span></p>}
+                    {BETA && <p className="text-[14px] tabular-nums text-[#9AA0A8]"><s>{won(regular!)}</s> <span className="ml-1 rounded bg-[#EEF3FD] px-1.5 py-0.5 text-[12px] font-bold text-[#14306E]">{annual ? '12월분까지 반값' : '베타 반값'}</span></p>}
                     <p className="mt-1 tabular-nums">
                       <span className="text-[32px] font-extrabold tracking-[-0.03em]">{won(price)}</span>
                       <span className="ml-1 text-[14px] font-semibold text-[#5B616B]">/{annual ? '년' : '월'}</span>
                       <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[3px] text-[11.5px] font-semibold text-[#5B616B]">VAT 포함</span>
                     </p>
                     {annual
-                      ? <p className="mt-1 text-[13px] font-semibold tabular-nums text-[#8C6A35]">한 달 약 {(price / 12 / 10_000).toFixed(1)}만 원꼴 · {won(saved)} 절약</p>
+                      ? <p className="mt-1 text-[13px] font-semibold tabular-nums text-[#14306E]">한 달 약 {(price / 12 / 10_000).toFixed(1)}만 원꼴 · {won(saved)} 절약</p>
                       : <p className="mt-1 text-[13px] tabular-nums text-[#5B616B]">{BETA ? `${REGULAR_FROM_LABEL}부터 월 ${won(p.monthly!)}` : `1년 결제 시 ${won(yearly!)}/년`}</p>}
                   </>
                 )}
@@ -116,7 +116,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               <a
                 href={applyHref}
                 onClick={() => pick(p.id)}
-                className={`mt-5 rounded-md px-4 py-3 text-center text-[15px] font-bold transition ${p.pick ? 'bg-[#0F1115] text-white hover:bg-[#2A2D33]' : 'bg-[#14171C] text-white hover:bg-[#2A2F37]'}`}
+                className={`mt-5 rounded-md px-4 py-3 text-center text-[15px] font-bold transition ${p.pick ? 'bg-[#1F4FD0] text-white hover:bg-[#193FAA]' : 'bg-white text-[#14306E] ring-1 ring-[#D9E1EE] hover:bg-[#EEF3FD]'}`}
               >
                 {price == null ? '상담 신청' : BETA ? '베타 신청하기' : '신청하기'}
               </a>
@@ -132,7 +132,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               </dl>
               {p.extras.length > 0 && (
                 <ul className="mt-4 space-y-1.5 text-[13.5px] text-[#3B4048]">
-                  {p.extras.map((x) => <li key={x} className="flex gap-2"><span className="text-[#8C6A35]" aria-hidden>✓</span>{x}</li>)}
+                  {p.extras.map((x) => <li key={x} className="flex gap-2"><span className="text-[#14306E]" aria-hidden>✓</span>{x}</li>)}
                 </ul>
               )}
             </div>
@@ -143,7 +143,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       <div className="mt-6 rounded-lg bg-white p-6 ring-1 ring-black/5 sm:p-8">
         <p className="text-[16px] font-extrabold">모든 요금제에 기본으로 들어 있습니다</p>
         <ul className="mt-4 grid gap-x-6 gap-y-2.5 text-[14.5px] text-[#3B4048] sm:grid-cols-2 lg:grid-cols-3">
-          {COMMON.map((c) => <li key={c} className="flex gap-2"><span className="font-bold text-[#8C6A35]" aria-hidden>✓</span>{c}</li>)}
+          {COMMON.map((c) => <li key={c} className="flex gap-2"><span className="font-bold text-[#14306E]" aria-hidden>✓</span>{c}</li>)}
         </ul>
       </div>
 
@@ -158,13 +158,13 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
             {BETA && <span className="mr-2 text-[15px] text-[#9AA0A8]"><s>{won(SETUP_FEE)}</s></span>}
             <span className="text-[26px] font-extrabold tracking-[-0.02em]">{BETA ? '0원' : won(SETUP_FEE)}</span>
             <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[4px] text-[11.5px] font-semibold text-[#5B616B]">VAT 포함</span>
-            {BETA && <span className="ml-2 inline-block whitespace-nowrap rounded bg-[#F3EDE3] px-2 py-0.5 align-[4px] text-[12px] font-bold text-[#8C6A35]">베타 기간 신청 무료</span>}
+            {BETA && <span className="ml-2 inline-block whitespace-nowrap rounded bg-[#EEF3FD] px-2 py-0.5 align-[4px] text-[12px] font-bold text-[#14306E]">베타 기간 신청 무료</span>}
           </p>
         </div>
         <ul className="mt-5 grid gap-x-6 gap-y-3 text-[14px] sm:grid-cols-2">
           {SETUP_ITEMS.map(([t, d]) => (
             <li key={t} className="flex gap-2.5">
-              <span className="mt-0.5 font-bold text-[#8C6A35]" aria-hidden>✓</span>
+              <span className="mt-0.5 font-bold text-[#14306E]" aria-hidden>✓</span>
               <span><strong className="font-bold text-[#14171C]">{t}</strong><span className="block text-[13px] leading-snug text-[#5B616B]">{d}</span></span>
             </li>
           ))}
