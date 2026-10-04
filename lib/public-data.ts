@@ -5,6 +5,7 @@ import { demoArticles, demoSite } from './demo-articles'
 import { SITES, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
 import { normalizeLayout, type SlotKey } from './home-layout'
 import { INDEX_WEEKS, type IndexKey, type IndexSeries } from './market-index'
+import { outletTag } from './outlet-cache'
 
 export type PublicArticle = {
   id: string
@@ -89,6 +90,26 @@ function client() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 }
 
+// ───────── 홈페이지 데이터 캐시 ─────────
+// 독자가 올 때마다 DB를 읽지 않도록 매체별로 1분 동안 기억한다
+//   기사를 저장·발행·승인·삭제하거나 홈 편집판을 저장하면 그 매체 것만 바로 지운다 (app/(main)/articles/refresh.ts)
+//   예약 발행 기사는 정한 시각에서 최대 1분 뒤에 보인다
+const CACHE_SECONDS = 60
+const cacheId = (site: SiteConfig) => site.outletId ?? site.domains[0] ?? site.key
+// 섹션 구성이 바뀌면 다른 캐시를 쓴다 (2차 메뉴 묶음이 달라지므로)
+const sectionsKey = (site: SiteConfig) => site.sections.map((s) => `${s.slug}<${s.parent ?? ''}`).join(',')
+
+function outletCached<A extends unknown[], R>(name: string, load: (site: SiteConfig, ...args: A) => Promise<R>) {
+  return (site: SiteConfig, ...args: A): Promise<R> => {
+    if (isDemo) return load(site, ...args)
+    const id = cacheId(site)
+    return unstable_cache(() => load(site, ...args), ['outlet-data', name, id, sectionsKey(site), JSON.stringify(args)], {
+      revalidate: CACHE_SECONDS,
+      tags: [outletTag(id), 'sites'],
+    })()
+  }
+}
+
 function toPublic(row: any): PublicArticle {
   return {
     id: row.id,
@@ -153,7 +174,7 @@ async function pinnedArticles(scope: NonNullable<Awaited<ReturnType<typeof outle
   ) as Record<SlotKey, (PublicArticle | null)[]>
 }
 
-export async function getHomeData(site: SiteConfig): Promise<HomeData> {
+async function loadHomeData(site: SiteConfig): Promise<HomeData> {
   if (isDemo) {
     const all = demoArticles()
     const bySection = Object.fromEntries(
@@ -194,6 +215,7 @@ export async function getHomeData(site: SiteConfig): Promise<HomeData> {
     bySection: Object.fromEntries(tops.map((s, i) => [s.slug, (sections[i].data ?? []).map(toPublic)])),
   }
 }
+export const getHomeData = outletCached('home', loadHomeData)
 
 export const SECTION_PAGE_SIZE = 15
 // 홈에서 섹션마다 가져오는 기사 수 (섹션 띠 배치는 더 많이 쓴다)
@@ -205,7 +227,7 @@ function familyIds(site: SiteConfig, catIds: Record<string, string>, slug: strin
 }
 
 // slug 가 null 이면 모든 섹션 (전체기사)
-export async function getSectionData(site: SiteConfig, slug: string | null, page: number) {
+async function loadSectionData(site: SiteConfig, slug: string | null, page: number) {
   const from = (page - 1) * SECTION_PAGE_SIZE
   if (isDemo) {
     const all = demoArticles()
@@ -233,6 +255,7 @@ export async function getSectionData(site: SiteConfig, slug: string | null, page
     mostViewed: (mostViewed.data ?? []).map(toPublic),
   }
 }
+export const getSectionData = outletCached('section', loadSectionData)
 
 export async function searchArticles(site: SiteConfig, q: string) {
   const term = q.trim()
@@ -260,7 +283,7 @@ async function sourceOf(supabase: ReturnType<typeof client>, id: string): Promis
   return { id: src.id, outletName: outlet.name, url: outlet.domain ? `https://${outlet.domain}/news/${src.id}` : null }
 }
 
-export async function getArticleData(site: SiteConfig, id: string) {
+async function loadArticleData(site: SiteConfig, id: string) {
   if (isDemo) {
     const all = demoArticles()
     const article = all.find((a) => a.id === id)
@@ -307,6 +330,7 @@ export async function getArticleData(site: SiteConfig, id: string) {
     latest: (latest.data ?? []).map(toPublic),
   }
 }
+export const getArticleData = outletCached('article', loadArticleData)
 
 const RELATED_LINKS = 4
 const RELATED_MIN = 3
@@ -334,7 +358,7 @@ function splitRelated(a: PublicArticle, tagged: PublicArticle[], sameSection: Pu
 export const REPORTER_PAGE_SIZE = 15
 
 // 기자별 기사: 기사에 적힌 기자명이 같은 기사 (기자명을 따로 적지 않은 기사는 그 이름의 작성자 계정 기사)
-export async function getReporterArticles(site: SiteConfig, name: string, page: number) {
+async function loadReporterArticles(site: SiteConfig, name: string, page: number) {
   const from = (page - 1) * REPORTER_PAGE_SIZE
   const who = name.trim().slice(0, 40)
   const empty = { articles: [] as PublicArticle[], total: 0, mostViewed: [] as PublicArticle[] }
@@ -361,6 +385,7 @@ export async function getReporterArticles(site: SiteConfig, name: string, page: 
   ])
   return { articles: (list.data ?? []).map(toPublic), total: list.count ?? 0, mostViewed: (mostViewed.data ?? []).map(toPublic) }
 }
+export const getReporterArticles = outletCached('reporter', loadReporterArticles)
 
 // 기사 화면 오른쪽 (많이 본 기사·최신 기사). 기사 미리보기가 쓴다
 export async function getArticleSidebar(site: SiteConfig) {
@@ -415,7 +440,7 @@ export async function getIndexSeries(site: SiteConfig): Promise<IndexSeries | nu
 export type FeedArticle = PublicArticle & { updated_at: string | null }
 
 // 공개된 기사 목록 (최신순). sinceHours를 주면 그 시간 안에 공개된 기사만 (뉴스 사이트맵용)
-export async function getFeedArticles(site: SiteConfig, limit: number, sinceHours?: number): Promise<FeedArticle[]> {
+async function loadFeedArticles(site: SiteConfig, limit: number, sinceHours?: number): Promise<FeedArticle[]> {
   if (isDemo) return demoArticles().slice(0, limit).map((a) => ({ ...a, updated_at: a.published_at }))
   const scope = await outletScope(site)
   if (!scope) return []
@@ -429,6 +454,7 @@ export async function getFeedArticles(site: SiteConfig, limit: number, sinceHour
   const { data } = await q.order('published_at', { ascending: false }).limit(limit)
   return ((data ?? []) as any[]).map((r) => ({ ...toPublic(r), updated_at: r.updated_at ?? r.published_at }))
 }
+export const getFeedArticles = outletCached('feed', loadFeedArticles)
 
 // 사이트맵·RSS에 쓰는 대표 주소 (도메인이 연결돼 있으면 그 주소, 아니면 지금 접속한 주소)
 export function siteBaseUrl(site: SiteConfig, host: string | null) {

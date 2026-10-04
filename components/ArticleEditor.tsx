@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Editor } from '@tiptap/react'
 import { createClient } from '@/lib/supabase'
+import { refreshArticlePages } from '@/app/(main)/articles/refresh'
 import { toHtml } from '@/lib/body-text'
 import { formatDateTime, fromKstInput, isScheduled, toKstInput } from '@/lib/format'
 import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@/lib/types'
@@ -275,6 +276,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
         window.alert(`함께 송고 중 문제가 생겼습니다: ${e instanceof Error ? e.message : ''}`)
       }
     }
+
+    // 홈페이지에 바로 보이게 (이 매체와 함께 송고한 매체의 홈페이지 캐시를 지운다)
+    if (id) await refreshArticlePages(id).catch(() => {})
 
     setSaving(null)
     if (mode === 'draft') {

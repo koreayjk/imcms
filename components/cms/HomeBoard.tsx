@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type DragEvent } from 'react'
 import { createClient } from '@/lib/supabase'
+import { refreshOutletPages } from '@/app/(main)/articles/refresh'
 import { formatDateTime } from '@/lib/format'
 import { SLOTS, type HomeLayout, type SlotKey } from '@/lib/home-layout'
 
@@ -91,6 +92,7 @@ export default function HomeBoard({ outletId, initialLayout, articles, savedAt }
       setMessage({ ok: false, text: `저장하지 못했습니다: ${error.message}` })
     } else {
       setBaseline(JSON.stringify(layout))
+      if (outletId) await refreshOutletPages(outletId).catch(() => {})
       setMessage({ ok: true, text: '저장했습니다. 홈페이지에 바로 반영됩니다.' })
     }
   }

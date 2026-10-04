@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { describe, syndicate } from '@/lib/syndicate'
+import { refreshArticlePages } from '@/app/(main)/articles/refresh'
 
 type Snapshot = { title: string | null; excerpt: string | null; body: string | null; byline?: string | null }
 
@@ -30,6 +31,7 @@ export default function RevisionRestore({ articleId, snapshot, when, live }: { a
       } catch (e) {
         window.alert(`함께 송고한 사본을 맞추는 중 문제가 생겼습니다: ${e instanceof Error ? e.message : ''}`)
       }
+      await refreshArticlePages(articleId).catch(() => {})
     }
     setBusy(false)
     router.refresh()

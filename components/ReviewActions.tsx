@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
+import { refreshArticlePages } from '@/app/(main)/articles/refresh'
 
 // presetAt: 기자가 정해 둔 발행 일시 (있으면 그 시각으로 발행 — 앞으로의 시각이면 예약 발행)
 export default function ReviewActions({ articleId, presetAt = null, hasSection = true }: { articleId: string; presetAt?: string | null; hasSection?: boolean }) {
@@ -36,6 +37,8 @@ export default function ReviewActions({ articleId, presetAt = null, hasSection =
       } catch (e) {
         window.alert(`함께 송고 중 문제가 생겼습니다: ${e instanceof Error ? e.message : ''}`)
       }
+      // 홈페이지에 바로 보이게
+      await refreshArticlePages(articleId).catch(() => {})
     }
     router.refresh()
     setLoading(false)
