@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { PRODUCT } from '@/lib/product'
 import { useRouter } from 'next/navigation'
 import { switchTrialRole, type TrialRole } from '@/app/(main)/account/trial'
 
@@ -42,7 +43,7 @@ export default function TrialBar({ role, daysLeft }: { role: string | null; days
           ))}
         </span>
         <span className="hidden text-[#1F3A5F]/75 lg:inline">🔒 샘플 기사는 수정·삭제할 수 없고, 기사는 내가 쓴 것만 지울 수 있어요.</span>
-        <a href="/imnewsroom#apply" className="ml-auto rounded bg-[#1F3A5F] px-3 py-1 font-semibold text-white hover:brightness-110">정식 신청</a>
+        <a href={PRODUCT.appLive ? `${PRODUCT.url}/#apply` : '/imnewsroom#apply'} target="_blank" rel="noopener" className="ml-auto rounded bg-[#1F3A5F] px-3 py-1 font-semibold text-white hover:brightness-110">정식 신청</a>
       </div>
       {error && <p role="alert" className="mt-1 text-danger">{error}</p>}
     </div>
