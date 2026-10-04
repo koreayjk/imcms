@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA, BETA_RATE, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, SETUP_FEE, SETUP_ITEMS, won, type PlanId } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, REGULAR_FROM_LABEL, SETUP_FEE, SETUP_ITEMS, betaDaysLeft, isBeta, planCharge, won, type PlanId } from '@/lib/pricing'
 
 // 소개 페이지 요금표 (금액은 lib/pricing.ts)
 //   요금제의 신청 버튼을 누르면 아래 신청서에 그 요금제·결제 방식이 골라진다 (im-pick-plan 이벤트)
@@ -32,22 +32,25 @@ const COMMON = [
 
 export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }) {
   const [annual, setAnnual] = useState(true)
-  const rate = BETA ? BETA_RATE : 1
+  // 베타(출시 전 테스트): 12월 30일까지 가입하면 2026년 12월분까지 반값, 2027년 1월부터 정상가
+  const BETA = isBeta()
+  const daysLeft = betaDaysLeft()
   const pick = (plan: PlanId) => window.dispatchEvent(new CustomEvent<PickPlanDetail>(PICK_PLAN_EVENT, { detail: { plan, billing: annual ? 'annual' : 'monthly' } }))
 
   return (
     <div>
       {BETA && (
-        <a
-          href={applyHref}
-          className="group mx-auto flex max-w-[860px] flex-col items-center gap-3 rounded-2xl bg-gradient-to-r from-[#F5A524] via-[#EF6B3A] to-[#D93B4A] px-6 py-5 text-center text-white shadow-[0_20px_50px_-20px_rgba(217,59,74,0.8)] transition hover:-translate-y-0.5 sm:flex-row sm:justify-between sm:text-left"
-        >
+        <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-2xl bg-gradient-to-r from-[#F5A524] via-[#EF6B3A] to-[#D93B4A] px-6 py-5 text-center text-white shadow-[0_20px_50px_-20px_rgba(217,59,74,0.8)] sm:flex-row sm:justify-between sm:text-left">
           <span>
-            <span className="block text-[13px] font-bold tracking-[0.06em] text-white/85">베타 테스트 신문사 모집 중</span>
-            <span className="mt-0.5 block text-[22px] font-extrabold tracking-[-0.02em] sm:text-[26px]">지금 참여하시면 모든 요금 <span className="underline decoration-white/60 decoration-[3px] underline-offset-[6px]">반값</span></span>
+            <span className="block text-[13px] font-bold tracking-[0.06em] text-white/85">출시 기념 베타 · 마감까지 D-{daysLeft}</span>
+            <span className="mt-0.5 block text-[21px] font-extrabold tracking-[-0.02em] sm:text-[24px]">1주일 무료 체험 → {BETA_END_LABEL}까지 <span className="underline decoration-white/60 decoration-[3px] underline-offset-[6px]">모든 요금 반값</span></span>
+            <span className="mt-1 block text-[13px] text-white/85">{REGULAR_FROM_LABEL}부터 정상가로 바뀝니다</span>
           </span>
-          <span className="shrink-0 rounded-xl bg-white px-5 py-3 text-[15px] font-bold text-[#D93B4A] transition group-hover:brightness-95">베타 신청하기 →</span>
-        </a>
+          <span className="flex shrink-0 flex-wrap justify-center gap-2">
+            <a href="/trial" className="rounded-xl bg-white px-5 py-3 text-[15px] font-bold text-[#D93B4A] transition hover:brightness-95">1주일 무료 체험 →</a>
+            <a href={applyHref} className="rounded-xl border border-white/60 px-5 py-3 text-[15px] font-bold text-white transition hover:bg-white/10">바로 신청</a>
+          </span>
+        </div>
       )}
 
       <div className="mt-10 flex flex-col items-center gap-3">
@@ -77,10 +80,12 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
 
       <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {PLANS.map((p) => {
-          const months = annual ? ANNUAL_MONTHS : 1
-          const regular = p.monthly == null ? null : p.monthly * months
-          const price = regular == null ? null : regular * rate
-          const saved = p.monthly == null || !annual ? 0 : p.monthly * (12 - ANNUAL_MONTHS) * rate
+          const charge = planCharge(p, annual ? 'annual' : 'monthly', BETA)
+          const regular = charge?.regular ?? null
+          const price = charge?.price ?? null
+          // 1년 결제로 아끼는 금액 = 달마다 낼 때(베타 반영)보다 덜 내는 1개월치
+          const saved = price == null || !annual ? 0 : Math.round(price / ANNUAL_MONTHS)
+          const yearly = p.monthly == null ? null : planCharge(p, 'annual', BETA)?.price ?? null
           return (
             <div
               key={p.name}
@@ -95,7 +100,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                   <p className="pt-3 text-[28px] font-extrabold tracking-[-0.02em] text-[#9AA0A8]">별도 문의</p>
                 ) : (
                   <>
-                    {BETA && <p className="text-[14px] tabular-nums text-[#9AA0A8]"><s>{won(regular!)}</s> <span className="ml-1 rounded bg-[#FDECEA] px-1.5 py-0.5 text-[12px] font-bold text-[#D93B4A]">베타 반값</span></p>}
+                    {BETA && <p className="text-[14px] tabular-nums text-[#9AA0A8]"><s>{won(regular!)}</s> <span className="ml-1 rounded bg-[#FDECEA] px-1.5 py-0.5 text-[12px] font-bold text-[#D93B4A]">{annual ? '12월분까지 반값' : '베타 반값'}</span></p>}
                     <p className="mt-1 tabular-nums">
                       <span className="text-[32px] font-extrabold tracking-[-0.03em]">{won(price)}</span>
                       <span className="ml-1 text-[14px] font-semibold text-[#5B616B]">/{annual ? '년' : '월'}</span>
@@ -103,7 +108,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                     </p>
                     {annual
                       ? <p className="mt-1 text-[13px] font-semibold tabular-nums text-[#0F9F6E]">한 달 약 {(price / 12 / 10_000).toFixed(1)}만 원꼴 · {won(saved)} 절약</p>
-                      : <p className="mt-1 text-[13px] tabular-nums text-[#5B616B]">1년 결제 시 {won(p.monthly! * ANNUAL_MONTHS * rate)}/년</p>}
+                      : <p className="mt-1 text-[13px] tabular-nums text-[#5B616B]">{BETA ? `${REGULAR_FROM_LABEL}부터 월 ${won(p.monthly!)}` : `1년 결제 시 ${won(yearly!)}/년`}</p>}
                   </>
                 )}
               </div>
@@ -115,6 +120,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               >
                 {price == null ? '상담 신청' : BETA ? '베타 신청하기' : '신청하기'}
               </a>
+              {price != null && <a href="/trial" className="mt-2 text-center text-[13.5px] font-semibold text-[#5B616B] underline-offset-4 hover:text-[#14171C] hover:underline">먼저 1주일 무료 체험 →</a>}
 
               <dl className="mt-6 space-y-2 border-t border-[#EEF0F3] pt-5 text-[14px]">
                 {p.specs.map(([k, v]) => (
@@ -181,7 +187,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
 
       <p className="mt-5 text-center text-[12.5px] leading-relaxed text-[#8A9099]">
         모든 금액은 부가세(VAT) 포함입니다. * 전송량은 일반적인 언론사 사용 기준으로 제한 없이 쓰며, 아주 큰 트래픽이 계속되면 요금제를 함께 정합니다. 배너·팝업 디자인은 운영팀이 만들어 드리는 건수이고, 직접 만든 배너는 개수 제한 없이 올릴 수 있습니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
-        {BETA && ' 베타 반값의 적용 기간과 조건은 상담할 때 안내해 드립니다.'}
+        {BETA && ` 베타 반값은 ${BETA_END_LABEL}까지 신청한 신문사의 2026년 12월분 이용료까지 적용되고, ${REGULAR_FROM_LABEL}분부터 정상가입니다. 1년 결제는 12개월 중 12월분까지만 반값으로 계산합니다.`}
       </p>
     </div>
   )

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { submitBetaRequest, type ApplyState } from '@/app/imnewsroom/actions'
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA, BILLING_LABEL, PLANS, SETUP_FEE, firstPayment, planById, won, type Billing, type PlanId } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BILLING_LABEL, PLANS, REGULAR_FROM_LABEL, SETUP_FEE, firstPayment, isBeta, planById, won, type Billing, type PlanId } from '@/lib/pricing'
 import { applyConsentSections, termsSections } from '@/lib/service-terms'
 import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
@@ -72,6 +72,7 @@ export default function ApplyForm() {
 
   const chosen = planById(plan)!
   const pay = firstPayment(chosen, billing)
+  const BETA = isBeta()
 
   if (state.ok) {
     return (
@@ -131,11 +132,13 @@ export default function ApplyForm() {
               </p>
               <ul className="mt-1.5 space-y-0.5 text-[12.5px] tabular-nums text-[#5B616B]">
                 <li>
-                  이용료 {won(pay.price)} ({chosen.name} · {billing === 'annual' ? `12개월을 ${ANNUAL_MONTHS}개월 값으로` : '1개월'}{BETA ? ' · 베타 반값' : ''})
+                  이용료 {won(pay.price)} ({chosen.name} · {billing === 'annual' ? `12개월을 ${ANNUAL_MONTHS}개월 값으로` : '1개월'}{BETA ? (billing === 'annual' ? ' · 2026년 12월분까지 반값' : ' · 베타 반값') : ''})
                   {BETA && <s className="ml-1 text-[#9AA0A8]">{won(pay.regular)}</s>}
                 </li>
                 <li>세팅비 {pay.setupFree ? <>0원 <s className="text-[#9AA0A8]">{won(SETUP_FEE)}</s> (베타 기간 신청 무료)</> : <>{won(pay.setup)} (처음 한 번)</>}</li>
-                {billing === 'monthly' && <li>다음 달부터 매달 {won(pay.price)}</li>}
+                {billing === 'monthly' && (BETA
+                  ? <li>2026년 12월분까지 매달 {won(pay.price)}, {REGULAR_FROM_LABEL}분부터 정상가 매달 {won(pay.regular)}</li>
+                  : <li>다음 달부터 매달 {won(pay.price)}</li>)}
               </ul>
             </>
           ) : (

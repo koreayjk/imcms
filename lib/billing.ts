@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { BETA_RATE, ANNUAL_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, SETUP_FEE, planById } from './pricing'
+import { ANNUAL_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, SETUP_FEE, BETA_LAST_MONTH, annualPrice, betaRateFor, planById } from './pricing'
 import { invoiceTotals, type InvoiceItem } from './support'
 import { paymentDbSecret } from './toss'
 import { notifyInvoiceIssued } from './invoice-mail'
@@ -43,9 +43,12 @@ export function billingItems(t: BillingTarget, month: string) {
   const plan = planById(t.plan)
   const monthly = t.custom_monthly ?? plan?.monthly ?? null
   const planName = t.custom_monthly != null ? '이용료' : plan ? `${plan.name} 요금제` : null
-  // 맞춤 금액은 그대로, 요금제 금액에만 베타 반값
-  const rate = t.beta && t.custom_monthly == null ? BETA_RATE : 1
+  // 맞춤 금액은 그대로, 요금제 금액에만 베타 반값 (2026년 12월분까지, 2027년 1월분부터 정상가)
+  const beta = t.beta && t.custom_monthly == null
+  const rate = betaRateFor(month, beta)
   const betaTag = rate < 1 ? ', 베타 반값' : ''
+  // 1년 결제는 12개월 중 12월분까지만 반값
+  const annualBeta = beta && month <= BETA_LAST_MONTH ? ', 2026년 12월분까지 베타 반값' : ''
 
   const annual = t.cycle === 'annual'
   // 1년 결제: 시작 월에서 12개월마다만 이용료를 청구 (시작 월이 없으면 이용료는 넣지 않는다)
@@ -53,7 +56,7 @@ export function billingItems(t: BillingTarget, month: string) {
   if (billPlan) {
     if (monthly != null && planName) {
       items.push(annual
-        ? { name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${betaTag})`, qty: 1, unit_price: Math.round(monthly * ANNUAL_MONTHS * rate) }
+        ? { name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${annualBeta})`, qty: 1, unit_price: annualPrice(monthly, month, beta) }
         : { name: `IM 뉴스룸 ${planName} (${label(m)}${betaTag})`, qty: 1, unit_price: Math.round(monthly * rate) })
     }
     // 프리미엄은 같은 그룹 매체 3개까지 포함 (본 매체 + 추가 2개는 무료)

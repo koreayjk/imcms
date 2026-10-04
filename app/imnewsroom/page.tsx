@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { PRODUCT, isProductHost } from '@/lib/product'
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_RATE, PLANS, won } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, PLANS, REGULAR_FROM_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
@@ -105,10 +105,18 @@ const FAQ = [
   { q: '기사를 정해 둔 시각에 올릴 수 있나요?', a: '네. 기사쓰기에서 발행 일시를 앞으로의 시각으로 정하면 예약 발행됩니다. 그 시각 전까지는 홈페이지에 보이지 않고, 지난 날짜를 고르면 그 날짜로 발행됩니다. 시간은 한국 시간 기준입니다.' },
   { q: '한 기자가 여러 매체에서 일할 수 있나요?', a: '네. 같은 그룹 안에서 여러 매체에 소속되고, 매체마다 직급을 따로 가질 수 있습니다(예: A매체 편집장, B매체 기자). 상단바에서 매체를 바꾸면 그 매체의 직급으로 바뀝니다.' },
   { q: '휴대폰으로도 기사를 쓸 수 있나요?', a: '네. 편집국 화면이 휴대폰에 맞게 바뀌어 현장에서 바로 쓰고, 편집장은 휴대폰으로 승인·발행할 수 있습니다.' },
-  { q: '요금은 얼마인가요?', a: '베이직 월 110,000원, 스탠다드 월 150,000원, 프리미엄 월 230,000원이고 모두 부가세(VAT) 포함 금액입니다. 기자 계정은 모든 요금제에서 무제한이고, AI 사용 횟수(초안·법적 검수)·저장 용량에 따라 나뉩니다. 지금 베타 테스트 신문사로 참여하시면 반값입니다.' },
-  { q: '1년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로 씁니다. 베타 반값과 함께 적용됩니다. 예: 베이직 베타 신문사 1년 ${won(PLANS[0].monthly! * ANNUAL_MONTHS * BETA_RATE)}.` },
-  { q: '세팅비는 무엇인가요?', a: '처음 개통할 때 한 번만 내는 150,000원(VAT 포함)입니다. 편집국·홈페이지 개설, 로고·색 등 맞춤 적용, 법정 표기·정책 페이지, 도메인 연결, 기존 기사·사진 옮기기와 옛 주소 연결, 포털 검색 등록 준비, 사용법 1:1 안내가 들어 있습니다. 지금 베타 기간에 신청하시면 세팅비는 무료입니다.' },
 ]
+
+// 요금 질문은 베타 기간(12월 30일까지)인지에 따라 답이 바뀐다
+function pricingFaq(beta: boolean) {
+  return [
+    { q: '무료 체험은 어떻게 하나요?', a: '“1주일 무료 체험”에서 이름·연락처·소속 언론사만 적으면 바로 시작합니다. 카드 등록이나 결제는 없습니다. 샘플 기사가 채워진 체험용 신문에서 기자·편집장·그룹장 역할을 바꿔 가며 모든 기능을 써 볼 수 있고, 7일이 지나면 자동으로 끝납니다.' },
+    ...(beta ? [{ q: '베타 반값은 언제까지인가요?', a: `IM 뉴스룸 정식 출시 전 베타 기간입니다. ${BETA_END_LABEL}까지 신청한 신문사는 2026년 12월분 이용료까지 반값이고, ${REGULAR_FROM_LABEL}분부터 정상가입니다. 베타 기간에 신청하시면 세팅비도 무료입니다.` }] : []),
+    { q: '요금은 얼마인가요?', a: `베이직 월 110,000원, 스탠다드 월 150,000원, 프리미엄 월 230,000원이고 모두 부가세(VAT) 포함 금액입니다. 기자 계정은 모든 요금제에서 무제한이고, AI 사용 횟수(초안·법적 검수)·저장 용량에 따라 나뉩니다.${beta ? ` 지금 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 2026년 12월분까지 반값입니다.` : ''}` },
+    { q: '1년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로 씁니다.${beta ? ` 베타 기간에는 12개월 중 2026년 12월분까지를 반값으로 계산한 뒤 ${ANNUAL_FREE}를 적용합니다. 예: 지금 베이직 1년 ${won(planCharge(PLANS[0], 'annual', true)!.price)}.` : ''}` },
+    { q: '세팅비는 무엇인가요?', a: `처음 개통할 때 한 번만 내는 150,000원(VAT 포함)입니다. 편집국·홈페이지 개설, 로고·색 등 맞춤 적용, 법정 표기·정책 페이지, 도메인 연결, 기존 기사·사진 옮기기와 옛 주소 연결, 포털 검색 등록 준비, 사용법 1:1 안내가 들어 있습니다.${beta ? ` 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 세팅비는 무료입니다.` : ''}` },
+  ]
+}
 
 const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인']
 
@@ -148,7 +156,30 @@ const DEMO_INDEX: IndexSeries = {
 
 const H2 = 'text-[30px] font-extrabold leading-[1.25] tracking-[-0.03em] [text-wrap:balance] sm:text-[40px]'
 
+// 1주일 무료 체험 버튼 (소개 페이지 곳곳에)
+function TrialButton({ className = '', children = '1주일 무료 체험 시작 →' }: { className?: string; children?: React.ReactNode }) {
+  return <Link href="/trial" className={className}>{children}</Link>
+}
+
+// 섹션 사이 띠: 지금 바로 1주일 무료로
+function TrialStrip({ beta }: { beta: boolean }) {
+  return (
+    <div className="px-4 sm:px-6">
+      <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 rounded-2xl border border-[#F5A524]/40 bg-gradient-to-r from-[#FFF7E8] to-[#FFEDEA] px-6 py-6 text-center sm:flex-row sm:justify-between sm:text-left">
+        <p className="text-[17px] font-bold leading-snug tracking-[-0.02em] text-[#14171C] sm:text-[19px]">
+          말로 듣는 것보다 직접 써 보는 게 빠릅니다.
+          <span className="block text-[14.5px] font-medium text-[#5B616B]">{beta ? `첫 1주일은 무료, ${BETA_END_LABEL}까지 가입하면 모든 요금 반값` : '첫 1주일은 무료로 모든 기능을 써 보세요'}</span>
+        </p>
+        <TrialButton className="shrink-0 rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-6 py-3.5 text-[15.5px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(229,72,58,0.8)] transition hover:-translate-y-0.5 hover:brightness-110" />
+      </div>
+    </div>
+  )
+}
+
 export default function ProductHome() {
+  const beta = isBeta()
+  const daysLeft = betaDaysLeft()
+  const FAQ_ALL = [...FAQ, ...pricingFaq(beta)]
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-[#14171C] [word-break:keep-all]" style={{ ['--serif' as string]: "'Noto Serif KR', Georgia, serif" }}>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
@@ -166,12 +197,12 @@ export default function ProductHome() {
             <a href="#vertical" className="hover:text-white">전문지</a>
             <a href="#showcase" className="hover:text-white">디자인</a>
             <a href="#pricing" className="hover:text-white">요금</a>
-            <a href="#beta" className="hover:text-white">베타 모집</a>
+            {beta && <a href="#beta" className="hover:text-white">베타 모집</a>}
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link href="/login" className="hidden rounded-md px-3 py-2 text-[13.5px] text-white/70 hover:text-white sm:block">편집국 로그인</Link>
-            <Link href="/trial" className="hidden rounded-lg border border-white/25 px-3.5 py-2 text-[13.5px] font-semibold text-white hover:bg-white/10 sm:block">무료 체험</Link>
-            <a href="#apply" className="rounded-lg bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-4 py-2 text-[13.5px] font-bold text-white shadow-[0_6px_20px_-6px_rgba(229,72,58,0.8)] hover:brightness-110">베타 신청</a>
+            <a href="#apply" className="hidden rounded-lg border border-white/25 px-3.5 py-2 text-[13.5px] font-semibold text-white hover:bg-white/10 sm:block">{beta ? '베타 신청' : '서비스 신청'}</a>
+            <TrialButton className="rounded-lg bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-4 py-2 text-[13.5px] font-bold text-white shadow-[0_6px_20px_-6px_rgba(229,72,58,0.8)] hover:brightness-110">1주일 무료 체험</TrialButton>
           </div>
         </div>
       </header>
@@ -190,7 +221,7 @@ export default function ProductHome() {
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[12.5px] font-semibold text-white/85 backdrop-blur">
                 <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E5483A] opacity-75" /><span className="relative h-2 w-2 rounded-full bg-[#E5483A]" /></span>
-                베타 테스트 신문사 모집 중 · 지금 참여하면 요금 반값
+                {beta ? <>출시 기념 베타 · 1주일 무료 + {BETA_END_LABEL}까지 반값<span className="hidden sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
               </p>
               <h1 className="mt-7 text-[42px] font-extrabold leading-[1.14] tracking-[-0.04em] sm:text-[56px] xl:text-[60px]">
                 1인 언론사에도
@@ -202,14 +233,15 @@ export default function ProductHome() {
                 반복 업무는 {PRODUCT.name}이 맡고, 기자는 취재와 확인에 집중합니다.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <a href="#apply" className="rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-7 py-4 text-[16px] font-bold text-white shadow-[0_12px_30px_-8px_rgba(229,72,58,0.8)] transition hover:-translate-y-0.5 hover:brightness-110">
-                  베타 고객사 신청 →
+                <TrialButton className="rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-7 py-4 text-[16px] font-bold text-white shadow-[0_12px_30px_-8px_rgba(229,72,58,0.8)] transition hover:-translate-y-0.5 hover:brightness-110">
+                  1주일 무료 체험 시작 →
+                </TrialButton>
+                <a href="#apply" className="rounded-xl border border-white/20 bg-white/5 px-7 py-4 text-[16px] font-semibold text-white backdrop-blur transition hover:bg-white/10">
+                  {beta ? '베타 신청 (반값)' : '서비스 신청'}
                 </a>
-                <Link href="/trial" className="rounded-xl border border-white/20 bg-white/5 px-7 py-4 text-[16px] font-semibold text-white backdrop-blur transition hover:bg-white/10">
-                  1주일 무료 체험
-                </Link>
               </div>
               <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] text-white/60">
+                <li>✓ 카드 등록 없이 1주일 무료</li>
                 <li>✓ 설치 없이 웹에서</li>
                 <li>✓ 쓰던 도메인 그대로</li>
                 <li>✓ 기존 기사 이전 지원</li>
@@ -322,6 +354,8 @@ export default function ProductHome() {
         </section>
 
         {/* ─── 보도자료함 ─── */}
+        <div className="pt-16"><TrialStrip beta={beta} /></div>
+
         <section id="press" className="scroll-mt-16">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
             <Reveal>
@@ -507,6 +541,8 @@ export default function ProductHome() {
           </div>
         </section>
 
+        <div className="py-16"><TrialStrip beta={beta} /></div>
+
         {/* ─── 요금 ─── */}
         <section id="pricing" className="scroll-mt-16 bg-[#F4F5F7]">
           <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
@@ -518,44 +554,50 @@ export default function ProductHome() {
           </div>
         </section>
 
-        {/* ─── 베타 모집 ─── */}
-        <section id="beta" className="scroll-mt-16 px-4 sm:px-6">
-          <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F5A524] via-[#EF6B3A] to-[#D93B4A] px-6 py-16 text-white shadow-[0_40px_80px_-30px_rgba(217,59,74,0.7)] sm:px-14">
-            <div className="pointer-events-none absolute -right-20 -top-20 -z-10 h-[360px] w-[360px] rounded-full bg-white/15 blur-2xl" aria-hidden />
-            <div className="grid gap-10 md:grid-cols-[1fr_1fr] md:items-center">
-              <div>
-                <p className="text-[13.5px] font-bold tracking-[0.08em] text-white/85">베타 고객사 모집</p>
-                <h2 className="mt-3 text-[32px] font-extrabold leading-[1.25] tracking-[-0.03em] sm:text-[44px]">함께 만들 언론사를<br />먼저 모십니다</h2>
-                <a href="#apply" className="mt-8 inline-block rounded-xl bg-white px-7 py-4 text-[16px] font-bold text-[#D93B4A] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5">지금 신청하기 →</a>
+        {/* ─── 베타 모집: 1주일 무료 → 12월 30일까지 반값 → 2027년 1월 정상가 ─── */}
+        {beta && (
+          <section id="beta" className="scroll-mt-16 px-4 sm:px-6">
+            <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-[28px] bg-gradient-to-br from-[#F5A524] via-[#EF6B3A] to-[#D93B4A] px-6 py-16 text-white shadow-[0_40px_80px_-30px_rgba(217,59,74,0.7)] sm:px-14">
+              <div className="pointer-events-none absolute -right-20 -top-20 -z-10 h-[360px] w-[360px] rounded-full bg-white/15 blur-2xl" aria-hidden />
+              <div className="flex flex-wrap items-end justify-between gap-6">
+                <div>
+                  <p className="text-[13.5px] font-bold tracking-[0.08em] text-white/85">출시 기념 베타 · 마감까지 D-{daysLeft}</p>
+                  <h2 className="mt-3 text-[32px] font-extrabold leading-[1.25] tracking-[-0.03em] sm:text-[44px]">지금 가입하면<br />첫 1주일은 무료입니다</h2>
+                  <p className="mt-4 max-w-[34em] text-[16px] leading-[1.75] text-white/85">정식 출시 전 베타 기간입니다. {BETA_END_LABEL}까지 가입한 신문사는 12월분까지 모든 요금이 반값이고, {REGULAR_FROM_LABEL}부터 정상가로 바뀝니다.</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <TrialButton className="rounded-xl bg-white px-7 py-4 text-[16px] font-bold text-[#D93B4A] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5" />
+                  <a href="#apply" className="rounded-xl border border-white/60 px-7 py-4 text-[16px] font-bold text-white transition hover:bg-white/10">바로 베타 신청</a>
+                </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <ol className="mt-12 grid gap-3 md:grid-cols-3">
                 {[
-                  { t: '모든 요금 반값', d: '베타 테스트 신문사 특별 요금' },
-                  { t: '세팅비 무료', d: '기존 기사·사진 이전까지 저희가' },
-                  { t: '기능 우선 반영', d: '필요한 기능을 먼저 개발' },
-                  { t: '1:1 전담 지원', d: '개통부터 운영까지' },
-                ].map((b) => (
-                  <div key={b.t} className="rounded-2xl bg-white/15 p-5 ring-1 ring-white/25 backdrop-blur">
-                    <p className="text-[18px] font-extrabold">{b.t}</p>
-                    <p className="mt-1 text-[14px] text-white/85">{b.d}</p>
-                  </div>
+                  { when: '가입 후 7일', t: '1주일 무료 체험', d: '카드 등록 없이 모든 기능을 기자·편집장·그룹장으로 써 보기' },
+                  { when: `~ 2026년 ${BETA_END_LABEL}`, t: '모든 요금 반값', d: '12월분 이용료까지 반값 · 세팅비 무료 · 기존 기사 이전 지원' },
+                  { when: `${REGULAR_FROM_LABEL}부터`, t: '정상가', d: '베이직 월 110,000원부터 (VAT 포함)' },
+                ].map((b, i) => (
+                  <li key={b.t} className={`rounded-2xl p-5 ring-1 backdrop-blur ${i < 2 ? 'bg-white/15 ring-white/30' : 'bg-black/10 ring-white/15'}`}>
+                    <p className="text-[12.5px] font-bold tracking-[0.04em] text-white/75">{b.when}</p>
+                    <p className="mt-1 text-[21px] font-extrabold">{b.t}</p>
+                    <p className="mt-1 text-[14px] leading-relaxed text-white/85">{b.d}</p>
+                  </li>
                 ))}
-              </div>
+              </ol>
+            </Reveal>
+            <div className="mx-auto mt-10 grid max-w-[1200px] gap-3 text-center text-[14.5px] text-[#3B4048] sm:grid-cols-3">
+              {['기자 1~5명이 매일 기사를 내는 인터넷신문', '매체를 두 개 이상 운영하는 발행인', '창간을 준비하며 프로그램을 고르는 곳'].map((t) => (
+                <p key={t} className="rounded-xl border border-[#EEF0F3] px-4 py-3.5">👉 {t}</p>
+              ))}
             </div>
-          </Reveal>
-          <div className="mx-auto mt-10 grid max-w-[1200px] gap-3 text-center text-[14.5px] text-[#3B4048] sm:grid-cols-3">
-            {['기자 1~5명이 매일 기사를 내는 인터넷신문', '매체를 두 개 이상 운영하는 발행인', '창간을 준비하며 프로그램을 고르는 곳'].map((t) => (
-              <p key={t} className="rounded-xl border border-[#EEF0F3] px-4 py-3.5">👉 {t}</p>
-            ))}
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* ─── 자주 묻는 질문 ─── */}
         <section id="faq" className="scroll-mt-16">
           <div className="mx-auto max-w-[860px] px-4 py-24 sm:px-6">
             <Reveal className="text-center"><h2 className={H2}>자주 묻는 질문</h2></Reveal>
             <div className="mt-10 space-y-3">
-              {FAQ.map((f) => (
+              {FAQ_ALL.map((f) => (
                 <details key={f.q} className="group rounded-2xl border border-[#EEF0F3] bg-white px-6 py-5 shadow-[0_6px_20px_-14px_rgba(11,16,32,0.3)] open:ring-2 open:ring-[#F5A524]/40">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16.5px] font-bold [&::-webkit-details-marker]:hidden">
                     <span><span className="mr-2 text-[#E5483A]">Q.</span>{f.q}</span>
@@ -581,18 +623,30 @@ export default function ProductHome() {
                 요금제를 고르고 신청서를 보내주시면 담당자가 연락드려 개통 일정과 계약 서류를 안내합니다. 결제는 계약 내용을 확인한 뒤에 진행되며, 신청만으로는 비용이 생기지 않습니다.
               </p>
               <ul className="mt-8 space-y-3">
-                <Check dark>베타 신문사 모든 요금 반값 · 세팅비 무료</Check>
+                {beta && <Check dark>{BETA_END_LABEL}까지 신청하면 12월분까지 모든 요금 반값 · 세팅비 무료 ({REGULAR_FROM_LABEL}부터 정상가)</Check>}
                 <Check dark>1년 한 번에 결제하면 {ANNUAL_FREE}</Check>
                 <Check dark>쓰던 도메인 그대로</Check>
                 <Check dark>기존 기사 이전 지원</Check>
               </ul>
+              <div className="mt-8 rounded-2xl bg-white/5 p-5 ring-1 ring-white/10">
+                <p className="text-[15px] font-bold">아직 고민 중이라면</p>
+                <p className="mt-1 text-[14px] text-white/65">카드 등록 없이 1주일 동안 모든 기능을 먼저 써 보세요.</p>
+                <TrialButton className="mt-4 inline-block rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] px-5 py-3 text-[15px] font-bold text-white hover:brightness-110" />
+              </div>
             </div>
             <div className="text-[#14171C]"><ApplyForm /></div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-white/10 bg-[#070A14] text-white/60">
+      {/* 휴대폰: 화면 아래 고정 버튼 */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0B1020]/90 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-md sm:hidden">
+        <TrialButton className="block rounded-xl bg-gradient-to-r from-[#F5A524] to-[#E5483A] py-3.5 text-center text-[15.5px] font-bold text-white">
+          {beta ? `1주일 무료 체험 · ${BETA_END_LABEL}까지 반값` : '1주일 무료 체험 시작'}
+        </TrialButton>
+      </div>
+
+      <footer className="border-t border-white/10 bg-[#070A14] pb-20 text-white/60 sm:pb-0">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-4 py-10 text-[13px] sm:px-6">
           <div className="flex items-center gap-3">
             <Logo dark />

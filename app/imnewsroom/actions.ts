@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import { BETA, BILLING_LABEL, firstPayment, planById, type Billing } from '@/lib/pricing'
+import { BILLING_LABEL, firstPayment, isBeta, planById, type Billing } from '@/lib/pricing'
 import { TERMS_VERSION } from '@/lib/service-terms'
 
 export type ApplyState = { ok?: boolean; error?: string }
@@ -56,12 +56,12 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
     terms_agreed_at: now,
     terms_version: TERMS_VERSION,
     quoted_total: pay?.total ?? null,
-    beta_discount: BETA,
+    beta_discount: isBeta(),
   })
   if (error) {
     // service-apply.sql 실행 전: 새 칸 없이 저장하고 요금제·도메인·약관 동의는 요청사항 앞에 적어 둔다
     const summary = [
-      `[신청] ${plan.name} · ${BILLING_LABEL[billing]}${pay ? ` · 첫 결제 ${pay.total.toLocaleString('ko-KR')}원` : ''}${BETA ? ' · 베타 반값' : ''}`,
+      `[신청] ${plan.name} · ${BILLING_LABEL[billing]}${pay ? ` · 첫 결제 ${pay.total.toLocaleString('ko-KR')}원` : ''}${isBeta() ? ' · 베타 반값' : ''}`,
       domain && `도메인: ${domain}`,
       `이용약관(${TERMS_VERSION}) 동의 ${now}`,
     ].filter(Boolean).join('\n')

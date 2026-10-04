@@ -1,9 +1,35 @@
 // IM 뉴스룸 요금 (소개 페이지 요금표·신청서·고객 상담 화면이 같이 쓴다). 금액은 모두 VAT 포함
 //   1년 한 번에 결제하면 1개월 무료(11개월 값), 베타 테스트 신문사는 반값 — 두 혜택은 함께 적용된다
-//   베타 모집이 끝나면 BETA 를 false 로 바꾸면 반값 표시·계산이 모두 빠진다
-export const BETA = true
+//   베타(출시 전 테스트): 2026년 12월 30일(한국 시간)까지 가입·신청한 신문사는 2026년 12월분 이용료까지 반값,
+//   2027년 1월분부터 정상가. 날짜가 지나면 소개 페이지의 반값 표시·계산이 저절로 빠진다
+export const BETA_END = '2026-12-30'
+export const BETA_LAST_MONTH = '2026-12'
+export const BETA_END_LABEL = '12월 30일'
+export const REGULAR_FROM_LABEL = '2027년 1월'
 export const BETA_RATE = 0.5
 export const ANNUAL_MONTHS = 11
+
+const kstDate = (d = new Date()) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10)
+export const kstMonth = (d = new Date()) => kstDate(d).slice(0, 7)
+// 지금 베타 기간인지 (한국 날짜 기준)
+export const isBeta = (d = new Date()) => kstDate(d) <= BETA_END
+// 베타 마감까지 남은 날 (마감일 당일 = 1, 지나면 0)
+export function betaDaysLeft(d = new Date()) {
+  return Math.max(0, Math.ceil((Date.parse(`${BETA_END}T23:59:59+09:00`) - d.getTime()) / 86_400_000))
+}
+export function addMonth(month: string, n: number) {
+  const [y, m] = month.split('-').map(Number)
+  const t = y * 12 + (m - 1) + n
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`
+}
+// 그 달 이용료에 곱할 값: 베타 고객이고 2026년 12월분까지면 반값
+export const betaRateFor = (month: string, beta: boolean) => (beta && month <= BETA_LAST_MONTH ? BETA_RATE : 1)
+// 1년 결제: 12개월을 달마다(12월분까지 반값, 1월분부터 정상가) 더한 뒤 1개월 무료(11/12). 10원 단위
+export function annualPrice(monthly: number, start: string, beta: boolean) {
+  let sum = 0
+  for (let i = 0; i < 12; i++) sum += monthly * betaRateFor(addMonth(start, i), beta)
+  return Math.round((sum * ANNUAL_MONTHS) / 12 / 10) * 10
+}
 // 1년 결제 혜택 표시 ("1개월 무료")
 export const ANNUAL_FREE = `${12 - ANNUAL_MONTHS}개월 무료`
 export const SETUP_FEE = 150_000
@@ -82,14 +108,16 @@ export const BILLING_LABEL: Record<Billing, string> = { monthly: '월 결제', a
 export const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 
 // 한 번 결제하는 이용료 (월 결제면 한 달, 1년 결제면 11개월 값). 별도 문의 요금제는 null
-export function planCharge(plan: Plan, billing: Billing, beta = BETA) {
+//   start: 첫 이용 월('YYYY-MM', 기본은 이번 달)
+export function planCharge(plan: Plan, billing: Billing, beta = isBeta(), start = kstMonth()) {
   if (plan.monthly == null) return null
   const regular = plan.monthly * (billing === 'annual' ? ANNUAL_MONTHS : 1)
-  return { regular, price: regular * (beta ? BETA_RATE : 1) }
+  const price = billing === 'annual' ? annualPrice(plan.monthly, start, beta) : plan.monthly * betaRateFor(start, beta)
+  return { regular, price }
 }
 
 // 신청서의 첫 결제 금액: 이용료 + 세팅비 (베타 기간에 신청하면 세팅비 무료)
-export function firstPayment(plan: Plan, billing: Billing, beta = BETA) {
+export function firstPayment(plan: Plan, billing: Billing, beta = isBeta()) {
   const charge = planCharge(plan, billing, beta)
   if (!charge) return null
   const setupFree = beta
