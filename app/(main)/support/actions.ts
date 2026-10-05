@@ -6,6 +6,8 @@ import { getCmsContext } from '@/lib/cms'
 import { notify } from '@/lib/notify'
 import { notifyInvoiceIssued } from '@/lib/invoice-mail'
 import { cmsOrigin } from '@/lib/origin'
+import { billingItems, billingTargets, type BillingTarget } from '@/lib/billing'
+import { planById } from '@/lib/pricing'
 import { NOTICE_CATEGORIES, TICKET_CATEGORIES, TICKET_STATUS, invoiceTotals, type InvoiceItem } from '@/lib/support'
 
 const text = (form: FormData, k: string, max: number) => String(form.get(k) ?? '').trim().slice(0, max)
@@ -145,6 +147,44 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
   await notifyInvoice(supabase, data.id)
   revalidatePath('/support', 'layout')
   redirect(`/support/invoices/${data.id}`)
+}
+
+// 청구서 발행 화면: 요금표와 그 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·AI 추가 사용·세팅비)으로 항목을 채운다
+//   자동 청구를 켠 매체는 자동 청구와 똑같이, 아니면 요금제·청구 설정만으로 계산한다 (AI 추가 사용은 빠진다)
+export async function invoiceDraft(outletId: string, month: string): Promise<{ items: InvoiceItem[]; note: string }> {
+  const { supabase } = await superContext()
+  if (!/^[0-9a-f-]{36}$/.test(outletId) || !/^\d{4}-\d{2}$/.test(month)) return { items: [], note: '' }
+  let target: BillingTarget | null = null
+  if (process.env.PAYMENT_DB_SECRET) {
+    try {
+      target = (await billingTargets(supabase, month)).find((t) => t.outlet_id === outletId) ?? null
+    } catch { /* 자동 청구 함수가 없으면 아래에서 직접 계산 */ }
+  }
+  let partial = false
+  if (!target) {
+    const [{ data: o }, { data: p }, { data: kids }] = await Promise.all([
+      supabase.from('outlets').select('id, name, plan').eq('id', outletId).maybeSingle(),
+      supabase.from('outlet_plans').select('*').eq('outlet_id', outletId).maybeSingle(),
+      supabase.from('outlet_plans').select('outlet_id, outlet:outlets!outlet_plans_outlet_id_fkey(name)').eq('bill_to', outletId),
+    ])
+    if (!o) return { items: [], note: '매체를 찾지 못했습니다.' }
+    const plan = p as { cycle?: string; beta?: boolean; start_month?: string | null; setup_fee_pending?: boolean; custom_monthly?: number | null; bill_to?: string | null } | null
+    if (plan?.bill_to) return { items: [], note: '추가 매체는 청구 받는 매체의 청구서에 함께 들어갑니다. 그 매체를 골라 주세요.' }
+    target = {
+      outlet_id: o.id, name: o.name, plan: o.plan ?? null,
+      cycle: plan?.cycle === 'annual' ? 'annual' : 'monthly', beta: !!plan?.beta, start_month: plan?.start_month ?? null,
+      setup_fee_pending: !!plan?.setup_fee_pending, custom_monthly: plan?.custom_monthly ?? null, has_invoice: false,
+      over_count: 0, autopay: null,
+      children: ((kids ?? []) as unknown as { outlet_id: string; outlet: { name: string } | null }[]).map((k) => ({ outlet_id: k.outlet_id, name: k.outlet?.name ?? '추가 매체', over_count: 0 })),
+    }
+    partial = true
+  }
+  const { items } = billingItems(target, month)
+  const notes: string[] = []
+  if (!planById(target.plan) && target.custom_monthly == null) notes.push('이 매체는 요금제가 정해지지 않았습니다 (AI 사용량 화면에서 정합니다).')
+  if (target.cycle === 'annual' && !items.some((i) => i.name.includes('1년'))) notes.push('1년 결제 매체라 이번 달은 이용료 청구 월이 아닙니다.')
+  if (partial) notes.push('자동 청구가 꺼진 매체라 지난달 AI 추가 사용은 넣지 않았습니다.')
+  return { items, note: notes.join(' ') }
 }
 
 export async function setInvoicePaid(id: string, paid: boolean) {

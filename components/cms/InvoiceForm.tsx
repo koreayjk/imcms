@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useFormState } from 'react-dom'
-import { saveInvoice, type FormState } from '@/app/(main)/support/actions'
+import { invoiceDraft, saveInvoice, type FormState } from '@/app/(main)/support/actions'
 import { invoiceTotals, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from './PendingButton'
 
@@ -11,28 +11,48 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const [items, setItems] = useState<InvoiceItem[]>([{ name: 'IM 뉴스룸 이용료', qty: 1, unit_price: 0 }])
   const t = invoiceTotals(items)
   const now = new Date()
-  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const set = (i: number, patch: Partial<InvoiceItem>) => setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+  const [outletId, setOutletId] = useState('')
+  const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+  // 매체·청구 월을 고르면 요금표대로 항목을 채운다 (직접 고친 뒤에는 바꾸지 않고, “요금표대로 채우기”를 누르면 다시 채운다)
+  const [edited, setEdited] = useState(false)
+  const [note, setNote] = useState('')
+  const [filling, startFill] = useTransition()
+  const fill = () => {
+    if (!outletId || !/^\d{4}-\d{2}$/.test(month)) return
+    startFill(async () => {
+      const r = await invoiceDraft(outletId, month)
+      setNote(r.note)
+      if (r.items.length) { setItems(r.items); setEdited(false) }
+    })
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!edited) fill() }, [outletId, month])
+  const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
   return (
     <form action={action} className="space-y-5 rounded-2xl bg-white p-7 ring-1 ring-black/5">
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label htmlFor="i-outlet" className="field-label">매체</label>
-          <select id="i-outlet" name="outlet_id" required defaultValue="" className="field-input">
+          <select id="i-outlet" name="outlet_id" required value={outletId} onChange={(e) => setOutletId(e.target.value)} className="field-input">
             <option value="" disabled>매체 선택</option>
             {outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
         </div>
         <div>
           <label htmlFor="i-month" className="field-label">청구 월</label>
-          <input id="i-month" name="month" type="month" required defaultValue={month} className="field-input" />
+          <input id="i-month" name="month" type="month" required value={month} onChange={(e) => setMonth(e.target.value)} className="field-input" />
         </div>
         <div>
           <label htmlFor="i-due" className="field-label">납부 기한</label>
           <input id="i-due" name="due_date" type="date" defaultValue={new Date(Date.now() + 9 * 3600_000 + 14 * 864e5).toISOString().slice(0, 10)} className="field-input" />
           <p className="mt-1 text-[11.5px] text-muted">자동결제를 등록한 매체는 발행 7일 뒤부터, 납부 기한에 자동으로 결제됩니다.</p>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#F4F6FA] px-4 py-2.5 text-[12.5px] text-muted">
+        <span>{filling ? '요금표로 계산하는 중…' : note || (outletId ? '요금표와 이 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·세팅비)으로 채웠습니다. 고쳐서 발행해도 됩니다.' : '매체를 고르면 요금표대로 항목이 채워집니다.')}</span>
+        {outletId && <button type="button" onClick={fill} disabled={filling} className="font-semibold text-[#2F6BF0] disabled:opacity-50">요금표대로 다시 채우기</button>}
       </div>
 
       <div className="overflow-x-auto">
@@ -49,13 +69,13 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
               <td className="py-2 pr-2"><input name="item_qty" type="number" min={0} value={it.qty} onChange={(e) => set(i, { qty: Number(e.target.value) })} aria-label="수량" className="field-input py-1.5" /></td>
               <td className="py-2 pr-2"><input name="item_price" type="number" min={0} step={100} value={it.unit_price} onChange={(e) => set(i, { unit_price: Number(e.target.value) })} aria-label="단가" className="field-input py-1.5" /></td>
               <td className="py-2 text-right tabular-nums">{won(it.qty * it.unit_price)}</td>
-              <td className="py-2 text-right"><button type="button" onClick={() => setItems(items.filter((_, j) => j !== i))} aria-label="줄 빼기" className="text-muted hover:text-danger">×</button></td>
+              <td className="py-2 text-right"><button type="button" onClick={() => { setEdited(true); setItems(items.filter((_, j) => j !== i)) }} aria-label="줄 빼기" className="text-muted hover:text-danger">×</button></td>
             </tr>
           ))}
         </tbody>
       </table>
       </div>
-      <button type="button" onClick={() => setItems([...items, { name: '', qty: 1, unit_price: 0 }])} className="text-[13px] font-semibold text-[#2F6BF0]">+ 항목 추가</button>
+      <button type="button" onClick={() => { setEdited(true); setItems([...items, { name: '', qty: 1, unit_price: 0 }]) }} className="text-[13px] font-semibold text-[#2F6BF0]">+ 항목 추가</button>
 
       <dl className="ml-auto w-64 space-y-1 text-[14px] tabular-nums">
         <div className="flex justify-between text-[16px] font-bold"><dt>합계 (VAT 포함)</dt><dd>{won(t.total)}</dd></div>
