@@ -4,6 +4,7 @@ import { PRODUCT, isAppHost, isProductHost } from '@/lib/product'
 import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import TrialSignupForm from '@/components/auth/TrialSignupForm'
+import SignOutButton from '@/components/auth/SignOutButton'
 import { isApproved } from '@/lib/cms'
 
 // 소개 사이트·편집국 주소(imnewsroom.com, app.imnewsroom.com)로 들어온 경우에만 검색에 노출한다
@@ -84,8 +85,11 @@ export default async function TrialPage() {
           ) : loggedIn ? (
             <div className="rounded-lg border border-line bg-white p-6 text-center">
               <p className="font-bold">이미 로그인돼 있습니다</p>
-              <p className="mt-2 text-[14px] text-muted">체험 계정이면 편집국에서 바로 이어서 쓰면 됩니다.</p>
-              <Link href="/newsroom" className="btn-primary mt-4 inline-block">편집국으로</Link>
+              <p className="mt-2 text-[14px] text-muted">체험 계정이면 편집국에서 바로 이어서 쓰면 됩니다. 다른 계정으로 체험을 신청하려면 로그아웃해 주세요.</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Link href="/newsroom" className="btn-primary">편집국으로</Link>
+                <SignOutButton next="/trial" label="로그아웃하고 체험 신청" />
+              </div>
             </div>
           ) : (
             <>
