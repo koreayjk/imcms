@@ -8,11 +8,15 @@ import HomeBoard, { type BoardArticle } from '@/components/cms/HomeBoard'
 const FIELDS = 'id, title, thumbnail_url, published_at, category:categories(name)'
 
 export default async function HomeEditPage() {
-  const { supabase, outletId, isEditorPlus } = await getCmsContext()
-  if (!isEditorPlus) redirect('/newsroom')
+  const { supabase, outletId, canEditSite, isStaff, isSuper } = await getCmsContext()
+  if (!canEditSite) redirect('/newsroom')
 
   const { data: outlets } = await supabase.from('outlets').select('id, name, domain, site').order('created_at')
-  const outlet = outlets?.find((o) => o.id === outletId) ?? outlets?.[0]
+  // 매니저는 상단에서 고른 고객사 매체만 (고르기 전이면 안내)
+  const outlet = outlets?.find((o) => o.id === outletId) ?? (isStaff && !isSuper ? undefined : outlets?.[0])
+  if (!outlet && isStaff && !isSuper) {
+    return <p className="px-4 py-10 md:px-8 md:py-16 text-center text-muted">위쪽 매체 선택에서 수정할 고객사 매체를 먼저 골라 주세요.</p>
+  }
   if (!outlet) {
     return <p className="px-4 py-10 md:px-8 md:py-16 text-center text-muted">등록된 매체가 없습니다. 매체 관리에서 먼저 매체를 등록하세요.</p>
   }

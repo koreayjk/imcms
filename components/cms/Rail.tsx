@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase'
 import type { UserRole } from '@/lib/types'
 import { BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, GlobeIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, UsersIcon, WriteIcon } from './icons'
 
-type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'group' | 'outlets' | 'staff' | 'super' }
+type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
 
 const ITEMS: Item[] = [
   { href: '/admin/dashboard', label: '대시보드', icon: <ChartIcon />, match: (p) => p.startsWith('/admin/dashboard'), minRole: 'staff' },
@@ -15,9 +15,9 @@ const ITEMS: Item[] = [
   { href: '/articles/new', label: '기사쓰기', icon: <WriteIcon />, match: (p) => p === '/articles/new' || p.endsWith('/edit') },
   { href: '/articles', label: '기사목록', icon: <ListIcon />, match: (p) => p === '/articles' || (/^\/articles\/[^/]+$/.test(p) && p !== '/articles/new') },
   { href: '/press', label: '보도자료', icon: <InboxIcon />, match: (p) => p.startsWith('/press') },
-  { href: '/admin/home', label: '홈편집', icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'editor' },
-  { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'editor' },
-  { href: '/admin/ads', label: '광고', icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'editor' },
+  { href: '/admin/home', label: '홈편집', icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'site' },
+  { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'site' },
+  { href: '/admin/ads', label: '광고', icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'site' },
   { href: '/admin/newsletter', label: '뉴스레터', icon: <MailIcon />, match: (p) => p.startsWith('/admin/newsletter'), minRole: 'editor' },
   { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
   { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
@@ -57,6 +57,8 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
   const allowed = (i: Item) =>
     !i.minRole
     || (i.minRole === 'editor' && (role === 'editor' || role === 'admin' || isSuper))
+    // 홈페이지 꾸미기(홈편집·섹션·광고): 편집장 이상 + 매니저(고객사 수정 요청 처리)
+    || (i.minRole === 'site' && (role === 'editor' || role === 'admin' || isSuper || isStaff))
     || (i.minRole === 'group' && isGroupAdmin)
     || (i.minRole === 'outlets' && (isGroupAdmin || isStaff))
     || (i.minRole === 'staff' && isStaff)

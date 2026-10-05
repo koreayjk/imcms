@@ -1,25 +1,19 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
+import { getCmsContext } from '@/lib/cms'
 import CategoryManager from '@/components/CategoryManager'
 
+// 섹션 관리: 편집장 이상은 자기 매체, 매니저는 상단에서 고른 고객사 매체
 export default async function CategoriesPage() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, outlet_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || (profile.role !== 'editor' && profile.role !== 'admin')) {
-    redirect('/articles')
+  const { supabase, outletId, canEditSite } = await getCmsContext()
+  if (!canEditSite) redirect('/articles')
+  if (!outletId) {
+    return <p className="px-4 py-10 md:px-8 md:py-16 text-center text-muted">위쪽 매체 선택에서 섹션을 고칠 매체를 먼저 골라 주세요.</p>
   }
 
   const { data: categories } = await supabase
     .from('categories')
     .select('*')
+    .eq('outlet_id', outletId)
     .order('sort_order')
 
   return (
@@ -28,7 +22,7 @@ export default async function CategoriesPage() {
         <h1 className="text-lg font-semibold">카테고리 관리</h1>
         <p className="text-sm text-muted mt-0.5">기사 분류에 사용할 카테고리를 관리합니다</p>
       </header>
-      <CategoryManager categories={categories ?? []} outletId={profile.outlet_id} />
+      <CategoryManager categories={categories ?? []} outletId={outletId} />
     </div>
   )
 }

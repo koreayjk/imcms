@@ -26,7 +26,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   // 발행인·총관리자는 관리하는 매체 사이를 오간다 (DB 권한이 보이는 매체만 돌려준다)
   const outletQuery = (fields: string) => {
     const q = supabase.from('outlets').select(fields).order('created_at')
-    return isGroupAdmin ? q : q.eq('id', outletId ?? '00000000-0000-0000-0000-000000000000')
+    return isGroupAdmin || isStaff ? q : q.eq('id', outletId ?? '00000000-0000-0000-0000-000000000000')
   }
   const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, outletRes] = await Promise.all([
     pendingQ, ticketQ, leadQ, outletQuery('id, name, domain, publisher:publishers(name)'),
@@ -45,6 +45,12 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     if (rows.length) {
       list = rows.map((m) => ({ id: m.outlet.id as string, name: m.outlet.name as string, domain: (m.outlet.domain as string | null) ?? null, group: (m.outlet.publisher?.name as string | undefined) ?? null, role: m.role as string }))
     }
+  }
+  // 매니저: 담당 매체를 맨 위에 (staff-outlets.sql 전이면 그대로)
+  if (isStaff && !isSuper) {
+    const { data: mine } = await supabase.from('staff_outlets').select('outlet_id').eq('staff_id', user.id)
+    const assigned = new Set(((mine ?? []) as { outlet_id: string }[]).map((m) => m.outlet_id))
+    list = [...list.filter((o) => assigned.has(o.id)), ...list.filter((o) => !assigned.has(o.id))]
   }
   const current = list.find((o) => o.id === outletId) ?? null
 
@@ -88,7 +94,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           outletName={current?.name ?? null}
           groupName={current?.group ?? null}
           siteUrl={current ? outletHomeUrl({ id: outletId ?? '', domain: current.domain }) : '/'}
-          outlets={isGroupAdmin || list.length > 1 ? list : []}
+          outlets={isGroupAdmin || isStaff || list.length > 1 ? list : []}
           currentOutletId={outletId}
           userName={profile?.full_name ?? user.email ?? ''}
           role={profile?.role ?? null}
