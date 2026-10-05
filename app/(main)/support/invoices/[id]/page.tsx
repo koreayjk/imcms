@@ -6,11 +6,12 @@ import { ISSUER, PRODUCT } from '@/lib/product'
 import { monthLabel, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import PrintButton from '@/components/cms/PrintButton'
-import { setInvoicePaid } from '../../actions'
+import { deleteInvoice, setInvoicePaid } from '../../actions'
+import ConfirmSubmit from '@/components/cms/ConfirmSubmit'
 import InvoicePayments, { type PaymentRow } from '@/components/cms/InvoicePayments'
 import { payProvider } from '@/lib/pay-provider'
 
-export default async function InvoicePage({ params }: { params: { id: string } }) {
+export default async function InvoicePage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
   const { supabase, isSuper, isStaff } = await getCmsContext()
   const { data: inv } = await supabase.from('invoices').select('*, outlet:outlets(name)').eq('id', params.id).maybeSingle()
   if (!inv) notFound()
@@ -30,6 +31,11 @@ export default async function InvoicePage({ params }: { params: { id: string } }
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link href="/support/invoices" className="text-[13px] text-muted hover:text-ink">← 청구서 목록</Link>
         <div className="flex gap-2">
+          {isSuper && inv.status !== 'paid' && (
+            <form action={deleteInvoice.bind(null, inv.id)}>
+              <ConfirmSubmit message={`${monthLabel(inv.month)} ${(inv.outlet as { name?: string } | null)?.name ?? ''} 청구서를 지울까요?\n지우면 되돌릴 수 없습니다. (시험 결제 기록도 함께 지워집니다)`} className="btn-secondary bg-white text-danger">청구서 지우기</ConfirmSubmit>
+            </form>
+          )}
           {isSuper && (
             <form action={setInvoicePaid.bind(null, inv.id, inv.status !== 'paid')}>
               <PendingButton pending="…" className="btn-secondary bg-white">{inv.status === 'paid' ? '미납으로 되돌리기' : '납부 완료 처리'}</PendingButton>
@@ -38,6 +44,8 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           <PrintButton />
         </div>
       </div>
+
+      {searchParams.error && <p role="alert" className="mb-4 rounded-lg bg-danger/10 px-4 py-3 text-[13.5px] text-danger print:hidden">{searchParams.error}</p>}
 
       <article className="rounded-2xl bg-white p-10 ring-1 ring-black/5 print:rounded-none print:p-0 print:ring-0">
         <header className="flex items-start justify-between border-b-2 border-ink pb-5">

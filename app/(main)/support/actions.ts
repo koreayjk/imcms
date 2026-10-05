@@ -153,6 +153,23 @@ export async function setInvoicePaid(id: string, paid: boolean) {
   revalidatePath('/support', 'layout')
 }
 
+// 청구서 지우기 (총관리자): 미납이고 실제 결제 기록(시험 결제 제외)이 없을 때만. 시험 결제 기록은 함께 지워진다
+export async function deleteInvoice(id: string) {
+  const { supabase } = await superContext()
+  const { data: inv } = await supabase.from('invoices').select('status').eq('id', id).maybeSingle()
+  if (!inv) redirect('/support/invoices')
+  const back = (msg: string) => redirect(`/support/invoices/${id}?error=${encodeURIComponent(msg)}`)
+  if (inv.status === 'paid') back('납부 완료된 청구서는 지울 수 없습니다. 먼저 “미납으로 되돌리기”를 해 주세요.')
+  // payments.sql 전이면 표가 없어 오류 → 결제 기록이 없는 것으로 본다
+  const { count, error } = await supabase.from('payments').select('id', { count: 'exact', head: true })
+    .eq('invoice_id', id).eq('test_mode', false).in('status', ['done', 'canceled'])
+  if (!error && count) back('실제 결제·환불 기록이 있는 청구서는 지울 수 없습니다.')
+  const { error: delErr } = await supabase.from('invoices').delete().eq('id', id)
+  if (delErr) back(`지우지 못했습니다: ${delErr.message}`)
+  revalidatePath('/support', 'layout')
+  redirect('/support/invoices')
+}
+
 export async function setTicketAssignee(id: string, form: FormData) {
   const { supabase } = await staffContext()
   const assignee = String(form.get('assigned_to') ?? '') || null
