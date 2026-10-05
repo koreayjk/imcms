@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ANNUAL_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, BETA_LAST_MONTH, annualPrice, betaRateFor, planById } from './pricing'
+import { ANNUAL_MONTHS, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, addMonth, annualPrice, betaRateFor, planById } from './pricing'
 import { invoiceTotals, type InvoiceItem } from './support'
 import { paymentDbSecret } from './toss'
 import { notifyInvoiceIssued } from './invoice-mail'
@@ -42,12 +42,13 @@ export function billingItems(t: BillingTarget, month: string) {
   const plan = planById(t.plan)
   const monthly = t.custom_monthly ?? plan?.monthly ?? null
   const planName = t.custom_monthly != null ? '이용료' : plan ? `${plan.name} 요금제` : null
-  // 맞춤 금액은 그대로, 요금제 금액에만 베타 반값 (2026년 12월분까지, 2027년 1월분부터 정상가)
+  // 맞춤 금액은 그대로, 요금제 금액에만 베타 반값 (첫 청구 월부터 3개월분, 그다음 정상가). 첫 청구 월이 없으면 반값 없음
   const beta = t.beta && t.custom_monthly == null
-  const rate = betaRateFor(month, beta)
+  const start = t.start_month ? t.start_month.slice(0, 7) : null
+  const rate = betaRateFor(month, beta, start)
   const betaTag = rate < 1 ? ', 베타 반값' : ''
-  // 1년 결제는 12개월 중 12월분까지만 반값
-  const annualBeta = beta && month <= BETA_LAST_MONTH ? ', 2026년 12월분까지 베타 반값' : ''
+  // 1년 결제는 12개월 중 첫 3개월분만 반값
+  const annualBeta = beta && start && month < addMonth(start, BETA_MONTHS) ? `, 첫 ${BETA_MONTHS}개월 베타 반값` : ''
 
   const annual = t.cycle === 'annual'
   // 1년 결제: 시작 월에서 12개월마다만 이용료를 청구 (시작 월이 없으면 이용료는 넣지 않는다)

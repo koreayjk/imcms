@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { PRODUCT, appLink, isProductHost } from '@/lib/product'
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, EXTRA_OUTLET_FEE, PLANS, REGULAR_FROM_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, BETA_PERIOD_LABEL, EXTRA_OUTLET_FEE, PLANS, REGULAR_AFTER_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
@@ -111,13 +111,13 @@ const FAQ = [
   { q: '휴대폰으로도 기사를 쓸 수 있나요?', a: '네. 편집국 화면이 휴대폰에 맞게 바뀌어 현장에서 바로 쓰고, 편집장은 휴대폰으로 승인·발행할 수 있습니다.' },
 ]
 
-// 요금 질문은 베타 기간(12월 30일까지)인지에 따라 답이 바뀐다
+// 요금 질문은 베타 기간(10월 31일까지 신청)인지에 따라 답이 바뀐다
 function pricingFaq(beta: boolean) {
   return [
     { q: '무료 체험은 어떻게 하나요?', a: '“1주일 무료 체험”에서 이름·연락처·소속 언론사만 적으면 바로 시작합니다. 카드 등록이나 결제는 없습니다. 샘플 기사가 채워진 체험용 신문에서 기자·편집장·그룹장 역할을 바꿔 가며 모든 기능을 써 볼 수 있고, 7일이 지나면 자동으로 끝납니다.' },
-    ...(beta ? [{ q: '베타 반값은 언제까지인가요?', a: `IM 뉴스룸 정식 출시 전 베타 기간입니다. ${BETA_END_LABEL}까지 신청한 신문사는 2026년 12월분 이용료까지 반값이고, ${REGULAR_FROM_LABEL}분부터 정상가입니다. 베타 기간에 신청하시면 세팅비도 무료입니다. 매체 추가·AI 추가 사용 요금은 베타 기간에도 정상가입니다.` }] : []),
-    { q: '요금은 얼마인가요?', a: `베이직 월 110,000원, 스탠다드 월 150,000원, 프리미엄 월 230,000원이고 모두 부가세(VAT) 포함 금액입니다. 기자 계정은 모든 요금제에서 무제한이고, AI 사용 횟수(초안·법적 검수)·저장 용량에 따라 나뉩니다.${beta ? ` 지금 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 2026년 12월분까지 반값입니다.` : ''}` },
-    { q: '1년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로 씁니다.${beta ? ` 베타 기간에는 12개월 중 2026년 12월분까지를 반값으로 계산한 뒤 ${ANNUAL_FREE}를 적용합니다. 예: 지금 베이직 1년 ${won(planCharge(PLANS[0], 'annual', true)!.price)}.` : ''}` },
+    ...(beta ? [{ q: '베타 반값은 언제까지인가요?', a: `IM 뉴스룸 정식 출시 전 베타 기간입니다. ${BETA_END_LABEL}까지 신청한 신문사는 ${BETA_PERIOD_LABEL} 이용료가 반값이고, ${REGULAR_AFTER_LABEL} 정상가입니다. 베타 기간에 신청하시면 세팅비도 무료입니다. 매체 추가·AI 추가 사용 요금은 베타 기간에도 정상가입니다.` }] : []),
+    { q: '요금은 얼마인가요?', a: `베이직 월 110,000원, 스탠다드 월 150,000원, 프리미엄 월 230,000원이고 모두 부가세(VAT) 포함 금액입니다. 기자 계정은 모든 요금제에서 무제한이고, AI 사용 횟수(초안·법적 검수)·저장 용량에 따라 나뉩니다.${beta ? ` 지금 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 ${BETA_PERIOD_LABEL} 이용료가 반값입니다.` : ''}` },
+    { q: '1년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로 씁니다.${beta ? ` 베타 기간에는 12개월 중 ${BETA_PERIOD_LABEL}분을 반값으로 계산한 뒤 ${ANNUAL_FREE}를 적용합니다. 예: 지금 베이직 1년 ${won(planCharge(PLANS[0], 'annual', true)!.price)}.` : ''}` },
     { q: '세팅비는 무엇인가요?', a: `처음 개통할 때 한 번만 내는 150,000원(VAT 포함)입니다. 편집국·홈페이지 개설, 로고·색 등 맞춤 적용, 법정 표기·정책 페이지, 도메인 연결, 기존 기사·사진 옮기기와 옛 주소 연결, 포털 검색 등록 준비, 사용법 1:1 안내가 들어 있습니다.${beta ? ` 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 세팅비는 무료입니다.` : ''}` },
     { q: '매체를 여러 개 운영할 수 있나요?', a: `네. 여러 매체 운영은 프리미엄 요금제에서 쓸 수 있습니다. 프리미엄에는 매체 2개가 포함되고, 3번째 매체부터 매체마다 월 ${won(EXTRA_OUTLET_FEE)}(VAT 포함)입니다. 추가 매체는 베이직 사양(AI 초안·법적 검수 월 300회, 뉴스레터 회당 2,000명 등)으로 운영되며, 그룹장 화면에서 여러 매체를 한 번에 관리하고 기사를 여러 매체에 동시에 송고할 수 있습니다. 매체가 아주 많으면 엔터프라이즈로 상담해 주세요.` },
   ]
@@ -173,7 +173,7 @@ function TrialStrip({ beta }: { beta: boolean }) {
       <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 border-y border-[#E3E7EE] px-2 py-7 text-center sm:flex-row sm:justify-between sm:text-left">
         <p className="text-[18px] font-extrabold leading-snug tracking-[-0.03em] text-[#0F1115] sm:text-[21px]">
           말로 듣는 것보다 직접 써 보는 게 빠릅니다.
-          <span className="block text-[14.5px] font-medium text-[#5B616B]">{beta ? <>첫 1주일은 무료, <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입하면 모든 요금 반값</b></> : '첫 1주일은 무료로 모든 기능을 써 보세요'}</span>
+          <span className="block text-[14.5px] font-medium text-[#5B616B]">{beta ? <>첫 1주일은 무료, <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입하면 {BETA_PERIOD_LABEL} 반값</b></> : '첫 1주일은 무료로 모든 기능을 써 보세요'}</span>
         </p>
         <TrialButton className="shrink-0 rounded-md bg-[#1F4FD0] px-6 py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#193FAA]" />
       </div>
@@ -545,7 +545,7 @@ export default function ProductHome() {
           </div>
         </section>
 
-        {/* ─── 베타 기간: 1주일 무료 → 12월 30일까지 반값 → 2027년 1월 정상가 ─── */}
+        {/* ─── 베타 기간: 1주일 무료 → 10월 31일까지 신청하면 첫 3개월 반값 → 4개월째부터 정상가 ─── */}
         {beta && (
           <section id="beta" className="scroll-mt-16 px-4 sm:px-6">
             <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-xl bg-[#EEF3FD] ring-1 ring-[#D9E1EE] px-6 py-16 text-[#0F1115] sm:px-14">
@@ -553,7 +553,7 @@ export default function ProductHome() {
                 <div>
                   <p className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-[0.06em] text-[#C2410C]"><span className="rounded bg-[#E8590C] px-1.5 py-0.5 text-[11.5px] tracking-normal text-white">D-{daysLeft}</span>출시 기념 베타 · {BETA_END_LABEL} 마감</p>
                   <h2 className="mt-4 text-[32px] font-extrabold leading-[1.25] tracking-[-0.03em] sm:text-[44px]">지금 가입하면<br />첫 1주일은 무료입니다</h2>
-                  <p className="mt-4 max-w-[34em] text-[16px] leading-[1.75] text-[#5B616B]">정식 출시 전 베타 기간입니다. {BETA_END_LABEL}까지 가입한 신문사는 12월분까지 모든 요금이 반값이고, {REGULAR_FROM_LABEL}부터 정상가로 바뀝니다.</p>
+                  <p className="mt-4 max-w-[34em] text-[16px] leading-[1.75] text-[#5B616B]">정식 출시 전 베타 기간입니다. {BETA_END_LABEL}까지 가입한 신문사는 {BETA_PERIOD_LABEL} 이용료가 반값이고, {REGULAR_AFTER_LABEL} 정상가로 바뀝니다.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <TrialButton className="rounded-md bg-[#1F4FD0] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#193FAA]" />
@@ -563,8 +563,8 @@ export default function ProductHome() {
               <ol className="mt-14 grid gap-8 md:grid-cols-3 md:gap-6">
                 {[
                   { when: '가입 후 7일', t: '1주일 무료 체험', d: '카드 등록 없이 모든 기능을 기자·편집장·그룹장으로 써 보기' },
-                  { when: `~ 2026년 ${BETA_END_LABEL}`, t: '월 이용료 반값', d: '12월분 이용료까지 반값 · 세팅비 무료 · 기존 기사 이전 지원' },
-                  { when: `${REGULAR_FROM_LABEL}부터`, t: '정상가', d: '베이직 월 110,000원부터 (VAT 포함)' },
+                  { when: `${BETA_END_LABEL}까지 신청`, t: `${BETA_PERIOD_LABEL} 반값`, d: `${BETA_PERIOD_LABEL} 이용료 반값 · 세팅비 무료 · 기존 기사 이전 지원` },
+                  { when: REGULAR_AFTER_LABEL, t: '정상가', d: '베이직 월 110,000원부터 (VAT 포함)' },
                 ].map((b, i) => (
                   <li key={b.t} className={`border-t-2 pt-5 ${i === 0 ? 'border-[#1F4FD0]' : i === 1 ? 'border-[#E8590C]' : 'border-[#D9E1EE]'}`}>
                     <p className={`text-[12.5px] font-semibold tracking-[0.04em] ${i === 0 ? 'text-[#1F4FD0]' : i === 1 ? 'text-[#C2410C]' : 'text-[#5B616B]'}`}>{b.when}</p>
@@ -604,7 +604,7 @@ export default function ProductHome() {
                 요금제를 고르고 신청서를 보내주시면 담당자가 연락드려 개통 일정과 계약 서류를 안내합니다. 결제는 계약 내용을 확인한 뒤에 진행되며, 신청만으로는 비용이 생기지 않습니다.
               </p>
               <ul className="mt-8 space-y-3">
-                {beta && <Check>{BETA_END_LABEL}까지 신청하면 12월분까지 월 이용료 반값 · 세팅비 무료 ({REGULAR_FROM_LABEL}부터 정상가)</Check>}
+                {beta && <Check>{BETA_END_LABEL}까지 신청하면 {BETA_PERIOD_LABEL} 이용료 반값 · 세팅비 무료 ({REGULAR_AFTER_LABEL} 정상가)</Check>}
                 <Check>1년 한 번에 결제하면 {ANNUAL_FREE}</Check>
                 <Check>쓰던 도메인 그대로</Check>
                 <Check>기존 기사 이전 지원</Check>

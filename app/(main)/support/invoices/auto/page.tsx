@@ -146,7 +146,7 @@ export default async function AutoBillingPage({ searchParams }: Props) {
                 </label>
                 <label className="flex items-center gap-2">
                   <input type="checkbox" name="beta" defaultChecked={!!p?.beta} className="h-4 w-4" />
-                  베타 반값
+                  베타 반값 (첫 청구 월부터 3개월)
                 </label>
                 <label className="flex items-center gap-2 sm:col-span-2">
                   <input type="checkbox" name="setup_fee_pending" defaultChecked={!!p?.setup_fee_pending} className="h-4 w-4" />
