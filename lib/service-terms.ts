@@ -2,7 +2,7 @@
 //   매체 홈페이지 독자용 정책(lib/policies.ts)과는 다르다. 이쪽은 언론사(고객사)와 IM 뉴스룸 운영사 사이의 약속이다
 //   운영사 정보(상호·대표·연락처)는 사업자 등록 후 lib/product.ts 의 ISSUER 에 넣으면 여기에 들어간다
 import { ISSUER, PRODUCT } from './product'
-import { ANNUAL_FREE, ANNUAL_MONTHS, EXTRA_AI_FEE, SETUP_FEE, won } from './pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, SETUP_FEE, won } from './pricing'
 
 export const TERMS_VERSION = '2026-10-02'
 export const TERMS_EFFECTIVE = '2026년 10월 2일'
@@ -80,7 +80,8 @@ export function termsSections(): PolicySection[] {
         '요금은 미리 냅니다. 월 결제는 개통일을 기준으로 매달, 1년 결제는 12개월분을 한 번에 냅니다.',
         `1년 결제는 ${ANNUAL_MONTHS}개월 요금으로 12개월을 이용합니다.`,
         `세팅비는 처음 개통할 때 한 번 내는 ${won(SETUP_FEE)}(VAT 포함)으로, 편집국·홈페이지 개설과 맞춤 적용, 도메인 연결, 기존 기사 옮기기, 사용법 안내가 들어 있습니다. 베타 테스트 기간에 신청한 신문사는 받지 않습니다.`,
-        '베타 테스트 신문사 할인(반값)의 적용 기간과 조건은 계약할 때 따로 안내하고 청구서에 표시합니다.',
+        `여러 매체 운영은 프리미엄 요금제에서만 할 수 있습니다. 프리미엄에는 매체 2개(본 매체는 프리미엄 사양, 추가 매체 1개는 베이직 사양)가 포함되고, 3번째 매체부터 매체마다 월 ${won(EXTRA_OUTLET_FEE)}(VAT 포함)이며 추가 매체는 모두 베이직 사양으로 운영합니다.`,
+        `베타 테스트 기간에 신청한 신문사는 첫 청구 월부터 ${BETA_MONTHS}개월 동안 요금제 이용료를 반값으로 냅니다. 매체 추가 요금과 AI 추가 사용 요금은 할인하지 않으며, 할인 내역은 청구서에 표시합니다.`,
         '회사는 청구서를 편집국 “고객센터 → 청구서”에서 발행합니다. 온라인 결제는 결제대행사 Stripe(미국)를 통해 처리되며, 카드 번호 등 결제수단 정보는 회사가 보관하지 않습니다.',
         '자동결제를 등록하면 청구서를 발행한 날로부터 7일이 지난 뒤, 납부 기한에 등록한 결제수단으로 결제됩니다. 청구서는 발행 즉시 편집국 고객센터에서 볼 수 있으며, 고객사는 언제든 자동결제를 해지할 수 있습니다.',
         '요금을 올릴 때는 30일 전에 알리고 동의를 받습니다.',
