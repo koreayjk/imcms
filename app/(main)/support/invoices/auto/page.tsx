@@ -23,7 +23,7 @@ export default async function AutoBillingPage({ searchParams }: Props) {
   const thisMonth = kstToday().slice(0, 7)
   const nextMonth = nextMonthOf(thisMonth)
   const [{ data: outlets }, plansRes] = await Promise.all([
-    supabase.from('outlets').select('id, name, plan').order('created_at'),
+    supabase.from('outlets').select('*').order('created_at'),
     supabase.from('outlet_plans').select('*'),
   ])
   const missingSql = !!plansRes.error
@@ -49,8 +49,9 @@ export default async function AutoBillingPage({ searchParams }: Props) {
         <Link href="/support/invoices" className="text-[13px] text-muted hover:text-ink">‹ 청구서</Link>
         <h1 className="mt-1 text-[22px] font-extrabold tracking-tight">자동 청구</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
-          자동 청구를 켠 매체는 <strong className="text-ink">매월 1일</strong>에 청구서가 만들어지고 안내 메일이 나갑니다. 납부 기한은 <strong className="text-ink">10일</strong>이며,
-          자동결제를 등록한 매체는 10일 오전 10시에 결제됩니다. 모든 금액은 부가세 포함입니다.
+          자동 청구를 켠 매체는 <strong className="text-ink">매월 1일</strong>에 청구서가 만들어지고 안내 메일이 나갑니다. 납부 기한은 <strong className="text-ink">5일</strong>이고,
+          자동결제를 등록한 매체는 발행 7일 뒤(8일) 오전 10시에 결제됩니다. 기한이 지나면 다음 날 미납 안내가 가고, <strong className="text-ink">10일까지</strong> 내지 않으면
+          11일부터 그 매체(와 추가 매체)의 편집국 이용이 제한됩니다. 결제하면 바로 풀립니다. 연체료는 없고, 모든 금액은 부가세 포함입니다.
         </p>
       </div>
 
@@ -88,6 +89,7 @@ export default async function AutoBillingPage({ searchParams }: Props) {
                 <h2 className="text-[16px] font-bold">{o.name}</h2>
                 <span className="rounded bg-[#F4F5F7] px-2 py-0.5 text-[12px] font-semibold text-[#5B616B]">{plan ? `${plan.name}${plan.monthly ? ` 월 ${won(plan.monthly)}` : ''}` : '요금제 없음'}</span>
                 <span className={`rounded px-2 py-0.5 text-[12px] font-semibold ${p?.auto ? 'bg-published/10 text-published' : 'bg-line/60 text-muted'}`}>{p?.auto ? '자동 청구 켜짐' : '자동 청구 꺼짐'}</span>
+                {(o as { billing_hold?: boolean }).billing_hold && <span className="rounded bg-danger/10 px-2 py-0.5 text-[12px] font-semibold text-danger">미납 · 이용 제한 중</span>}
                 {thisMonthHas.has(o.id) && <span className="rounded bg-[#EEF3FF] px-2 py-0.5 text-[12px] font-semibold text-[#2F6BF0]">{monthLabel(`${thisMonth}-01`)} 청구서 있음</span>}
               </div>
 

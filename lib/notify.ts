@@ -4,7 +4,7 @@ import { paymentDbSecret } from './toss'
 
 // 알림 메일 보내기 (supabase/mail.sql). 받는 사람은 DB가 정하고(서버 열쇠로만), 같은 열쇠의 알림은 한 번만 나간다
 //   메일 설정·SQL 전이면 아무 일도 하지 않는다. 실패해도 편집국 작업은 막지 않는다
-export type NoticeKind = 'article_submitted' | 'article_rejected' | 'article_published' | 'ticket_staff_reply' | 'ticket_customer_reply' | 'invoice_issued'
+export type NoticeKind = 'article_submitted' | 'article_rejected' | 'article_published' | 'ticket_staff_reply' | 'ticket_customer_reply' | 'invoice_issued' | 'invoice_overdue' | 'invoice_hold'
 
 export async function notify(
   supabase: SupabaseClient,

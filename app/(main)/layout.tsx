@@ -4,9 +4,11 @@ import TopBar from '@/components/cms/TopBar'
 import TrialBar from '@/components/cms/TrialBar'
 import { getCmsContext } from '@/lib/cms'
 import { hasUnreadReply } from '@/lib/support'
+import { GRACE_DAYS, holdFrom, kstToday } from '@/lib/billing'
+import { formatDate } from '@/lib/format'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin, trial } = await getCmsContext()
+  const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin, isEditorPlus, trial } = await getCmsContext()
 
   // 알림 숫자와 매체 목록은 한꺼번에 가져온다 (하나씩 기다리면 그만큼 느려진다)
   // 승인 대기 가입자: 총관리자는 전체, 발행인은 우리 그룹 매체로 신청한 사람 (DB 권한이 보이는 만큼만 센다)
@@ -46,6 +48,20 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   }
   const current = list.find((o) => o.id === outletId) ?? null
 
+  // 이용료 미납 (billing-dunning.sql): 제한 중이면 빨간 띠, 납부 기한이 지났으면(유예 중) 노란 띠. 운영팀에게는 안 보인다
+  let billing: { hold: boolean; overdue: { id: string; month: string; due: string } | null } = { hold: false, overdue: null }
+  if (outletId && !isStaff && !trial) {
+    const [{ data: o }, { data: inv }] = await Promise.all([
+      supabase.from('outlets').select('billing_hold').eq('id', outletId).maybeSingle(),
+      isEditorPlus
+        ? supabase.from('invoices').select('id, month, due_date').eq('outlet_id', outletId).eq('status', 'unpaid').gt('total', 0).lt('due_date', kstToday()).order('due_date').limit(1)
+        : Promise.resolve({ data: [] as { id: string; month: string; due_date: string }[] }),
+    ])
+    const first = ((inv ?? []) as { id: string; month: string; due_date: string }[])[0]
+    billing = { hold: !!(o as { billing_hold?: boolean } | null)?.billing_hold, overdue: first ? { id: first.id, month: first.month, due: first.due_date } : null }
+  }
+  const monthText = (m: string) => `${Number(m.slice(5, 7))}월`
+
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-[#F4F5F7] print:block print:h-auto print:overflow-visible print:bg-white">
       <div className="contents print:hidden">
@@ -53,6 +69,21 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         {trial && <TrialBar role={trial.role} daysLeft={trial.daysLeft} />}
+        {billing.hold ? (
+          <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-danger px-4 py-2 text-[13px] text-white print:hidden">
+            <strong>이용료가 밀려 편집국 이용이 제한되었습니다.</strong>
+            <span className="opacity-90">기사 쓰기·고치기·발행과 AI 기능을 쓸 수 없습니다. 신문 홈페이지는 그대로 열려 있습니다.</span>
+            {isEditorPlus
+              ? <a href={billing.overdue ? `/support/invoices/${billing.overdue.id}` : '/support/invoices'} className="ml-auto rounded bg-white px-3 py-1 font-semibold text-danger">결제하면 바로 풀립니다 →</a>
+              : <span className="ml-auto opacity-90">발행인·편집장에게 알려 주세요.</span>}
+          </div>
+        ) : billing.overdue ? (
+          <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[#FFF4D6] px-4 py-2 text-[13px] text-[#7A4B00] print:hidden">
+            <strong>{monthText(billing.overdue.month)} 이용료의 납부 기한({formatDate(billing.overdue.due)})이 지났습니다.</strong>
+            <span>{GRACE_DAYS}일 안에 결제하지 않으면 {formatDate(holdFrom(billing.overdue.due))}부터 기사 쓰기·발행이 제한됩니다.</span>
+            <a href={`/support/invoices/${billing.overdue.id}`} className="ml-auto rounded bg-[#7A4B00] px-3 py-1 font-semibold text-white">지금 결제하기 →</a>
+          </div>
+        ) : null}
         <TopBar
           outletName={current?.name ?? null}
           groupName={current?.group ?? null}

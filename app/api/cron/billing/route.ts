@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { kstToday, runBilling } from '@/lib/billing'
+import { kstToday, runBilling, runDunning } from '@/lib/billing'
 import { cmsOrigin } from '@/lib/origin'
 
 // 매일 0시~0시 50분(한국) 10분마다 Supabase 예약 작업(billing-auto.sql·scale.sql)이 부른다: 자동 청구를 켠 매체의 이번 달 청구서가 없으면 만든다
@@ -19,7 +19,9 @@ export async function GET(req: NextRequest) {
   try {
     // 2분 제한 안에 끝나도록 100초가 지나면 멈춘다 (남은 매체는 다음 예약 실행이 이어서)
     const result = await runBilling(supabase, kstToday().slice(0, 7), cmsOrigin(), Date.now() + 100_000)
-    return NextResponse.json({ ok: true, ...result })
+    // 미납 처리: 유예가 지난 매체 이용 제한, 미납·제한 안내 (billing-dunning.sql 전이면 오류만 돌려준다)
+    const dunning = await runDunning(supabase, cmsOrigin())
+    return NextResponse.json({ ok: true, ...result, dunning })
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 })
   }

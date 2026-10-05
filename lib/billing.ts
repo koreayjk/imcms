@@ -2,10 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { ANNUAL_MONTHS, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, addMonth, annualPrice, betaRateFor, planById } from './pricing'
 import { invoiceTotals, type InvoiceItem } from './support'
 import { paymentDbSecret } from './toss'
-import { notifyInvoiceIssued } from './invoice-mail'
+import { notifyInvoiceDunning, notifyInvoiceIssued } from './invoice-mail'
 
 // 매월 자동 청구서 (supabase/billing-auto.sql). 금액은 모두 VAT 포함
-//   매월 1일 발행 · 10일 납부. 1년 결제는 시작 월부터 12개월마다 한 번(11개월 값)
+//   매월 1일 발행 · 5일 납부 · 10일까지 유예. 1년 결제는 시작 월부터 12개월마다 한 번(11개월 값)
 //   항목: 요금제 이용료(베타 반값) · 추가 매체 · 지난달 AI 추가 사용(100회마다) · 세팅비(처음 한 번)
 
 export type BillingChild = { outlet_id: string; name: string; over_count: number }
@@ -24,7 +24,9 @@ export type BillingTarget = {
   children: BillingChild[]
 }
 
-export const DUE_DAY = 10
+// 매월 1일 발행 · 5일 납부 기한 · 5일 유예(10일까지) · 11일부터 편집국 이용 제한 (billing-dunning.sql 의 billing_grace_days 와 같게)
+export const DUE_DAY = 5
+export const GRACE_DAYS = 5
 
 const ym = (d: string) => Number(d.slice(0, 4)) * 12 + Number(d.slice(5, 7)) - 1
 const label = (n: number) => `${Math.floor(n / 12)}년 ${(n % 12) + 1}월`
@@ -78,11 +80,33 @@ export function billingItems(t: BillingTarget, month: string) {
   return { items, totals: invoiceTotals(items), clearSetup: setup }
 }
 
-// 납부 기한: 그달 10일. 10일이 얼마 안 남았거나 지났으면(늦게 켠 경우) 오늘부터 7일 뒤
+// 납부 기한: 그달 5일. 5일이 얼마 안 남았거나 지났으면(늦게 발행한 경우) 오늘부터 4일 뒤
 export function dueDate(month: string, today = kstToday()) {
-  const tenth = `${month}-${String(DUE_DAY).padStart(2, '0')}`
-  const minDue = new Date(Date.parse(`${today}T00:00:00Z`) + 7 * 864e5).toISOString().slice(0, 10)
-  return tenth >= minDue ? tenth : minDue
+  const due = `${month}-${String(DUE_DAY).padStart(2, '0')}`
+  const minDue = new Date(Date.parse(`${today}T00:00:00Z`) + 4 * 864e5).toISOString().slice(0, 10)
+  return due >= minDue ? due : minDue
+}
+
+// 이용 제한이 시작되는 날 (납부 기한 + 유예 기간 다음 날)
+export function holdFrom(due: string) {
+  return new Date(Date.parse(`${due}T00:00:00Z`) + (GRACE_DAYS + 1) * 864e5).toISOString().slice(0, 10)
+}
+
+// 매일 예약 작업: 유예가 지난 매체 이용 제한(결제하면 바로 풀림), 미납·제한 안내 메일 (billing-dunning.sql)
+export async function runDunning(supabase: SupabaseClient, origin: string) {
+  const { data, error } = await supabase.rpc('billing_dunning', { secret: paymentDbSecret() })
+  if (error) return { error: error.message, overdue: 0, hold: 0 }
+  const rows = (data ?? []) as { invoice_id: string; outlet_name: string; month: string; total: number; due_date: string; stage: 'overdue' | 'hold'; autopay: boolean }[]
+  let overdue = 0
+  let hold = 0
+  for (const r of rows) {
+    // 자동결제 매체는 유예 기간 안에 카드로 다시 결제를 시도하므로 미납 안내는 보내지 않는다 (제한 안내는 보낸다)
+    if (r.stage === 'overdue' && r.autopay) continue
+    await notifyInvoiceDunning(supabase, { id: r.invoice_id, outletName: r.outlet_name, month: r.month, total: Number(r.total), dueDate: r.due_date, stage: r.stage, origin })
+    if (r.stage === 'hold') hold++
+    else overdue++
+  }
+  return { error: null as string | null, overdue, hold }
 }
 
 export async function billingTargets(supabase: SupabaseClient, month: string) {
