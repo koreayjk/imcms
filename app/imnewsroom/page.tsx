@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export function generateMetadata(): Metadata {
   const indexable = PRODUCT.indexable && isProductHost(headers().get('host'))
-  const title = `${PRODUCT.name} — 1인 언론사에도 뉴스룸이 생깁니다`
+  const title = `${PRODUCT.name} — 더 스마트하게, 더 저렴하게. 인터넷신문 AI 편집국`
   const description = '보도자료 자동 수집, AI 기사 초안, 기자·편집장 승인, 여러 매체 동시 송고까지. 인터넷신문을 위한 AI 편집국 클라우드.'
   return {
     title,
@@ -220,16 +220,16 @@ export default function ProductHome() {
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.15fr]">
             <div>
               <p className="inline-flex items-center gap-2.5 border-l-2 border-[#E8590C] pl-3 text-[13px] font-medium tracking-[0.02em] text-[#5B616B]">
-                {beta ? <>출시 기념 베타 · 1주일 무료 + <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입 시 {BETA_PERIOD_LABEL} 반값</b><span className="hidden font-semibold text-[#C2410C] sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
+                {beta ? <><span className="hidden sm:inline">출시 기념 베타 · </span><b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입 시 {BETA_PERIOD_LABEL} 반값</b><span className="hidden font-semibold text-[#C2410C] sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
               </p>
               <h1 className="mt-7 text-[42px] font-extrabold leading-[1.14] tracking-[-0.04em] sm:text-[56px] xl:text-[60px]">
-                1인 언론사에도
+                더 스마트하게,
                 <br />
-                <span className="text-[#1F4FD0] sm:whitespace-nowrap">뉴스룸이 생깁니다.</span>
+                <span className="text-[#1F4FD0] sm:whitespace-nowrap">더 저렴하게.</span>
               </h1>
               <p className="mt-6 max-w-[32em] text-[17.5px] leading-[1.75] text-[#5B616B]">
-                보도자료 수집부터 AI 기사 초안, 승인, 발행, 여러 매체 동시 송고까지.
-                반복 업무는 {PRODUCT.name}이 맡고, 기자는 취재와 확인에 집중합니다.
+                보도자료 자동 수집, AI 기사 초안과 법적 검수, 기자·편집장 승인, 여러 매체 동시 송고까지 기본으로 들어 있습니다.
+                인터넷신문 편집국을 <b className="font-semibold text-[#0F1115]">월 11만 원부터</b>(VAT 포함) 쓰세요.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <TrialButton className="rounded-md bg-[#1F4FD0] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#193FAA]">
@@ -272,7 +272,7 @@ export default function ProductHome() {
             {[
               { n: 15, s: '곳', label: '보도자료 출처 자동 연결', color: '#0F1115' },
               { n: 30, s: '분', label: '마다 새 보도자료 수집', color: '#0F1115' },
-              { n: 0, s: '원', label: '설치비', color: '#0F1115' },
+              { n: 11, s: '만 원', label: '부터 · 월 이용료 (VAT 포함)', color: '#1F4FD0' },
               { n: 1, s: '개', label: '계정으로 여러 매체 운영', color: '#0F1115' },
             ].map((x, i) => (
               <div key={x.label} className={`px-6 py-7 text-center ${i % 2 ? '' : 'border-r'} border-[#EEF0F3] md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
@@ -623,7 +623,7 @@ export default function ProductHome() {
       {/* 휴대폰: 화면 아래 고정 버튼 */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D9E1EE] bg-white/95 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-md sm:hidden">
         <TrialButton className="block rounded-md bg-[#1F4FD0] py-3.5 text-center text-[15.5px] font-bold text-white">
-          {beta ? `1주일 무료 체험 · ${BETA_END_LABEL}까지 가입 시 ${BETA_PERIOD_LABEL} 반값` : '1주일 무료 체험 시작'}
+          {beta ? `1주일 무료 체험 · ${BETA_PERIOD_LABEL} 반값` : '1주일 무료 체험 시작'}
         </TrialButton>
       </div>
 
