@@ -220,7 +220,7 @@ export default function ProductHome() {
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.15fr]">
             <div>
               <p className="inline-flex items-center gap-2.5 border-l-2 border-[#E8590C] pl-3 text-[13px] font-medium tracking-[0.02em] text-[#5B616B]">
-                {beta ? <>출시 기념 베타 · 1주일 무료 + <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 반값</b><span className="hidden font-semibold text-[#C2410C] sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
+                {beta ? <>출시 기념 베타 · 1주일 무료 + <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입 시 {BETA_PERIOD_LABEL} 반값</b><span className="hidden font-semibold text-[#C2410C] sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
               </p>
               <h1 className="mt-7 text-[42px] font-extrabold leading-[1.14] tracking-[-0.04em] sm:text-[56px] xl:text-[60px]">
                 1인 언론사에도
@@ -623,7 +623,7 @@ export default function ProductHome() {
       {/* 휴대폰: 화면 아래 고정 버튼 */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D9E1EE] bg-white/95 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-md sm:hidden">
         <TrialButton className="block rounded-md bg-[#1F4FD0] py-3.5 text-center text-[15.5px] font-bold text-white">
-          {beta ? `1주일 무료 체험 · ${BETA_END_LABEL}까지 반값` : '1주일 무료 체험 시작'}
+          {beta ? `1주일 무료 체험 · ${BETA_END_LABEL}까지 가입 시 ${BETA_PERIOD_LABEL} 반값` : '1주일 무료 체험 시작'}
         </TrialButton>
       </div>
 
