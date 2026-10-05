@@ -133,7 +133,7 @@ export function SyndicateVisual() {
           <path key={x} d={`M260 0 C 260 45, ${x} 45, ${x} 90`} fill="none" stroke="url(#synd)" strokeWidth="2.5" className="pn-dash" style={{ animationDelay: `${i * 200}ms` }} />
         ))}
         <defs>
-          <linearGradient id="synd" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7FA1E8" /><stop offset="1" stopColor="#1F4FD0" /></linearGradient>
+          <linearGradient id="synd" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#7FA1E8" /><stop offset="1" stopColor="#1D3461" /></linearGradient>
         </defs>
       </svg>
       <div className="grid grid-cols-3 gap-2.5">
@@ -143,7 +143,7 @@ export function SyndicateVisual() {
             <div className="space-y-1 p-2.5">
               <span className="block h-1.5 w-full rounded bg-[#E4E6EA]" />
               <span className="block h-1.5 w-4/5 rounded bg-[#E4E6EA]" />
-              <span className={`mt-1.5 inline-block rounded px-1.5 py-px text-[9.5px] font-bold ${o.note === '원본' ? 'bg-[#1E7D4D]/10 text-[#1E7D4D]' : 'bg-[#EEF3FD] text-[#14306E]'}`}>{o.note}</span>
+              <span className={`mt-1.5 inline-block rounded px-1.5 py-px text-[9.5px] font-bold ${o.note === '원본' ? 'bg-[#1E7D4D]/10 text-[#1E7D4D]' : 'bg-[#EFF2F7] text-[#16294D]'}`}>{o.note}</span>
             </div>
           </div>
         ))}
@@ -184,7 +184,7 @@ export function MailForwardVisual() {
   )
   const Arrow = ({ label }: { label: string }) => (
     <div className="flex items-center gap-2 py-1.5 pl-8 text-[11px] font-semibold text-[#8C929B]">
-      <svg width="14" height="26" viewBox="0 0 14 26" aria-hidden><path d="M7 0v22M2 17l5 6 5-6" fill="none" stroke="#1F4FD0" strokeWidth="2" className="pn-dash" /></svg>
+      <svg width="14" height="26" viewBox="0 0 14 26" aria-hidden><path d="M7 0v22M2 17l5 6 5-6" fill="none" stroke="#1D3461" strokeWidth="2" className="pn-dash" /></svg>
       {label}
     </div>
   )
@@ -233,7 +233,7 @@ export function SupportMock() {
       </div>
       <div className="mx-4 mb-4 rounded-xl bg-[#EEF2F8] p-3.5">
         <p className="flex items-center gap-2 text-[11.5px]">
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-[#1F4FD0] text-[9px] font-bold text-white">IM</span>
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-[#1D3461] text-[9px] font-bold text-white">IM</span>
           <strong>IM 뉴스룸 운영팀</strong>
           <span className="ml-auto text-[#8C929B]">방금</span>
         </p>
@@ -250,7 +250,7 @@ export function SupportMock() {
 // 그룹·권한: 한 사람이 여러 매체에서 다른 직급을 갖고, 상단바에서 매체를 바꾼다
 export function TeamMock() {
   const people = [
-    { name: '김발행', tag: '발행인', tagCls: 'bg-[#EEF3FD] text-[#14306E]', roles: [['그룹 전체 매체', '관리']] },
+    { name: '김발행', tag: '발행인', tagCls: 'bg-[#EFF2F7] text-[#16294D]', roles: [['그룹 전체 매체', '관리']] },
     { name: '이편집', tag: '매체별 직급', tagCls: 'bg-[#6366F1]/10 text-[#4F46E5]', roles: [['케어타임즈', '편집장'], ['시니어경제', '기자']] },
     { name: '박기자', tag: '매체별 직급', tagCls: 'bg-[#6366F1]/10 text-[#4F46E5]', roles: [['시니어경제', '기자']] },
   ]
@@ -274,7 +274,7 @@ export function TeamMock() {
             </span>
           </div>
         ))}
-        <div className="flex items-center gap-2 rounded-xl border border-dashed border-[#1F4FD0]/50 bg-[#EEF3FD] p-3 text-[12px]">
+        <div className="flex items-center gap-2 rounded-xl border border-dashed border-[#1D3461]/50 bg-[#EFF2F7] p-3 text-[12px]">
           <span className="rounded bg-[#B0452E] px-1.5 py-px text-[10px] font-bold text-white">가입 신청</span>
           <span>최신입 · <strong>케어타임즈</strong> 기자로 가입</span>
           <span className="ml-auto rounded bg-[#3F7D5C] px-2 py-0.5 text-[11px] font-bold text-white">발행인 승인</span>

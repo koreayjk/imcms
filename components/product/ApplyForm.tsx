@@ -10,7 +10,7 @@ import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
 import PolicyDoc from './PolicyDoc'
 
 const input =
-  'w-full rounded-md border border-[#D5D8DD] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#A3A8B0] focus:border-[#1F4FD0]'
+  'w-full rounded-md border border-[#D5D8DD] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#A3A8B0] focus:border-[#1D3461]'
 
 function Field({ id, label, required, children, hint }: { id: string; label: string; required?: boolean; children: React.ReactNode; hint?: React.ReactNode }) {
   return (
@@ -30,7 +30,7 @@ function Submit() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-md bg-[#1F4FD0] px-5 py-4 text-[16px] font-bold text-white transition hover:bg-[#193FAA] disabled:opacity-60"
+      className="w-full rounded-md bg-[#1D3461] px-5 py-4 text-[16px] font-bold text-white transition hover:bg-[#152748] disabled:opacity-60"
     >
       {pending ? '보내는 중…' : '서비스 신청하기'}
     </button>
@@ -99,7 +99,7 @@ export default function ApplyForm() {
         <legend className="mb-2 text-[13px] font-semibold text-[#14171C]">요금제 <span className="text-[#D6402B]">*</span></legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {PLANS.map((p) => (
-            <label key={p.id} className={`cursor-pointer rounded-md border px-3 py-2.5 text-center transition ${plan === p.id ? 'border-[#1F4FD0] bg-[#EEF3FD] ring-1 ring-[#1F4FD0]' : 'border-[#D5D8DD] hover:border-[#14171C]'}`}>
+            <label key={p.id} className={`cursor-pointer rounded-md border px-3 py-2.5 text-center transition ${plan === p.id ? 'border-[#1D3461] bg-[#EFF2F7] ring-1 ring-[#1D3461]' : 'border-[#D5D8DD] hover:border-[#14171C]'}`}>
               <input type="radio" name="plan_pick" value={p.id} checked={plan === p.id} onChange={() => setPlan(p.id)} className="sr-only" />
               <span className="block text-[14.5px] font-bold">{p.name}</span>
               <span className="block text-[12px] tabular-nums text-[#5B616B]">{p.monthly == null ? '별도 문의' : `월 ${won(p.monthly)}`}</span>
@@ -114,10 +114,10 @@ export default function ApplyForm() {
                 type="button"
                 aria-pressed={billing === b}
                 onClick={() => setBilling(b)}
-                className={`flex items-center justify-center gap-1.5 rounded-md border px-3 py-2.5 text-[14px] font-semibold transition ${billing === b ? 'border-[#1F4FD0] bg-[#1F4FD0] text-white' : 'border-[#D5D8DD] text-[#3B4048] hover:border-[#1F4FD0]'}`}
+                className={`flex items-center justify-center gap-1.5 rounded-md border px-3 py-2.5 text-[14px] font-semibold transition ${billing === b ? 'border-[#1D3461] bg-[#1D3461] text-white' : 'border-[#D5D8DD] text-[#3B4048] hover:border-[#1D3461]'}`}
               >
                 {BILLING_LABEL[b]}
-                {b === 'annual' && <span className="rounded-full bg-[#EEF3FD] px-1.5 py-0.5 text-[11px] font-bold text-[#14306E]">{ANNUAL_FREE}</span>}
+                {b === 'annual' && <span className="rounded-full bg-[#EFF2F7] px-1.5 py-0.5 text-[11px] font-bold text-[#16294D]">{ANNUAL_FREE}</span>}
               </button>
             ))}
           </div>
@@ -128,7 +128,7 @@ export default function ApplyForm() {
             <>
               <p className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="text-[13px] font-semibold text-[#5B616B]">첫 결제 금액 (VAT 포함)</span>
-                <span className="text-[24px] font-extrabold tabular-nums tracking-[-0.02em] text-[#14306E]">{won(pay.total)}</span>
+                <span className="text-[24px] font-extrabold tabular-nums tracking-[-0.02em] text-[#16294D]">{won(pay.total)}</span>
               </p>
               <ul className="mt-1.5 space-y-0.5 text-[12.5px] tabular-nums text-[#5B616B]">
                 <li>

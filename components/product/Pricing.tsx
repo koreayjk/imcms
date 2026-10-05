@@ -41,15 +41,15 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
   return (
     <div>
       {BETA && (
-        <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-lg bg-[#EEF3FD] ring-1 ring-[#D9E1EE] px-7 py-6 text-center text-[#0F1115] sm:flex-row sm:justify-between sm:text-left">
+        <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-lg bg-[#EFF2F7] ring-1 ring-[#DADFE8] px-7 py-6 text-center text-[#0F1115] sm:flex-row sm:justify-between sm:text-left">
           <span>
             <span className="inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.06em] text-[#C2410C]"><span className="rounded bg-[#E8590C] px-1.5 py-0.5 text-[11px] tracking-normal text-white">D-{daysLeft}</span>출시 기념 베타</span>
             <span className="mt-1 block text-[21px] font-extrabold tracking-[-0.02em] sm:text-[24px]">1주일 무료 체험 → {BETA_END_LABEL}까지 가입하면 <span className="text-[#C2410C]">{BETA_PERIOD_LABEL} 반값</span></span>
             <span className="mt-1 block text-[13px] text-[#5B616B]">{REGULAR_AFTER_LABEL} 정상가로 바뀝니다</span>
           </span>
           <span className="flex shrink-0 flex-wrap justify-center gap-2">
-            <a href={appLink('/trial')} className="rounded-md bg-[#1F4FD0] px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#193FAA]">1주일 무료 체험 →</a>
-            <a href={applyHref} className="rounded-md border border-[#D9E1EE] bg-white px-5 py-3 text-[15px] font-semibold text-[#14306E] transition hover:bg-[#EEF3FD]">바로 신청</a>
+            <a href={appLink('/trial')} className="rounded-md bg-[#1D3461] px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#152748]">1주일 무료 체험 →</a>
+            <a href={applyHref} className="rounded-md border border-[#DADFE8] bg-white px-5 py-3 text-[15px] font-semibold text-[#16294D] transition hover:bg-[#EFF2F7]">바로 신청</a>
           </span>
         </div>
       )}
@@ -71,11 +71,11 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
             className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-[15px] font-bold transition ${annual ? 'bg-white text-[#14171C] shadow-[0_4px_14px_-6px_rgba(11,16,32,0.4)]' : 'text-[#5B616B] hover:text-[#14171C]'}`}
           >
             1년 한 번에 결제
-            <span className="rounded-full bg-[#EEF3FD] px-2 py-0.5 text-[12px] font-bold text-[#14306E]">{ANNUAL_FREE}</span>
+            <span className="rounded-full bg-[#EFF2F7] px-2 py-0.5 text-[12px] font-bold text-[#16294D]">{ANNUAL_FREE}</span>
           </button>
         </div>
         <p className="text-[14px] text-[#5B616B]">
-          {annual ? <>1년 요금을 한 번에 내시면 <strong className="text-[#14306E]">12개월을 {ANNUAL_MONTHS}개월 값</strong>으로 씁니다.</> : '매달 결제하고 언제든 해지할 수 있습니다.'}
+          {annual ? <>1년 요금을 한 번에 내시면 <strong className="text-[#16294D]">12개월을 {ANNUAL_MONTHS}개월 값</strong>으로 씁니다.</> : '매달 결제하고 언제든 해지할 수 있습니다.'}
         </p>
       </div>
 
@@ -90,9 +90,9 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
           return (
             <div
               key={p.name}
-              className={`relative flex flex-col rounded-lg bg-white p-6 ${p.pick ? 'ring-2 ring-[#1F4FD0] shadow-[0_24px_50px_-28px_rgba(15,17,21,0.45)]' : 'ring-1 ring-black/5 shadow-[0_10px_30px_-18px_rgba(11,16,32,0.3)]'}`}
+              className={`relative flex flex-col rounded-lg bg-white p-6 ${p.pick ? 'ring-2 ring-[#1D3461] shadow-[0_24px_50px_-28px_rgba(15,17,21,0.45)]' : 'ring-1 ring-black/5 shadow-[0_10px_30px_-18px_rgba(11,16,32,0.3)]'}`}
             >
-              {p.pick && <span className="absolute -top-3 left-6 rounded-full bg-[#1F4FD0] px-3 py-1 text-[12px] font-bold text-white">추천</span>}
+              {p.pick && <span className="absolute -top-3 left-6 rounded-full bg-[#1D3461] px-3 py-1 text-[12px] font-bold text-white">추천</span>}
               <p className="text-[19px] font-extrabold tracking-[-0.02em]">{p.name}</p>
               <p className="mt-1 min-h-[42px] text-[13.5px] leading-snug text-[#5B616B]">{p.for}</p>
 
@@ -108,7 +108,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                       <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[3px] text-[11.5px] font-semibold text-[#5B616B]">VAT 포함</span>
                     </p>
                     {annual
-                      ? <p className="mt-1 text-[13px] font-semibold tabular-nums text-[#14306E]">한 달 약 {(price / 12 / 10_000).toFixed(1)}만 원꼴 · {won(saved)} 절약</p>
+                      ? <p className="mt-1 text-[13px] font-semibold tabular-nums text-[#16294D]">한 달 약 {(price / 12 / 10_000).toFixed(1)}만 원꼴 · {won(saved)} 절약</p>
                       : <p className="mt-1 text-[13px] tabular-nums text-[#5B616B]">{BETA ? `${REGULAR_AFTER_LABEL} 월 ${won(p.monthly!)}` : `1년 결제 시 ${won(yearly!)}/년`}</p>}
                   </>
                 )}
@@ -117,7 +117,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               <a
                 href={applyHref}
                 onClick={() => pick(p.id)}
-                className={`mt-5 rounded-md px-4 py-3 text-center text-[15px] font-bold transition ${p.pick ? 'bg-[#1F4FD0] text-white hover:bg-[#193FAA]' : 'bg-white text-[#14306E] ring-1 ring-[#D9E1EE] hover:bg-[#EEF3FD]'}`}
+                className={`mt-5 rounded-md px-4 py-3 text-center text-[15px] font-bold transition ${p.pick ? 'bg-[#1D3461] text-white hover:bg-[#152748]' : 'bg-white text-[#16294D] ring-1 ring-[#DADFE8] hover:bg-[#EFF2F7]'}`}
               >
                 {price == null ? '상담 신청' : '신청하기'}
               </a>
@@ -133,7 +133,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               </dl>
               {p.extras.length > 0 && (
                 <ul className="mt-4 space-y-1.5 text-[13.5px] text-[#3B4048]">
-                  {p.extras.map((x) => <li key={x} className="flex gap-2"><span className="text-[#14306E]" aria-hidden>✓</span>{x}</li>)}
+                  {p.extras.map((x) => <li key={x} className="flex gap-2"><span className="text-[#16294D]" aria-hidden>✓</span>{x}</li>)}
                 </ul>
               )}
             </div>
@@ -144,7 +144,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       <div className="mt-6 rounded-lg bg-white p-6 ring-1 ring-black/5 sm:p-8">
         <p className="text-[16px] font-extrabold">모든 요금제에 기본으로 들어 있습니다</p>
         <ul className="mt-4 grid gap-x-6 gap-y-2.5 text-[14.5px] text-[#3B4048] sm:grid-cols-2 lg:grid-cols-3">
-          {COMMON.map((c) => <li key={c} className="flex gap-2"><span className="font-bold text-[#14306E]" aria-hidden>✓</span>{c}</li>)}
+          {COMMON.map((c) => <li key={c} className="flex gap-2"><span className="font-bold text-[#16294D]" aria-hidden>✓</span>{c}</li>)}
         </ul>
       </div>
 
@@ -165,7 +165,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
         <ul className="mt-5 grid gap-x-6 gap-y-3 text-[14px] sm:grid-cols-2">
           {SETUP_ITEMS.map(([t, d]) => (
             <li key={t} className="flex gap-2.5">
-              <span className="mt-0.5 font-bold text-[#14306E]" aria-hidden>✓</span>
+              <span className="mt-0.5 font-bold text-[#16294D]" aria-hidden>✓</span>
               <span><strong className="font-bold text-[#14171C]">{t}</strong><span className="block text-[13px] leading-snug text-[#5B616B]">{d}</span></span>
             </li>
           ))}
