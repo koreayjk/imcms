@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Link from 'next/link'
-import { PRODUCT, appLink, isProductHost } from '@/lib/product'
+import { ISSUER, PRODUCT, appLink, isProductHost } from '@/lib/product'
 import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, BETA_PERIOD_LABEL, EXTRA_OUTLET_FEE, PLANS, REGULAR_AFTER_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
@@ -639,7 +639,10 @@ export default function ProductHome() {
             <Link href={`${PRODUCT.path}/terms`} className="hover:text-[#0F1115]">이용약관</Link>
             <Link href={`${PRODUCT.path}/privacy`} className="font-semibold text-[#5B616B] hover:text-[#0F1115]">개인정보처리방침</Link>
           </div>
-          <p className="w-full text-[12px] text-[#5B616B]">© {new Date().getFullYear()} {PRODUCT.nameEn}</p>
+          <p className="w-full text-[12px] leading-relaxed text-[#5B616B]">
+            운영: {ISSUER.company ?? PRODUCT.nameEn} · 문의 <a href="mailto:contact@imnewsroom.com" className="underline hover:text-[#0F1115]">contact@imnewsroom.com</a>
+            <br />© {new Date().getFullYear()} {PRODUCT.nameEn}
+          </p>
         </div>
       </footer>
     </div>
