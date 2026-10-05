@@ -57,6 +57,6 @@ export const ISSUER = {
   dba: 'IM Genesis' as string | null,
   bizNo: null as string | null,
   ceo: 'Sang W Lee' as string | null,
-  address: '1608 Hollowhill Dr, Apt 912, Bryan, TX 77802, USA' as string | null,
+  address: '1608 Hollow Hill Dr, Apt 912, Bryan, TX 77802, USA' as string | null,
   contact: 'contact@imnewsroom.com' as string | null,
 }
