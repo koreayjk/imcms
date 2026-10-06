@@ -97,14 +97,15 @@ const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
   { icon: 'receipt', title: '청구서·온라인 결제', body: '국내 카드·카카오페이·네이버페이 결제, 자동결제', color: '#A855F7' },
 ]
 
-// 보안: 실제로 돌아가는 것만 적는다 (편집국 2단계 인증·캡차처럼 아직 없는 것은 넣지 않는다)
-const SECURITY: { icon: Icon; title: string; body: string }[] = [
-  { icon: 'lock', title: '언론사마다 DB에서 잠금', body: '모든 데이터 표에 접근 규칙이 걸려 있습니다. 화면을 우회해 직접 요청해도 다른 언론사의 기사·회원·청구서는 0건으로 나옵니다.' },
-  { icon: 'users', title: '권한은 스스로 못 올립니다', body: '기자가 자기 직급을 편집장·발행인으로 바꾸는 요청은 DB가 거절합니다. 가입도 발행인이 승인해야 편집국에 들어옵니다.' },
-  { icon: 'cloud', title: '패치를 놓칠 서버가 없습니다', body: 'Vercel·Supabase 관리형 클라우드에서 운영해 서버·DB 보안 업데이트가 자동입니다. 두 회사 모두 SOC 2 Type II 보안 감사를 받습니다.' },
-  { icon: 'shield', title: '암호화와 매일 백업', body: '모든 접속은 HTTPS로 암호화되고, 저장된 데이터도 암호화됩니다. DB는 매일 자동으로 백업합니다.' },
-  { icon: 'card', title: '카드 정보는 저희 서버에 오지 않습니다', body: '결제는 Stripe가 처리하고 카드 번호는 Stripe만 보관합니다. 결제 완료 신호는 서명을 확인한 것만 받습니다.' },
-  { icon: 'check', title: '로그인 · 본문 안전장치', body: '이메일 인증 또는 구글 로그인, 유출된 적 있는 비밀번호는 사용 차단. 기사 본문은 허용된 서식만 홈페이지에 나가 악성 코드가 실행되지 않습니다.' },
+// 보안: 언론사 대표가 실제로 하는 걱정에 쉬운 말로 답한다. 실제로 돌아가는 것만 적는다
+//   (편집국 2단계 인증·퇴사자 계정 정지처럼 아직 없는 것은 넣지 않는다)
+const SECURITY: { icon: Icon; worry: string; title: string; body: string }[] = [
+  { icon: 'shield', worry: '홈페이지가 해킹돼 악성코드가 심어지면?', title: '고칠 수 있는 서버 파일이 없습니다', body: '홈페이지는 배포할 때마다 새로 만들어지고 바깥에서 파일을 바꿀 수 없습니다. 기사에는 허용된 서식만 나가서, 본문에 악성 코드를 넣어도 실행되지 않습니다.' },
+  { icon: 'lock', worry: '다른 언론사가 우리 자료를 보면?', title: '언론사마다 따로 잠가 둡니다', body: '기사·회원·청구서 모두 우리 언론사 사람만 열 수 있습니다. 화면을 거치지 않고 직접 요청해도 다른 언론사 자료는 한 건도 나오지 않습니다.' },
+  { icon: 'history', worry: '기사가 날아가면?', title: '매일 백업, 고친 내용은 기록', body: '모든 자료를 매일 자동으로 백업합니다. 발행 뒤 고친 내용은 누가 언제 바꿨는지 남고 되돌릴 수 있으며, 쓰던 글은 자동으로 임시 저장됩니다.' },
+  { icon: 'users', worry: '누가 마음대로 권한을 올리면?', title: '권한은 발행인만 줍니다', body: '기자가 스스로 편집장·발행인이 될 수 없습니다. 새로 가입한 사람도 발행인이 승인해야 편집국에 들어옵니다.' },
+  { icon: 'card', worry: '결제·개인정보가 새면?', title: '카드 정보는 보관하지 않습니다', body: '결제는 세계적인 결제 회사 Stripe가 처리하고 카드 번호는 Stripe만 보관합니다. 모든 접속은 암호화되고, 유출된 적 있는 비밀번호로는 가입할 수 없습니다.' },
+  { icon: 'cloud', worry: '작은 회사 서버를 믿어도 되나?', title: '아마존(AWS) 데이터센터에서 운영', body: '서버를 직접 두지 않고 아마존(AWS) 위의 글로벌 클라우드에서 운영합니다. 서버 보안 업데이트도 자동으로 적용됩니다.' },
 ]
 
 const FAQ = [
@@ -114,7 +115,7 @@ const FAQ = [
   { q: '쓰다가 컴퓨터가 꺼지면 어떻게 되나요?', a: '쓰는 내용은 고칠 때마다 그 브라우저에 자동으로 임시 저장됩니다. 다시 기사쓰기를 열면 쓰던 내용이 그대로 나옵니다. “저장”을 누르면 기사목록에 들어갑니다.' },
   { q: '지금 쓰는 도메인을 그대로 쓸 수 있나요?', a: '네. 도메인을 산 곳에서 연결 주소만 바꾸면 됩니다. 저희가 설정 방법을 안내해 드립니다.' },
   { q: '기존 프로그램에 있는 기사를 옮길 수 있나요?', a: '네. 신청하시면 저희가 직접 옮겨 드립니다. 기존 프로그램에서 내보낼 수 있는 형식에 따라 방법이 달라서, 상담할 때 함께 확인합니다.' },
-  { q: '우리 기사나 회원 정보를 다른 언론사가 볼 수 있나요?', a: '아니요. 여러 언론사가 함께 쓰는 서비스라 이 부분을 가장 먼저 설계했습니다. 화면에서 숨기는 것이 아니라 데이터베이스의 모든 표에 “어느 언론사 사람이 무엇을 볼 수 있는지” 규칙을 걸어, 다른 언론사 사람이 직접 요청해도 기사·회원·청구서가 나오지 않습니다.' },
+  { q: '우리 기사나 회원 정보를 다른 언론사가 볼 수 있나요?', a: '아니요. 여러 언론사가 함께 쓰는 서비스라 이 부분을 가장 먼저 설계했습니다. 화면에서 숨기는 것이 아니라 자료를 저장하는 곳에 “어느 언론사 사람이 무엇을 볼 수 있는지” 규칙을 걸어 두어, 다른 언론사 사람이 직접 요청해도 기사·회원·청구서가 한 건도 나오지 않습니다.' },
   { q: '서버나 프로그램을 설치해야 하나요?', a: '아니요. 웹브라우저에서 로그인해 바로 씁니다. 서버, 백업, 보안 업데이트는 저희가 관리합니다.' },
   { q: '보도자료를 자유롭게 기사로 써도 되나요?', a: '배포처 약관을 따라야 합니다. 예를 들어 뉴스와이어는 언론사가 하루 5건을 넘게 쓰려면 사전 허락이 필요합니다. 보도자료함에 오늘 사용한 건수가 표시됩니다.' },
   { q: '기자 메일로 받은 보도자료도 모을 수 있나요?', a: '네. 기자마다 전용 전달 주소가 생기고, 지메일에서 “보도자료” 메일만 그 주소로 자동 전달하도록 한 번 설정하면 됩니다. 네이버·다음 메일은 자동 전달 기능이 없어 “전달” 버튼으로 보내면 됩니다. 설정 방법은 화면에서 단계별로 안내합니다.' },
@@ -136,7 +137,7 @@ function pricingFaq(beta: boolean) {
   ]
 }
 
-const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인', '언론사별 DB 잠금']
+const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인', '언론사별 자료 잠금']
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
@@ -553,11 +554,11 @@ export default function ProductHome() {
               <Reveal>
                 <Eyebrow icon="lock" color="#A9BDE6">보안</Eyebrow>
                 <h2 className={`mt-5 ${H2}`}>우리 신문 자료는<br />우리 신문만 봅니다.</h2>
-                <p className="mt-5 max-w-[34em] text-[17px] leading-[1.8] text-[#C5CFE0]">여러 언론사가 함께 쓰는 서비스에서 가장 중요한 질문은 하나입니다. “다른 언론사가 우리 기사와 회원 정보를 볼 수 있는가.” {PRODUCT.name}은 이것을 화면이 아니라 데이터베이스에서부터 막습니다.</p>
+                <p className="mt-5 max-w-[34em] text-[17px] leading-[1.8] text-[#C5CFE0]">여러 언론사가 함께 쓰는 서비스에서 가장 중요한 질문은 하나입니다. “다른 언론사가 우리 기사와 회원 정보를 볼 수 있는가.” {PRODUCT.name}은 이것을 화면에서 숨기는 게 아니라 자료를 저장하는 곳에서부터 막습니다.</p>
                 <dl className="mt-8 grid max-w-[30em] grid-cols-3 gap-4 border-t border-white/15 pt-6">
                   {[
-                    { k: '데이터 위치', v: '도쿄 리전' },
-                    { k: '접속', v: 'HTTPS 암호화' },
+                    { k: '서버', v: '아마존 AWS' },
+                    { k: '접속', v: '모두 암호화' },
                     { k: '백업', v: '매일 자동' },
                   ].map((x) => (
                     <div key={x.k}>
@@ -570,7 +571,7 @@ export default function ProductHome() {
               <Reveal delay={150}>
                 {/* 접근 규칙이 실제로 하는 일 */}
                 <div className="rounded-xl bg-white/[0.04] p-5 ring-1 ring-white/10 sm:p-6">
-                  <p className="text-[12.5px] font-semibold tracking-[0.06em] text-[#8FA3C7]">DB 접근 규칙이 하는 일</p>
+                  <p className="text-[12.5px] font-semibold tracking-[0.06em] text-[#8FA3C7]">실제로 막히는 모습</p>
                   <ul className="mt-4 divide-y divide-white/10">
                     {[
                       { who: 'A신문 편집장', what: 'A신문 기사 목록', ok: true, res: '보임' },
@@ -589,7 +590,7 @@ export default function ProductHome() {
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-3 text-[12.5px] leading-relaxed text-[#8FA3C7]">화면을 거치지 않고 DB에 직접 요청해도 같은 결과입니다. 그룹 간 차단은 시나리오별로 시험한 뒤 반영합니다.</p>
+                  <p className="mt-3 text-[12.5px] leading-relaxed text-[#8FA3C7]">화면을 거치지 않고 직접 요청해도 같은 결과입니다. 기능을 바꿀 때마다 이런 경우를 하나씩 시험합니다.</p>
                 </div>
               </Reveal>
             </div>
@@ -598,16 +599,18 @@ export default function ProductHome() {
               {SECURITY.map((f, i) => (
                 <Reveal key={f.title} delay={(i % 3) * 80}>
                   <div className="h-full rounded-lg bg-white/[0.04] p-6 ring-1 ring-white/10">
-                    <span className="grid h-11 w-11 place-items-center rounded-md border border-white/15 text-[#A9BDE6]">
-                      <Glyph name={f.icon} className="h-[22px] w-[22px]" />
-                    </span>
-                    <p className="mt-5 text-[17px] font-bold">{f.title}</p>
-                    <p className="mt-1.5 text-[14px] leading-relaxed text-[#C5CFE0]">{f.body}</p>
+                    <p className="flex items-center gap-2.5 text-[14px] text-[#8FA3C7]">
+                      <Glyph name={f.icon} className="h-[18px] w-[18px] shrink-0 text-[#A9BDE6]" />
+                      “{f.worry}”
+                    </p>
+                    <p className="mt-4 text-[18px] font-bold leading-snug">{f.title}</p>
+                    <p className="mt-2 text-[14.5px] leading-relaxed text-[#C5CFE0]">{f.body}</p>
                   </div>
                 </Reveal>
               ))}
             </div>
-            <p className="mt-10 text-center text-[13.5px] text-[#8FA3C7]">보안 점검 자료가 필요하시면 <a href={`mailto:${ISSUER.contact}`} className="font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">{ISSUER.contact}</a>로 문의해 주세요.</p>
+            <p className="mx-auto mt-10 max-w-[52em] text-center text-[12.5px] leading-relaxed text-[#6F83A8]">기술 정보 — Vercel·Supabase(AWS 기반, SOC 2 Type II 보안 감사), 모든 접속 HTTPS(TLS), 저장 데이터 암호화, 데이터베이스 행 단위 접근 규칙(RLS), 카드 결제 Stripe(PCI DSS)</p>
+            <p className="mt-3 text-center text-[13.5px] text-[#8FA3C7]">보안 점검 자료가 필요하시면 <a href={`mailto:${ISSUER.contact}`} className="font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">{ISSUER.contact}</a>로 문의해 주세요.</p>
           </div>
         </section>
 
