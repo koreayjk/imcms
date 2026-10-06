@@ -61,6 +61,8 @@ const ICONS = {
   shield: <path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z" />,
   link: <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />,
   scale: <path d="M12 4v16M7 20h10M4 8h16M6 8l-3 6a3 3 0 0 0 6 0L6 8ZM18 8l-3 6a3 3 0 0 0 6 0l-3-6Z" />,
+  lock: <><rect x="4.5" y="10.5" width="15" height="10" rx="2" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3M12 14.5v2.5" /></>,
+  card: <><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h4" /></>,
 }
 
 function Glyph({ name, className = '' }: { name: Icon; className?: string }) {
@@ -95,6 +97,16 @@ const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
   { icon: 'receipt', title: '청구서·온라인 결제', body: '국내 카드·카카오페이·네이버페이 결제, 자동결제', color: '#A855F7' },
 ]
 
+// 보안: 실제로 돌아가는 것만 적는다 (편집국 2단계 인증·캡차처럼 아직 없는 것은 넣지 않는다)
+const SECURITY: { icon: Icon; title: string; body: string }[] = [
+  { icon: 'lock', title: '언론사마다 DB에서 잠금', body: '모든 데이터 표에 접근 규칙이 걸려 있습니다. 화면을 우회해 직접 요청해도 다른 언론사의 기사·회원·청구서는 0건으로 나옵니다.' },
+  { icon: 'users', title: '권한은 스스로 못 올립니다', body: '기자가 자기 직급을 편집장·발행인으로 바꾸는 요청은 DB가 거절합니다. 가입도 발행인이 승인해야 편집국에 들어옵니다.' },
+  { icon: 'cloud', title: '패치를 놓칠 서버가 없습니다', body: 'Vercel·Supabase 관리형 클라우드에서 운영해 서버·DB 보안 업데이트가 자동입니다. 두 회사 모두 SOC 2 Type II 보안 감사를 받습니다.' },
+  { icon: 'shield', title: '암호화와 매일 백업', body: '모든 접속은 HTTPS로 암호화되고, 저장된 데이터도 암호화됩니다. DB는 매일 자동으로 백업합니다.' },
+  { icon: 'card', title: '카드 정보는 저희 서버에 오지 않습니다', body: '결제는 Stripe가 처리하고 카드 번호는 Stripe만 보관합니다. 결제 완료 신호는 서명을 확인한 것만 받습니다.' },
+  { icon: 'check', title: '로그인 · 본문 안전장치', body: '이메일 인증 또는 구글 로그인, 유출된 적 있는 비밀번호는 사용 차단. 기사 본문은 허용된 서식만 홈페이지에 나가 악성 코드가 실행되지 않습니다.' },
+]
+
 const FAQ = [
   { q: 'AI가 쓴 기사가 그대로 홈페이지에 올라가나요?', a: '아니요. AI 초안은 항상 ‘작성중’ 상태로 저장되고, 기자가 원문과 대조해 고친 뒤에만 발행됩니다. AI가 확인이 필요하다고 본 부분은 편집 화면에 메모로 표시됩니다.' },
   { q: 'AI가 법적인 문제도 봐 주나요?', a: '네. 기사쓰기에서 “AI 검수”를 누르면 명예훼손·모욕, 개인정보·초상권, 저작권(도용), 기사형 광고 등 문제가 될 수 있는 문장을 찾아 이유와 고칠 문장을 보여 줍니다. 항목마다 바꿀지 그대로 둘지 고르면 바로 반영되고, 검수 기록은 편집장 승인 화면에도 남습니다. 참고용 점검이며 법률 자문은 아닙니다.' },
@@ -102,6 +114,7 @@ const FAQ = [
   { q: '쓰다가 컴퓨터가 꺼지면 어떻게 되나요?', a: '쓰는 내용은 고칠 때마다 그 브라우저에 자동으로 임시 저장됩니다. 다시 기사쓰기를 열면 쓰던 내용이 그대로 나옵니다. “저장”을 누르면 기사목록에 들어갑니다.' },
   { q: '지금 쓰는 도메인을 그대로 쓸 수 있나요?', a: '네. 도메인을 산 곳에서 연결 주소만 바꾸면 됩니다. 저희가 설정 방법을 안내해 드립니다.' },
   { q: '기존 프로그램에 있는 기사를 옮길 수 있나요?', a: '네. 신청하시면 저희가 직접 옮겨 드립니다. 기존 프로그램에서 내보낼 수 있는 형식에 따라 방법이 달라서, 상담할 때 함께 확인합니다.' },
+  { q: '우리 기사나 회원 정보를 다른 언론사가 볼 수 있나요?', a: '아니요. 여러 언론사가 함께 쓰는 서비스라 이 부분을 가장 먼저 설계했습니다. 화면에서 숨기는 것이 아니라 데이터베이스의 모든 표에 “어느 언론사 사람이 무엇을 볼 수 있는지” 규칙을 걸어, 다른 언론사 사람이 직접 요청해도 기사·회원·청구서가 나오지 않습니다.' },
   { q: '서버나 프로그램을 설치해야 하나요?', a: '아니요. 웹브라우저에서 로그인해 바로 씁니다. 서버, 백업, 보안 업데이트는 저희가 관리합니다.' },
   { q: '보도자료를 자유롭게 기사로 써도 되나요?', a: '배포처 약관을 따라야 합니다. 예를 들어 뉴스와이어는 언론사가 하루 5건을 넘게 쓰려면 사전 허락이 필요합니다. 보도자료함에 오늘 사용한 건수가 표시됩니다.' },
   { q: '기자 메일로 받은 보도자료도 모을 수 있나요?', a: '네. 기자마다 전용 전달 주소가 생기고, 지메일에서 “보도자료” 메일만 그 주소로 자동 전달하도록 한 번 설정하면 됩니다. 네이버·다음 메일은 자동 전달 기능이 없어 “전달” 버튼으로 보내면 됩니다. 설정 방법은 화면에서 단계별로 안내합니다.' },
@@ -123,7 +136,7 @@ function pricingFaq(beta: boolean) {
   ]
 }
 
-const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인']
+const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인', '언론사별 DB 잠금']
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
@@ -193,7 +206,7 @@ export default function ProductHome() {
       <header className="fixed inset-x-0 top-0 z-40 border-b border-[#DADFE8] bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-4 sm:px-6">
           <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo /></a>
-          <nav className="ml-auto hidden items-center gap-7 text-[14px] text-[#5B616B] md:flex" aria-label="소개 메뉴">
+          <nav className="ml-auto hidden items-center gap-5 whitespace-nowrap text-[14px] text-[#5B616B] lg:flex xl:gap-7" aria-label="소개 메뉴">
             <a href="#multi" className="hover:text-[#0F1115]">여러 매체</a>
             <a href="#team" className="hover:text-[#0F1115]">권한</a>
             <a href="#ai" className="hover:text-[#0F1115]">AI 초안</a>
@@ -201,10 +214,11 @@ export default function ProductHome() {
             <a href="#support" className="hover:text-[#0F1115]">고객센터</a>
             <a href="#vertical" className="hover:text-[#0F1115]">전문지</a>
             <a href="#showcase" className="hover:text-[#0F1115]">디자인</a>
+            <a href="#security" className="hover:text-[#0F1115]">보안</a>
             <a href="#pricing" className="hover:text-[#0F1115]">요금</a>
             {beta && <a href="#beta" className="hover:text-[#0F1115]">베타 혜택</a>}
           </nav>
-          <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <div className="ml-auto flex items-center gap-2 whitespace-nowrap lg:ml-0">
             <Link href={appLink('/login')} className="hidden rounded-md px-3 py-2 text-[13.5px] text-[#5B616B] hover:text-[#0F1115] sm:block">편집국 로그인</Link>
             <a href="#apply" className="hidden rounded-md border border-[#DADFE8] bg-white px-3.5 py-2 text-[13.5px] font-semibold text-[#16294D] hover:bg-[#EFF2F7] sm:block">서비스 신청</a>
             <TrialButton className="rounded-md bg-[#1D3461] px-4 py-2 text-[13.5px] font-bold text-white hover:bg-[#152748]">1주일 무료 체험</TrialButton>
@@ -529,6 +543,71 @@ export default function ProductHome() {
                 매일 쓰면서 불편한 점을 먼저 고치니, 현장에서 필요한 기능이 먼저 들어갑니다.
               </p>
             </Reveal>
+          </div>
+        </section>
+
+        {/* ─── 보안 ─── */}
+        <section id="security" className="relative isolate scroll-mt-16 overflow-hidden bg-[#121F3A] text-white">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+            <div className="grid items-center gap-14 lg:grid-cols-[1fr_1fr]">
+              <Reveal>
+                <Eyebrow icon="lock" color="#A9BDE6">보안</Eyebrow>
+                <h2 className={`mt-5 ${H2}`}>우리 신문 자료는<br />우리 신문만 봅니다.</h2>
+                <p className="mt-5 max-w-[34em] text-[17px] leading-[1.8] text-[#C5CFE0]">여러 언론사가 함께 쓰는 서비스에서 가장 중요한 질문은 하나입니다. “다른 언론사가 우리 기사와 회원 정보를 볼 수 있는가.” {PRODUCT.name}은 이것을 화면이 아니라 데이터베이스에서부터 막습니다.</p>
+                <dl className="mt-8 grid max-w-[30em] grid-cols-3 gap-4 border-t border-white/15 pt-6">
+                  {[
+                    { k: '데이터 위치', v: '도쿄 리전' },
+                    { k: '접속', v: 'HTTPS 암호화' },
+                    { k: '백업', v: '매일 자동' },
+                  ].map((x) => (
+                    <div key={x.k}>
+                      <dt className="text-[12.5px] text-[#8FA3C7]">{x.k}</dt>
+                      <dd className="mt-1 text-[16px] font-bold">{x.v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Reveal>
+              <Reveal delay={150}>
+                {/* 접근 규칙이 실제로 하는 일 */}
+                <div className="rounded-xl bg-white/[0.04] p-5 ring-1 ring-white/10 sm:p-6">
+                  <p className="text-[12.5px] font-semibold tracking-[0.06em] text-[#8FA3C7]">DB 접근 규칙이 하는 일</p>
+                  <ul className="mt-4 divide-y divide-white/10">
+                    {[
+                      { who: 'A신문 편집장', what: 'A신문 기사 목록', ok: true, res: '보임' },
+                      { who: 'A신문 기자', what: '내 직급을 편집장으로 변경', ok: false, res: '거절' },
+                      { who: 'B신문 기자', what: 'A신문 회원 명단', ok: false, res: '0건' },
+                      { who: 'B신문 발행인', what: 'A신문 청구서', ok: false, res: '0건' },
+                    ].map((r) => (
+                      <li key={r.who + r.what} className="flex items-center gap-3 py-3.5">
+                        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[13px] font-bold ${r.ok ? 'bg-[#1F9D6B]/20 text-[#5FD3A2]' : 'bg-[#E5483A]/15 text-[#FF8A7E]'}`} aria-hidden>{r.ok ? '✓' : '✕'}</span>
+                        <span className="min-w-0 flex-1 text-[14.5px] leading-snug">
+                          <span className="font-semibold">{r.who}</span>
+                          <span className="text-[#8FA3C7]"> → </span>
+                          <span className="text-[#C5CFE0]">{r.what}</span>
+                        </span>
+                        <span className={`shrink-0 rounded px-2 py-0.5 text-[12.5px] font-bold ${r.ok ? 'bg-[#1F9D6B]/20 text-[#5FD3A2]' : 'bg-[#E5483A]/15 text-[#FF8A7E]'}`}>{r.res}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-[12.5px] leading-relaxed text-[#8FA3C7]">화면을 거치지 않고 DB에 직접 요청해도 같은 결과입니다. 그룹 간 차단은 시나리오별로 시험한 뒤 반영합니다.</p>
+                </div>
+              </Reveal>
+            </div>
+
+            <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {SECURITY.map((f, i) => (
+                <Reveal key={f.title} delay={(i % 3) * 80}>
+                  <div className="h-full rounded-lg bg-white/[0.04] p-6 ring-1 ring-white/10">
+                    <span className="grid h-11 w-11 place-items-center rounded-md border border-white/15 text-[#A9BDE6]">
+                      <Glyph name={f.icon} className="h-[22px] w-[22px]" />
+                    </span>
+                    <p className="mt-5 text-[17px] font-bold">{f.title}</p>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-[#C5CFE0]">{f.body}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+            <p className="mt-10 text-center text-[13.5px] text-[#8FA3C7]">보안 점검 자료가 필요하시면 <a href={`mailto:${ISSUER.contact}`} className="font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">{ISSUER.contact}</a>로 문의해 주세요.</p>
           </div>
         </section>
 
