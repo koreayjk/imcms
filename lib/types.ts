@@ -15,6 +15,8 @@ export interface Profile {
   // 가입 때 고른 소속 매체 (승인 전, signup-outlet.sql)
   requested_outlet_id?: string | null
   publisher_id?: string | null
+  // 출입 정지된 때 (퇴사자 등, account-security.sql)
+  suspended_at?: string | null
 }
 
 export interface Outlet {

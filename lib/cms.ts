@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from './supabase-server'
 import type { UserRole } from './types'
+import { hasVerifiedFactor, mfaExpired, mfaSession } from './mfa'
 
 // 한 번의 요청 안에서는 레이아웃과 페이지가 같은 결과를 나눠 쓴다 (로그인 확인·회원 정보 조회를 두 번 하지 않도록)
 export const getCmsContext = cache(async function getCmsContext() {
@@ -37,6 +38,20 @@ export const getCmsContext = cache(async function getCmsContext() {
   const outletId = staffPick && /^[0-9a-f-]{36}$/.test(staffPick)
     ? staffPick
     : ((profile?.outlet_id as string | null) ?? null)
+
+  // 2단계 인증 (account-security.sql): 코드를 넣은 지 오래됐으면 다시 묻고, 필수인데 아직 안 켰으면 등록 화면으로
+  //   필수 = 총관리자·매니저, 발행인이 필수로 정한 그룹의 발행인·편집장 (SQL 실행 전이면 아무것도 바뀌지 않는다)
+  if (!trial) {
+    if (hasVerifiedFactor(user)) {
+      const { data: { session } } = await supabase.auth.getSession()
+      const m = mfaSession(session?.access_token)
+      if (!m.aal2) redirect('/login/mfa')
+      if (mfaExpired(m.verifiedAt, isStaff)) redirect('/login/mfa?again=1')
+    } else if (isStaff || role === 'admin' || role === 'editor') {
+      const { data: required } = await supabase.rpc('my_mfa_required')
+      if (required === true) redirect('/login/mfa/setup?required=1')
+    }
+  }
 
   return {
     supabase,

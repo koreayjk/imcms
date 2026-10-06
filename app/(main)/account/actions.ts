@@ -51,3 +51,13 @@ export async function setEmailNotify(on: boolean): Promise<{ error?: string }> {
   revalidatePath('/account')
   return {}
 }
+
+// 발행인: 우리 그룹 발행인·편집장 2단계 인증 필수 (account-security.sql)
+export async function setGroupRequireMfa(on: boolean): Promise<{ error?: string }> {
+  const { supabase, isGroupAdmin } = await getCmsContext()
+  if (!isGroupAdmin) return { error: '발행인만 바꿀 수 있습니다.' }
+  const { error } = await supabase.rpc('set_group_require_mfa', { on_off: on })
+  if (error) return { error: /set_group_require_mfa/.test(error.message) ? '2단계 인증 설정을 쓰려면 account-security.sql을 실행해 주세요.' : error.message }
+  revalidatePath('/account')
+  return {}
+}

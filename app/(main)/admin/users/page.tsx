@@ -52,6 +52,9 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
     // 매체별 소속·직급 (outlet-members.sql 전이면 오류 → 예전처럼 매체 하나)
     supabase.from('outlet_members').select('profile_id, outlet_id, role').order('created_at'),
   ])
+  // 회원별 2단계 인증 여부 (account-security.sql 전이면 오류 → 출입 정지·초기화 버튼을 숨긴다)
+  const mfaRes = await supabase.rpc('admin_member_mfa')
+  const mfa = mfaRes.error ? null : Object.fromEntries(((mfaRes.data ?? []) as { id: string; mfa: boolean }[]).map((r) => [r.id, r.mfa]))
   // 매니저의 담당 매체 (총관리자만, staff-outlets.sql 전이면 오류 → 정하기 버튼을 숨긴다)
   const staffRes = isSuper ? await supabase.from('staff_outlets').select('staff_id, outlet_id') : { data: [], error: null }
   const staffReady = isSuper && !staffRes.error
@@ -97,6 +100,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
         <p className="mt-1 text-[13px] text-muted">
           {isSuper ? '모든 그룹의 회원과 가입 신청을 관리합니다.' : '우리 그룹 회원의 역할과 매체를 정하고, 새 기자를 초대합니다.'}
           {' '}기자 = 자기 기사 · 편집장 = 자기 매체 · 발행인 = 그룹의 모든 매체. 기자·편집장은 그룹 안 여러 매체에 소속되고 매체마다 직급을 따로 가질 수 있습니다.
+          {' '}퇴사한 사람은 <strong>출입 정지</strong>로 바로 막을 수 있고(쓴 기사는 남음), 휴대폰을 잃어버린 회원은 <strong>2단계 초기화</strong>로 인증 앱을 새로 등록하게 합니다.
         </p>
       </header>
 
@@ -192,7 +196,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
       {sections.map((s) => (
         <section key={s.key}>
           <h2 className="mb-2 text-[15px] font-bold">{s.title} <span className="text-[12.5px] font-normal text-muted">{s.list.length}명</span></h2>
-          <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} memberships={membershipsReady ? memberships : null} canDelete={isSuper} />
+          <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} memberships={membershipsReady ? memberships : null} canDelete={isSuper} mfa={mfa} viewerIsSuper={isSuper} />
         </section>
       ))}
     </div>

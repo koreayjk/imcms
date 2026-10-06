@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { APP_PATHS, PRODUCT, isAppHost, isProductHost } from '@/lib/product'
 import { isGdpaHost } from '@/lib/gdpa'
+import { hasVerifiedFactor, mfaSession } from '@/lib/mfa'
 
 // 로그인 없이 볼 수 있는 공개 경로
 function isPublicPath(pathname: string) {
@@ -122,6 +123,20 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
+  }
+
+  // 2단계 인증을 켠 사람이 아직 6자리 코드를 안 넣었으면 코드 입력 화면으로 (DB도 코드 전에는 자료를 주지 않는다)
+  if (user && !isPublicPath(pathname) && !pathname.startsWith('/api/') && hasVerifiedFactor(user)) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!mfaSession(session?.access_token).aal2) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login/mfa'
+      url.search = `?next=${encodeURIComponent(request.nextUrl.pathname + request.nextUrl.search)}`
+      const res = NextResponse.redirect(url)
+      // 방금 새로 받은 로그인 쿠키를 잃지 않게 옮겨 담는다
+      supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c))
+      return res
+    }
   }
 
   // 로그인 상태에서 /login 접근 → CMS로

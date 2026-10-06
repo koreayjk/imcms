@@ -158,3 +158,22 @@ export async function deleteMember(id: string): Promise<FormState> {
   revalidatePath('/', 'layout')
   return { ok: '탈퇴 처리했습니다.' }
 }
+
+// 출입 정지 · 해제 (퇴사자 등, account-security.sql). 발행인은 우리 그룹 기자·편집장, 총관리자는 모두 (DB가 확인한다)
+//   정지하면 바로 편집국과 DB 자료를 못 연다. 쓴 기사는 기자명 그대로 남는다
+export async function suspendMember(id: string, suspend: boolean): Promise<FormState> {
+  const { supabase } = await groupContext()
+  const { error } = await supabase.rpc('admin_suspend_user', { target: id, suspend })
+  if (error) return { error: /admin_suspend_user/.test(error.message) ? '출입 정지를 쓰려면 account-security.sql을 실행해 주세요.' : error.message }
+  revalidatePath('/admin/users')
+  return { ok: suspend ? '출입을 정지했습니다.' : '정지를 풀었습니다.' }
+}
+
+// 2단계 인증 초기화 (휴대폰을 잃어버린 회원). 다음 로그인 때 인증 앱을 새로 등록한다
+export async function resetMemberMfa(id: string): Promise<FormState> {
+  const { supabase } = await groupContext()
+  const { error } = await supabase.rpc('admin_reset_mfa', { target: id })
+  if (error) return { error: /admin_reset_mfa/.test(error.message) ? '2단계 인증을 쓰려면 account-security.sql을 실행해 주세요.' : error.message }
+  revalidatePath('/admin/users')
+  return { ok: '2단계 인증을 초기화했습니다.' }
+}

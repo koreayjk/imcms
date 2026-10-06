@@ -13,6 +13,23 @@ export default async function PendingPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // 출입 정지된 계정 (account-security.sql): 자기 회원 정보도 못 읽으므로 따로 묻는다
+  const { data: suspended } = await supabase.rpc('am_i_suspended')
+  if (suspended === true) {
+    return (
+      <AuthShell subtitle="편집국 출입 정지">
+        <div className="rounded-lg border border-line bg-white px-6 py-7 text-center">
+          <p className="text-[15px] font-semibold">이 계정은 편집국 출입이 정지되었습니다</p>
+          <p className="mt-3 text-[13px] leading-relaxed text-muted">
+            {user.email}<br />
+            발행인이 출입을 정지해 기사와 편집국 자료를 열 수 없습니다. 다시 쓰려면 소속 언론사 발행인에게 문의해 주세요.
+          </p>
+          <div className="mt-5 flex justify-center"><SignOutButton /></div>
+        </div>
+      </AuthShell>
+    )
+  }
+
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
   if (isApproved(profile)) redirect('/newsroom')
 

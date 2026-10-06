@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
-import { deleteMember, inviteMember, setMember, setMemberships, type FormState, type Membership } from '@/app/(main)/admin/users/actions'
+import { deleteMember, inviteMember, resetMemberMfa, setMember, setMemberships, suspendMember, type FormState, type Membership } from '@/app/(main)/admin/users/actions'
 import type { Profile, UserRole } from '@/lib/types'
 import { ROLE_LABEL } from '@/lib/types'
 import PendingButton from './cms/PendingButton'
@@ -48,10 +48,13 @@ export function InviteForm({ outlets }: { outlets: OutletOption[] }) {
 
 type Kind = 'member' | 'admin'
 
-function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete }: {
+function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete, mfa, viewerIsSuper }: {
   u: Profile; email?: string; outlets: OutletOption[]; isMe: boolean; groupName: string | null
   // 총관리자만: 회원 탈퇴(계정 삭제)
   canDelete: boolean
+  // 2단계 인증을 켰는가 (account-security.sql 전이면 undefined)
+  mfa?: boolean
+  viewerIsSuper: boolean
   // null이면 outlet-members.sql 전: 예전처럼 직급 하나 + 매체 하나
   memberships: Membership[] | null
 }) {
@@ -68,6 +71,18 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete 
   const [pending, start] = useTransition()
   const multi = memberships !== null
   const locked = isMe || !!u.is_super || !!u.is_staff
+  // 출입 정지·2단계 인증 초기화: 발행인은 우리 그룹 기자·편집장, 총관리자는 모두 (DB가 한 번 더 확인)
+  const canGuard = mfa !== undefined && !isMe && !u.is_super && (viewerIsSuper || (!u.is_staff && u.role !== 'admin'))
+  const suspended = !!u.suspended_at
+
+  function guard(run: () => Promise<FormState>, question: string) {
+    if (!window.confirm(question)) return
+    start(async () => {
+      const r = await run()
+      setMsg(r)
+      if (!r.error) router.refresh()
+    })
+  }
 
   const sameItems = JSON.stringify(items) === JSON.stringify(initialItems)
   const dirty = name !== u.full_name || (multi
@@ -97,6 +112,8 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete 
         {isMe && <span className="ml-1 text-xs text-muted">(나)</span>}
         {u.is_super && <span className="ml-1 rounded bg-[#E5483A] px-1 text-[10.5px] font-bold text-white">총관리자</span>}
         {u.is_staff && !u.is_super && <span className="ml-1 rounded bg-[#2F6BF0] px-1 text-[10.5px] font-bold text-white">매니저</span>}
+        {suspended && <span className="ml-1 rounded bg-danger px-1 text-[10.5px] font-bold text-white">출입 정지</span>}
+        {mfa && <span title="2단계 인증 켬" className="ml-1 rounded bg-published/10 px-1 text-[10.5px] font-bold text-published">2단계</span>}
         {email && <span className="block pl-1.5 text-xs text-muted">{email}</span>}
       </td>
       <td className="py-2.5 pr-2">
@@ -162,6 +179,31 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete 
             {pending ? '저장 중…' : '저장'}
           </button>
         )}
+        {canGuard && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => guard(
+              () => suspendMember(u.id, !suspended),
+              suspended
+                ? `${u.full_name}님의 출입 정지를 풀까요? 다시 편집국을 쓸 수 있게 됩니다.`
+                : `${u.full_name}님의 편집국 출입을 정지할까요?\n\n· 바로 편집국과 기사·자료를 열 수 없게 됩니다 (자기 기사 수정·삭제 포함).\n· 쓴 기사는 기자명 그대로 남습니다.\n· 언제든 정지를 풀 수 있습니다.`,
+            )}
+            className={`mt-1 block w-full text-right text-[11.5px] ${suspended ? 'font-semibold text-review' : 'text-muted hover:text-danger'}`}
+          >
+            {suspended ? '정지 풀기' : '출입 정지'}
+          </button>
+        )}
+        {canGuard && mfa && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => guard(() => resetMemberMfa(u.id), `${u.full_name}님의 2단계 인증을 초기화할까요?\n\n휴대폰을 잃어버렸을 때 씁니다. 다음 로그인 때 인증 앱을 새로 등록합니다. 본인이 맞는지 꼭 확인하세요.`)}
+            className="mt-1 block w-full whitespace-nowrap text-right text-[11.5px] text-muted hover:text-danger"
+          >
+            2단계 초기화
+          </button>
+        )}
         {canDelete && !isMe && !u.is_super && (
           <button
             type="button"
@@ -180,12 +222,13 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete 
           </button>
         )}
         {msg.error && <span role="alert" className="block text-[11.5px] text-danger">{msg.error}</span>}
+        {msg.ok && !msg.error && !dirty && <span role="status" className="block text-[11.5px] text-published">{msg.ok}</span>}
       </td>
     </tr>
   )
 }
 
-export default function UserManager({ users, outlets, currentUserId, emails = {}, groupOf = {}, memberships = null, canDelete = false }: {
+export default function UserManager({ users, outlets, currentUserId, emails = {}, groupOf = {}, memberships = null, canDelete = false, mfa = null, viewerIsSuper = false }: {
   users: Profile[]
   outlets: OutletOption[]
   currentUserId: string
@@ -193,6 +236,9 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
   groupOf?: Record<string, string | null>
   memberships?: Record<string, Membership[]> | null
   canDelete?: boolean
+  // 회원별 2단계 인증 여부 (account-security.sql 전이면 null → 정지·초기화 버튼을 숨긴다)
+  mfa?: Record<string, boolean> | null
+  viewerIsSuper?: boolean
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-line bg-white px-5">
@@ -203,12 +249,12 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
             <th className="w-36 py-2.5 font-normal">직급</th>
             <th className="w-72 py-2.5 font-normal">{memberships ? '소속 매체 · 매체별 직급' : '매체'}</th>
             <th className="w-24 py-2.5 font-normal">가입일</th>
-            <th className="w-20" />
+            <th className="w-24" />
           </tr>
         </thead>
         <tbody>
           {users.map((u) => (
-            <MemberRow key={u.id} u={u} email={emails[u.id]} outlets={outlets} isMe={u.id === currentUserId} groupName={groupOf[u.id] ?? null} memberships={memberships ? memberships[u.id] ?? [] : null} canDelete={canDelete} />
+            <MemberRow key={u.id} u={u} email={emails[u.id]} outlets={outlets} isMe={u.id === currentUserId} groupName={groupOf[u.id] ?? null} memberships={memberships ? memberships[u.id] ?? [] : null} canDelete={canDelete} mfa={mfa ? !!mfa[u.id] : undefined} viewerIsSuper={viewerIsSuper} />
           ))}
           {!users.length && (
             <tr><td colSpan={5} className="py-10 text-center text-sm text-muted">회원이 없습니다.</td></tr>
