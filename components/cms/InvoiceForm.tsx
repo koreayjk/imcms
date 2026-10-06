@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, useActionState } from 'react'
 import { invoiceDraft, saveInvoice, type FormState } from '@/app/(main)/support/actions'
-import { invoiceTotals, won, type InvoiceItem } from '@/lib/support'
+import { TAX_NOTE, invoiceTotals, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from './PendingButton'
 
 export default function InvoiceForm({ outlets }: { outlets: { id: string; name: string }[] }) {
@@ -58,7 +58,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       <table className="w-full min-w-[560px] text-[14px]">
         <thead>
           <tr className="border-b border-line text-left text-[12.5px] text-muted">
-            <th className="py-2 font-medium">항목</th><th className="w-20 py-2 font-medium">수량</th><th className="w-36 py-2 font-medium">단가(원, VAT 포함)</th><th className="w-32 py-2 text-right font-medium">금액</th><th className="w-8" />
+            <th className="py-2 font-medium">항목</th><th className="w-20 py-2 font-medium">수량</th><th className="w-36 py-2 font-medium">단가(원)</th><th className="w-32 py-2 text-right font-medium">금액</th><th className="w-8" />
           </tr>
         </thead>
         <tbody>
@@ -77,9 +77,8 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       <button type="button" onClick={() => { setEdited(true); setItems([...items, { name: '', qty: 1, unit_price: 0 }]) }} className="text-[13px] font-semibold text-[#2F6BF0]">+ 항목 추가</button>
 
       <dl className="ml-auto w-64 space-y-1 text-[14px] tabular-nums">
-        <div className="flex justify-between text-[16px] font-bold"><dt>합계 (VAT 포함)</dt><dd>{won(t.total)}</dd></div>
-        <div className="flex justify-between border-t border-line pt-1 text-[12.5px] text-muted"><dt>공급가액</dt><dd>{won(t.supply)}</dd></div>
-        <div className="flex justify-between text-[12.5px] text-muted"><dt>부가세</dt><dd>{won(t.vat)}</dd></div>
+        <div className="flex justify-between text-[16px] font-bold"><dt>합계</dt><dd>{won(t.total)}</dd></div>
+        <p className="text-right text-[12px] text-muted">{TAX_NOTE}</p>
       </dl>
 
       <div>

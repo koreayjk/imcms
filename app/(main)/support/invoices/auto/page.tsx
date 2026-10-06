@@ -52,7 +52,7 @@ export default async function AutoBillingPage(props: Props) {
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
           자동 청구를 켠 매체는 <strong className="text-ink">매월 1일</strong>에 청구서가 만들어지고 안내 메일이 나갑니다. 납부 기한은 <strong className="text-ink">5일</strong>이고,
           자동결제를 등록한 매체는 발행 7일 뒤(8일) 오전 10시에 결제됩니다. 기한이 지나면 다음 날 미납 안내가 가고, <strong className="text-ink">10일까지</strong> 내지 않으면
-          11일부터 그 매체(와 추가 매체)의 편집국 이용이 제한됩니다. 결제하면 바로 풀립니다. 연체료는 없고, 모든 금액은 부가세 포함입니다.
+          11일부터 그 매체(와 추가 매체)의 편집국 이용이 제한됩니다. 결제하면 바로 풀립니다. 연체료는 없고, 해외 법인(미국) 공급이라 한국 부가세는 붙지 않습니다.
         </p>
       </div>
 

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime } from '@/lib/format'
 import { ISSUER, PRODUCT } from '@/lib/product'
-import { monthLabel, won, type InvoiceItem } from '@/lib/support'
+import { TAX_NOTE, monthLabel, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import PrintButton from '@/components/cms/PrintButton'
 import { deleteInvoice, setInvoicePaid } from '../../actions'
@@ -89,7 +89,7 @@ export default async function InvoicePage(
         <table className="mt-8 w-full min-w-[480px] text-[14px]">
           <thead>
             <tr className="border-y border-ink/80 bg-[#F8F9FA] text-left text-[12.5px]">
-              <th className="px-3 py-2.5 font-semibold">항목</th><th className="w-20 px-3 py-2.5 text-right font-semibold">수량</th><th className="w-32 px-3 py-2.5 text-right font-semibold">단가 (VAT 포함)</th><th className="w-36 px-3 py-2.5 text-right font-semibold">금액</th>
+              <th className="px-3 py-2.5 font-semibold">항목</th><th className="w-20 px-3 py-2.5 text-right font-semibold">수량</th><th className="w-32 px-3 py-2.5 text-right font-semibold">단가</th><th className="w-36 px-3 py-2.5 text-right font-semibold">금액</th>
             </tr>
           </thead>
           <tbody className="tabular-nums">
@@ -103,10 +103,8 @@ export default async function InvoicePage(
         </div>
 
         <dl className="ml-auto mt-5 w-72 space-y-1.5 text-[14px] tabular-nums">
-          <div className="flex justify-between"><dt className="text-muted">공급가액</dt><dd>{won(inv.supply_amount)}</dd></div>
-          <div className="flex justify-between"><dt className="text-muted">부가세</dt><dd>{won(inv.vat)}</dd></div>
           <div className="flex justify-between border-t-2 border-ink pt-2 text-[20px] font-extrabold"><dt>합계</dt><dd>{won(inv.total)}</dd></div>
-          <p className="text-right text-[12px] text-muted">부가세 포함 금액입니다</p>
+          <p className="text-right text-[12px] text-muted">{TAX_NOTE}</p>
         </dl>
 
         {(inv.due_date || inv.memo) && (

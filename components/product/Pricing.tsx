@@ -105,7 +105,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                     <p className="mt-1 tabular-nums">
                       <span className="text-[32px] font-extrabold tracking-[-0.03em]">{won(price)}</span>
                       <span className="ml-1 text-[14px] font-semibold text-[#5B616B]">/{annual ? '년' : '월'}</span>
-                      <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[3px] text-[11.5px] font-semibold text-[#5B616B]">VAT 포함</span>
+                      <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[3px] text-[11.5px] font-semibold text-[#5B616B]">부가세 없음</span>
                     </p>
                     {annual
                       ? <p className="mt-1 text-[13px] font-semibold tabular-nums text-[#16294D]">한 달 약 {(price / 12 / 10_000).toFixed(1)}만 원꼴 · {won(saved)} 절약</p>
@@ -158,7 +158,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
           <p className="tabular-nums">
             {BETA && <span className="mr-2 text-[15px] text-[#9AA0A8]"><s>{won(SETUP_FEE)}</s></span>}
             <span className="text-[26px] font-extrabold tracking-[-0.02em]">{BETA ? '0원' : won(SETUP_FEE)}</span>
-            <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[4px] text-[11.5px] font-semibold text-[#5B616B]">VAT 포함</span>
+            <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[4px] text-[11.5px] font-semibold text-[#5B616B]">부가세 없음</span>
             {BETA && <span className="ml-2 inline-block whitespace-nowrap rounded bg-[#FFF3EB] px-2 py-0.5 align-[4px] text-[12px] font-bold text-[#C2410C]">베타 기간 신청 무료</span>}
           </p>
         </div>
@@ -187,7 +187,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       </dl>
 
       <p className="mt-5 text-center text-[12.5px] leading-relaxed text-[#8A9099]">
-        모든 금액은 부가세(VAT) 포함입니다. * 전송량은 일반적인 언론사 사용 기준으로 제한 없이 쓰며, 아주 큰 트래픽이 계속되면 요금제를 함께 정합니다. 배너·팝업 디자인은 운영팀이 만들어 드리는 건수이고, 직접 만든 배너는 개수 제한 없이 올릴 수 있습니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
+        모든 금액은 따로 붙는 부가세가 없는 최종 금액입니다(미국 법인 IM America Group Corp 공급, 세금계산서 대신 청구서·결제 영수증 발행). * 전송량은 일반적인 언론사 사용 기준으로 제한 없이 쓰며, 아주 큰 트래픽이 계속되면 요금제를 함께 정합니다. 배너·팝업 디자인은 운영팀이 만들어 드리는 건수이고, 직접 만든 배너는 개수 제한 없이 올릴 수 있습니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
         {BETA && ` 베타 반값은 ${BETA_END_LABEL}까지 신청한 신문사의 ${BETA_PERIOD_LABEL} 이용료에 적용되고, ${REGULAR_AFTER_LABEL} 정상가입니다. 1년 결제는 12개월 중 ${BETA_PERIOD_LABEL}분만 반값으로 계산합니다. 매체 추가·AI 추가 사용 요금은 베타 기간에도 정상가입니다.`}
       </p>
     </div>

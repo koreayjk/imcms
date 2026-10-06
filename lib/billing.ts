@@ -4,7 +4,7 @@ import { invoiceTotals, type InvoiceItem } from './support'
 import { paymentDbSecret } from './toss'
 import { notifyInvoiceDunning, notifyInvoiceIssued } from './invoice-mail'
 
-// 매월 자동 청구서 (supabase/billing-auto.sql). 금액은 모두 VAT 포함
+// 매월 자동 청구서 (supabase/billing-auto.sql). 금액은 모두 최종 금액 (한국 부가세 없음)
 //   매월 1일 발행 · 5일 납부 · 10일까지 유예. 1년 결제는 시작 월부터 12개월마다 한 번(11개월 값)
 //   항목: 요금제 이용료(베타 반값) · 추가 매체 · 지난달 AI 추가 사용(100회마다) · 세팅비(처음 한 번)
 
@@ -131,7 +131,7 @@ export async function runBilling(supabase: SupabaseClient, month: string, origin
     const { data: id, error } = await supabase.rpc('billing_create', {
       secret: paymentDbSecret(), o: t.outlet_id, p_month: `${month}-01`, p_items: items,
       p_supply: totals.supply, p_vat: totals.vat, p_total: totals.total, p_due: due,
-      p_memo: '매월 자동으로 발행된 청구서입니다. 금액은 부가세 포함입니다.', p_clear_setup: clearSetup,
+      p_memo: '매월 자동으로 발행된 청구서입니다. 해외 법인(미국) 공급이라 한국 부가세가 없습니다.', p_clear_setup: clearSetup,
     })
     if (error) { skipped.push({ outlet: t.name, reason: error.message }); continue }
     if (!id) { skipped.push({ outlet: t.name, reason: '이번 달 청구서가 이미 있음' }); continue }

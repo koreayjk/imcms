@@ -33,11 +33,12 @@ export function won(n: number | null | undefined) {
 
 export type InvoiceItem = { name: string; qty: number; unit_price: number }
 
-// 단가는 부가세 포함 금액이다 (요금표와 같은 기준). 합계에서 공급가액·부가세를 거꾸로 나눈다
+// 미국 법인(IM America Group Corp)이 공급하는 해외 서비스라 한국 부가세를 따로 받지 않는다: 합계 = 공급가액, 부가세 0
+//   (DB 칸 supply_amount·vat 는 그대로 두고 값만 이렇게 채운다)
+export const TAX_NOTE = '해외 법인(미국 IM America Group Corp) 공급 · 한국 부가세 없음'
 export function invoiceTotals(items: InvoiceItem[]) {
   const total = items.reduce((s, i) => s + Math.round((i.qty || 0) * (i.unit_price || 0)), 0)
-  const supply = Math.round(total / 1.1)
-  return { supply, vat: total - supply, total }
+  return { supply: total, vat: 0, total }
 }
 
 export function monthLabel(d: string) {
