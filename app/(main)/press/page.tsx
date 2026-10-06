@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { FOREIGN_PREFIX, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, isForeignSource } from '@/lib/press-sources'
+import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, foreignTopicOf } from '@/lib/press-sources'
 import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
@@ -41,9 +41,9 @@ export default async function PressPage(props: Props) {
   // 매체 홈페이지 설정의 '보도자료 추천 키워드' (없으면 추천 탭은 직접 등록·메일 자료만)
   const outletSite = outlet ? buildSite(outlet as OutletRow, []) : null
   const keywords = outletSite?.pressKeywords ?? []
-  // 해외 언론(영문) 자료는 '해외 언론 자료 받기'를 켠 매체만 본다
-  const foreignOk = !!outletSite?.pressForeign
-  const PRESS_SOURCES = ALL_SOURCES.filter((x) => foreignOk || !isForeignSource(x.key))
+  // 해외 언론(영문) 자료는 매체 설정에서 켠 묶음만 본다 (이스라엘 언론 / 해외 교육·유학 언론)
+  const topics = outletSite?.pressForeignTopics ?? []
+  const PRESS_SOURCES = ALL_SOURCES.filter((x) => { const t = foreignTopicOf(x.key); return !t || topics.includes(t) })
 
   const tab = searchParams.tab === 'all' ? 'all' : 'rec'
   const src = searchParams.src === MANUAL_SOURCE || searchParams.src === 'email' ? searchParams.src : PRESS_SOURCES.find((s) => s.key === searchParams.src)?.key
@@ -55,7 +55,7 @@ export default async function PressPage(props: Props) {
     .select('id, source_key, source_name, title, summary, link, published_at', { count: 'exact' })
     .order('published_at', { ascending: false, nullsFirst: false })
   if (src) query = query.eq('source_key', src)
-  if (!foreignOk) query = query.not('source_key', 'like', `${FOREIGN_PREFIX}%`)
+  for (const t of FOREIGN_TOPICS) if (!topics.includes(t.key)) query = query.not('source_key', 'like', `${t.prefix}%`)
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
   if (tab === 'rec' && keywords.length) query = query.or([`source_key.eq.${MANUAL_SOURCE}`, 'source_key.eq.email', ...keywords.map((k) => `title.ilike.*${k}*,summary.ilike.*${k}*`)].join(','))
 

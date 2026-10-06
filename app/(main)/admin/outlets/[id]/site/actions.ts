@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
-import type { LogoMode, OutletSiteSettings, SiteLegal } from '@/lib/sites'
+import { foreignTopics, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { connectDomain } from '@/lib/vercel-domains'
 
 export type SitePayload = {
@@ -56,8 +56,9 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     legal: Object.fromEntries(LEGAL_KEYS.map((k) => [k, cut(s.legal?.[k], k === 'address' ? 200 : 80)])) as SiteLegal,
     homeLayout: s.homeLayout === 'bands' ? 'bands' : 'standard',
     shopUrl: /^https?:\/\/\S+$/.test(cut(s.shopUrl, 300)) ? cut(s.shopUrl, 300) : undefined,
-    pressForeign: !!s.pressForeign,
+    pressForeignTopics: foreignTopics({ pressForeignTopics: Array.isArray(s.pressForeignTopics) ? s.pressForeignTopics : [], pressForeign: false }),
   }
+  site.pressForeign = (site.pressForeignTopics ?? []).length > 0
   // 화면에 없는 설정(섹션 띠 순서 등)은 그대로 둔다
   const { data: prev } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
   const prevSite = ((prev as { site?: OutletSiteSettings | null } | null)?.site ?? {}) as OutletSiteSettings

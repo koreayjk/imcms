@@ -1,3 +1,4 @@
+import { FOREIGN_TOPICS, type ForeignTopic } from './press-sources'
 export type SectionConfig = {
   slug: string
   name: string
@@ -61,8 +62,9 @@ export type SiteConfig = {
   bands?: HomeBand[]
   // SHOP 띠·메뉴에서 연결할 쇼핑몰 주소 (없으면 '준비 중')
   shopUrl?: string
-  // 보도자료함에 해외 언론(영문) 자료도 보여줄지
+  // 보도자료함에 해외 언론(영문) 자료도 보여줄지 (묶음: 이스라엘 언론, 해외 교육·유학 언론)
   pressForeign?: boolean
+  pressForeignTopics?: ForeignTopic[]
   // 카카오톡·페이스북 등에 링크를 올릴 때 나오는 대표 이미지 (1200×630 PNG/JPG)
   ogImage?: string
   // IM 뉴스룸 체험용 신문 (trial.sql) — 홈페이지 맨 위에 체험판 안내 띠
@@ -171,6 +173,8 @@ export type OutletSiteSettings = {
   bands?: HomeBand[]
   shopUrl?: string
   pressForeign?: boolean
+  // 받을 해외 언론 묶음 (없고 pressForeign 이 켜져 있으면 예전처럼 이스라엘 언론)
+  pressForeignTopics?: ForeignTopic[]
   ogImage?: string
   trial?: boolean
 }
@@ -187,6 +191,12 @@ export function shade(hex: string, amount: number) {
   const f = (c: number) => Math.max(0, Math.min(255, Math.round(c * (1 - amount))))
   const r = f(n >> 16), g = f((n >> 8) & 255), b = f(n & 255)
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
+}
+
+// 받을 해외 언론 묶음 (예전 설정: '해외 언론 자료 받기'만 켠 매체는 이스라엘 언론)
+export function foreignTopics(s: Pick<OutletSiteSettings, 'pressForeign' | 'pressForeignTopics'>): ForeignTopic[] {
+  if (Array.isArray(s.pressForeignTopics)) return FOREIGN_TOPICS.map((t) => t.key).filter((k) => s.pressForeignTopics!.includes(k))
+  return s.pressForeign ? ['israel'] : []
 }
 
 export const EMPTY_LEGAL: SiteLegal = {
@@ -240,7 +250,10 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     homeLayout: s.homeLayout === 'bands' ? 'bands' : 'standard',
     bands: Array.isArray(s.bands) ? s.bands.filter((b) => b && typeof b.slug === 'string') : undefined,
     shopUrl: typeof s.shopUrl === 'string' && /^https?:\/\//.test(s.shopUrl) ? s.shopUrl : undefined,
-    pressForeign: !!s.pressForeign,
+    ...(() => {
+      const topics = foreignTopics(s)
+      return { pressForeign: topics.length > 0, pressForeignTopics: topics }
+    })(),
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
     trial: s.trial === true,
   }

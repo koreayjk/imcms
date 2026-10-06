@@ -3,7 +3,8 @@
 import { useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
-import { buildSite, DEFAULT_COLORS, type CategoryRow, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { buildSite, DEFAULT_COLORS, foreignTopics, type CategoryRow, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { FOREIGN_TOPICS } from '@/lib/press-sources'
 import { uploadImage } from '@/components/editor/upload'
 import SiteHeader from '@/components/site/SiteHeader'
 import SiteFooter from '@/components/site/SiteFooter'
@@ -143,10 +144,25 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <input type="checkbox" checked={s.homeLayout === 'bands'} onChange={(e) => set({ homeLayout: e.target.checked ? 'bands' : 'standard' })} className="mt-1" />
               <span><strong>섹션 띠 배치</strong> (톱 기사 아래를 섹션 순서대로 띠처럼 쌓기) <span className="block text-[12px] text-muted">띠 순서·모양은 운영팀이 설정합니다{s.bands?.length ? ` (지금 ${s.bands.length}개 띠)` : ''}.</span></span>
             </label>
-            <label className="flex items-start gap-2 text-[13.5px]">
-              <input type="checkbox" checked={!!s.pressForeign} onChange={(e) => set({ pressForeign: e.target.checked })} className="mt-1" />
-              <span><strong>해외 언론 자료 받기</strong> (보도자료함에 이스라엘 언론 등 영문 기사 요약을 함께 보여주고, AI가 출처를 밝힌 한국어 기사 초안으로 씁니다)</span>
-            </label>
+            <fieldset className="space-y-1.5 text-[13.5px]">
+              <legend className="font-bold">해외 언론 자료 받기</legend>
+              <p className="text-[12px] text-muted">보도자료함에 영문 기사 요약을 함께 보여주고, AI가 출처를 밝힌 한국어 기사 초안으로 씁니다. 매체 분야에 맞는 묶음만 고르세요.</p>
+              {FOREIGN_TOPICS.map((t) => {
+                const on = foreignTopics(s).includes(t.key)
+                return (
+                  <label key={t.key} className="flex items-start gap-2">
+                    <input
+                      type="checkbox" checked={on} className="mt-1"
+                      onChange={(e) => {
+                        const next = foreignTopics(s).filter((k) => k !== t.key).concat(e.target.checked ? [t.key] : [])
+                        set({ pressForeignTopics: next, pressForeign: next.length > 0 })
+                      }}
+                    />
+                    <span><strong>{t.label}</strong> <span className="text-[12px] text-muted">{t.hint}</span></span>
+                  </label>
+                )
+              })}
+            </fieldset>
             <Field label="쇼핑몰 주소" hint="SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')"><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>
           </div>
         </div>
