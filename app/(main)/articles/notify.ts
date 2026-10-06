@@ -17,7 +17,7 @@ export async function notifyArticle(id: string, event: keyof typeof STATUS) {
   if (event !== 'submitted' && a.author_id === user.id) return
   const outlet = (a.outlet as unknown as { name: string } | null)?.name ?? ''
   const who = (profile?.full_name as string | undefined) ?? ''
-  const url = `${cmsOrigin()}/articles/${id}`
+  const url = `${(await cmsOrigin())}/articles/${id}`
   const slot = Math.floor(Date.now() / 600_000)
   const kind = event === 'submitted' ? 'article_submitted' : event === 'rejected' ? 'article_rejected' : 'article_published'
   await notify(supabase, kind, id, `${kind}:${id}:${slot}`, () =>

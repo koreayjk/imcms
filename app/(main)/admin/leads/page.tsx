@@ -4,9 +4,10 @@ import { formatDateTime } from '@/lib/format'
 import { PRODUCT } from '@/lib/product'
 import LeadCard, { type Lead } from '@/components/cms/LeadCard'
 
-type Props = { searchParams: { tab?: string } }
+type Props = { searchParams: Promise<{ tab?: string }> }
 
-export default async function LeadsPage({ searchParams }: Props) {
+export default async function LeadsPage(props: Props) {
+  const searchParams = await props.searchParams
   const { supabase, user, isStaff } = await getCmsContext()
   if (!isStaff) redirect('/newsroom')
   const tab = ['mine', 'open', 'done', 'trial'].includes(searchParams.tab ?? '') ? searchParams.tab : 'open'

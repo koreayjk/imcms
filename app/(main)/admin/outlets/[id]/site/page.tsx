@@ -6,7 +6,8 @@ import SiteSettingsForm from '@/components/cms/SiteSettingsForm'
 import DomainPanel from '@/components/cms/DomainPanel'
 import { domainStatus } from '@/lib/vercel-domains'
 
-export default async function SiteSettingsPage({ params }: { params: { id: string } }) {
+export default async function SiteSettingsPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   const { supabase, isStaff } = await getCmsContext()
   if (!isStaff) redirect('/admin/outlets')
 

@@ -25,7 +25,8 @@ export async function switchOutlet(outletId: string): Promise<{ error?: string }
   if (isStaff && !isSuper) {
     const { data: o } = await supabase.from('outlets').select('id').eq('id', outletId).maybeSingle()
     if (!o) return { error: '매체를 찾지 못했습니다.' }
-    cookies().set(STAFF_OUTLET_COOKIE, outletId, { path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 * 60 * 24 * 30 })
+    const jar = await cookies()
+    jar.set(STAFF_OUTLET_COOKIE, outletId, { path: '/', httpOnly: true, sameSite: 'lax', secure: true, maxAge: 60 * 60 * 24 * 30 })
     revalidatePath('/', 'layout')
     return {}
   }

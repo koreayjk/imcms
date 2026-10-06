@@ -1,6 +1,6 @@
 'use client'
 
-import { useFormState } from 'react-dom'
+import { useActionState } from 'react'
 import { saveNotice, type FormState } from '@/app/(main)/support/actions'
 import { NOTICE_CATEGORIES, type NoticeCategory } from '@/lib/support'
 import PendingButton from './PendingButton'
@@ -8,7 +8,7 @@ import PendingButton from './PendingButton'
 type Notice = { id: string; category: string; title: string; body: string; pinned: boolean }
 
 export default function NoticeForm({ notice }: { notice?: Notice }) {
-  const [state, action] = useFormState<FormState, FormData>(saveNotice.bind(null, notice?.id ?? null), {})
+  const [state, action] = useActionState<FormState, FormData>(saveNotice.bind(null, notice?.id ?? null), {})
   return (
     <form action={action} className="space-y-4 rounded-2xl bg-white p-7 ring-1 ring-black/5">
       <div className="flex flex-wrap items-center gap-4">

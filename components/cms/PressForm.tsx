@@ -1,7 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { useFormState } from 'react-dom'
+import { useRef, useState, useActionState } from 'react'
 import Link from 'next/link'
 import { uploadImage } from '@/components/editor/upload'
 import { DOC_ACCEPT, extractDocText, guessTitle } from '@/lib/doc-extract'
@@ -11,7 +10,7 @@ import PendingButton from './PendingButton'
 type Photo = { url: string; caption: string }
 
 export default function PressForm({ outletId }: { outletId: string | null }) {
-  const [state, action] = useFormState<ManualPressState, FormData>(createManualPress, {})
+  const [state, action] = useActionState<ManualPressState, FormData>(createManualPress, {})
   const fileRef = useRef<HTMLInputElement>(null)
   const [photos, setPhotos] = useState<Photo[]>([])
   const [uploading, setUploading] = useState(0)

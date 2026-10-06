@@ -6,6 +6,7 @@ import { BoardList } from '@/components/gdpa/Board'
 export const metadata: Metadata = { title: BOARD_LABEL.notice }
 export const revalidate = 60
 
-export default function Page({ searchParams }: { searchParams: { page?: string } }) {
-  return <BoardList base={gdpaBase()} board="notice" page={Math.max(1, Number(searchParams.page) || 1)} />
+export default async function Page(props: { searchParams: Promise<{ page?: string }> }) {
+  const searchParams = await props.searchParams
+  return <BoardList base={(await gdpaBase())} board="notice" page={Math.max(1, Number(searchParams.page) || 1)} />
 }

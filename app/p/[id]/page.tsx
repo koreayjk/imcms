@@ -14,7 +14,11 @@ export const metadata: Metadata = { title: '기사 미리보기', robots: { inde
 type Row = Record<string, any> & { id: string; outlet_id: string; status: string; published_at: string | null }
 
 // 미리보기 링크: 아직 발행 전인 기사를 링크를 받은 사람만 볼 수 있다 (서명이 맞을 때만, 검색엔진 노출 없음)
-export default async function SharedPreviewPage({ params, searchParams }: { params: { id: string }; searchParams: { k?: string } }) {
+export default async function SharedPreviewPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ k?: string }> }
+) {
+  const searchParams = await props.searchParams
+  const params = await props.params
   if (!/^[0-9a-f-]{36}$/.test(params.id) || !shareTokenOk(params.id, searchParams.k) || !process.env.NEXT_PUBLIC_SUPABASE_URL) notFound()
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
   const { data, error } = await supabase.rpc('article_share_view', { secret: process.env.PAYMENT_DB_SECRET, p_id: params.id })

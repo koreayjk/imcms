@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
-import { useFormState } from 'react-dom'
+import { useEffect, useRef, useState, useTransition, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { addMemberOutlet, deletePost, removeMemberOutlet, savePost, setMemberStatus, type FormState } from '@/app/(main)/admin/association/actions'
 import PendingButton from './PendingButton'
@@ -80,12 +79,15 @@ function Members({ members }: { members: Member[] }) {
 // 게시글: 공지사항 · 협회 활동 · 자료실
 function PostForm({ post, onDone }: { post: Post | null; onDone: () => void }) {
   const router = useRouter()
-  const [state, action] = useFormState(savePost, {} as FormState)
+  const [state, action] = useActionState(savePost, {} as FormState)
   const formRef = useRef<HTMLFormElement>(null)
   useEffect(() => {
     if (state.ok) {
       router.refresh()
-      if (!post) formRef.current?.reset()
+      if (!post && formRef.current) {
+        formRef.current.dataset.allowReset = '1'
+        formRef.current.reset()
+      }
       else onDone()
     }
   }, [state, post, onDone, router])

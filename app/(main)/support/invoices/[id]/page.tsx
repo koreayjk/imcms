@@ -11,7 +11,11 @@ import ConfirmSubmit from '@/components/cms/ConfirmSubmit'
 import InvoicePayments, { type PaymentRow } from '@/components/cms/InvoicePayments'
 import { payProvider } from '@/lib/pay-provider'
 
-export default async function InvoicePage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function InvoicePage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
+) {
+  const searchParams = await props.searchParams
+  const params = await props.params
   const { supabase, isSuper, isStaff } = await getCmsContext()
   const { data: inv } = await supabase.from('invoices').select('*, outlet:outlets(name)').eq('id', params.id).maybeSingle()
   if (!inv) notFound()

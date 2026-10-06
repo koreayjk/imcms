@@ -8,9 +8,9 @@ function Box({ children, strong = false }: { children: React.ReactNode; strong?:
   return <div className={`rounded-lg px-5 py-3 text-center text-[15px] font-bold ${strong ? 'bg-[var(--g-navy)] text-white' : 'border border-[var(--g-line)] bg-white text-[var(--g-ink)]'}`}>{children}</div>
 }
 
-export default function Organization() {
+export default async function Organization() {
   return (
-    <SubPage base={gdpaBase()} section="/about" current="/about/organization" title="조직도">
+    <SubPage base={(await gdpaBase())} section="/about" current="/about/organization" title="조직도">
       <p className="mb-8 rounded-lg bg-[var(--g-soft)] px-5 py-3 text-[14px] text-[var(--g-sub)]">아래는 협회 출범을 준비하며 정한 조직 구성안입니다. 임원과 위원회는 창립총회에서 확정되면 이곳에 안내합니다.</p>
       <div className="mx-auto flex max-w-[640px] flex-col items-center gap-3">
         <Box strong>총회</Box>

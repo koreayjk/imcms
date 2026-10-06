@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = { title: 'AI 초안 검토 · IM 뉴스룸', robots: { index: false, follow: false } }
 
-export default async function AiReviewPage({ params }: { params: { token: string } }) {
+export default async function AiReviewPage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params
   const share = await loadShare(params.token)
   if (!share) notFound()
   const { releases, models, results } = share.data

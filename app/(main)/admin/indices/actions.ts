@@ -30,7 +30,7 @@ export async function saveIndexPoint(form: FormData) {
     { onConflict: 'outlet_id,index_key,week_date' },
   )
   if (error) back({ error: /market_index_points/.test(error.message) ? 'market-indices.sql을 먼저 실행해 주세요.' : error.message })
-  revalidateTag('market-index')
+  revalidateTag('market-index', { expire: 0 })
   revalidatePath('/admin/indices')
   back({ ok: `${key.toUpperCase()} ${date} 값을 저장했습니다.` })
 }
@@ -38,7 +38,7 @@ export async function saveIndexPoint(form: FormData) {
 export async function deleteIndexPoint(key: string, date: string) {
   const { supabase, outletId } = await ctx()
   await supabase.from('market_index_points').delete().eq('outlet_id', outletId!).eq('index_key', key).eq('week_date', date)
-  revalidateTag('market-index')
+  revalidateTag('market-index', { expire: 0 })
   back()
 }
 
@@ -46,6 +46,6 @@ export async function deleteIndexPoint(key: string, date: string) {
 export async function clearSampleIndex() {
   const { supabase, outletId } = await ctx()
   await supabase.from('market_index_points').delete().eq('outlet_id', outletId!).eq('is_sample', true)
-  revalidateTag('market-index')
+  revalidateTag('market-index', { expire: 0 })
   back({ ok: '샘플 값을 모두 지웠습니다.' })
 }

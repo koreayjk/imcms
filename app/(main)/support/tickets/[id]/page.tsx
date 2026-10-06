@@ -24,7 +24,8 @@ function Files({ files, urls }: { files: FileRow[]; urls: Map<string, string> })
   )
 }
 
-export default async function TicketPage({ params }: { params: { id: string } }) {
+export default async function TicketPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   const { supabase, isStaff } = await getCmsContext()
 
   const { data: t } = await supabase

@@ -8,9 +8,10 @@ import SiteFrame from '@/components/site/SiteFrame'
 import MostViewed from '@/components/site/MostViewed'
 import ArticleRow from '@/components/site/ArticleRow'
 
-type Props = { params: { slug: string }; searchParams: { page?: string } }
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ page?: string }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params
   const site = await currentSite()
   const section = findSection(site, params.slug)
   return {
@@ -21,7 +22,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function SectionPage({ params, searchParams }: Props) {
+export default async function SectionPage(props: Props) {
+  const searchParams = await props.searchParams
+  const params = await props.params
   const site = await currentSite()
   const section = findSection(site, params.slug)
   if (!section) notFound()

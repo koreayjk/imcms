@@ -14,8 +14,8 @@ import Pricing from '@/components/product/Pricing'
 
 export const dynamic = 'force-dynamic'
 
-export function generateMetadata(): Metadata {
-  const indexable = PRODUCT.indexable && isProductHost(headers().get('host'))
+export async function generateMetadata(): Promise<Metadata> {
+  const indexable = PRODUCT.indexable && isProductHost((await headers()).get('host'))
   const title = `${PRODUCT.name} — 더 스마트하게, 더 저렴하게. 인터넷신문 AI 편집국`
   const description = '보도자료 자동 수집, AI 기사 초안, 기자·편집장 승인, 여러 매체 동시 송고까지. 인터넷신문을 위한 AI 편집국 클라우드.'
   return {

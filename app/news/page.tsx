@@ -8,7 +8,7 @@ import ArticleRow from '@/components/site/ArticleRow'
 import { ALL_NEWS } from '@/components/site/SiteHeader'
 import { siteIcon } from '@/lib/sites'
 
-type Props = { searchParams: { page?: string } }
+type Props = { searchParams: Promise<{ page?: string }> }
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
@@ -21,7 +21,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // 전체기사: 모든 섹션의 기사를 최신순으로
-export default async function AllNewsPage({ searchParams }: Props) {
+export default async function AllNewsPage(props: Props) {
+  const searchParams = await props.searchParams
   const site = await currentSite()
   const page = Math.max(1, Number(searchParams.page) || 1)
   const { articles, total, mostViewed } = await getSectionData(site, null, page)

@@ -38,7 +38,7 @@ function Eyebrow({ children, light = false }: { children: ReactNode; light?: boo
 
 // 협회 첫 화면: 큰 사진 → 바로가기 → 하는 일 → 인사말 → 회원사 → 회원사 뉴스·공지 → 가입 안내
 export default async function GdpaHome() {
-  const base = gdpaBase()
+  const base = (await gdpaBase())
   const [outlets, news, notices] = await Promise.all([memberOutlets(), memberNews(6), boardPosts('notice', 1, 5)])
   const [lead, ...rest] = news.items
 

@@ -3,7 +3,8 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { byteaToBytes } from '@/lib/press-attachments'
 
 // 메일로 받은 보도자료의 첨부파일(한글·PDF 등) 내려받기 — 로그인한 편집국 계정만
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

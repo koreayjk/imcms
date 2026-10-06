@@ -12,7 +12,7 @@ export default async function PressEmailPage() {
   const isAdmin = isSuper
   const { data: admin } = isAdmin ? await supabase.rpc('admin_press_mail_settings') : { data: null }
   const settings = (Array.isArray(admin) ? admin[0] : admin) as { secret: string | null; address: string | null } | null
-  const host = headers().get('host') ?? 'imcms.vercel.app'
+  const host = (await headers()).get('host') ?? 'imcms.vercel.app'
   const webhook = settings?.secret ? `https://${host}/api/inbound/email?key=${settings.secret}` : null
 
   return (

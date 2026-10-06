@@ -8,7 +8,8 @@ import { clearSampleIndex, deleteIndexPoint, saveIndexPoint } from './actions'
 type Row = { index_key: IndexKey; week_date: string; value: number; is_sample: boolean }
 
 // 해운 운임지수 입력: 매주 발표된 SCFI·KCCI 값을 넣으면 홈페이지 위젯에 바로 반영된다
-export default async function IndicesPage({ searchParams }: { searchParams: { error?: string; ok?: string } }) {
+export default async function IndicesPage(props: { searchParams: Promise<{ error?: string; ok?: string }> }) {
+  const searchParams = await props.searchParams
   const { supabase, outletId, isEditorPlus } = await getCmsContext()
   if (!isEditorPlus || !outletId) redirect('/newsroom')
 

@@ -12,9 +12,9 @@ const HISTORY: { year: string; items: [string, string][] }[] = [
   ] },
 ]
 
-export default function History() {
+export default async function History() {
   return (
-    <SubPage base={gdpaBase()} section="/about" current="/about/history" title="연혁">
+    <SubPage base={(await gdpaBase())} section="/about" current="/about/history" title="연혁">
       {HISTORY.map((h) => (
         <section key={h.year} className="grid gap-4 border-t-2 border-[var(--g-navy)] pt-6 md:grid-cols-[160px_1fr]">
           <p className="text-[34px] font-extrabold text-[var(--g-navy)]">{h.year}</p>

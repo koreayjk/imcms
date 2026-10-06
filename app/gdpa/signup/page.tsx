@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: '회원가입' }
 export const dynamic = 'force-dynamic'
 
 export default async function Signup() {
-  const base = gdpaBase()
+  const base = (await gdpaBase())
   const { email, member } = await gdpaSession()
   if (member) redirect(`${base}/mypage`)
   return (

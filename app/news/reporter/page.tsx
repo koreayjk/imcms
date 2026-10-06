@@ -8,13 +8,13 @@ import MostViewed from '@/components/site/MostViewed'
 import ArticleRow from '@/components/site/ArticleRow'
 import { siteIcon } from '@/lib/sites'
 
-type Props = { searchParams: { name?: string; page?: string } }
+type Props = { searchParams: Promise<{ name?: string; page?: string }> }
 
-const nameOf = (p: Props) => (p.searchParams.name ?? '').trim().slice(0, 40)
+const nameOf = (sp: { name?: string }) => (sp.name ?? '').trim().slice(0, 40)
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const site = await currentSite()
-  const name = nameOf(props)
+  const name = nameOf(await props.searchParams)
   return {
     title: `${name ? `${name} 기자` : '기자'} 기사 | ${site.name}`,
     description: name ? `${site.name} ${name} 기자가 쓴 기사` : site.description,
@@ -25,9 +25,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 // 기자별 기사: 기사 아래 '다른기사 보기'에서 온다
 export default async function ReporterPage(props: Props) {
-  const { searchParams } = props
+  const searchParams = await props.searchParams
   const site = await currentSite()
-  const name = nameOf(props)
+  const name = nameOf(searchParams)
   const page = Math.max(1, Number(searchParams.page) || 1)
   const { articles, total, mostViewed } = await getReporterArticles(site, name, page)
   const pages = Math.max(1, Math.ceil(total / REPORTER_PAGE_SIZE))

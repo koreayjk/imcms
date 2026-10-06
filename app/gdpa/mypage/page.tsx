@@ -17,7 +17,7 @@ const STATUS = {
 }
 
 export default async function MyPage() {
-  const base = gdpaBase()
+  const base = (await gdpaBase())
   const { email, member } = await gdpaSession()
   if (!email) redirect(`${base}/login`)
 

@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useFormState } from 'react-dom'
+import { useState, useTransition, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteMember, inviteMember, setMember, setMemberships, type FormState, type Membership } from '@/app/(main)/admin/users/actions'
 import type { Profile, UserRole } from '@/lib/types'
@@ -25,7 +24,7 @@ function OutletSelect({ outlets, value, onChange, name, id }: { outlets: OutletO
 }
 
 export function InviteForm({ outlets }: { outlets: OutletOption[] }) {
-  const [state, action] = useFormState<FormState, FormData>(inviteMember, {})
+  const [state, action] = useActionState<FormState, FormData>(inviteMember, {})
   return (
     <form action={action} className="rounded-lg border border-line bg-white p-5">
       <h2 className="text-[15px] font-bold">회원 초대</h2>

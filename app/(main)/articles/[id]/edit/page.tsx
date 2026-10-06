@@ -7,7 +7,8 @@ import { outletEmailOf } from '@/lib/outlet-email'
 // 승인신청·발행할 때 AI 법적 검수를 기다린다
 export const maxDuration = 60
 
-export default async function EditArticlePage({ params }: { params: { id: string } }) {
+export default async function EditArticlePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   const { supabase, user, profile, outletId, isEditorPlus, trial } = await getCmsContext()
 
   const { data: article } = await supabase.from('articles').select('*').eq('id', params.id).single()

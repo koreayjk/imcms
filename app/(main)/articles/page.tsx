@@ -10,9 +10,10 @@ import CopyLinkButton from '@/components/cms/CopyLinkButton'
 const TABS: (ArticleStatus | 'all')[] = ['all', 'draft', 'in_review', 'rejected', 'published']
 const PAGE_SIZE = 30
 
-type Props = { searchParams: { status?: string; q?: string; mine?: string; page?: string; deleted?: string } }
+type Props = { searchParams: Promise<{ status?: string; q?: string; mine?: string; page?: string; deleted?: string }> }
 
-export default async function ArticlesPage({ searchParams }: Props) {
+export default async function ArticlesPage(props: Props) {
+  const searchParams = await props.searchParams
   const { supabase, user, outletId, isEditorPlus } = await getCmsContext()
 
   const status = TABS.includes(searchParams.status as ArticleStatus) ? (searchParams.status as ArticleStatus) : undefined

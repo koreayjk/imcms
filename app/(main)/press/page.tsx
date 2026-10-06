@@ -13,14 +13,15 @@ export const maxDuration = 30
 
 const PAGE_SIZE = 30
 
-type Props = { searchParams: { tab?: string; src?: string; q?: string; page?: string } }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
   return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 3600e3).toISOString()
 }
 
-export default async function PressPage({ searchParams }: Props) {
+export default async function PressPage(props: Props) {
+  const searchParams = await props.searchParams
   const { supabase, outletId } = await getCmsContext()
 
   const probe = await supabase.from('press_fetch_log').select('source_key').limit(1)

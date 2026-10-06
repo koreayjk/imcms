@@ -53,8 +53,8 @@ const loadSite = unstable_cache(
 
 export async function currentSite(): Promise<SiteConfig> {
   if (isDemo) return demoSite()
-  const host = (headers().get('host') ?? '').split(':')[0].toLowerCase()
-  const previewId = cookies().get(PREVIEW_COOKIE)?.value ?? null
+  const host = ((await headers()).get('host') ?? '').split(':')[0].toLowerCase()
+  const previewId = (await cookies()).get(PREVIEW_COOKIE)?.value ?? null
   try {
     return (await loadSite(host, /^[0-9a-f-]{36}$/.test(previewId ?? '') ? previewId : null)) ?? resolveSite(host)
   } catch {

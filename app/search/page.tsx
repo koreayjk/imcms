@@ -4,14 +4,15 @@ import SiteFrame from '@/components/site/SiteFrame'
 import ArticleRow from '@/components/site/ArticleRow'
 import { siteIcon } from '@/lib/sites'
 
-type Props = { searchParams: { q?: string } }
+type Props = { searchParams: Promise<{ q?: string }> }
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
   return { title: `기사 검색 | ${site.name}`, icons: { icon: siteIcon(site) }, robots: { index: false } }
 }
 
-export default async function SearchPage({ searchParams }: Props) {
+export default async function SearchPage(props: Props) {
+  const searchParams = await props.searchParams
   const site = await currentSite()
   const q = (searchParams.q ?? '').slice(0, 100)
   const results = await searchArticles(site, q)

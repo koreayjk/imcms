@@ -11,8 +11,9 @@ export const revalidate = 300
 const SIZE = 18
 
 // 회원사 최신 기사 모음 (누르면 각 회원사 홈페이지 기사로)
-export default async function News({ searchParams }: { searchParams: { page?: string } }) {
-  const base = gdpaBase()
+export default async function News(props: { searchParams: Promise<{ page?: string }> }) {
+  const searchParams = await props.searchParams
+  const base = (await gdpaBase())
   const page = Math.max(1, Number(searchParams.page) || 1)
   const { items, total } = await memberNews(SIZE, page)
   const pages = Math.min(20, Math.max(1, Math.ceil(total / SIZE)))

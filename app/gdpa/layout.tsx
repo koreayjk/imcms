@@ -19,8 +19,8 @@ const PALETTE = {
   '--g-ink': '#14202E', '--g-sub': '#5A6878', '--g-line': '#E2E7EE', '--g-soft': '#F4F6F9',
 } as CSSProperties
 
-export default function GdpaLayout({ children }: { children: ReactNode }) {
-  const base = gdpaBaseFor(headers().get('host'))
+export default async function GdpaLayout({ children }: { children: ReactNode }) {
+  const base = gdpaBaseFor((await headers()).get('host'))
   return (
     <div style={PALETTE} className="min-h-screen bg-white text-[var(--g-ink)] [word-break:keep-all]">
       <GdpaHeader base={base} />

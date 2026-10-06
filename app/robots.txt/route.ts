@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 // 매체별 robots.txt: 홈페이지 설정에서 “검색 허용”을 켠 매체만 수집을 허락한다 (오픈 전에는 전부 막음)
 export async function GET() {
-  const host = (headers().get('host') ?? '').split(':')[0].toLowerCase()
+  const host = ((await headers()).get('host') ?? '').split(':')[0].toLowerCase()
   // 편집국 주소: 체험 신청 화면만 수집
   if (isAppHost(host)) {
     const body = PRODUCT.indexable ? 'User-agent: *\nAllow: /trial$\nDisallow: /' : 'User-agent: *\nDisallow: /'

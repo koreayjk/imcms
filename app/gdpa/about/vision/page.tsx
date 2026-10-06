@@ -11,9 +11,9 @@ const GOALS = [
   ['혁신', 'AI·데이터 등 새 기술을 책임 있게 활용하는 디지털 저널리즘을 만들어 갑니다.'],
 ]
 
-export default function Vision() {
+export default async function Vision() {
   return (
-    <SubPage base={gdpaBase()} section="/about" current="/about/vision" title="설립 목적·비전">
+    <SubPage base={(await gdpaBase())} section="/about" current="/about/vision" title="설립 목적·비전">
       <section>
         <h2 className="text-[20px] font-bold text-[var(--g-navy)]">설립 목적</h2>
         <p className="mt-3 text-[16.5px] leading-[1.9]">협회는 디지털 언론사와 언론인이 서로 협력하여 언론의 자유와 책임을 함께 지키고, 건전한 디지털 언론 문화를 만들어 공공의 이익에 이바지하는 것을 목적으로 합니다.</p>

@@ -8,8 +8,8 @@ import SignOutButton from '@/components/auth/SignOutButton'
 import { isApproved } from '@/lib/cms'
 
 // 소개 사이트·편집국 주소(imnewsroom.com, app.imnewsroom.com)로 들어온 경우에만 검색에 노출한다
-export function generateMetadata(): Metadata {
-  const host = headers().get('host')
+export async function generateMetadata(): Promise<Metadata> {
+  const host = (await headers()).get('host')
   const indexable = PRODUCT.indexable && (isProductHost(host) || isAppHost(host))
   return {
     title: '1주일 무료 체험 | IM 뉴스룸',

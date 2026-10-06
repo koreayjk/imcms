@@ -1,6 +1,6 @@
 'use client'
 
-import { useFormState } from 'react-dom'
+import { useActionState } from 'react'
 import { saveBilling, type FormState } from '@/app/(main)/support/actions'
 import PendingButton from './PendingButton'
 
@@ -17,7 +17,7 @@ const FIELDS: { k: keyof Billing; label: string; ph?: string; type?: string; gro
 ]
 
 export default function BillingForm({ outletId, billing }: { outletId: string; billing: Billing | null }) {
-  const [state, action] = useFormState<FormState, FormData>(saveBilling.bind(null, outletId), {})
+  const [state, action] = useActionState<FormState, FormData>(saveBilling.bind(null, outletId), {})
   const section = (group: 'biz' | 'mgr', title: string) => (
     <fieldset className="rounded-2xl bg-white p-6 ring-1 ring-black/5">
       <legend className="px-1 text-[15px] font-bold">{title}</legend>

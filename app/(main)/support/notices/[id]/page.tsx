@@ -6,7 +6,8 @@ import { NOTICE_CATEGORIES, STAFF_NAME, type NoticeCategory } from '@/lib/suppor
 import PendingButton from '@/components/cms/PendingButton'
 import { deleteNotice } from '../../actions'
 
-export default async function NoticePage({ params }: { params: { id: string } }) {
+export default async function NoticePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   const { supabase, isStaff } = await getCmsContext()
   const { data: n } = await supabase.from('support_notices').select('*').eq('id', params.id).maybeSingle()
   if (!n) notFound()

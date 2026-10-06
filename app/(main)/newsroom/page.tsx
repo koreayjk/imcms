@@ -14,9 +14,10 @@ const CARDS: { status: ArticleStatus; tone: string; note: string }[] = [
   { status: 'published', tone: 'bg-[#2E8B57] text-white', note: '홈페이지에 공개된 기사' },
 ]
 
-type Props = { searchParams: { tab?: string } }
+type Props = { searchParams: Promise<{ tab?: string }> }
 
-export default async function NewsroomPage({ searchParams }: Props) {
+export default async function NewsroomPage(props: Props) {
+  const searchParams = await props.searchParams
   const { supabase, user, outletId, isEditorPlus, isStaff, isSuper, trial } = await getCmsContext()
   // 매체에 속하지 않은 매니저는 대시보드가 첫 화면
   if (isStaff && !isSuper && !outletId) redirect('/admin/dashboard')

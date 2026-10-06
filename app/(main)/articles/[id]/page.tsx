@@ -16,7 +16,11 @@ import { deleteArticle } from '../actions'
 // 승인하면서 함께 송고할 때 AI로 문장을 바꾸므로 넉넉하게 기다린다
 export const maxDuration = 60
 
-export default async function ArticleDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function ArticleDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
+) {
+  const searchParams = await props.searchParams
+  const params = await props.params
   const { supabase, user, isEditorPlus, trial } = await getCmsContext()
 
   const [{ data: article }, { data: revs }] = await Promise.all([

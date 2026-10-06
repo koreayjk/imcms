@@ -1,11 +1,11 @@
 'use client'
 
-import { useFormState } from 'react-dom'
+import { useActionState } from 'react'
 import { updateMyName, type NameState } from '@/app/(main)/account/actions'
 import PendingButton from './PendingButton'
 
 export default function NameForm({ name }: { name: string }) {
-  const [state, action] = useFormState<NameState, FormData>(updateMyName, {})
+  const [state, action] = useActionState<NameState, FormData>(updateMyName, {})
   return (
     <form action={action} className="space-y-2">
       <label htmlFor="full_name" className="text-[13px] font-semibold">이름</label>

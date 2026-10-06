@@ -13,9 +13,9 @@ const FAQ: [string, string][] = [
   ['탈퇴는 어떻게 하나요?', '“내 정보”에서 탈퇴를 요청하거나 사무국에 연락하시면 바로 처리합니다. 탈퇴하면 개인정보는 지체 없이 파기합니다.'],
 ]
 
-export default function Faq() {
+export default async function Faq() {
   return (
-    <SubPage base={gdpaBase()} section="/notice" current="/faq" title="자주 묻는 질문">
+    <SubPage base={(await gdpaBase())} section="/notice" current="/faq" title="자주 묻는 질문">
       <ul className="divide-y divide-[var(--g-line)] border-y-2 border-[var(--g-navy)]">
         {FAQ.map(([q, a]) => (
           <li key={q}>

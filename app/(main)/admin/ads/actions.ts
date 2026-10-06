@@ -30,7 +30,7 @@ const httpUrl = (v: string) => {
 }
 
 function done() {
-  revalidateTag('ads')
+  revalidateTag('ads', { expire: 0 })
   revalidatePath('/admin/ads')
 }
 

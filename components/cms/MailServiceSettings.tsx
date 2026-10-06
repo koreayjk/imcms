@@ -1,12 +1,12 @@
 'use client'
 
-import { useFormState } from 'react-dom'
+import { useActionState } from 'react'
 import { saveMailAddress, type AddressState } from '@/app/(main)/press/email/actions'
 import PendingButton from './PendingButton'
 
 // 관리자만: 메일 수신 서비스(Resend) 연결
 export default function MailServiceSettings({ address, webhook }: { address: string | null; webhook: string | null }) {
-  const [state, action] = useFormState<AddressState, FormData>(saveMailAddress, {})
+  const [state, action] = useActionState<AddressState, FormData>(saveMailAddress, {})
   return (
     <section className="mt-6 rounded-lg border border-review/30 bg-review/5 p-6">
       <h2 className="text-[15px] font-bold">관리자 설정 · 메일 수신 서비스 연결 <span className="text-[12px] font-normal text-muted">(관리자에게만 보입니다)</span></h2>

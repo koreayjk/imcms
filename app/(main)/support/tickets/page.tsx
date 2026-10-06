@@ -3,9 +3,10 @@ import { getCmsContext } from '@/lib/cms'
 import { formatShort } from '@/lib/format'
 import { TICKET_CATEGORIES, TICKET_STATUS, hasUnreadReply, type TicketCategory, type TicketStatus } from '@/lib/support'
 
-type Props = { searchParams: { tab?: string } }
+type Props = { searchParams: Promise<{ tab?: string }> }
 
-export default async function TicketsPage({ searchParams }: Props) {
+export default async function TicketsPage(props: Props) {
+  const searchParams = await props.searchParams
   const { supabase, user, isStaff } = await getCmsContext()
   const tab = ['open', 'unread', 'mine'].includes(searchParams.tab ?? '') ? searchParams.tab : 'all'
 

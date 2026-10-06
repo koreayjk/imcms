@@ -9,7 +9,8 @@ import PreviewArticle from './PreviewArticle'
 export const metadata: Metadata = { title: '기사 미리보기', robots: { index: false, follow: false } }
 
 // 기사쓰기 미리보기: 그 매체 홈페이지의 기사 화면과 같은 틀(머리·메뉴·오른쪽·광고·꼬리)에 쓰는 중인 기사를 넣어 보여 준다
-export default async function ArticlePreviewPage({ searchParams }: { searchParams: { outlet?: string; c?: string } }) {
+export default async function ArticlePreviewPage(props: { searchParams: Promise<{ outlet?: string; c?: string }> }) {
+  const searchParams = await props.searchParams
   const outletId = isDemo ? null : (await getCmsContext()).outletId
   const id = /^[0-9a-f-]{36}$/.test(searchParams.outlet ?? '') ? searchParams.outlet! : outletId
   const site = await siteForOutlet(id ?? '')

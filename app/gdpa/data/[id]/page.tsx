@@ -5,11 +5,13 @@ import { BoardView } from '@/components/gdpa/Board'
 
 export const revalidate = 60
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const params = await props.params
   const p = await boardPost(params.id)
   return { title: p?.title ?? '글' }
 }
 
-export default function Page({ params }: { params: { id: string } }) {
-  return <BoardView base={gdpaBase()} board="data" id={params.id} />
+export default async function Page(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
+  return <BoardView base={(await gdpaBase())} board="data" id={params.id} />
 }

@@ -13,9 +13,9 @@ const BENEFITS = [
   ['시상·행사', '협회 언론상 등 시상과 회원사 행사에 참여할 수 있습니다.'],
 ]
 
-export default function Benefits() {
+export default async function Benefits() {
   return (
-    <SubPage base={gdpaBase()} section="/members" current="/members/benefits" title="회원 혜택">
+    <SubPage base={(await gdpaBase())} section="/members" current="/members/benefits" title="회원 혜택">
       <ul className="grid gap-5 sm:grid-cols-2">
         {BENEFITS.map(([t, d], i) => (
           <li key={t} className="rounded-lg border border-[var(--g-line)] p-6">

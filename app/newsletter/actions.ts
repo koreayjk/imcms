@@ -23,7 +23,7 @@ export async function subscribeNewsletter(_prev: SubscribeState, form: FormData)
   const { data: token, error } = await anon().rpc('newsletter_subscribe', { secret: paymentDbSecret(), o: site.outletId, p_email: email, p_name: name })
   if (error) return { error: '신청을 받지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }
   if (!token) return { ok: true } // 이미 구독 중
-  const url = `${siteOrigin()}/newsletter/confirm?t=${token}`
+  const url = `${(await siteOrigin())}/newsletter/confirm?t=${token}`
   const { html, text } = noticeMail({
     title: `${site.name} 뉴스레터 구독을 확인해 주세요`,
     lines: ['아래 버튼을 누르면 구독이 시작됩니다.', '직접 신청하지 않으셨다면 이 메일을 무시하세요. 구독되지 않습니다.'],

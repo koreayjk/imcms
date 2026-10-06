@@ -5,10 +5,11 @@ import { formatDate } from '@/lib/format'
 import { BOARD_LABEL } from '@/lib/gdpa'
 import AssociationAdmin from '@/components/cms/AssociationAdmin'
 
-type Props = { searchParams: { tab?: string } }
+type Props = { searchParams: Promise<{ tab?: string }> }
 
 // 운영팀: 글로벌디지털언론협회(GDPA) 회원 승인 · 게시글 · 회원사
-export default async function AssociationPage({ searchParams }: Props) {
+export default async function AssociationPage(props: Props) {
+  const searchParams = await props.searchParams
   const { supabase, isStaff } = await getCmsContext()
   if (!isStaff) redirect('/newsroom')
   const tab = searchParams.tab === 'posts' || searchParams.tab === 'outlets' ? searchParams.tab : 'members'

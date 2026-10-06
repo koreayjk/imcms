@@ -5,7 +5,8 @@ import NewsletterAction from '@/components/site/NewsletterAction'
 
 export const metadata: Metadata = { title: '뉴스레터 구독 확인', robots: { index: false, follow: false } }
 
-export default async function Page({ searchParams }: { searchParams: { t?: string } }) {
+export default async function Page(props: { searchParams: Promise<{ t?: string }> }) {
+  const searchParams = await props.searchParams
   const site = await currentSite()
   const token = /^[0-9a-f]{20,64}$/.test(searchParams.t ?? '') ? searchParams.t! : ''
   return (

@@ -5,7 +5,10 @@ import PaymentResult from '@/components/cms/PaymentResult'
 export const dynamic = 'force-dynamic'
 
 // 자동결제 등록에서 돌아온 곳: 일회용 인증키로 빌링키를 받아 비공개 표에 저장한다
-export default async function BillingSuccessPage({ searchParams }: { searchParams: { authKey?: string; customerKey?: string } }) {
+export default async function BillingSuccessPage(
+  props: { searchParams: Promise<{ authKey?: string; customerKey?: string }> }
+) {
+  const searchParams = await props.searchParams
   const { supabase, outletId, user, isEditorPlus } = await getCmsContext()
   const back = [{ href: '/support/billing', label: '결제 정보로', primary: true }]
   const { authKey, customerKey } = searchParams

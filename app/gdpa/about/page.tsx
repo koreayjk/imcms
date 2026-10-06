@@ -5,9 +5,9 @@ import SubPage from '@/components/gdpa/SubPage'
 
 export const metadata: Metadata = { title: '인사말' }
 
-export default function Greeting() {
+export default async function Greeting() {
   return (
-    <SubPage base={gdpaBase()} section="/about" current="/about" title="인사말">
+    <SubPage base={(await gdpaBase())} section="/about" current="/about" title="인사말">
       <div className="grid gap-10 md:grid-cols-[220px_1fr]">
         <div className="flex items-start justify-center md:justify-start"><img src="/gdpa/logo-mark.svg" alt="" className="h-[150px] w-[150px]" /></div>
         <div className="space-y-5 text-[16.5px] leading-[1.95]">

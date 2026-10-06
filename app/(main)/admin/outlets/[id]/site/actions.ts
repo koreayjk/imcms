@@ -73,7 +73,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     await supabase.from('categories').update({ specialty: !!c.specialty, description: cut(c.description, 100) || null }).eq('id', c.id).eq('outlet_id', outletId)
   }
 
-  revalidateTag('sites')
+  revalidateTag('sites', { expire: 0 })
   revalidatePath('/', 'layout')
   // 도메인을 Vercel에도 등록 (VERCEL_API_TOKEN 이 있을 때)
   const dErr = await connectDomain(domain || null)

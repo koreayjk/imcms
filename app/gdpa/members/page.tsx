@@ -9,7 +9,7 @@ export const revalidate = 300
 export default async function Members() {
   const outlets = await memberOutlets()
   return (
-    <SubPage base={gdpaBase()} section="/members" current="/members" title="회원사 소개" wide>
+    <SubPage base={(await gdpaBase())} section="/members" current="/members" title="회원사 소개" wide>
       <p className="mb-8 text-[15.5px] text-[var(--g-sub)]">협회와 함께하는 회원사 <strong className="text-[var(--g-navy)]">{outlets.length}곳</strong>입니다. 이름을 누르면 각 회원사 홈페이지로 이동합니다.</p>
       <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {outlets.map((o, i) => (

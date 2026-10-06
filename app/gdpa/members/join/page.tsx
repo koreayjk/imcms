@@ -12,8 +12,8 @@ const STEPS = [
   ['입회 확정', '결과를 알려 드리고, 회원사 목록에 올립니다.'],
 ]
 
-export default function Join() {
-  const base = gdpaBase()
+export default async function Join() {
+  const base = (await gdpaBase())
   return (
     <SubPage base={base} section="/members" current="/members/join" title="입회 안내">
       <section>

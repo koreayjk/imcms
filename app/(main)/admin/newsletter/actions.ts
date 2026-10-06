@@ -22,7 +22,7 @@ async function outletContext() {
   ])
   if (!outlet) throw new Error('매체를 찾지 못했습니다.')
   const site = buildSite(outlet as never, (cats ?? []) as never)
-  const baseUrl = outlet.domain ? `https://${String(outlet.domain).replace(/^https?:\/\//, '')}` : siteOrigin()
+  const baseUrl = outlet.domain ? `https://${String(outlet.domain).replace(/^https?:\/\//, '')}` : (await siteOrigin())
   return { ...ctx, outlet, site, baseUrl }
 }
 

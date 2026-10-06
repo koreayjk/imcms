@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useFormState } from 'react-dom'
+import { useState, useTransition, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createGroup, createOutlet, deleteGroup, renameGroup, updateOutlet, type FormState } from '@/app/(main)/admin/outlets/actions'
 import { SOLO } from '@/lib/groups'
@@ -106,8 +105,8 @@ function GroupName({ g, canRename, canDelete, count }: { g: Group; canRename: bo
 }
 
 export default function GroupOutlets({ groups, outlets, canManage, isSuper = false, myGroupId, currentOutletId }: { groups: Group[]; outlets: Outlet[]; canManage: boolean; isSuper?: boolean; myGroupId: string | null; currentOutletId: string | null }) {
-  const [outletState, outletAction] = useFormState<FormState, FormData>(createOutlet, {})
-  const [groupState, groupAction] = useFormState<FormState, FormData>(createGroup, {})
+  const [outletState, outletAction] = useActionState<FormState, FormData>(createOutlet, {})
+  const [groupState, groupAction] = useActionState<FormState, FormData>(createGroup, {})
   const orphans = outlets.filter((o) => !o.publisher_id || !groups.some((g) => g.id === o.publisher_id))
   const realGroups = groups.filter((g) => !g.solo)
   const soloIds = new Set(groups.filter((g) => g.solo).map((g) => g.id))

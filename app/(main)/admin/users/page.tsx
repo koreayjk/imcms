@@ -9,7 +9,8 @@ import { appointStaff, approveUser, cancelInvite, rejectUser } from './actions'
 
 type AuthInfo = { id: string; email: string; provider: string; last_sign_in_at: string | null }
 
-export default async function UsersPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function UsersPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams
   const { supabase, user, isSuper, isGroupAdmin, outletId, trial, profile } = await getCmsContext()
   if (!isGroupAdmin) redirect('/articles')
   // 체험 그룹장: 다른 체험자의 정보는 보여주지 않고, 이 화면에서 하는 일만 안내한다

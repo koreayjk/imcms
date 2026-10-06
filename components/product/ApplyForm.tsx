@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useFormState, useFormStatus } from 'react-dom'
+import { useEffect, useState, useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { submitBetaRequest, type ApplyState } from '@/app/imnewsroom/actions'
 import { ANNUAL_FREE, ANNUAL_MONTHS, BILLING_LABEL, PLANS, BETA_PERIOD_LABEL, REGULAR_AFTER_LABEL, SETUP_FEE, firstPayment, isBeta, planById, won, type Billing, type PlanId } from '@/lib/pricing'
 import { applyConsentSections, termsSections } from '@/lib/service-terms'
@@ -53,7 +53,7 @@ function Consent({ name, title, checked, onChange, children, link }: { name: str
 }
 
 export default function ApplyForm() {
-  const [state, action] = useFormState<ApplyState, FormData>(submitBetaRequest, {})
+  const [state, action] = useActionState<ApplyState, FormData>(submitBetaRequest, {})
   const [plan, setPlan] = useState<PlanId>('standard')
   const [billing, setBilling] = useState<Billing>('annual')
   const [agree, setAgree] = useState(false)

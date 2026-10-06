@@ -7,7 +7,8 @@ import PaymentResult from '@/components/cms/PaymentResult'
 export const dynamic = 'force-dynamic'
 
 // Stripe 자동결제 등록에서 돌아온 곳: 저장된 결제수단을 이 매체의 자동결제로 기록한다 (결제수단 ID는 비공개 표에만)
-export default async function StripeSetupPage({ searchParams }: { searchParams: { session_id?: string } }) {
+export default async function StripeSetupPage(props: { searchParams: Promise<{ session_id?: string }> }) {
+  const searchParams = await props.searchParams
   const { supabase, outletId, user, isEditorPlus } = await getCmsContext()
   const back = [{ href: '/support/billing', label: '결제 정보로', primary: true }]
   const sid = searchParams.session_id ?? ''

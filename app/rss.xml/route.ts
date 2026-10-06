@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 // RSS: 최근 기사 50건 (포털·뉴스 앱·구독용)
 export async function GET() {
   const site = await currentSite()
-  const base = siteBaseUrl(site, headers().get('host'))
+  const base = siteBaseUrl(site, (await headers()).get('host'))
   const articles = await getFeedArticles(site, 50)
   const items = articles.map((a) => `<item>
   <title>${xml(a.title)}</title>

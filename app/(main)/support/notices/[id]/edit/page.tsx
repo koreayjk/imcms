@@ -2,7 +2,8 @@ import { notFound, redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import NoticeForm from '@/components/cms/NoticeForm'
 
-export default async function EditNoticePage({ params }: { params: { id: string } }) {
+export default async function EditNoticePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   const { supabase, isStaff } = await getCmsContext()
   if (!isStaff) redirect('/support/notices')
   const { data } = await supabase.from('support_notices').select('*').eq('id', params.id).maybeSingle()

@@ -8,7 +8,7 @@ import { outletTag } from '@/lib/outlet-cache'
 const UUID = /^[0-9a-f-]{36}$/
 
 function refresh(ids: unknown[]) {
-  for (const id of new Set(ids.filter((x): x is string => typeof x === 'string' && UUID.test(x)))) revalidateTag(outletTag(id))
+  for (const id of new Set(ids.filter((x): x is string => typeof x === 'string' && UUID.test(x)))) revalidateTag(outletTag(id), { expire: 0 })
 }
 
 // 기사 저장·발행·승인·되돌리기 뒤: 그 기사 매체 + 함께 송고된 사본이 있는 매체

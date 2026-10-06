@@ -48,7 +48,7 @@ function isPublicPath(pathname: string) {
   )
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // 매체 홈페이지 미리보기: ?preview_outlet=매체ID 로 들어오면 쿠키에 기억 (clear면 끝내기)
   const previewParam = request.nextUrl.searchParams.get('preview_outlet')
   if (previewParam) {

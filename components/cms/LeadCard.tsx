@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useFormState } from 'react-dom'
+import { useState, useTransition, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { openCustomer, saveLead, type LeadState } from '@/app/(main)/admin/leads/actions'
 import PendingButton from './PendingButton'
@@ -29,7 +28,7 @@ export default function LeadCard({ lead, staff, createdLabel, groupName }: { lea
   const [msg, setMsg] = useState<LeadState>({})
   const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()
-  const [openState, openAction] = useFormState<LeadState, FormData>(openCustomer.bind(null, lead.id), {})
+  const [openState, openAction] = useActionState<LeadState, FormData>(openCustomer.bind(null, lead.id), {})
   const dirty = status !== lead.status || note !== (lead.note ?? '') || assignee !== (lead.assigned_to ?? '')
 
   return (

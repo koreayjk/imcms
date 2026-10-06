@@ -9,7 +9,10 @@ export const dynamic = 'force-dynamic'
 
 // 결제창에서 돌아온 곳: 주문 금액과 대조한 뒤 토스페이먼츠에 승인을 요청하고 결과를 기록한다
 //   새로고침해도 같은 주문번호로 승인을 다시 요청해 같은 결과를 받는다 (중복 결제 없음)
-export default async function PaymentSuccessPage({ searchParams }: { searchParams: { paymentKey?: string; orderId?: string; amount?: string } }) {
+export default async function PaymentSuccessPage(
+  props: { searchParams: Promise<{ paymentKey?: string; orderId?: string; amount?: string }> }
+) {
+  const searchParams = await props.searchParams
   const { supabase } = await getCmsContext()
   const { paymentKey, orderId } = searchParams
   const amount = Number(searchParams.amount)

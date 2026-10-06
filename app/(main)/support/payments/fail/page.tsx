@@ -1,7 +1,10 @@
 import PaymentResult from '@/components/cms/PaymentResult'
 
 // 결제창·자동결제 등록에서 실패하거나 사용자가 닫았을 때
-export default function PaymentFailPage({ searchParams }: { searchParams: { code?: string; message?: string; invoice?: string; billing?: string } }) {
+export default async function PaymentFailPage(
+  props: { searchParams: Promise<{ code?: string; message?: string; invoice?: string; billing?: string }> }
+) {
+  const searchParams = await props.searchParams
   const canceled = searchParams.code === 'PAY_PROCESS_CANCELED' || searchParams.code === 'USER_CANCEL'
   const billing = searchParams.billing === '1'
   const back = billing

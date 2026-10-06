@@ -18,9 +18,9 @@ export async function GET(req: NextRequest) {
 
   try {
     // 2분 제한 안에 끝나도록 100초가 지나면 멈춘다 (남은 매체는 다음 예약 실행이 이어서)
-    const result = await runBilling(supabase, kstToday().slice(0, 7), cmsOrigin(), Date.now() + 100_000)
+    const result = await runBilling(supabase, kstToday().slice(0, 7), (await cmsOrigin()), Date.now() + 100_000)
     // 미납 처리: 유예가 지난 매체 이용 제한, 미납·제한 안내 (billing-dunning.sql 전이면 오류만 돌려준다)
-    const dunning = await runDunning(supabase, cmsOrigin())
+    const dunning = await runDunning(supabase, (await cmsOrigin()))
     return NextResponse.json({ ok: true, ...result, dunning })
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 })

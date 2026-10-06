@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 // 뉴스 사이트맵 (구글 뉴스 형식): 최근 48시간에 공개된 기사
 export async function GET() {
   const site = await currentSite()
-  const base = siteBaseUrl(site, headers().get('host'))
+  const base = siteBaseUrl(site, (await headers()).get('host'))
   const articles = await getFeedArticles(site, 1000, 48)
   const items = articles.map((a) => `<url>
   <loc>${base}/news/${a.id}</loc>

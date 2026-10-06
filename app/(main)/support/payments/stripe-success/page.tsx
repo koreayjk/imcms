@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic'
 
 // Stripe 결제 페이지에서 돌아온 곳: 결제를 다시 조회하고 우리 주문(금액)과 맞으면 청구서를 납부 완료로 바꾼다
 //   새로고침해도 같은 결제를 다시 기록할 뿐이다 (중복 결제 없음). 웹훅도 같은 일을 한다
-export default async function StripeSuccessPage({ searchParams }: { searchParams: { session_id?: string } }) {
+export default async function StripeSuccessPage(props: { searchParams: Promise<{ session_id?: string }> }) {
+  const searchParams = await props.searchParams
   const { supabase } = await getCmsContext()
   const back = [{ href: '/support/invoices', label: '청구서 목록' }]
   const sid = searchParams.session_id ?? ''

@@ -5,7 +5,7 @@ import SubPage from '@/components/gdpa/SubPage'
 
 export const metadata: Metadata = { title: '오시는 길·문의' }
 
-export default function Contact() {
+export default async function Contact() {
   const o = GDPA.office
   const rows: [string, string][] = [
     ['주소', o.address || '사무국 주소는 정해지면 안내합니다.'],
@@ -14,7 +14,7 @@ export default function Contact() {
     ['운영 시간', o.hours],
   ]
   return (
-    <SubPage base={gdpaBase()} section="/about" current="/about/contact" title="오시는 길·문의">
+    <SubPage base={(await gdpaBase())} section="/about" current="/about/contact" title="오시는 길·문의">
       <dl className="divide-y divide-[var(--g-line)] border-y-2 border-[var(--g-navy)]">
         {rows.map(([k, v]) => (
           <div key={k} className="grid grid-cols-[110px_1fr] gap-4 py-4 text-[16px]">

@@ -9,9 +9,10 @@ import AdArea from '@/components/site/AdArea'
 import ArticleMain from '@/components/site/ArticleMain'
 import ArticleAside from '@/components/site/ArticleAside'
 
-type Props = { params: { id: string } }
+type Props = { params: Promise<{ id: string }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params
   const site = await currentSite()
   const data = await getArticleData(site, params.id)
   if (!data) return { title: `기사를 찾을 수 없습니다 | ${site.name}` }
@@ -36,7 +37,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function ArticlePage({ params }: Props) {
+export default async function ArticlePage(props: Props) {
+  const params = await props.params
   const site = await currentSite()
   const data = await getArticleData(site, params.id)
   if (!data) notFound()

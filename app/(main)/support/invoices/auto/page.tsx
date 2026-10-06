@@ -7,7 +7,7 @@ import { monthLabel, won } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import { runBillingNow, saveOutletPlan } from './actions'
 
-type Props = { searchParams: { ok?: string; error?: string } }
+type Props = { searchParams: Promise<{ ok?: string; error?: string }> }
 type PlanRow = { outlet_id: string; auto: boolean; cycle: 'monthly' | 'annual'; beta: boolean; start_month: string | null; bill_to: string | null; setup_fee_pending: boolean; custom_monthly: number | null }
 
 const nextMonthOf = (month: string) => {
@@ -16,7 +16,8 @@ const nextMonthOf = (month: string) => {
 }
 
 // 운영팀: 매체별 자동 청구 설정 + 다음 청구 예정 금액
-export default async function AutoBillingPage({ searchParams }: Props) {
+export default async function AutoBillingPage(props: Props) {
+  const searchParams = await props.searchParams
   const { supabase, isStaff, isSuper } = await getCmsContext()
   if (!isStaff) redirect('/support')
 

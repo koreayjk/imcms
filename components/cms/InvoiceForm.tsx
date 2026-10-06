@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
-import { useFormState } from 'react-dom'
+import { useEffect, useState, useTransition, useActionState } from 'react'
 import { invoiceDraft, saveInvoice, type FormState } from '@/app/(main)/support/actions'
 import { invoiceTotals, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from './PendingButton'
 
 export default function InvoiceForm({ outlets }: { outlets: { id: string; name: string }[] }) {
-  const [state, action] = useFormState<FormState, FormData>(saveInvoice, {})
+  const [state, action] = useActionState<FormState, FormData>(saveInvoice, {})
   const [items, setItems] = useState<InvoiceItem[]>([{ name: 'IM 뉴스룸 이용료', qty: 1, unit_price: 0 }])
   const t = invoiceTotals(items)
   const now = new Date()

@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { subscribeNewsletter, type SubscribeState } from '@/app/newsletter/actions'
 
 function Submit() {
@@ -10,7 +11,7 @@ function Submit() {
 
 // 홈페이지 하단 뉴스레터 구독 (확인 메일의 링크를 눌러야 구독이 시작된다)
 export default function NewsletterBox({ siteName }: { siteName: string }) {
-  const [state, action] = useFormState<SubscribeState, FormData>(subscribeNewsletter, {})
+  const [state, action] = useActionState<SubscribeState, FormData>(subscribeNewsletter, {})
   if (state.ok) {
     return <p role="status" className="text-[14px] text-body">확인 메일을 보냈습니다. 메일의 “구독 확인”을 누르면 {siteName} 뉴스레터를 받아보실 수 있습니다.</p>
   }

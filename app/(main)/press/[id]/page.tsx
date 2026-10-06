@@ -15,7 +15,11 @@ export const preferredRegion = 'icn1'
 // AI 초안은 최대 50초까지 기다린다
 export const maxDuration = 60
 
-export default async function PressDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function PressDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
+) {
+  const searchParams = await props.searchParams
+  const params = await props.params
   const { supabase, user, outletId } = await getCmsContext()
 
   const { data } = await supabase.from('press_releases').select('*').eq('id', params.id).maybeSingle()

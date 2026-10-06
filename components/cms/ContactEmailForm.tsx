@@ -1,11 +1,11 @@
 'use client'
 
-import { useFormState } from 'react-dom'
+import { useActionState } from 'react'
 import { saveContactEmail, type SettingsState } from '@/app/(main)/admin/settings/actions'
 import PendingButton from './PendingButton'
 
 export default function ContactEmailForm({ email }: { email: string | null }) {
-  const [state, action] = useFormState<SettingsState, FormData>(saveContactEmail, {})
+  const [state, action] = useActionState<SettingsState, FormData>(saveContactEmail, {})
   return (
     <form action={action} className="flex flex-wrap items-center gap-2">
       <label htmlFor="contact-email" className="sr-only">언론사 대표 이메일</label>

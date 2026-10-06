@@ -33,7 +33,7 @@ export const getCmsContext = cache(async function getCmsContext() {
   const isStaff = isSuper || !!profile?.is_staff
   // 매니저는 매체에 소속되지 않는다: 고객사 수정 요청을 처리할 매체는 상단에서 골라 쿠키에 기억한다
   //   (소속이 아니므로 그 매체의 기사 쓰기·회원 권한은 DB가 계속 막는다)
-  const staffPick = isStaff && !isSuper ? cookies().get(STAFF_OUTLET_COOKIE)?.value ?? null : null
+  const staffPick = isStaff && !isSuper ? (await cookies()).get(STAFF_OUTLET_COOKIE)?.value ?? null : null
   const outletId = staffPick && /^[0-9a-f-]{36}$/.test(staffPick)
     ? staffPick
     : ((profile?.outlet_id as string | null) ?? null)

@@ -46,7 +46,7 @@ export async function startStripeCheckout(invoiceId: string): Promise<{ ok: true
   const { data, error } = await supabase.rpc('payment_start', { inv: invoiceId, p_kind: 'card', p_provider: 'stripe' })
   if (error || !data) return { ok: false, error: error?.message.replace(/^.*?:\s*/, '') || '결제를 시작하지 못했습니다.' }
   const o = data as { orderId: string; orderName: string; amount: number }
-  const origin = siteOrigin()
+  const origin = (await siteOrigin())
   try {
     const session = await stripe().checkout.sessions.create({
       mode: 'payment',
@@ -75,7 +75,7 @@ export async function startStripeSetup(): Promise<{ ok: true; url: string } | { 
   const { data: key, error } = await supabase.rpc('autopay_customer_key', { o: outletId })
   if (error || !key) return { ok: false, error: error?.message ?? '자동결제를 준비하지 못했습니다.' }
   const { data: outlet } = await supabase.from('outlets').select('name').eq('id', outletId).maybeSingle()
-  const origin = siteOrigin()
+  const origin = (await siteOrigin())
   try {
     const customer = await stripe().customers.create({
       email: user.email ?? undefined,
