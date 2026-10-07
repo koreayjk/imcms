@@ -43,10 +43,10 @@ create policy "articles_insert" on articles for insert to authenticated
         and exists (select 1 from articles s where s.id = articles.source_article_id and public.can_manage_outlet(s.outlet_id)))
   );
 
--- 확인: 매니저와 담당 매체
-select p.full_name as "매니저", string_agg(o.name, ', ' order by o.name) as "담당 매체"
-from profiles p
-left join staff_outlets s on s.staff_id = p.id
-left join outlets o on o.id = s.outlet_id
-where coalesce(p.is_staff, false) and not coalesce(p.is_super, false)
-group by p.full_name order by p.full_name;
+-- 확인: 이번에 만든 규칙 (5~7줄이 나오면 끝)
+--   (예전에는 매니저 담당 매체 표를 읽었는데, 그 표가 없는 DB에서는 오류가 나며 위 내용까지 모두 취소됐다)
+select tablename as "표", policyname as "규칙"
+from pg_policies
+where schemaname = 'public'
+  and policyname in ('categories_update', 'categories_delete', 'categories_insert', 'home_layouts_insert', 'home_layouts_update', 'articles_select_staff', 'articles_insert')
+order by 1, 2;
