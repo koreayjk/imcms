@@ -57,6 +57,17 @@ export default async function NewsroomPage(props: Props) {
   const aiLvl = aiLevel(aiUsage)
   const aiAlert = aiUsage && (aiLvl === 'near' || aiLvl === 'full' || aiLvl === 'over') ? aiLvl : null
 
+  // 광고 계약 알림 (편집장·발행인): 7일 안에 끝나는 광고, 시작했는데 입금 안 된 광고 (ad-contracts.sql 전이면 조용히 없음)
+  const kstToday = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)
+  const adRes = isEditorPlus && outletId && !trial
+    ? await supabase.from('ad_contracts').select('advertiser, starts_on, ends_on, supply_amount, vat_amount, paid_amount').eq('outlet_id', outletId).lte('starts_on', kstToday).limit(500)
+    : { data: null }
+  const adRows = (adRes.data ?? []) as { advertiser: string; starts_on: string; ends_on: string; supply_amount: number; vat_amount: number; paid_amount: number }[]
+  const weekLater = new Date(Date.parse(kstToday) + 7 * 864e5).toISOString().slice(0, 10)
+  const adEnding = adRows.filter((c) => c.ends_on >= kstToday && c.ends_on <= weekLater)
+  const adDue = adRows.filter((c) => Number(c.supply_amount) + Number(c.vat_amount) > Number(c.paid_amount))
+  const adDueSum = adDue.reduce((n, c) => n + Number(c.supply_amount) + Number(c.vat_amount) - Number(c.paid_amount), 0)
+
   const rows = (list.data ?? []) as any[]
   // 체험 기자 화면: 내 기사만 세므로, 체험신문 전체에 이미 발행된 기사 수를 함께 알려 준다
   const trialPublished = trial && !isEditorPlus && outletId
@@ -160,6 +171,14 @@ export default async function NewsroomPage(props: Props) {
         </section>
 
         <aside className="space-y-6">
+          {(adEnding.length > 0 || adDue.length > 0) && (
+            <Link href="/admin/ads/contracts" className="block rounded-lg border border-draft/50 bg-draft/5 px-5 py-3.5 text-[13px] leading-relaxed hover:border-draft">
+              <p className="font-bold">광고 확인할 일</p>
+              {adEnding.length > 0 && <p>· 7일 안에 끝나는 광고 <strong>{adEnding.length}건</strong> ({adEnding.slice(0, 2).map((c) => c.advertiser).join(', ')}{adEnding.length > 2 ? ' 등' : ''}) — 재계약 연락</p>}
+              {adDue.length > 0 && <p>· 받을 광고비 <strong>{adDueSum.toLocaleString('ko-KR')}원</strong> ({adDue.length}건)</p>}
+              <p className="mt-0.5 text-[12px] text-muted">광고 계약 보기 ›</p>
+            </Link>
+          )}
           {isEditorPlus && (
             <section className="rounded-lg border border-line bg-white">
               <h2 className="flex items-center gap-2 border-b border-line px-5 py-3.5 text-[14px] font-bold">

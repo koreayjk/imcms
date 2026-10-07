@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import AdManager, { type ManagedBanner } from '@/components/cms/AdManager'
+import AdTabs from '@/components/cms/AdTabs'
 
 // 광고 배너 관리 (편집장·발행인·운영팀). 작업 중인 매체의 배너만
 export default async function AdsPage() {
@@ -37,7 +38,7 @@ export default async function AdsPage() {
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-5">
-        <h1 className="text-[22px] font-bold tracking-tight">광고 배너</h1>
+        <h1 className="text-[22px] font-bold tracking-tight">{isEditorPlus ? '광고' : '광고 배너'}</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
           홈페이지 정해진 자리에 광고를 겁니다. 기간을 정해 두면 그 기간에만 나가고, 노출·클릭 수가 하루 단위로 집계됩니다(검색 로봇 제외).
           배너에는 기사와 헷갈리지 않게 작은 “광고” 표시가 붙습니다.
@@ -49,6 +50,7 @@ export default async function AdsPage() {
           </p>
         )}
       </header>
+      <AdTabs current="banners" showContracts={isEditorPlus} />
       {error ? (
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">광고 배너를 쓰려면 Supabase에서 <code>supabase/ad-banners.sql</code>을 실행해 주세요.</p>
       ) : (
