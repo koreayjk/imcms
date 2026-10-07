@@ -5,12 +5,13 @@ import { getCmsContext } from '@/lib/cms'
 import type { AdDocData } from '@/lib/ad-doc'
 import AdDocument from '@/components/cms/AdDocument'
 import PrintButton from '@/components/cms/PrintButton'
+import AutoPrint from '@/components/cms/AutoPrint'
 import { formatDateTime } from '@/lib/format'
 
 // 저장한 광고 문서 다시 보기: 저장한 순간의 내용 그대로 (그 매체 편집장·발행인만)
 export const metadata: Metadata = { title: '저장한 광고 문서', robots: { index: false } }
 
-export default async function SavedAdDocPage(props: { params: Promise<{ docId: string }>; searchParams: Promise<{ new?: string }> }) {
+export default async function SavedAdDocPage(props: { params: Promise<{ docId: string }>; searchParams: Promise<{ new?: string; same?: string; print?: string }> }) {
   const { docId } = await props.params
   const sp = await props.searchParams
   if (!/^[0-9a-f-]{36}$/.test(docId)) notFound()
@@ -30,11 +31,13 @@ export default async function SavedAdDocPage(props: { params: Promise<{ docId: s
       <div className="mx-auto mb-4 flex max-w-[210mm] flex-wrap items-start justify-between gap-3 px-2 print:hidden">
         <div className="text-[13px] leading-relaxed text-[#4B5563]">
           {sp.new && <p className="mb-1 font-semibold text-published">✓ {name}를 {d.doc_no}로 저장했습니다.</p>}
+          {sp.same && <p className="mb-1 font-semibold text-published">✓ 내용이 바뀌지 않아 이미 저장한 {d.doc_no}를 그대로 씁니다.</p>}
           <p>저장한 {name} <strong className="text-[#111]">{d.doc_no}</strong> · {formatDateTime(d.issued_at)}{d.issuer?.full_name ? ` · ${d.issuer.full_name}` : ''}</p>
           <p className="text-[12px]">저장한 순간의 내용 그대로입니다. 계약을 고친 뒤 새로 발급하려면 <Link href={`/doc/ad/${d.contract_id}/${d.kind}`} className="font-semibold text-review underline underline-offset-2">지금 내용으로 새로 만들기</Link> · <Link href="/admin/ads/contracts" className="underline underline-offset-2">광고 계약으로</Link></p>
         </div>
         <PrintButton />
       </div>
+      {sp.print && <AutoPrint />}
       <AdDocument d={{ ...d.data, no: d.doc_no }} />
     </div>
   )
