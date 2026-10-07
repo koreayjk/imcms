@@ -28,13 +28,17 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const leadQ = isStaff
     ? supabase.from('beta_requests').select('id', { count: 'exact', head: true }).eq('status', 'new')
     : Promise.resolve({ count: 0 })
+  // 운영팀: 아직 확인하지 않은 개선 요청 수 (feedback.sql 전이면 0)
+  const feedbackQ = isStaff
+    ? supabase.from('feedback_posts').select('id', { count: 'exact', head: true }).eq('status', 'received')
+    : Promise.resolve({ count: 0 })
   // 발행인·총관리자는 관리하는 매체 사이를 오간다 (DB 권한이 보이는 매체만 돌려준다)
   const outletQuery = (fields: string) => {
     const q = supabase.from('outlets').select(fields).order('created_at')
     return isGroupAdmin || isStaff ? q : q.eq('id', outletId ?? '00000000-0000-0000-0000-000000000000')
   }
-  const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, outletRes] = await Promise.all([
-    pendingQ, ticketQ, leadQ, outletQuery('id, name, domain, publisher:publishers(name)'),
+  const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes] = await Promise.all([
+    pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'),
   ])
   const supportCount = isStaff
     ? (tickets ?? []).length
@@ -76,7 +80,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-[#F4F5F7] print:block print:h-auto print:overflow-visible print:bg-white">
       <div className="contents print:hidden">
-        <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} />
+        <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} feedbackCount={feedbackCount ?? 0} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         {trial && <TrialBar role={trial.role} daysLeft={trial.daysLeft} />}

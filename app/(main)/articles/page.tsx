@@ -6,6 +6,7 @@ import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import PendingButton from '@/components/cms/PendingButton'
 import { deleteArticle } from './actions'
 import CopyLinkButton from '@/components/cms/CopyLinkButton'
+import { BulkReview, BulkCheck, type BulkItem } from '@/components/cms/BulkReview'
 
 const TABS: (ArticleStatus | 'all')[] = ['all', 'draft', 'in_review', 'rejected', 'published']
 const PAGE_SIZE = 30
@@ -14,7 +15,7 @@ type Props = { searchParams: Promise<{ status?: string; q?: string; mine?: strin
 
 export default async function ArticlesPage(props: Props) {
   const searchParams = await props.searchParams
-  const { supabase, user, outletId, isEditorPlus } = await getCmsContext()
+  const { supabase, user, outletId, isEditorPlus, trial } = await getCmsContext()
 
   const status = TABS.includes(searchParams.status as ArticleStatus) ? (searchParams.status as ArticleStatus) : undefined
   const q = searchParams.q?.trim().slice(0, 100) || undefined
@@ -46,6 +47,10 @@ export default async function ArticlesPage(props: Props) {
   ])
 
   const rows = (data ?? []) as any[]
+  // 한꺼번에 승인·반려: 편집장 이상, 이 쪽에 보이는 승인신청 기사
+  const bulk: BulkItem[] = isEditorPlus
+    ? rows.filter((a) => a.status === 'in_review').map((a) => ({ id: a.id, title: a.title, publishedAt: a.published_at ?? null, hasSection: !!a.category }))
+    : []
   const pages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
   const href = (params: Record<string, string | undefined>) => {
     const sp = new URLSearchParams()
@@ -103,12 +108,14 @@ export default async function ArticlesPage(props: Props) {
         </div>
 
         {rows.length ? (
+          <BulkReview items={bulk} moderated={!!trial}>
           <ul className="divide-y divide-line">
             {rows.map((a) => (
               <li key={a.id} className="group flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3.5 hover:bg-[#F8F9FA] md:flex-nowrap md:gap-4 md:px-5">
+                {bulk.length > 0 && (a.status === 'in_review' ? <BulkCheck id={a.id} title={a.title} /> : <span className="w-4 shrink-0" aria-hidden />)}
                 {isScheduled(a)
-                  ? <span className="status-badge status-scheduled w-[58px] shrink-0 justify-center" title={`${formatDateTime(a.published_at)} 공개 예정`}>예약</span>
-                  : <span className={`status-badge status-${a.status} w-[58px] shrink-0 justify-center`}>{STATUS_LABEL[a.status as ArticleStatus]}</span>}
+                  ? <span className="status-badge status-scheduled w-[64px] shrink-0 justify-center whitespace-nowrap" title={`${formatDateTime(a.published_at)} 공개 예정`}>예약</span>
+                  : <span className={`status-badge status-${a.status} w-[64px] shrink-0 justify-center whitespace-nowrap`}>{STATUS_LABEL[a.status as ArticleStatus]}</span>}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     {a.is_featured && <span className="text-[12px] font-bold text-draft" title="주요 기사">★</span>}
@@ -144,6 +151,7 @@ export default async function ArticlesPage(props: Props) {
               </li>
             ))}
           </ul>
+          </BulkReview>
         ) : (
           <p className="py-20 text-center text-[14px] text-muted">
             {q ? `‘${q}’에 해당하는 기사가 없습니다.` : status ? `${STATUS_LABEL[status]} 상태의 기사가 없습니다.` : '아직 작성한 기사가 없습니다.'}

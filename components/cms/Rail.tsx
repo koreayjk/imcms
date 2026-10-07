@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase'
 import type { UserRole } from '@/lib/types'
-import { BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, GlobeIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, UsersIcon, WriteIcon } from './icons'
+import { BulbIcon, BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, GlobeIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, UsersIcon, WriteIcon } from './icons'
 
 type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
 
@@ -23,13 +23,14 @@ const ITEMS: Item[] = [
   { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
   { href: '/admin/settings', label: '설정·AI', icon: <GearIcon />, match: (p) => p.startsWith('/admin/settings') },
   { href: '/support', label: '고객센터', icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') },
+  { href: '/feedback', label: '개선 요청', icon: <BulbIcon />, match: (p) => p.startsWith('/feedback') },
   { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'staff' },
   { href: '/admin/association', label: '협회', icon: <GlobeIcon />, match: (p) => p.startsWith('/admin/association'), minRole: 'staff' },
 ]
 
-type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number }
+type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number; feedbackCount?: number }
 
-export default function Rail({ userName = '', role, isSuper = false, isStaff = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0, leadCount = 0 }: Props) {
+export default function Rail({ userName = '', role, isSuper = false, isStaff = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0, leadCount = 0, feedbackCount = 0 }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const [more, setMore] = useState(false)
@@ -66,9 +67,9 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
 
   const items = ITEMS.filter(allowed)
   const badge = (href: string) =>
-    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/admin/users' ? pendingCount : 0
+    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/users' ? pendingCount : 0
   const badgeLabel = (href: string, n: number) =>
-    href === '/support' ? (isStaff ? `새 요청 ${n}건` : `새 답변 ${n}건`) : href === '/admin/leads' ? `새 상담 ${n}건` : `승인 대기 ${n}명`
+    href === '/support' ? (isStaff ? `새 요청 ${n}건` : `새 답변 ${n}건`) : href === '/admin/leads' ? `새 상담 ${n}건` : href === '/feedback' ? `새 개선 요청 ${n}건` : `승인 대기 ${n}명`
 
   // 휴대폰: 아래 탭 4개 + 더보기 (나머지 메뉴·내 정보·로그아웃)
   const TAB_HREFS = ['/newsroom', '/articles/new', '/articles', '/press']
