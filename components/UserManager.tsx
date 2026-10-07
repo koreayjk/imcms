@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useActionState } from 'react'
+import { useEffect, useState, useTransition, useActionState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { deleteMember, inviteMember, resetMemberMfa, setMember, setMemberships, signOutMember, suspendMember, suspendDormant, type FormState, type Membership } from '@/app/(main)/admin/users/actions'
@@ -49,6 +49,54 @@ export function InviteForm({ outlets }: { outlets: OutletOption[] }) {
 }
 
 type Kind = 'member' | 'admin'
+
+type MenuItem = { label: string; href?: string; onClick?: () => void; tone?: 'danger' | 'strong' }
+
+// 회원 줄 오른쪽 "관리 ⋯" 메뉴 (버튼을 여러 줄로 늘어놓지 않는다). 표가 옆으로 스크롤돼도 잘리지 않게 화면 기준으로 띄운다
+function RowMenu({ items, disabled }: { items: (MenuItem | false | null | undefined)[]; disabled?: boolean }) {
+  const list = items.filter(Boolean) as MenuItem[]
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+  useEffect(() => {
+    if (!pos) return
+    const close = () => setPos(null)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    document.addEventListener('keydown', close)
+    return () => { window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); document.removeEventListener('keydown', close) }
+  }, [pos])
+  if (!list.length) return null
+  return (
+    <>
+      <button
+        type="button"
+        disabled={disabled}
+        aria-haspopup="menu"
+        aria-expanded={!!pos}
+        onClick={(e) => {
+          const r = e.currentTarget.getBoundingClientRect()
+          const below = window.innerHeight - r.bottom > list.length * 34 + 16
+          setPos(pos ? null : { top: below ? r.bottom + 4 : r.top - list.length * 34 - 12, right: window.innerWidth - r.right })
+        }}
+        className="rounded border border-line px-2.5 py-1 text-[12.5px] text-muted hover:border-ink hover:text-ink disabled:opacity-50"
+      >
+        관리 ⋯
+      </button>
+      {pos && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setPos(null)} aria-hidden />
+          <div role="menu" className="fixed z-50 w-44 overflow-hidden rounded-md border border-line bg-white py-1 text-left shadow-lg" style={{ top: pos.top, right: pos.right }}>
+            {list.map((it) => {
+              const cls = `block w-full px-3.5 py-[7px] text-left text-[13px] hover:bg-paper ${it.tone === 'danger' ? 'text-danger' : it.tone === 'strong' ? 'font-semibold text-review' : 'text-ink'}`
+              return it.href
+                ? <Link key={it.label} href={it.href} role="menuitem" className={cls} onClick={() => setPos(null)}>{it.label}</Link>
+                : <button key={it.label} type="button" role="menuitem" className={cls} onClick={() => { setPos(null); it.onClick?.() }}>{it.label}</button>
+            })}
+          </div>
+        </>
+      )}
+    </>
+  )
+}
 
 function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete, mfa, viewerIsSuper, lastSeen, loginsReady }: {
   u: Profile; email?: string; outlets: OutletOption[]; isMe: boolean; groupName: string | null
@@ -191,67 +239,39 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
       </td>
       <td className="py-2.5 text-right">
         {dirty && (
-          <button type="button" disabled={pending} onClick={save} className="btn-primary px-3 py-1 text-[12.5px]">
+          <button type="button" disabled={pending} onClick={save} className="btn-primary mr-1.5 px-3 py-1 text-[12.5px]">
             {pending ? '저장 중…' : '저장'}
           </button>
         )}
-        {canGuard && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => guard(
-              () => suspendMember(u.id, !suspended),
-              suspended
-                ? `${u.full_name}님의 출입 정지를 풀까요? 다시 편집국을 쓸 수 있게 됩니다.`
-                : `${u.full_name}님의 편집국 출입을 정지할까요?\n\n· 바로 편집국과 기사·자료를 열 수 없게 됩니다 (자기 기사 수정·삭제 포함).\n· 쓴 기사는 기자명 그대로 남습니다.\n· 언제든 정지를 풀 수 있습니다.`,
-            )}
-            className={`mt-1 block w-full text-right text-[11.5px] ${suspended ? 'font-semibold text-review' : 'text-muted hover:text-danger'}`}
-          >
-            {suspended ? '정지 풀기' : '출입 정지'}
-          </button>
-        )}
-        {canWatch && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => guard(() => signOutMember(u.id), `${u.full_name}님의 로그인을 모든 기기에서 끊을까요?\n\n바로 편집국을 열 수 없게 되고, 다시 로그인해야 합니다.`)}
-            className="mt-1 block w-full whitespace-nowrap text-right text-[11.5px] text-muted hover:text-danger"
-          >
-            모든 기기 로그아웃
-          </button>
-        )}
-        {canWatch && (
-          <Link href={`/admin/users/${u.id}/logins`} className="mt-1 block w-full whitespace-nowrap text-right text-[11.5px] text-muted hover:text-ink">
-            로그인 기록
-          </Link>
-        )}
-        {canGuard && mfa && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => guard(() => resetMemberMfa(u.id), `${u.full_name}님의 2단계 인증을 초기화할까요?\n\n휴대폰을 잃어버렸을 때 씁니다. 다음 로그인 때 인증 앱을 새로 등록합니다. 본인이 맞는지 꼭 확인하세요.`)}
-            className="mt-1 block w-full whitespace-nowrap text-right text-[11.5px] text-muted hover:text-danger"
-          >
-            2단계 초기화
-          </button>
-        )}
-        {canDelete && !isMe && !u.is_super && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => {
-              if (!window.confirm(`${u.full_name}님${email ? `(${email})` : ''}을 탈퇴시킬까요?\n\n· 계정이 삭제되어 더 이상 로그인할 수 없습니다.\n· 쓴 기사는 그대로 남고 기자명도 유지됩니다.\n· 되돌릴 수 없습니다.`)) return
-              start(async () => {
-                const r = await deleteMember(u.id)
-                setMsg(r)
-                if (!r.error) router.refresh()
-              })
-            }}
-            className="mt-1 block w-full text-right text-[11.5px] text-muted hover:text-danger"
-          >
-            탈퇴
-          </button>
-        )}
+        <RowMenu
+          disabled={pending}
+          items={[
+            canWatch && { label: '로그인 기록', href: `/admin/users/${u.id}/logins` },
+            canWatch && { label: '모든 기기 로그아웃', onClick: () => guard(() => signOutMember(u.id), `${u.full_name}님의 로그인을 모든 기기에서 끊을까요?\n\n바로 편집국을 열 수 없게 되고, 다시 로그인해야 합니다.`) },
+            canGuard && mfa && { label: '2단계 인증 초기화', onClick: () => guard(() => resetMemberMfa(u.id), `${u.full_name}님의 2단계 인증을 초기화할까요?\n\n휴대폰을 잃어버렸을 때 씁니다. 다음 로그인 때 인증 앱을 새로 등록합니다. 본인이 맞는지 꼭 확인하세요.`) },
+            canGuard && {
+              label: suspended ? '정지 풀기' : '출입 정지',
+              tone: suspended ? 'strong' as const : 'danger' as const,
+              onClick: () => guard(
+                () => suspendMember(u.id, !suspended),
+                suspended
+                  ? `${u.full_name}님의 출입 정지를 풀까요? 다시 편집국을 쓸 수 있게 됩니다.`
+                  : `${u.full_name}님의 편집국 출입을 정지할까요?\n\n· 바로 편집국과 기사·자료를 열 수 없게 됩니다 (자기 기사 수정·삭제 포함).\n· 쓴 기사는 기자명 그대로 남습니다.\n· 언제든 정지를 풀 수 있습니다.`,
+              ),
+            },
+            canDelete && !isMe && !u.is_super && {
+              label: '탈퇴', tone: 'danger' as const,
+              onClick: () => {
+                if (!window.confirm(`${u.full_name}님${email ? `(${email})` : ''}을 탈퇴시킬까요?\n\n· 계정이 삭제되어 더 이상 로그인할 수 없습니다.\n· 쓴 기사는 그대로 남고 기자명도 유지됩니다.\n· 되돌릴 수 없습니다.`)) return
+                start(async () => {
+                  const r = await deleteMember(u.id)
+                  setMsg(r)
+                  if (!r.error) router.refresh()
+                })
+              },
+            },
+          ]}
+        />
         {msg.error && <span role="alert" className="block text-[11.5px] text-danger">{msg.error}</span>}
         {msg.ok && !msg.error && !dirty && <span role="status" className="block text-[11.5px] text-published">{msg.ok}</span>}
       </td>
