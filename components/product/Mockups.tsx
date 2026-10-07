@@ -42,7 +42,7 @@ const PRESS = [
 export function PressInboxMock() {
   return (
     <Window active="보도자료">
-      <div className="grid gap-3 lg:grid-cols-[1fr_150px]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_150px]">
         <div className="overflow-hidden rounded-lg border border-[#E4E6EA] bg-white">
           <div className="flex items-center gap-4 border-b border-[#E4E6EA] px-3.5 text-[12px]">
             <span className="-mb-px border-b-2 border-[#14171C] py-2.5 font-bold">추천 (더케어타임즈 관련)</span>

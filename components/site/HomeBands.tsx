@@ -78,7 +78,7 @@ function Wrap({ children, className = '' }: { children: ReactNode; className?: s
 function BriefBand({ title, href, items, subs, mostViewed, sidebarAd }: BandProps & { mostViewed: PublicArticle[]; sidebarAd?: ReactNode }) {
   if (!items.length) return null
   return (
-    <Wrap className="grid gap-10 lg:grid-cols-[1fr_300px]">
+    <Wrap className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
         <SectionHeading title={title} href={href} />
         <div className="mb-3"><SubLinks subs={subs} /></div>

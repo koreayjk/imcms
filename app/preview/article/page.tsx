@@ -19,7 +19,7 @@ export default async function ArticlePreviewPage(props: { searchParams: Promise<
 
   return (
     <SiteFrame site={site} current={searchParams.c}>
-      <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[1fr_300px] lg:py-10">
+      <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-10">
         <PreviewArticle siteName={site.name} sectionNames={sectionNames} bottomAd={<AdArea site={site} slot="article_bottom" className="mt-9" />} />
         <ArticleAside site={site} mostViewed={mostViewed} latest={latest} />
       </div>

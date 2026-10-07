@@ -77,7 +77,7 @@ export default async function SectionPage(props: Props) {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-[1200px] gap-10 px-4 py-8 lg:grid-cols-[1fr_300px]">
+      <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-10 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div>
           <p className="mb-4 border-b-2 border-brand pb-2 text-[13px] text-sub">
             전체 <strong className="font-semibold text-body tabular-nums">{total.toLocaleString()}</strong>건

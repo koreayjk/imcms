@@ -173,7 +173,7 @@ export default async function GdpaHome() {
 
       {/* 회원사 뉴스 + 공지 */}
       <section className="border-t border-[var(--g-line)] bg-[var(--g-soft)]">
-        <div className="mx-auto grid max-w-[1200px] gap-14 px-4 py-20 md:py-24 lg:grid-cols-[1fr_340px]">
+        <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-14 px-4 py-20 md:py-24 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div>
             <div className="flex items-end justify-between">
               <div>

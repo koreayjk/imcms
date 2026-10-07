@@ -111,7 +111,7 @@ export default async function PressPage(props: Props) {
         </div>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="min-w-0 rounded-lg border border-line bg-white">
           <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-line px-2 md:px-5">
             <nav className="flex max-w-full overflow-x-auto" aria-label="보기">

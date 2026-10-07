@@ -99,7 +99,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', initialLayout, arti
   }
 
   return (
-    <div className="grid items-start gap-6 pb-24 lg:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 items-start gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-6">
         {SLOTS.map((s) => (
           <section key={s.key} className="rounded-lg border border-line bg-white p-5">

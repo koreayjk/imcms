@@ -51,7 +51,7 @@ export default async function SharedPreviewPage(
       <div className="bg-[#1C1F26] px-4 py-2 text-center text-[12.5px] text-white">
         <strong>미리보기</strong> · 아직 홈페이지에 공개되지 않은 기사입니다({state}). 링크를 받은 사람만 볼 수 있습니다.
       </div>
-      <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[1fr_300px] lg:py-10">
+      <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-10">
         <ArticleMain a={a} bodyHtml={sanitizeBody(v.body)} sectionName={section?.name} siteName={site.name} />
         <ArticleAside site={site} mostViewed={mostViewed} latest={latest} />
       </div>

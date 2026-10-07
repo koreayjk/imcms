@@ -150,7 +150,7 @@ export default async function HomePage() {
         {!bandsMode && (
           <>
         {/* ── 주요뉴스 + 많이 본 뉴스 ── */}
-        <div className="grid gap-10 py-8 lg:grid-cols-[1fr_300px]">
+        <div className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <section id="major" className="scroll-mt-28">
             <SectionHeading title="주요뉴스" />
             <ul className="divide-y divide-rule lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-8 lg:divide-y-0">

@@ -51,7 +51,7 @@ export default async function TrialPage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <div className="mx-auto grid max-w-[1080px] gap-10 px-4 py-12 md:grid-cols-[1fr_440px] md:py-16">
+      <div className="mx-auto grid grid-cols-1 max-w-[1080px] gap-10 px-4 py-12 md:grid-cols-[minmax(0,1fr)_440px] md:py-16">
         <div>
           <p className="text-[12.5px] font-bold tracking-[0.2em] text-muted">IM NEWSROOM · FREE TRIAL</p>
           <h1 className="mt-3 text-[30px] font-extrabold leading-[1.3] tracking-[-0.03em] md:text-[38px]">7일 동안 무료로<br />우리 신문처럼 써 보세요</h1>

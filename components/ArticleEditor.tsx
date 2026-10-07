@@ -447,7 +447,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
   return (
     <div className="pb-24">
-      <div className="grid items-start gap-4 md:gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-5 rounded-lg border border-line bg-white p-4 md:p-7">
           <div className="flex flex-wrap items-center gap-3 border-b border-line pb-5">
             <span className="w-16 text-[13px] font-semibold">기사상태</span>
@@ -812,12 +812,12 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               )}
             </div>
           )}
-          <div className="ml-auto flex shrink-0 gap-1.5 md:gap-2">
-            <button type="button" onClick={() => { if (validate()) openPreview(null) }} disabled={!!saving} className="btn-secondary px-2.5 md:px-5">
+          <div className="ml-auto flex shrink-0 gap-1 md:gap-2">
+            <button type="button" onClick={() => { if (validate()) openPreview(null) }} disabled={!!saving} className="btn-secondary whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm">
               미리보기
             </button>
             {/* 저장 = 기사목록에 들어간다 (쓰는 중인 내용은 따로 이 브라우저에 자동 임시 저장) */}
-            <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary px-2.5 md:px-5">
+            <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm">
               {saving === 'draft' ? '저장 중…' : '저장'}
             </button>
             <button
@@ -825,17 +825,17 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               onClick={runLegal}
               disabled={!!saving || checking}
               title="명예훼손·저작권(도용)·개인정보 등 법적으로 문제가 될 표현을 AI가 찾아 줍니다 (AI 사용 1회)"
-              className={`btn-secondary whitespace-nowrap px-2.5 md:px-5 ${currentLegal ? 'border-published/50 text-published' : ''}`}
+              className={`btn-secondary whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm ${currentLegal ? 'border-published/50 text-published' : ''}`}
             >
               {checking ? '검수 중…' : currentLegal ? 'AI 검수 ✓' : 'AI 검수'}
             </button>
             {status !== 'published' && status !== 'in_review' && (
-              <button type="button" onClick={() => submit('review')} disabled={!!saving || checking} className="btn-review px-2.5 md:px-5">
+              <button type="button" onClick={() => submit('review')} disabled={!!saving || checking} className="btn-review whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm">
                 {saving === 'review' ? '신청 중…' : '승인신청'}
               </button>
             )}
             {isEditorPlus && (
-              <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish px-2.5 md:px-5">
+              <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm">
                 {saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
               </button>
             )}

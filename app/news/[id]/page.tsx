@@ -69,7 +69,7 @@ export default async function ArticlePage(props: Props) {
   return (
     <SiteFrame site={site} current={a.category?.slug}>
       {!a.id.startsWith('demo-') && <ViewCounter id={a.id} />}
-      <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[1fr_300px] lg:py-10">
+      <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-10">
         <ArticleMain
           a={a}
           bodyHtml={sanitizeBody(a.body)}

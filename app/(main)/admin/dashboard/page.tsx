@@ -121,7 +121,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
         <Kpi label="미납 청구서" value={unpaidCount} sub={won(sum('unpaid_total'))} tone={unpaidCount ? 'alert' : 'default'} href="/support/invoices" />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           {sections.map((g) => (
             <section key={g.id} className="overflow-hidden rounded-xl border border-line bg-white">
