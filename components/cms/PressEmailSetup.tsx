@@ -140,7 +140,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
                 <p className="text-[17px] font-bold">지메일에 내 전용 주소를 등록합니다</p>
                 <p>
                   아래 파란 버튼을 누르면 지메일 전달 설정이 열립니다.<br />
-                  <Btn>전달 주소 추가</Btn>를 누르고 <strong>붙여넣기</strong>(Ctrl+V) → <Btn>다음</Btn> → <Btn>계속</Btn> → <Btn>확인</Btn>.
+                  <Btn>전달 주소 추가</Btn>를 누르고 <strong>붙여넣기</strong>(Ctrl+V · 맥은 ⌘+V) → <Btn>다음</Btn> → <Btn>계속</Btn> → <Btn>확인</Btn>.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <CopyButton text={address} label="① 주소 복사" />
