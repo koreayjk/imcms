@@ -46,7 +46,7 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ stat
           <h1 className="text-[22px] font-bold tracking-tight">개선 요청</h1>
           <p className="mt-1 text-[13.5px] text-muted">
             편집국을 쓰면서 불편한 점, 있었으면 하는 기능을 올려 주세요. IM 뉴스룸 운영팀이 보고 처리 상태와 답을 남깁니다.
-            {!isStaff && ' 같은 매체 동료의 글도 보이니 댓글로 의견을 보태 주세요.'}
+            {!isStaff && ' 올린 글은 나와 운영팀만 볼 수 있습니다.'}
           </p>
         </div>
         <NewFeedback />
@@ -71,10 +71,10 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ stat
                 )
               })}
             </nav>
-            <div className="flex gap-1 px-2 py-2 text-[13px] md:px-0">
+            {isStaff && <div className="flex gap-1 px-2 py-2 text-[13px] md:px-0">
               <Link href={href({ mine: undefined, page: undefined })} className={`rounded px-2.5 py-1 ${!mine ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>모두</Link>
               <Link href={href({ mine: '1', page: undefined })} className={`rounded px-2.5 py-1 ${mine ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>내 글</Link>
-            </div>
+            </div>}
           </div>
 
           {rows.length ? (
@@ -99,7 +99,7 @@ export default async function FeedbackPage(props: { searchParams: Promise<{ stat
             </ul>
           ) : (
             <p className="py-20 text-center text-[14px] text-muted">
-              {status ? `${FEEDBACK_STATUS[status].label} 상태의 글이 없습니다.` : mine ? '아직 올린 개선 요청이 없습니다.' : '아직 올라온 개선 요청이 없습니다. 첫 의견을 남겨 주세요.'}
+              {status ? `${FEEDBACK_STATUS[status].label} 상태의 글이 없습니다.` : mine || !isStaff ? '아직 올린 개선 요청이 없습니다. 불편한 점이나 바라는 기능을 남겨 주세요.' : '아직 올라온 개선 요청이 없습니다.'}
             </p>
           )}
         </section>

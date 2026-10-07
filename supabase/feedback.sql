@@ -1,6 +1,6 @@
 -- 개선 요청: 기자·편집장이 편집국 프로그램에 바라는 점을 올리고, 운영팀이 상태(접수·처리중·이미 있음·처리완료·반영 어려움)를 정하고 댓글로 의견을 나눈다
 --   (Supabase SQL 에디터에서 실행. 여러 번 실행해도 된다. support.sql·groups.sql 다음)
---   보기: 같은 매체(그룹) 사람들 · 쓴 사람 · 운영팀(총관리자·IM 뉴스룸 매니저)
+--   보기: 쓴 사람은 자기 글만, 운영팀(총관리자·IM 뉴스룸 매니저)은 전체
 --   상태 바꾸기: 운영팀 / 글·댓글 고치기·지우기: 쓴 사람과 총관리자
 
 create table if not exists feedback_posts (
@@ -38,7 +38,7 @@ create index if not exists feedback_comments_post on feedback_comments (post_id,
 create or replace function public.can_see_feedback(p uuid) returns boolean language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from feedback_posts f
-    where f.id = p and (public.is_staff() or f.author_id = auth.uid() or (f.outlet_id is not null and public.can_view_outlet(f.outlet_id)))
+    where f.id = p and (public.is_staff() or f.author_id = auth.uid())
   );
 $$;
 grant execute on function public.can_see_feedback(uuid) to authenticated;
@@ -133,7 +133,7 @@ create trigger feedback_comment_count after insert or delete on feedback_comment
 alter table feedback_posts enable row level security;
 drop policy if exists "feedback_posts_select" on feedback_posts;
 create policy "feedback_posts_select" on feedback_posts for select to authenticated
-  using (public.is_staff() or author_id = auth.uid() or (outlet_id is not null and public.can_view_outlet(outlet_id)));
+  using (public.is_staff() or author_id = auth.uid());
 drop policy if exists "feedback_posts_insert" on feedback_posts;
 create policy "feedback_posts_insert" on feedback_posts for insert to authenticated with check (true);
 drop policy if exists "feedback_posts_update" on feedback_posts;
