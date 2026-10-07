@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import GroupOutlets from '@/components/cms/GroupOutlets'
@@ -33,7 +34,13 @@ export default async function OutletsPage() {
   return (
     <div className="mx-auto max-w-[960px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-6">
-        <h1 className="text-[22px] font-bold tracking-tight">{isStaff ? '그룹·매체 관리' : '우리 그룹 매체'}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-[22px] font-bold tracking-tight">{isStaff ? '그룹·매체 관리' : '우리 그룹 매체'}</h1>
+          <div className="flex gap-2">
+            {isSuper && <Link href="/admin/import" className="btn-secondary px-3 py-1.5 text-[13px]">다른 프로그램 자료 가져오기</Link>}
+            {isGroupAdmin && <Link href="/admin/export" className="btn-secondary px-3 py-1.5 text-[13px]">자료 내보내기</Link>}
+          </div>
+        </div>
         <p className="mt-1 text-[13px] text-muted">
           {isStaff
             ? '고객 그룹과 매체를 만들고 홈페이지를 설정합니다. 그룹끼리는 기사·회원·보도자료·청구서가 서로 보이지 않습니다.'

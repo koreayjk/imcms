@@ -332,6 +332,17 @@ async function loadArticleData(site: SiteConfig, id: string) {
 }
 export const getArticleData = outletCached('article', loadArticleData)
 
+// 다른 프로그램에서 옮겨 온 기사: 옛 기사 번호 → 새 기사 id (data-migration.sql 전이면 null)
+export async function legacyArticleId(site: SiteConfig, legacy: string) {
+  if (isDemo || !legacy.trim()) return null
+  const supabase = client()
+  const outletId = site.outletId
+    ?? ((await supabase.from('outlets').select('id').in('domain', site.domains).limit(1).maybeSingle()).data?.id as string | undefined)
+  if (!outletId) return null
+  const { data, error } = await supabase.rpc('legacy_article', { o: outletId, legacy: legacy.trim() })
+  return error ? null : ((data as string | null) ?? null)
+}
+
 const RELATED_LINKS = 4
 const RELATED_MIN = 3
 
