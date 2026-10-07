@@ -103,10 +103,14 @@ export default function MfaSetupPage() {
         ) : (
           <>
             <ol className="space-y-1.5 text-[13.5px] leading-relaxed">
-              <li><strong>1.</strong> 휴대폰에 인증 앱을 설치합니다 (Google Authenticator, Microsoft Authenticator 등).</li>
-              <li><strong>2.</strong> 앱에서 “QR 코드 스캔”으로 아래 그림을 찍습니다.</li>
-              <li><strong>3.</strong> 앱에 생긴 <strong>IM Newsroom</strong> 항목의 6자리 숫자를 넣습니다.</li>
+              <li><strong>1.</strong> 휴대폰 앱스토어·플레이스토어에서 <strong>Google Authenticator</strong> 또는 <strong>Microsoft Authenticator</strong>를 설치합니다 (무료).</li>
+              <li><strong>2.</strong> 앱을 열고 <strong>+</strong> 버튼 → <strong>“QR 코드 스캔”</strong>을 눌러 아래 그림을 찍습니다.</li>
+              <li><strong>3.</strong> 앱에 생긴 <strong>IM Newsroom</strong> 항목의 6자리 숫자를 아래에 넣습니다. 숫자는 30초마다 바뀝니다.</li>
             </ol>
+            <p className="mt-3 rounded-md bg-paper px-3.5 py-2.5 text-[12.5px] leading-relaxed text-muted">
+              다음부터는 새 기기에서 로그인할 때만 앱의 숫자를 넣습니다. 같은 기기에서는 {MFA_DAYS}일 동안 다시 묻지 않습니다.
+              이 화면을 휴대폰으로 보고 있다면 “키 직접 입력”을 눌러 나오는 글자를 인증 앱의 “설정 키 입력”에 넣으세요.
+            </p>
             <div className="mt-5 grid place-items-center rounded-lg border border-line bg-white p-4">
               {enrolled
                 ? <img src={enrolled.qr} alt="인증 앱으로 찍을 QR 코드" width={184} height={184} className="h-[184px] w-[184px]" />

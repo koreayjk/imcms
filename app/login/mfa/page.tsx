@@ -74,6 +74,15 @@ export default function MfaPage() {
           휴대폰의 인증 앱(Google Authenticator 등)에서 <strong className="text-ink">IM Newsroom</strong> 항목의 숫자를 넣으세요.
           이 기기에서 로그아웃하지 않으면 {MFA_DAYS}일(총관리자·매니저는 {MFA_DAYS_STAFF}일) 동안 다시 묻지 않습니다.
         </p>
+        <details className="mt-3 rounded-md bg-paper px-3.5 py-2.5 text-[12.5px] leading-relaxed text-muted">
+          <summary className="cursor-pointer font-semibold text-ink">6자리 코드는 어디서 보나요?</summary>
+          <ol className="mt-2 list-decimal space-y-1 pl-4">
+            <li>휴대폰에서 <strong className="text-ink">인증 앱</strong>을 엽니다. 2단계 인증을 켤 때 QR 코드를 찍은 앱입니다 (Google Authenticator, Microsoft Authenticator 등).</li>
+            <li>목록에서 <strong className="text-ink">IM Newsroom</strong> (내 이메일)을 찾습니다.</li>
+            <li>그 아래 큰 숫자 6자리를 여기에 넣습니다. 숫자는 30초마다 바뀌니, 바뀌었으면 새 숫자를 넣으세요.</li>
+          </ol>
+          <p className="mt-2">코드가 계속 틀리면 휴대폰 설정에서 <strong className="text-ink">날짜·시간 자동 설정</strong>이 켜져 있는지 확인하세요. 인증 앱은 휴대폰 시계로 숫자를 만듭니다.</p>
+        </details>
         {factors === null ? (
           <p className="mt-6 text-center text-[13px] text-muted">확인하는 중…</p>
         ) : (

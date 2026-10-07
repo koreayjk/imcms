@@ -11,6 +11,7 @@ import IndexWidget from '@/components/site/IndexWidget'
 import type { IndexSeries } from '@/lib/market-index'
 import { CountUp, Reveal } from '@/components/product/Motion'
 import Pricing from '@/components/product/Pricing'
+import { LoginHistoryMock, MfaMock } from '@/components/product/SecurityMocks'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,6 +109,40 @@ const SECURITY: { icon: Icon; worry: string; title: string; body: string }[] = [
   { icon: 'check', worry: '누가 마음대로 권한을 올리면?', title: '권한은 발행인만 줍니다', body: '기자가 스스로 편집장·발행인이 될 수 없습니다. 새로 가입한 사람도 발행인이 승인해야 편집국에 들어옵니다.' },
   { icon: 'card', worry: '결제·개인정보가 새면?', title: '카드 정보는 보관하지 않습니다', body: '결제는 세계적인 결제 회사 Stripe가 처리하고 카드 번호는 Stripe만 보관합니다. 모든 접속은 암호화되고, 유출된 적 있는 비밀번호로는 가입할 수 없습니다.' },
   { icon: 'clock', worry: '누가 몰래 내 계정으로 들어오면?', title: '로그인 기록을 보고 바로 끊습니다', body: '언제·어느 기기·어느 IP로 로그인했는지 1년 동안 남습니다. 모르는 기기가 보이면 “모든 기기 로그아웃”으로 그 즉시 끊고, 발행인도 기자 계정을 대신 끊을 수 있습니다.' },
+]
+
+// 2단계 인증 사용법 (소개 페이지 보안 섹션). 순서가 있는 일이라 번호를 붙인다
+const MFA_STEPS: { when: string; note: string; steps: { t: string; d: string }[] }[] = [
+  {
+    when: '처음 한 번', note: '1분이면 끝',
+    steps: [
+      { t: '휴대폰에 인증 앱 설치', d: '앱스토어·플레이스토어에서 “Google Authenticator” 또는 “Microsoft Authenticator”를 받습니다. 무료입니다.' },
+      { t: '편집국 → 내 정보 → “2단계 인증 켜기”', d: '화면에 네모난 QR 코드가 나옵니다.' },
+      { t: '인증 앱으로 QR 코드 찍기', d: '앱에 “IM Newsroom”이 생기고 6자리 숫자가 보입니다. 그 숫자를 화면에 넣으면 켜집니다.' },
+    ],
+  },
+  {
+    when: '로그인할 때', note: '새 기기에서만',
+    steps: [
+      { t: '평소처럼 이메일·비밀번호로 로그인', d: '구글 계정으로 로그인해도 같습니다.' },
+      { t: '휴대폰에서 인증 앱을 열어 6자리 숫자 입력', d: '숫자는 30초마다 바뀝니다. 넣기 전에 바뀌었으면 새 숫자를 넣으면 됩니다.' },
+      { t: '끝. 이 기기는 90일 동안 다시 묻지 않습니다', d: '로그아웃하거나 다른 컴퓨터·휴대폰에서 로그인할 때만 다시 묻습니다.' },
+    ],
+  },
+]
+const MFA_QA = [
+  { q: '문자(SMS) 인증과 뭐가 다른가요?', a: '숫자가 휴대폰 안에서 만들어져 문자 가로채기·유심 복제로 빼낼 수 없습니다. 구글·마이크로소프트·깃허브가 쓰는 국제 표준 방식이고, 인터넷이 안 돼도(비행기 모드) 숫자가 나옵니다.' },
+  { q: '휴대폰을 잃어버리면요?', a: '발행인이 회원 관리에서 “2단계 초기화”를 누르면, 다음 로그인 때 새 휴대폰으로 다시 등록합니다. 그 사이 다른 기기의 로그인은 “모든 기기 로그아웃”으로 끊어 둡니다.' },
+  { q: '휴대폰을 바꾸면요?', a: '인증 앱의 “계정 옮기기(내보내기)”로 새 휴대폰에 옮기면 됩니다. 옮기기 어려우면 초기화한 뒤 다시 등록합니다. 태블릿에 하나 더 등록해 두면 더 안심입니다.' },
+  { q: '꼭 켜야 하나요?', a: '기자는 선택입니다. 발행인이 우리 언론사 발행인·편집장에게 필수로 정할 수 있습니다. 모든 언론사를 관리하는 IM 뉴스룸 운영진은 모두 켜고 씁니다.' },
+]
+
+// 로그인 기록·원격 로그아웃·장기 미접속 정리
+const ACCOUNT_GUARD: { t: string; d: string }[] = [
+  { t: '로그인 기록', d: '언제, 어느 기기(Windows·iPhone 등), 어느 IP로 들어왔는지와 지금도 로그인돼 있는지가 내 정보에 나옵니다. 1년 동안 보관합니다.' },
+  { t: '다른 기기 모두 로그아웃', d: 'PC방·공용 컴퓨터에서 로그아웃을 잊었거나 모르는 기기가 보이면 버튼 하나로 끊습니다. 끊긴 기기는 그 순간부터 기사 한 건도 열 수 없습니다.' },
+  { t: '발행인이 대신 끊기', d: '기자가 휴대폰을 잃어버렸거나 퇴사하면 발행인이 회원 관리에서 그 기자의 로그인 기록을 보고, 모든 기기 로그아웃·출입 정지를 바로 합니다.' },
+  { t: '1년 넘게 안 쓴 계정 정리', d: '오래 쓰지 않는 계정은 비밀번호가 새도 알아차리기 어렵습니다. 1년 이상 접속하지 않은 계정을 따로 모아 보여주고, 한 번에 출입 정지합니다.' },
 ]
 
 const FAQ = [
@@ -603,7 +638,75 @@ export default function ProductHome() {
               </Reveal>
             </div>
 
-            <div className="mt-16 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {/* 2단계 인증 사용법 */}
+            <div id="mfa-guide" className="mt-24 scroll-mt-20 border-t border-white/10 pt-20">
+              <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_1fr]">
+                <Reveal>
+                  <Eyebrow icon="phone" color="#A9BDE6">2단계 인증</Eyebrow>
+                  <h3 className="mt-4 text-[26px] font-extrabold leading-[1.3] tracking-[-0.03em] [text-wrap:balance] sm:text-[32px]">비밀번호 다음에 휴대폰 숫자 6자리.<br />은행 OTP와 같은 원리입니다.</h3>
+                  <p className="mt-4 max-w-[34em] text-[16px] leading-[1.8] text-[#C5CFE0]">비밀번호는 새어 나갈 수 있지만, 내 휴대폰은 내 손에 있습니다. 2단계 인증을 켜면 비밀번호를 아는 사람도 내 휴대폰 없이는 편집국에 들어올 수 없습니다. 같은 기기에서는 90일에 한 번만 물어 번거롭지 않습니다.</p>
+                  <div className="mt-8 grid gap-6 sm:grid-cols-2">
+                    {MFA_STEPS.map((g) => (
+                      <div key={g.when}>
+                        <p className="flex items-baseline gap-2 border-b border-white/15 pb-2">
+                          <span className="text-[15px] font-bold">{g.when}</span>
+                          <span className="text-[12.5px] text-[#8FA3C7]">{g.note}</span>
+                        </p>
+                        <ol className="mt-3 space-y-3.5">
+                          {g.steps.map((st, i) => (
+                            <li key={st.t} className="flex gap-3">
+                              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#A9BDE6] text-[12px] font-bold text-[#121F3A] tabular-nums" aria-hidden>{i + 1}</span>
+                              <span>
+                                <span className="block text-[14.5px] font-semibold leading-snug">{st.t}</span>
+                                <span className="mt-1 block text-[13px] leading-relaxed text-[#A9B6CE]">{st.d}</span>
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    ))}
+                  </div>
+                </Reveal>
+                <Reveal delay={150}>
+                  <MfaMock />
+                </Reveal>
+              </div>
+              <dl className="mt-14 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+                {MFA_QA.map((x) => (
+                  <div key={x.q} className="border-l-2 border-[#A9BDE6]/40 pl-4">
+                    <dt className="text-[14.5px] font-bold">{x.q}</dt>
+                    <dd className="mt-1.5 text-[13.5px] leading-relaxed text-[#A9B6CE]">{x.a}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            {/* 로그인 기록 · 원격 로그아웃 · 장기 미접속 정리 */}
+            <div className="mt-24 border-t border-white/10 pt-20">
+              <div className="grid items-center gap-14 lg:grid-cols-[1fr_1.05fr]">
+                <Reveal className="order-2 lg:order-1">
+                  <LoginHistoryMock />
+                </Reveal>
+                <Reveal delay={150} className="order-1 lg:order-2">
+                  <Eyebrow icon="clock" color="#A9BDE6">로그인 기록 · 원격 로그아웃</Eyebrow>
+                  <h3 className="mt-4 text-[26px] font-extrabold leading-[1.3] tracking-[-0.03em] [text-wrap:balance] sm:text-[32px]">누가 들어왔는지 보이고,<br />이상하면 바로 끊습니다.</h3>
+                  <ul className="mt-7 space-y-5">
+                    {ACCOUNT_GUARD.map((x) => (
+                      <li key={x.t} className="flex gap-3.5">
+                        <span className="mt-[3px] grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#1F9D6B]/25 text-[11px] font-bold text-[#5FD3A2]" aria-hidden>✓</span>
+                        <span>
+                          <span className="block text-[15.5px] font-bold">{x.t}</span>
+                          <span className="mt-1 block text-[14px] leading-relaxed text-[#C5CFE0]">{x.d}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Reveal>
+              </div>
+            </div>
+
+            <p className="mt-24 border-t border-white/10 pt-16 text-center text-[13px] font-semibold tracking-[0.06em] text-[#8FA3C7]">이런 걱정도 미리 막아 두었습니다</p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {SECURITY.map((f, i) => (
                 <Reveal key={f.title} delay={(i % 4) * 80}>
                   <div className="h-full rounded-lg bg-white/[0.04] p-6 ring-1 ring-white/10">
