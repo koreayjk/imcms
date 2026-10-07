@@ -116,10 +116,10 @@ export default async function NewsroomPage(props: Props) {
         ))}
       </div>
 
-      <div className="mt-6 grid gap-6 md:mt-8 lg:grid-cols-[1fr_340px]">
+      <div className="mt-6 grid grid-cols-1 gap-6 md:mt-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <section className="min-w-0 rounded-lg border border-line bg-white">
           <div className="flex items-center justify-between gap-2 border-b border-line px-2 md:px-5">
-            <div className="flex overflow-x-auto">
+            <div className="flex min-w-0 overflow-x-auto">
               {CARDS.map((c, i) => (
                 <Link
                   key={c.status}

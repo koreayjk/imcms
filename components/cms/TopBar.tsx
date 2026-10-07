@@ -43,8 +43,11 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-white px-3 print:hidden md:h-16 md:gap-6 md:px-6">
-      <Link href="/newsroom" className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#1C1F26] text-[11px] font-extrabold text-white md:hidden" aria-label="뉴스룸 첫 화면">IM</Link>
+    <header className="flex h-14 min-w-0 shrink-0 items-center gap-2.5 border-b border-line bg-white px-3 print:hidden md:h-16 md:gap-6 md:px-6">
+      {/* 휴대폰: 전체 메뉴 (아래 메뉴가 브라우저 주소창에 가려져도 위에서 열 수 있게) */}
+      <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('im:menu'))} className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[#1C1F26] text-white md:hidden" aria-label="전체 메뉴 열기">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+      </button>
       <div className="min-w-0 flex-1 md:flex-none">
         {outlets.length > 1 ? (
           <div className="flex min-w-0 items-center gap-2.5">

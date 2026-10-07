@@ -101,7 +101,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           isSuper={isSuper}
           isStaff={isStaff}
         />
-        <main className="flex-1 overflow-y-auto pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0 print:overflow-visible print:pb-0">{children}</main>
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0 print:overflow-visible print:pb-0">{children}</main>
       </div>
     </div>
   )

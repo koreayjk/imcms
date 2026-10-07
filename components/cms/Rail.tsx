@@ -32,8 +32,15 @@ type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isSt
 export default function Rail({ userName = '', role, isSuper = false, isStaff = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0, leadCount = 0 }: Props) {
   const pathname = usePathname()
   const router = useRouter()
-  const [more, setMore] = useState(false)
-  useEffect(() => setMore(false), [pathname])
+  // 전체 메뉴: 아래 '더보기'로 열면 아래에서, 위 ☰로 열면 위에서 (휴대폰 브라우저 주소창이 아래를 가려도 보이게)
+  const [more, setMoreState] = useState<false | 'top' | 'bottom'>(false)
+  const setMore = (v: boolean | 'top' | 'bottom') => setMoreState(v === true ? 'bottom' : v)
+  useEffect(() => setMoreState(false), [pathname])
+  useEffect(() => {
+    const open = () => setMoreState((m) => (m ? false : 'top'))
+    window.addEventListener('im:menu', open)
+    return () => window.removeEventListener('im:menu', open)
+  }, [])
 
   // 화면이 낮아 메뉴가 다 안 보이면 아래에 '메뉴 더 있음' 표시 (끝까지 내리면 사라진다)
   const railRef = useRef<HTMLElement>(null)
@@ -149,7 +156,7 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
         <button
           type="button"
           onClick={() => setMore(true)}
-          aria-expanded={more}
+          aria-expanded={!!more}
           className={`relative flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${restActive ? 'text-[#F2B544]' : ''}`}
         >
           <MoreIcon />
@@ -163,8 +170,10 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
       {more && (
         <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="전체 메뉴">
           <button type="button" aria-label="메뉴 닫기" onClick={() => setMore(false)} className="absolute inset-0 bg-black/40" />
-          <div className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 text-ink shadow-2xl">
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />
+          <div className={`absolute inset-x-0 max-h-[85dvh] overflow-y-auto bg-white px-4 text-ink shadow-2xl ${more === 'top'
+            ? 'top-0 rounded-b-2xl pb-4 pt-[calc(env(safe-area-inset-top)+12px)]'
+            : 'bottom-0 rounded-t-2xl pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3'}`}>
+            {more === 'bottom' && <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line" />}
             <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
               <Link href="/account" onClick={() => setMore(false)} className="min-w-0">
                 <span className="block truncate text-[15px] font-bold">{userName || '내 정보'}</span>
