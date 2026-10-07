@@ -1,6 +1,7 @@
 -- 광고 계약 장부 (Supabase SQL 에디터에서 실행, ad-banners.sql 다음. 여러 번 실행해도 된다)
 --   광고주·담당자·광고 내용·기간·금액(공급가·부가세)·입금·세금계산서를 적고, 광고 자리를 예약해 사진을 미리 올려 두면
 --   그 기간에 자동으로 나가고 끝나면 내려간다. 노출·클릭도 계약별로 본다
+--   흐름: 견적(자리는 아직 안 잡음) → 계약 확정(자리 예약) → 세금계산서·입금 → 게재 확인서
 --   보기·쓰기: 그 매체 편집장·발행인과 총관리자만 (매출 정보라 IM 뉴스룸 매니저에게도 보이지 않는다)
 
 create table if not exists ad_contracts (
@@ -25,6 +26,21 @@ create table if not exists ad_contracts (
   check (ends_on >= starts_on)
 );
 create index if not exists ad_contracts_outlet on ad_contracts (outlet_id, ends_on desc);
+
+-- 견적 단계·광고주 사업자 정보(세금계산서용)·문서 안내 (예전에 실행한 DB에도 칸을 더한다)
+alter table ad_contracts add column if not exists status text not null default 'confirmed';
+alter table ad_contracts drop constraint if exists ad_contracts_status_check;
+alter table ad_contracts add constraint ad_contracts_status_check check (status in ('quote', 'confirmed'));
+alter table ad_contracts add column if not exists quoted_on date;
+alter table ad_contracts add column if not exists biz_no text check (biz_no is null or char_length(biz_no) <= 20);
+alter table ad_contracts add column if not exists biz_name text check (biz_name is null or char_length(biz_name) <= 80);
+alter table ad_contracts add column if not exists biz_ceo text check (biz_ceo is null or char_length(biz_ceo) <= 40);
+alter table ad_contracts add column if not exists biz_address text check (biz_address is null or char_length(biz_address) <= 200);
+alter table ad_contracts add column if not exists biz_type text check (biz_type is null or char_length(biz_type) <= 60);
+alter table ad_contracts add column if not exists biz_item text check (biz_item is null or char_length(biz_item) <= 60);
+alter table ad_contracts add column if not exists invoice_email text check (invoice_email is null or char_length(invoice_email) <= 120);
+-- 견적서·게재 확인서 아래에 넣을 안내 (예: 입금 계좌)
+alter table ad_contracts add column if not exists doc_note text check (doc_note is null or char_length(doc_note) <= 500);
 
 -- 배너 ↔ 계약 (계약 화면에서 올린 광고 소재는 계약을 지울 때 함께 내린다)
 alter table ad_banners add column if not exists contract_id uuid references ad_contracts(id) on delete set null;

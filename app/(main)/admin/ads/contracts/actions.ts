@@ -21,6 +21,19 @@ export type ContractInput = {
   paid_on: string
   tax_invoice_on: string
   memo: string
+  // 견적(자리는 아직 안 잡음) / 확정(자리 예약, 기간에 자동 게재)
+  status: 'quote' | 'confirmed'
+  quoted_on: string
+  // 세금계산서용 광고주 사업자 정보
+  biz_no: string
+  biz_name: string
+  biz_ceo: string
+  biz_address: string
+  biz_type: string
+  biz_item: string
+  invoice_email: string
+  // 견적서·게재 확인서에 넣을 안내 (입금 계좌 등)
+  doc_note: string
   // 예약할 광고 자리와 소재 (자리마다 하나). 계약 기간에 자동으로 나가고 끝나면 내려간다
   creatives: Creative[]
 }
@@ -62,6 +75,11 @@ export async function saveContract(input: ContractInput): Promise<ContractState>
   if (input.ends_on < input.starts_on) return { error: '끝나는 날이 시작일보다 빠릅니다.' }
   const email = cut(input.contact_email, 120)
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: '담당자 이메일을 확인해 주세요.' }
+  const invoiceEmail = cut(input.invoice_email ?? '', 120)
+  if (invoiceEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoiceEmail)) return { error: '세금계산서 받을 이메일을 확인해 주세요.' }
+  const bizNo = (input.biz_no ?? '').replace(/[^\d]/g, '')
+  if (bizNo && bizNo.length !== 10) return { error: '광고주 사업자등록번호는 숫자 10자리입니다.' }
+  const confirmed = input.status !== 'quote'
   // 광고 소재 확인
   const creatives: { id?: string; slot: string; image: string; mobile: string | null; link: string | null }[] = []
   for (const cr of (input.creatives ?? []).slice(0, 5)) {
@@ -74,7 +92,7 @@ export async function saveContract(input: ContractInput): Promise<ContractState>
     creatives.push({ id: cr.id, slot: cr.slot, image, mobile: httpUrl(cr.mobile_image_url), link: httpUrl(cr.link_url) })
   }
   // 예약 겹침 확인 (DB도 한 번 더 막는다): 같은 자리·같은 날의 다른 예약 광고 수가 정원 이상이면 안 된다
-  if (creatives.length) {
+  if (creatives.length && confirmed) {
     const { data: taken } = await supabase.from('ad_banners')
       .select('slot, name, starts_at, ends_at, contract_id')
       .eq('outlet_id', outletId!).eq('exclusive', true).eq('active', true)
@@ -106,6 +124,16 @@ export async function saveContract(input: ContractInput): Promise<ContractState>
     paid_on: DATE.test(input.paid_on) ? input.paid_on : null,
     tax_invoice_on: DATE.test(input.tax_invoice_on) ? input.tax_invoice_on : null,
     memo: input.memo.trim().slice(0, 2000) || null,
+    status: confirmed ? 'confirmed' : 'quote',
+    quoted_on: DATE.test(input.quoted_on ?? '') ? input.quoted_on : null,
+    biz_no: bizNo ? `${bizNo.slice(0, 3)}-${bizNo.slice(3, 5)}-${bizNo.slice(5)}` : null,
+    biz_name: cut(input.biz_name ?? '', 80),
+    biz_ceo: cut(input.biz_ceo ?? '', 40),
+    biz_address: cut(input.biz_address ?? '', 200),
+    biz_type: cut(input.biz_type ?? '', 60),
+    biz_item: cut(input.biz_item ?? '', 60),
+    invoice_email: invoiceEmail,
+    doc_note: (input.doc_note ?? '').trim().slice(0, 500) || null,
   }
   const res = input.id
     ? await supabase.from('ad_contracts').update(row).eq('id', input.id).eq('outlet_id', outletId!).select('id').maybeSingle()
@@ -123,7 +151,8 @@ export async function saveContract(input: ContractInput): Promise<ContractState>
       slot: cr.slot, kind: 'image', name: `${advertiser} · ${slotOf(cr.slot)!.label}`.slice(0, 80),
       image_url: cr.image, mobile_image_url: cr.mobile, link_url: cr.link,
       starts_at: kstStart(row.starts_on), ends_at: kstEnd(row.ends_on),
-      active: true, exclusive: true, contract_id: id, updated_at: new Date().toISOString(),
+      // 견적 단계에서는 사진만 올려 두고 자리는 잡지 않는다 (계약 확정 때 켠다)
+      active: confirmed, exclusive: true, contract_id: id, updated_at: new Date().toISOString(),
     }
     const r = cr.id && hadIds.has(cr.id)
       ? await supabase.from('ad_banners').update(bannerRow).eq('id', cr.id).select('id').single()
@@ -136,7 +165,7 @@ export async function saveContract(input: ContractInput): Promise<ContractState>
   revalidateTag('ads', { expire: 0 })
   revalidatePath('/admin/ads/contracts')
   revalidatePath('/admin/ads')
-  return { ok: input.id ? '고쳤습니다.' : '계약을 등록했습니다.' }
+  return { ok: input.id ? '고쳤습니다.' : confirmed ? '계약을 등록했습니다.' : '견적을 저장했습니다.' }
 }
 
 export async function deleteContract(id: string): Promise<ContractState> {
@@ -149,4 +178,29 @@ export async function deleteContract(id: string): Promise<ContractState> {
   revalidateTag('ads', { expire: 0 })
   revalidatePath('/admin/ads/contracts')
   return { ok: '지웠습니다. 이 계약의 광고도 홈페이지에서 내렸습니다.' }
+}
+
+// 견적 → 계약 확정: 광고 자리를 예약한다 (겹치면 DB가 막는다)
+export async function confirmContract(id: string): Promise<ContractState> {
+  const c = await ctx()
+  if (!c) return { error: '광고 계약은 편집장·발행인만 관리할 수 있습니다.' }
+  const { supabase, outletId } = c
+  const { error: e1 } = await supabase.from('ad_banners').update({ active: true, updated_at: new Date().toISOString() }).eq('contract_id', id).eq('outlet_id', outletId!)
+  if (e1) return { error: /겹칩니다/.test(e1.message) ? `${e1.message.replace(/^.*?(광고 자리)/, '$1')} — ‘고치기’에서 빈 날짜로 바꾼 뒤 확정해 주세요.` : e1.message }
+  const { error } = await supabase.from('ad_contracts').update({ status: 'confirmed' }).eq('id', id).eq('outlet_id', outletId!)
+  if (error) return { error: error.message }
+  revalidateTag('ads', { expire: 0 })
+  revalidatePath('/admin/ads/contracts')
+  return { ok: '계약을 확정했습니다. 시작일에 광고가 자동으로 나갑니다.' }
+}
+
+// 세금계산서 발행 기록 (홈택스 등에서 발행한 날)
+export async function markInvoiced(id: string, day: string | null): Promise<ContractState> {
+  const c = await ctx()
+  if (!c) return { error: '광고 계약은 편집장·발행인만 관리할 수 있습니다.' }
+  if (day && !DATE.test(day)) return { error: '날짜를 확인해 주세요.' }
+  const { error } = await c.supabase.from('ad_contracts').update({ tax_invoice_on: day }).eq('id', id).eq('outlet_id', c.outletId!)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/ads/contracts')
+  return { ok: day ? '세금계산서 발행을 기록했습니다.' : '발행 기록을 지웠습니다.' }
 }
