@@ -27,7 +27,7 @@ export default async function AdDocPage(props: { params: Promise<{ id: string; k
       <style>{'@page { size: A4; margin: 14mm } @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact } }'}</style>
       <div className="mx-auto mb-4 flex max-w-[210mm] flex-wrap items-start justify-between gap-3 px-2 print:hidden">
         <div className="text-[13px] leading-relaxed text-[#4B5563]">
-          <p><strong className="text-[#111]">PDF 다운 · 인쇄</strong>를 누르면 번호를 매겨 자동으로 저장한 뒤 인쇄 창이 열립니다. 인쇄 창에서 ‘PDF로 저장’을 고르면 광고주에게 보낼 파일이 됩니다.</p>
+          <p>버튼을 누르면 문서번호를 매겨 <strong className="text-[#111]">자동으로 저장</strong>한 뒤 이메일 보내기·PDF 다운로드·인쇄로 이어집니다.</p>
           <p className="text-[12px]">저장한 문서는 광고 계약 목록에서 다시 열 수 있고, 내용이 그대로면 다시 눌러도 번호가 새로 생기지 않습니다.</p>
           {(saved ?? []).length > 0 && (
             <p className="mt-1">이미 저장한 {name}: {(saved as { id: string; doc_no: string; issued_at: string }[]).map((x, i) => (
@@ -35,7 +35,7 @@ export default async function AdDocPage(props: { params: Promise<{ id: string; k
             ))}</p>
           )}
         </div>
-        <AdDocToolbar contractId={id} kind={kind} />
+        <AdDocToolbar mode="live" contractId={id} kind={kind} />
       </div>
       <AdDocument d={data} />
     </div>

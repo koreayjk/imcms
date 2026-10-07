@@ -26,7 +26,7 @@ export default function AdDocument({ d }: { d: AdDocData }) {
   )
 
   return (
-    <article className="mx-auto max-w-[210mm] bg-white px-[14mm] py-[16mm] text-[#111] shadow print:max-w-none print:p-0 print:shadow-none">
+    <article data-ad-doc className="mx-auto max-w-[210mm] bg-white px-[14mm] py-[16mm] text-[#111] shadow print:max-w-none print:p-0 print:shadow-none">
       <div className="flex items-start justify-between gap-4">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}

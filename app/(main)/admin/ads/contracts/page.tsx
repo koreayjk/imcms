@@ -27,9 +27,9 @@ export default async function AdContractsPage() {
     : { data: [] as { banner_id: string; day: string; views: number; clicks: number }[] }
   const rawContracts = (contractsRes.data ?? []) as any[]
   // 저장한 문서 (견적서·게재 확인서)
-  const { data: docRows } = await supabase.from('ad_documents').select('id, contract_id, kind, doc_no, issued_at').eq('outlet_id', outletId).order('issued_at', { ascending: false }).limit(2000)
-  const docsOf = (cid: string) => ((docRows ?? []) as { id: string; contract_id: string; kind: 'quote' | 'report'; doc_no: string; issued_at: string }[])
-    .filter((x) => x.contract_id === cid).map((x) => ({ id: x.id, kind: x.kind, no: x.doc_no, at: x.issued_at }))
+  const { data: docRows } = await supabase.from('ad_documents').select('id, contract_id, kind, doc_no, issued_at, sent_at').eq('outlet_id', outletId).order('issued_at', { ascending: false }).limit(2000)
+  const docsOf = (cid: string) => ((docRows ?? []) as { id: string; contract_id: string; kind: 'quote' | 'report'; doc_no: string; issued_at: string; sent_at?: string | null }[])
+    .filter((x) => x.contract_id === cid).map((x) => ({ id: x.id, kind: x.kind, no: x.doc_no, at: x.issued_at, sent: !!x.sent_at }))
   const advertiserOf = new Map(rawContracts.map((c) => [c.id as string, c.advertiser as string]))
   const kstDay = (iso: string) => new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(0, 10)
   // 달력에 보일 예약: 켜져 있는 예약 광고 (한국 날짜, 끝나는 날 포함)

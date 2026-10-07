@@ -114,6 +114,9 @@ create table if not exists ad_documents (
   issued_at timestamptz not null default now()
 );
 create index if not exists ad_documents_contract on ad_documents (contract_id, issued_at desc);
+-- 메일로 보낸 기록 (마지막으로 보낸 주소·시각)
+alter table ad_documents add column if not exists sent_to text check (sent_to is null or char_length(sent_to) <= 400);
+alter table ad_documents add column if not exists sent_at timestamptz;
 create unique index if not exists ad_documents_no on ad_documents (outlet_id, doc_no);
 alter table ad_documents enable row level security;
 drop policy if exists "ad_documents_read" on ad_documents;
@@ -122,6 +125,9 @@ create policy "ad_documents_read" on ad_documents for select to authenticated
 drop policy if exists "ad_documents_insert" on ad_documents;
 create policy "ad_documents_insert" on ad_documents for insert to authenticated
   with check (coalesce(public.can_manage_outlet(outlet_id), false));
+drop policy if exists "ad_documents_update" on ad_documents;
+create policy "ad_documents_update" on ad_documents for update to authenticated
+  using (coalesce(public.can_manage_outlet(outlet_id), false)) with check (coalesce(public.can_manage_outlet(outlet_id), false));
 drop policy if exists "ad_documents_delete" on ad_documents;
 create policy "ad_documents_delete" on ad_documents for delete to authenticated
   using (coalesce(public.can_manage_outlet(outlet_id), false));

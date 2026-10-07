@@ -132,3 +132,42 @@ ${o.button ? `<tr><td style="padding-top:22px"><a href="${esc(o.button.url)}" st
   const text = [o.title, '', ...o.lines, ...(o.button ? ['', `${o.button.label}: ${o.button.url}`] : []), '', o.footer ?? '알림 메일은 편집국 “내 정보”에서 끌 수 있습니다.'].join('\n')
   return { html, text }
 }
+
+// 첨부 파일이 있는 메일 한 통 (견적서·게재 확인서 PDF). Resend 묶음 보내기는 첨부를 못 써서 따로 보낸다
+export type Attachment = { filename: string; content: string /* base64 */; contentType?: string }
+export async function sendMailWithAttachments(m: Omit<Mail, 'to'> & { to: string[]; cc?: string[]; attachments: Attachment[] }): Promise<{ ok: boolean; error: string | null }> {
+  if (!mailReady()) return { ok: false, error: '메일 발송이 아직 설정되지 않았습니다 (RESEND_API_KEY·MAIL_FROM).' }
+  try {
+    if (provider() === 'resend') {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'User-Agent': 'im-newsroom/1.0' },
+        body: JSON.stringify({
+          from: fromWithName(m.fromName), to: m.to, ...(m.cc?.length ? { cc: m.cc } : {}),
+          subject: m.subject.slice(0, 200), html: m.html, text: m.text,
+          ...(m.replyTo ? { reply_to: m.replyTo } : {}),
+          ...(m.tag ? { tags: [{ name: 'type', value: tagValue(m.tag) }] } : {}),
+          attachments: m.attachments.map((a) => ({ filename: a.filename, content: a.content })),
+        }),
+        cache: 'no-store',
+      })
+      if (!res.ok) return { ok: false, error: ((await res.json().catch(() => null)) as { message?: string } | null)?.message ?? `HTTP ${res.status}` }
+      return { ok: true, error: null }
+    }
+    const res = await fetch('https://api.postmarkapp.com/email', {
+      method: 'POST',
+      headers: { 'X-Postmark-Server-Token': process.env.POSTMARK_SERVER_TOKEN!, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        From: fromWithName(m.fromName), To: m.to.join(','), ...(m.cc?.length ? { Cc: m.cc.join(',') } : {}),
+        Subject: m.subject.slice(0, 200), HtmlBody: m.html, TextBody: m.text, ...(m.replyTo ? { ReplyTo: m.replyTo } : {}),
+        MessageStream: 'outbound',
+        Attachments: m.attachments.map((a) => ({ Name: a.filename, Content: a.content, ContentType: a.contentType ?? 'application/octet-stream' })),
+      }),
+      cache: 'no-store',
+    })
+    if (!res.ok) return { ok: false, error: ((await res.json().catch(() => null)) as { Message?: string } | null)?.Message ?? `HTTP ${res.status}` }
+    return { ok: true, error: null }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : '메일 서버에 연결하지 못했습니다.' }
+  }
+}

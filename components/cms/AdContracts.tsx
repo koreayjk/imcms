@@ -20,7 +20,7 @@ export type Contract = {
   biz_type: string | null; biz_item: string | null; invoice_email: string | null; doc_note: string | null
   banner_ids: string[]; views: number; clicks: number
   // 저장한 문서 (최근 것부터)
-  docs: { id: string; kind: 'quote' | 'report'; no: string; at: string }[]
+  docs: { id: string; kind: 'quote' | 'report'; no: string; at: string; sent?: boolean }[]
   // 이 계약으로 예약한 광고 자리·소재
   creatives: (Creative & { id: string })[]
 }
@@ -55,8 +55,9 @@ function nextStep(c: Contract, today: string) {
   const t = total(c)
   const paid = t === 0 || c.paid_amount >= t
   const hasQuote = c.docs.some((x) => x.kind === 'quote')
+  const quoteSent = c.docs.some((x) => x.kind === 'quote' && x.sent)
   const hasReport = c.docs.some((x) => x.kind === 'report')
-  if (c.status === 'quote') return hasQuote ? '견적서 보냄 — 광고주가 수락하면 ‘계약 확정’' : '견적서를 만들어 저장·발송하기'
+  if (c.status === 'quote') return quoteSent ? '견적서 메일 보냄 — 광고주가 수락하면 ‘계약 확정’' : hasQuote ? '견적서 저장함 — 광고주에게 보내기' : '견적서 만들어 보내기'
   if (t > 0 && !c.tax_invoice_on && !paid) return '세금계산서 발행 또는 입금 확인'
   if (t > 0 && !c.tax_invoice_on) return '세금계산서 발행'
   if (!paid) return '입금 확인'
@@ -190,7 +191,7 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
                       {c.docs.length > 0 && (
                         <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11.5px] text-muted">
                           {c.docs.slice(0, 4).map((x) => (
-                            <a key={x.id} href={`/doc/saved/${x.id}`} target="_blank" rel="noopener" className="hover:text-ink hover:underline">📄 {x.kind === 'quote' ? '견적서' : '확인서'} {x.no}</a>
+                            <a key={x.id} href={`/doc/saved/${x.id}`} target="_blank" rel="noopener" className="hover:text-ink hover:underline">📄 {x.kind === 'quote' ? '견적서' : '확인서'} {x.no}{x.sent ? ' ✉' : ''}</a>
                           ))}
                           {c.docs.length > 4 && <span>외 {c.docs.length - 4}건</span>}
                         </p>
@@ -227,9 +228,9 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
                       <RowMenu disabled={busy} items={[
                         { label: '고치기', onClick: () => { setMsg({}); setEditing(c) } },
                         c.status === 'quote' && { label: '계약 확정 (자리 예약)', tone: 'strong' as const, onClick: () => confirm(c) },
-                        { label: '견적서 만들기·저장', href: `/doc/ad/${c.id}/quote`, newTab: true },
+                        { label: '견적서 (보내기·PDF)', href: `/doc/ad/${c.id}/quote`, newTab: true },
                         total(c) > 0 && { label: c.tax_invoice_on ? '세금계산서 정보 (발행함)' : '세금계산서 발행 정보', onClick: () => setInvoicing(c) },
-                        { label: '게재 확인서 만들기·저장', href: `/doc/ad/${c.id}/report`, newTab: true },
+                        { label: '게재 확인서 (보내기·PDF)', href: `/doc/ad/${c.id}/report`, newTab: true },
                       ]} />
                     </td>
                   </tr>
