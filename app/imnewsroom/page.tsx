@@ -291,7 +291,7 @@ export default function ProductHome() {
             {[
               { n: 15, s: '곳', label: '보도자료 출처 자동 연결', color: '#0F1115' },
               { n: 30, s: '분', label: '마다 새 보도자료 수집', color: '#0F1115' },
-              { n: 11, s: '만 원', label: '부터 · 월 이용료 (부가세 없음)', color: '#1D3461' },
+              { n: 11, s: '만 원', label: '부터 · 월 이용료 (VAT 별도 없음)', color: '#1D3461' },
               { n: 1, s: '개', label: '계정으로 여러 매체 운영', color: '#0F1115' },
             ].map((x, i) => (
               <div key={x.label} className={`px-6 py-7 text-center ${i % 2 ? '' : 'border-r'} border-[#EEF0F3] md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>

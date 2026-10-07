@@ -127,7 +127,7 @@ export default function ApplyForm() {
           {pay ? (
             <>
               <p className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-[13px] font-semibold text-[#5B616B]">첫 결제 금액 (부가세 없음)</span>
+                <span className="text-[13px] font-semibold text-[#5B616B]">첫 결제 금액 (VAT 별도 없음)</span>
                 <span className="text-[24px] font-extrabold tabular-nums tracking-[-0.02em] text-[#16294D]">{won(pay.total)}</span>
               </p>
               <ul className="mt-1.5 space-y-0.5 text-[12.5px] tabular-nums text-[#5B616B]">

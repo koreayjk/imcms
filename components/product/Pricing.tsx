@@ -105,7 +105,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
                     <p className="mt-1 tabular-nums">
                       <span className="text-[32px] font-extrabold tracking-[-0.03em]">{won(price)}</span>
                       <span className="ml-1 text-[14px] font-semibold text-[#5B616B]">/{annual ? '년' : '월'}</span>
-                      <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[3px] text-[11.5px] font-semibold text-[#5B616B]">부가세 없음</span>
+                      <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[3px] text-[11.5px] font-semibold text-[#5B616B]">VAT 별도 없음</span>
                     </p>
                     {annual
                       ? <p className="mt-1 text-[13px] font-semibold tabular-nums text-[#16294D]">한 달 약 {(price / 12 / 10_000).toFixed(1)}만 원꼴 · {won(saved)} 절약</p>
@@ -158,7 +158,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
           <p className="tabular-nums">
             {BETA && <span className="mr-2 text-[15px] text-[#9AA0A8]"><s>{won(SETUP_FEE)}</s></span>}
             <span className="text-[26px] font-extrabold tracking-[-0.02em]">{BETA ? '0원' : won(SETUP_FEE)}</span>
-            <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[4px] text-[11.5px] font-semibold text-[#5B616B]">부가세 없음</span>
+            <span className="ml-1.5 inline-block whitespace-nowrap rounded bg-[#F4F5F7] px-1.5 py-0.5 align-[4px] text-[11.5px] font-semibold text-[#5B616B]">VAT 별도 없음</span>
             {BETA && <span className="ml-2 inline-block whitespace-nowrap rounded bg-[#FFF3EB] px-2 py-0.5 align-[4px] text-[12px] font-bold text-[#C2410C]">베타 기간 신청 무료</span>}
           </p>
         </div>
