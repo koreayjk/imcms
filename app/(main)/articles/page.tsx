@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime, isScheduled } from '@/lib/format'
 import { ImageIcon } from '@/components/cms/icons'
@@ -7,9 +8,12 @@ import PendingButton from '@/components/cms/PendingButton'
 import { deleteArticle } from './actions'
 import CopyLinkButton from '@/components/cms/CopyLinkButton'
 import { BulkReview, BulkCheck, type BulkItem } from '@/components/cms/BulkReview'
+import PageSizeSelect from '@/components/cms/PageSizeSelect'
+import { pageSizeFrom } from '@/lib/list-size'
 
 const TABS: (ArticleStatus | 'all')[] = ['all', 'draft', 'in_review', 'rejected', 'published']
-const PAGE_SIZE = 30
+// 한 쪽에 보일 기사 수: 기본 30, 고른 값은 쿠키에 기억 (PageSizeSelect)
+const SIZE_COOKIE = 'im_articles_size'
 
 type Props = { searchParams: Promise<{ status?: string; q?: string; mine?: string; page?: string; deleted?: string }> }
 
@@ -21,6 +25,7 @@ export default async function ArticlesPage(props: Props) {
   const q = searchParams.q?.trim().slice(0, 100) || undefined
   const mineOnly = searchParams.mine === '1' || !isEditorPlus
   const page = Math.max(1, Number(searchParams.page) || 1)
+  const PAGE_SIZE = pageSizeFrom((await cookies()).get(SIZE_COOKIE)?.value)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scoped = (query: any) => {
@@ -160,11 +165,16 @@ export default async function ArticlesPage(props: Props) {
         )}
       </section>
 
-      <div className="mt-4 flex items-center justify-between text-[12.5px] text-muted">
-        <span>총 <span className="tabular-nums">{(count ?? 0).toLocaleString()}</span>건</span>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-muted">
+        <div className="flex items-center gap-3">
+          <span>총 <span className="tabular-nums">{(count ?? 0).toLocaleString()}</span>건</span>
+          <PageSizeSelect cookie={SIZE_COOKIE} value={PAGE_SIZE} href={href({ page: undefined })} />
+        </div>
         {pages > 1 && (
           <nav className="flex flex-wrap justify-end gap-1" aria-label="페이지">
-            {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+            {pageList(page, pages).map((p, i) => p === 0 ? (
+              <span key={`gap${i}`} className="grid h-8 place-items-center px-1" aria-hidden>…</span>
+            ) : (
               <Link
                 key={p}
                 href={href({ page: p > 1 ? String(p) : undefined })}
@@ -179,4 +189,14 @@ export default async function ArticlesPage(props: Props) {
       </div>
     </div>
   )
+}
+
+// 쪽 번호: 처음 · 지금 앞뒤 2쪽 · 끝 (사이가 비면 0 = '…')
+function pageList(cur: number, last: number) {
+  const out: number[] = []
+  for (let p = 1; p <= last; p++) {
+    if (p === 1 || p === last || Math.abs(p - cur) <= 2) out.push(p)
+    else if (out[out.length - 1] !== 0) out.push(0)
+  }
+  return out
 }
