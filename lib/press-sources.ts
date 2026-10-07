@@ -74,3 +74,20 @@ export const PRESS_SOURCES: PressSource[] = [
 export function findPressSource(key: string) {
   return PRESS_SOURCES.find((s) => s.key === key)
 }
+
+// 보도자료 분야: 매체마다 '추천' 탭에 넣을 뉴스와이어 분류 묶음
+//   분야를 고른 매체의 추천 탭 = 그 분야 분류 + 켠 해외 언론 + 메일·직접 등록 + (정부·공공기관 보도자료 중 제목에 추천 키워드가 있는 것)
+//   words: 매체 설정에서 분야를 아직 고르지 않았을 때 추천 키워드로 분야를 짐작하는 데 쓴다
+export type PressField = 'medical' | 'shipping' | 'education'
+export const PRESS_FIELDS: { key: PressField; label: string; sources: string[]; words: string[] }[] = [
+  { key: 'medical', label: '의료·복지', sources: ['nw-hospital', 'nw-elderly', 'nw-welfare', 'nw-medicine', 'nw-pharma', 'nw-device'], words: ['의료', '병원', '복지', '요양', '돌봄', '노인', '제약'] },
+  { key: 'shipping', label: '해운·물류·무역', sources: ['nw-logistics', 'nw-shipping', 'nw-airline', 'nw-shipbuilding', 'nw-ocean', 'nw-trade'], words: ['해운', '물류', '항만', '선박', '조선', '무역'] },
+  { key: 'education', label: '교육', sources: ['nw-edu', 'nw-university', 'nw-secondary', 'nw-primary', 'nw-academy', 'nw-elearning', 'nw-vocational', 'nw-preschool'], words: ['교육', '학교', '대학', '입시'] },
+]
+// 분야에 속하지 않는 출처(정부·공공기관 등)는 제목 키워드로만 추천에 넣는다
+export const fieldOfSource = (key: string): PressField | null => PRESS_FIELDS.find((f) => f.sources.includes(key))?.key ?? null
+
+// 추천 키워드로 쓸 단어: 짧은 영문 약어(IB, AI 등)는 다른 단어 속에 섞여 엉뚱한 자료가 걸리므로 뺀다
+export function usableKeywords(words: string[]) {
+  return words.map((w) => w.replace(/[,()*%\\]/g, '').trim()).filter((w) => w && !(/^[\x00-\x7F]+$/.test(w) && w.length < 4))
+}

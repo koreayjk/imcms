@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, foreignTopicOf } from '@/lib/press-sources'
+import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, usableKeywords } from '@/lib/press-sources'
 import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
@@ -57,7 +57,22 @@ export default async function PressPage(props: Props) {
   if (src) query = query.eq('source_key', src)
   for (const t of FOREIGN_TOPICS) if (!topics.includes(t.key)) query = query.not('source_key', 'like', `${t.prefix}%`)
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
-  if (tab === 'rec' && keywords.length) query = query.or([`source_key.eq.${MANUAL_SOURCE}`, 'source_key.eq.email', ...keywords.map((k) => `title.ilike.*${k}*,summary.ilike.*${k}*`)].join(','))
+  // 추천 탭: 매체 분야(예: 교육)의 출처 + 켠 해외 언론 + 메일·직접 등록 + 정부·공공기관 자료 중 제목에 추천 키워드가 있는 것
+  //   분야를 정하지 않은 매체는 예전처럼 제목에 추천 키워드가 있는 자료 (짧은 영문 약어는 엉뚱한 단어에 걸려 뺀다)
+  const fields = outletSite?.pressFields ?? []
+  const kw = usableKeywords(keywords)
+  const titleHit = kw.map((k) => `title.ilike.*${k}*`)
+  const foreignKeys = PRESS_SOURCES.filter((x) => foreignTopicOf(x.key)).map((x) => x.key)
+  const fieldKeys = PRESS_SOURCES.filter((x) => { const f = fieldOfSource(x.key); return !!f && fields.includes(f) }).map((x) => x.key)
+  const generalKeys = PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key)).map((x) => x.key)
+  const recBase = [MANUAL_SOURCE, 'email', ...foreignKeys, ...fieldKeys]
+  // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만
+  const recSources = fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : null
+  if (tab === 'rec' && fields.length) {
+    query = query.or([`source_key.in.(${recBase.join(',')})`, ...(titleHit.length && generalKeys.length ? [`and(source_key.in.(${generalKeys.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
+  } else if (tab === 'rec' && titleHit.length) {
+    query = query.or([`source_key.in.(${recBase.filter((k) => !fieldOfSource(k)).join(',')})`, ...titleHit].join(','))
+  }
 
   const [{ data: rows, count }, { data: logs }, { data: todayUses }] = await Promise.all([
     query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
@@ -127,7 +142,7 @@ export default async function PressPage(props: Props) {
             <Link href={href({ src: undefined, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${!src ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>모든 출처</Link>
             <Link href={href({ src: 'email', page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === 'email' ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>메일</Link>
             <Link href={href({ src: MANUAL_SOURCE, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === MANUAL_SOURCE ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>직접 등록</Link>
-            {PRESS_SOURCES.map((s) => (
+            {PRESS_SOURCES.filter((s) => tab === 'all' || !recSources || recSources.has(s.key)).map((s) => (
               <Link key={s.key} href={href({ src: s.key, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === s.key ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>
                 {s.name.replace('뉴스와이어 · ', '')}
               </Link>

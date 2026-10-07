@@ -3,8 +3,8 @@
 import { useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
-import { buildSite, DEFAULT_COLORS, foreignTopics, type CategoryRow, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
-import { FOREIGN_TOPICS } from '@/lib/press-sources'
+import { buildSite, DEFAULT_COLORS, foreignTopics, pressFields, type CategoryRow, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { FOREIGN_TOPICS, PRESS_FIELDS } from '@/lib/press-sources'
 import { uploadImage } from '@/components/editor/upload'
 import SiteHeader from '@/components/site/SiteHeader'
 import SiteFooter from '@/components/site/SiteFooter'
@@ -78,6 +78,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
   const fileRef = useRef<HTMLInputElement>(null)
 
   const set = (patch: Partial<OutletSiteSettings>) => setS((prev) => ({ ...prev, ...patch }))
+  const keywordList = (s.pressKeywords ?? '').split(/[,\n]/).map((k) => k.trim()).filter(Boolean)
   const setLegal = (k: keyof SiteLegal, v: string) => setS((prev) => ({ ...prev, legal: { ...prev.legal, [k]: v } }))
 
   // 저장 전에 바로 보이는 미리보기
@@ -258,8 +259,27 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         {missing.length > 0 && <p className="mt-3 rounded bg-draft/10 px-3 py-2 text-[12.5px] text-[#6B5F22]">⚠ 아직 비어 있는 필수 항목: {missing.map((m) => m.label).join(', ')}</p>}
       </Card>
 
-      <Card title="보도자료 추천 키워드" note="보도자료함 ‘추천’ 탭에서 제목·요약에 이 단어가 들어간 보도자료만 골라 보여줍니다. 쉼표로 구분합니다.">
-        <textarea value={s.pressKeywords ?? ''} onChange={(e) => set({ pressKeywords: e.target.value })} rows={3} placeholder="예: 요양, 돌봄, 복지, 병원" className="field-input resize-y" />
+      <Card title="보도자료 추천" note="보도자료함 ‘추천’ 탭에 보여줄 자료를 정합니다. ‘전체’ 탭에는 언제나 모든 자료가 나옵니다.">
+        <fieldset className="space-y-1.5 text-[13.5px]">
+          <legend className="font-bold">매체 분야</legend>
+          <p className="text-[12px] text-muted">고른 분야의 뉴스와이어 분류만 추천에 나옵니다. 정부·공공기관 보도자료는 제목에 아래 키워드가 있을 때만 나옵니다.</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+            {PRESS_FIELDS.map((f) => {
+              const now = pressFields(s, keywordList)
+              return (
+                <label key={f.key} className="flex items-center gap-2">
+                  <input type="checkbox" checked={now.includes(f.key)} onChange={(e) => set({ pressFields: now.filter((k) => k !== f.key).concat(e.target.checked ? [f.key] : []) })} />
+                  <strong>{f.label}</strong>
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+        <div className="mt-4">
+          <p className="text-[13.5px] font-bold">추천 키워드</p>
+          <p className="mb-1.5 text-[12px] text-muted">제목에 이 단어가 들어간 정부·공공기관 보도자료를 추천에 넣습니다(분야를 고르지 않았다면 모든 출처에서). 쉼표로 구분합니다. 3글자 이하 영문 약어(IB, AI 등)는 다른 단어에 섞여 걸리기 쉬워 쓰지 않습니다.</p>
+          <textarea value={s.pressKeywords ?? ''} onChange={(e) => set({ pressKeywords: e.target.value })} rows={3} placeholder="예: 요양, 돌봄, 복지, 병원" className="field-input resize-y" />
+        </div>
       </Card>
 
       <Card title="도메인">

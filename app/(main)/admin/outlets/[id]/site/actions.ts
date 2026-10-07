@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
-import { foreignTopics, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { connectDomain } from '@/lib/vercel-domains'
 
 export type SitePayload = {
@@ -57,6 +57,8 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     homeLayout: s.homeLayout === 'bands' ? 'bands' : 'standard',
     shopUrl: /^https?:\/\/\S+$/.test(cut(s.shopUrl, 300)) ? cut(s.shopUrl, 300) : undefined,
     pressForeignTopics: foreignTopics({ pressForeignTopics: Array.isArray(s.pressForeignTopics) ? s.pressForeignTopics : [], pressForeign: false }),
+    // 고른 적이 없으면 비워 두어 추천 키워드로 계속 짐작한다
+    pressFields: Array.isArray(s.pressFields) ? pressFields({ pressFields: s.pressFields }, []) : undefined,
   }
   site.pressForeign = (site.pressForeignTopics ?? []).length > 0
   // 화면에 없는 설정(섹션 띠 순서 등)은 그대로 둔다

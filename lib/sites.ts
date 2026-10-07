@@ -1,4 +1,4 @@
-import { FOREIGN_TOPICS, type ForeignTopic } from './press-sources'
+import { FOREIGN_TOPICS, PRESS_FIELDS, type ForeignTopic, type PressField } from './press-sources'
 export type SectionConfig = {
   slug: string
   name: string
@@ -65,6 +65,8 @@ export type SiteConfig = {
   // 보도자료함에 해외 언론(영문) 자료도 보여줄지 (묶음: 이스라엘 언론, 해외 교육·유학 언론)
   pressForeign?: boolean
   pressForeignTopics?: ForeignTopic[]
+  // 보도자료함 추천 탭에 넣을 분야 (의료·복지 / 해운·물류·무역 / 교육)
+  pressFields: PressField[]
   // 카카오톡·페이스북 등에 링크를 올릴 때 나오는 대표 이미지 (1200×630 PNG/JPG)
   ogImage?: string
   // IM 뉴스룸 체험용 신문 (trial.sql) — 홈페이지 맨 위에 체험판 안내 띠
@@ -106,6 +108,7 @@ export const SITES: SiteConfig[] = [
       { slug: 'senior-care', name: '요양·시니어케어', description: '요양병원·요양시설·시니어케어', specialty: true },
       { slug: 'care-industry', name: '돌봄산업', description: '복지·돌봄산업 관련 소식', specialty: true },
     ],
+    pressFields: ['medical'],
     pressKeywords: [
       '요양', '돌봄', '간병', '복지', '노인', '어르신', '시니어', '실버', '치매', '장애', '재활',
       '병원', '의료', '의원', '의사', '간호', '환자', '건강', '보건', '질병', '감염', '백신',
@@ -175,6 +178,8 @@ export type OutletSiteSettings = {
   pressForeign?: boolean
   // 받을 해외 언론 묶음 (없고 pressForeign 이 켜져 있으면 예전처럼 이스라엘 언론)
   pressForeignTopics?: ForeignTopic[]
+  // 보도자료 추천 분야 (없으면 추천 키워드로 짐작)
+  pressFields?: PressField[]
   ogImage?: string
   trial?: boolean
 }
@@ -197,6 +202,13 @@ export function shade(hex: string, amount: number) {
 export function foreignTopics(s: Pick<OutletSiteSettings, 'pressForeign' | 'pressForeignTopics'>): ForeignTopic[] {
   if (Array.isArray(s.pressForeignTopics)) return FOREIGN_TOPICS.map((t) => t.key).filter((k) => s.pressForeignTopics!.includes(k))
   return s.pressForeign ? ['israel'] : []
+}
+
+// 보도자료 추천 분야: 매체 설정에서 고른 것, 아직 안 골랐으면 추천 키워드에 분야 단어가 있는지로 짐작한다
+export function pressFields(s: Pick<OutletSiteSettings, 'pressFields'>, keywords: string[]): PressField[] {
+  if (Array.isArray(s.pressFields)) return PRESS_FIELDS.map((f) => f.key).filter((k) => s.pressFields!.includes(k))
+  // 분야 단어가 2개 이상 들어 있어야 그 분야로 본다 (교육 매체 키워드의 '돌봄' 하나로 의료·복지가 되지 않게)
+  return PRESS_FIELDS.filter((f) => f.words.filter((w) => keywords.some((k) => k.includes(w))).length >= 2).map((f) => f.key)
 }
 
 export const EMPTY_LEGAL: SiteLegal = {
@@ -254,6 +266,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
       const topics = foreignTopics(s)
       return { pressForeign: topics.length > 0, pressForeignTopics: topics }
     })(),
+    pressFields: pressFields(s, keywords),
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
     trial: s.trial === true,
   }
