@@ -4,6 +4,8 @@ import { getCmsContext } from '@/lib/cms'
 import { formatShort } from '@/lib/format'
 import { TICKET_CATEGORIES, TICKET_STATUS, won, type TicketCategory, type TicketStatus } from '@/lib/support'
 import type { OutletSiteSettings } from '@/lib/sites'
+import ConfirmSubmit from '@/components/cms/ConfirmSubmit'
+import { removeGroup, removeOutlet } from './actions'
 
 // 인터넷신문 필수 표시 항목 (홈페이지 설정과 같은 기준)
 const REQUIRED_LEGAL = ['company', 'registrationNo', 'registeredAt', 'publisher', 'editor', 'youthOfficer', 'phone', 'address'] as const
@@ -24,12 +26,13 @@ function Kpi({ label, value, sub, tone = 'default', href }: { label: string; val
   return href ? <Link href={href}>{body}</Link> : body
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams
   const { supabase, isStaff, isSuper } = await getCmsContext()
   if (!isStaff) redirect('/newsroom')
 
-  const [{ data: groups }, outletsRes, statsRes, { count: pending }, { data: tickets }, { count: newLeads }, { data: leads }, { count: memberCount }] = await Promise.all([
-    supabase.from('publishers').select('id, name').order('created_at'),
+  const [groupsRes, outletsRes, statsRes, { count: pending }, { data: tickets }, { count: newLeads }, { data: leads }, { count: memberCount }] = await Promise.all([
+    supabase.from('publishers').select('id, name, solo').order('created_at'),
     supabase.from('outlets').select('*').order('created_at'),
     supabase.rpc('platform_outlet_stats'),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('approved', false),
@@ -39,6 +42,8 @@ export default async function DashboardPage() {
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
   ])
 
+  // group-solo.sql 전에는 solo 칸이 없다 → 모두 일반 그룹으로
+  const groups = ((groupsRes.error ? (await supabase.from('publishers').select('id, name').order('created_at')).data : groupsRes.data) ?? []) as { id: string; name: string; solo?: boolean }[]
   if (statsRes.error) {
     return (
       <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
@@ -67,10 +72,14 @@ export default async function DashboardPage() {
   outlets.filter((o) => legalDone(o) < REQUIRED_LEGAL.length).forEach((o) => todos.push({ text: `${o.name}: 하단 필수 표시 정보 ${REQUIRED_LEGAL.length - legalDone(o)}개 비어 있음`, href: `/admin/outlets/${o.id}/site` }))
   outlets.filter((o) => o.domain && st(o.id).published_week === 0).forEach((o) => todos.push({ text: `${o.name}: 최근 7일 발행 기사 없음`, href: `/admin/outlets/${o.id}/site` }))
 
+  // 그룹들 → 맨 아래 '개별 매체'(그룹 없이 혼자 운영하는 단독 언론사, 매체마다 숨은 그룹이 있다) → 그룹 없음
+  const soloIds = new Set(groups.filter((g) => g.solo).map((g) => g.id))
   const sections = [
-    ...(groups ?? []).map((g) => ({ id: g.id as string, name: g.name as string, list: outlets.filter((o) => o.publisher_id === g.id) })),
-    { id: 'none', name: '그룹 없음', list: outlets.filter((o) => !o.publisher_id || !(groups ?? []).some((g) => g.id === o.publisher_id)) },
-  ].filter((s) => s.list.length || s.id !== 'none')
+    ...groups.filter((g) => !g.solo).map((g) => ({ id: g.id, name: g.name, note: '', list: outlets.filter((o) => o.publisher_id === g.id), deletable: true })),
+    { id: 'solo', name: '개별 매체', note: '그룹 없이 혼자 운영하는 단독 언론사', list: outlets.filter((o) => o.publisher_id && soloIds.has(o.publisher_id)), deletable: false },
+    { id: 'none', name: '그룹 없음', note: '', list: outlets.filter((o) => !o.publisher_id || !groups.some((g) => g.id === o.publisher_id)), deletable: false },
+  ].filter((s) => s.list.length || s.deletable)
+  const realGroups = groups.filter((g) => !g.solo).length
 
   const today = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())
 
@@ -84,8 +93,11 @@ export default async function DashboardPage() {
         <div className="flex gap-2"><Link href="/admin/ai-usage" className="btn-secondary bg-white">요금제·AI 사용량</Link><Link href="/admin/ai-compare" className="btn-secondary bg-white">AI 모델 비교</Link><Link href="/admin/outlets" className="btn-primary">그룹·매체 관리</Link></div>
       </header>
 
+      {searchParams.error && <p role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-4 py-3 text-[13.5px] text-danger">{searchParams.error}</p>}
+      {searchParams.ok && <p role="status" className="mb-4 rounded-lg border border-published/30 bg-published/5 px-4 py-3 text-[13.5px] text-published">{searchParams.ok}</p>}
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-        <Kpi label="그룹" value={(groups ?? []).length} sub="고객 언론사·발행인" />
+        <Kpi label="그룹" value={realGroups} sub={`개별 매체 ${outlets.filter((o) => o.publisher_id && soloIds.has(o.publisher_id)).length}곳`} />
         <Kpi label="매체" value={outlets.length} sub={`운영 ${live} · 준비 ${outlets.length - live}`} />
         <Kpi label="오늘 발행" value={sum('published_today')} sub="전체 매체 기사" tone="good" />
         <Kpi label="최근 7일 발행" value={sum('published_week')} sub={`누적 ${sum('published').toLocaleString()}건`} />
@@ -100,9 +112,19 @@ export default async function DashboardPage() {
           {sections.map((g) => (
             <section key={g.id} className="overflow-hidden rounded-xl border border-line bg-white">
               <div className="flex items-center justify-between border-b border-line bg-[#F8F9FA] px-5 py-3">
-                <h2 className="text-[15.5px] font-extrabold">{g.name}</h2>
-                <span className="text-[12.5px] text-muted">
+                <h2 className="text-[15.5px] font-extrabold">{g.name}{g.note && <span className="ml-2 text-[12px] font-normal text-muted">{g.note}</span>}</h2>
+                <span className="flex items-center gap-3 text-[12.5px] text-muted">
                   매체 {g.list.length} · 7일 발행 {g.list.reduce((a, o) => a + Number(st(o.id).published_week ?? 0), 0)} · 회원 {g.list.reduce((a, o) => a + Number(st(o.id).members ?? 0), 0)}
+                  {isSuper && g.deletable && !g.list.some((o) => o.site?.trial) && (
+                    <form action={removeGroup.bind(null, g.id)}>
+                      <ConfirmSubmit
+                        message={g.list.length ? `‘${g.name}’ 그룹을 지울까요?\n안의 매체 ${g.list.length}개는 지워지지 않고 '개별 매체'로 옮겨집니다.` : `빈 그룹 ‘${g.name}’을(를) 지울까요?`}
+                        className="text-[12px] text-muted underline underline-offset-2 hover:text-danger"
+                      >
+                        그룹 삭제
+                      </ConfirmSubmit>
+                    </form>
+                  )}
                 </span>
               </div>
               {g.list.length ? (
@@ -155,6 +177,11 @@ export default async function DashboardPage() {
                             <td className="whitespace-nowrap px-5 py-3 text-right text-[12px]">
                               <a href={o.domain ? `https://${o.domain}` : `/?preview_outlet=${o.id}`} target="_blank" rel="noopener" className="text-muted underline underline-offset-2 hover:text-ink">홈페이지</a>
                               <Link href={`/admin/outlets/${o.id}/site`} className="ml-2.5 text-muted underline underline-offset-2 hover:text-ink">설정</Link>
+                              {isSuper && !s.published && !s.members && !s.drafts_in_review && !o.site?.trial && (
+                                <form action={removeOutlet.bind(null, o.id)} className="ml-2.5 inline">
+                                  <ConfirmSubmit message={`‘${o.name}’ 매체를 지울까요?\n기사·회원·청구서가 없는 매체만 지워지며, 섹션·홈페이지 설정도 함께 지워집니다. 되돌릴 수 없습니다.`} className="text-muted underline underline-offset-2 hover:text-danger">삭제</ConfirmSubmit>
+                                </form>
+                              )}
                             </td>
                           </tr>
                         )
@@ -163,7 +190,7 @@ export default async function DashboardPage() {
                   </table>
                 </div>
               ) : (
-                <p className="px-5 py-6 text-center text-[13px] text-muted">아직 매체가 없습니다. 그룹·매체 관리에서 만들 수 있습니다.</p>
+                <p className="px-5 py-6 text-center text-[13px] text-muted">아직 매체가 없습니다. 그룹·매체 관리에서 만들거나, 쓰지 않는 그룹이면 위의 “그룹 삭제”로 지우세요.</p>
               )}
             </section>
           ))}

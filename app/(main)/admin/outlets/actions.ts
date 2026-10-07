@@ -109,3 +109,13 @@ function missingSql(message: string) {
     ? '총관리자가 Supabase에서 group-solo.sql을 먼저 실행해 주세요.'
     : null
 }
+
+// 빈 매체 지우기 (총관리자, outlet-delete.sql): 기사·회원·청구서·결제가 하나도 없는 매체만 (테스트 매체 정리용)
+export async function deleteOutlet(id: string): Promise<FormState> {
+  const { supabase, isSuper } = await staffContext()
+  if (!isSuper) return { error: '매체는 총관리자만 지울 수 있습니다.' }
+  const { data, error } = await supabase.rpc('admin_delete_outlet', { o: id })
+  if (error) return { error: /admin_delete_outlet/.test(error.message) ? '매체를 지우려면 총관리자가 Supabase에서 outlet-delete.sql을 먼저 실행해 주세요.' : error.message }
+  revalidatePath('/', 'layout')
+  return { ok: `${data ?? '매체'}을(를) 지웠습니다.` }
+}
