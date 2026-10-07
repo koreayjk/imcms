@@ -26,6 +26,10 @@ export default async function AdContractsPage() {
     ? await supabase.from('ad_stats').select('banner_id, day, views, clicks').in('banner_id', linked.map((b) => b.id))
     : { data: [] as { banner_id: string; day: string; views: number; clicks: number }[] }
   const rawContracts = (contractsRes.data ?? []) as any[]
+  // 저장한 문서 (견적서·게재 확인서)
+  const { data: docRows } = await supabase.from('ad_documents').select('id, contract_id, kind, doc_no, issued_at').eq('outlet_id', outletId).order('issued_at', { ascending: false }).limit(2000)
+  const docsOf = (cid: string) => ((docRows ?? []) as { id: string; contract_id: string; kind: 'quote' | 'report'; doc_no: string; issued_at: string }[])
+    .filter((x) => x.contract_id === cid).map((x) => ({ id: x.id, kind: x.kind, no: x.doc_no, at: x.issued_at }))
   const advertiserOf = new Map(rawContracts.map((c) => [c.id as string, c.advertiser as string]))
   const kstDay = (iso: string) => new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(0, 10)
   // 달력에 보일 예약: 켜져 있는 예약 광고 (한국 날짜, 끝나는 날 포함)
@@ -41,6 +45,7 @@ export default async function AdContractsPage() {
       ...c,
       supply_amount: Number(c.supply_amount), vat_amount: Number(c.vat_amount), paid_amount: Number(c.paid_amount),
       banner_ids: ids,
+      docs: docsOf(c.id),
       creatives: mineBanners.map((b) => ({ id: b.id, slot: b.slot, image_url: b.image_url ?? '', mobile_image_url: b.mobile_image_url ?? '', link_url: b.link_url ?? '' })),
       views: mine.reduce((n, s) => n + (s.views ?? 0), 0),
       clicks: mine.reduce((n, s) => n + (s.clicks ?? 0), 0),

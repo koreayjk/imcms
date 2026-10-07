@@ -2,6 +2,7 @@
 --   광고주·담당자·광고 내용·기간·금액(공급가·부가세)·입금·세금계산서를 적고, 광고 자리를 예약해 사진을 미리 올려 두면
 --   그 기간에 자동으로 나가고 끝나면 내려간다. 노출·클릭도 계약별로 본다
 --   흐름: 견적(자리는 아직 안 잡음) → 계약 확정(자리 예약) → 세금계산서·입금 → 게재 확인서
+--   견적서·게재 확인서는 '저장'하면 번호를 매겨 그때 내용 그대로 보관한다 (ad_documents)
 --   보기·쓰기: 그 매체 편집장·발행인과 총관리자만 (매출 정보라 IM 뉴스룸 매니저에게도 보이지 않는다)
 
 create table if not exists ad_contracts (
@@ -101,12 +102,39 @@ drop policy if exists "ad_contracts_delete" on ad_contracts;
 create policy "ad_contracts_delete" on ad_contracts for delete to authenticated
   using (coalesce(public.can_manage_outlet(outlet_id), false));
 
+-- 발급한 문서 (견적서·광고 게재 확인서): 저장한 순간의 내용을 그대로 보관한다 (나중에 금액·노출 수가 바뀌어도 그대로)
+create table if not exists ad_documents (
+  id uuid primary key default gen_random_uuid(),
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  contract_id uuid not null references ad_contracts(id) on delete cascade,
+  kind text not null check (kind in ('quote', 'report')),
+  doc_no text not null check (char_length(doc_no) <= 40),
+  data jsonb not null,
+  issued_by uuid default auth.uid() references profiles(id) on delete set null,
+  issued_at timestamptz not null default now()
+);
+create index if not exists ad_documents_contract on ad_documents (contract_id, issued_at desc);
+create unique index if not exists ad_documents_no on ad_documents (outlet_id, doc_no);
+alter table ad_documents enable row level security;
+drop policy if exists "ad_documents_read" on ad_documents;
+create policy "ad_documents_read" on ad_documents for select to authenticated
+  using (coalesce(public.can_manage_outlet(outlet_id), false));
+drop policy if exists "ad_documents_insert" on ad_documents;
+create policy "ad_documents_insert" on ad_documents for insert to authenticated
+  with check (coalesce(public.can_manage_outlet(outlet_id), false));
+drop policy if exists "ad_documents_delete" on ad_documents;
+create policy "ad_documents_delete" on ad_documents for delete to authenticated
+  using (coalesce(public.can_manage_outlet(outlet_id), false));
+
 -- 출입 정지·2단계 인증·끊긴 로그인 확인도 겹쳐 건다 (account-security.sql 을 실행한 DB만)
 do $$
 begin
   if to_regprocedure('public.session_ok()') is not null then
     drop policy if exists "zz_account_ok" on ad_contracts;
     create policy "zz_account_ok" on ad_contracts as restrictive for all to authenticated
+      using (public.session_ok()) with check (public.session_ok());
+    drop policy if exists "zz_account_ok" on ad_documents;
+    create policy "zz_account_ok" on ad_documents as restrictive for all to authenticated
       using (public.session_ok()) with check (public.session_ok());
   end if;
 end $$;

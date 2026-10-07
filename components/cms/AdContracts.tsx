@@ -19,6 +19,8 @@ export type Contract = {
   biz_no: string | null; biz_name: string | null; biz_ceo: string | null; biz_address: string | null
   biz_type: string | null; biz_item: string | null; invoice_email: string | null; doc_note: string | null
   banner_ids: string[]; views: number; clicks: number
+  // 저장한 문서 (최근 것부터)
+  docs: { id: string; kind: 'quote' | 'report'; no: string; at: string }[]
   // 이 계약으로 예약한 광고 자리·소재
   creatives: (Creative & { id: string })[]
 }
@@ -52,11 +54,13 @@ function payOf(c: Contract, today: string) {
 function nextStep(c: Contract, today: string) {
   const t = total(c)
   const paid = t === 0 || c.paid_amount >= t
-  if (c.status === 'quote') return '견적서를 보내고, 광고주가 수락하면 ‘계약 확정’'
+  const hasQuote = c.docs.some((x) => x.kind === 'quote')
+  const hasReport = c.docs.some((x) => x.kind === 'report')
+  if (c.status === 'quote') return hasQuote ? '견적서 보냄 — 광고주가 수락하면 ‘계약 확정’' : '견적서를 만들어 저장·발송하기'
   if (t > 0 && !c.tax_invoice_on && !paid) return '세금계산서 발행 또는 입금 확인'
   if (t > 0 && !c.tax_invoice_on) return '세금계산서 발행'
   if (!paid) return '입금 확인'
-  if (c.ends_on < today) return '게재 확인서 보내기'
+  if (c.ends_on < today) return hasReport ? '끝 (게재 확인서 발급함)' : '게재 확인서 보내기'
   return c.starts_on > today ? '시작일에 자동 게재' : '게재 중'
 }
 
@@ -183,6 +187,14 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
                       <p className="text-[12.5px] text-muted">{c.title}</p>
                       {(c.contact_name || c.contact_phone) && <p className="text-[12px] text-muted">{[c.contact_name, c.contact_phone].filter(Boolean).join(' · ')}</p>}
                       <p className="mt-1 text-[12px] font-semibold text-review">다음 할 일: {nextStep(c, today)}</p>
+                      {c.docs.length > 0 && (
+                        <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11.5px] text-muted">
+                          {c.docs.slice(0, 4).map((x) => (
+                            <a key={x.id} href={`/doc/saved/${x.id}`} target="_blank" rel="noopener" className="hover:text-ink hover:underline">📄 {x.kind === 'quote' ? '견적서' : '확인서'} {x.no}</a>
+                          ))}
+                          {c.docs.length > 4 && <span>외 {c.docs.length - 4}건</span>}
+                        </p>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-2 py-3 tabular-nums">
                       {dot(c.starts_on)} ~ {dot(c.ends_on).slice(5)}
@@ -215,9 +227,9 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
                       <RowMenu disabled={busy} items={[
                         { label: '고치기', onClick: () => { setMsg({}); setEditing(c) } },
                         c.status === 'quote' && { label: '계약 확정 (자리 예약)', tone: 'strong' as const, onClick: () => confirm(c) },
-                        { label: '견적서', href: `/doc/ad/${c.id}/quote`, newTab: true },
+                        { label: '견적서 만들기·저장', href: `/doc/ad/${c.id}/quote`, newTab: true },
                         total(c) > 0 && { label: c.tax_invoice_on ? '세금계산서 정보 (발행함)' : '세금계산서 발행 정보', onClick: () => setInvoicing(c) },
-                        { label: '광고 게재 확인서', href: `/doc/ad/${c.id}/report`, newTab: true },
+                        { label: '게재 확인서 만들기·저장', href: `/doc/ad/${c.id}/report`, newTab: true },
                       ]} />
                     </td>
                   </tr>
