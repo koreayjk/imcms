@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime } from '@/lib/format'
 import { ROLE_LABEL, type Profile, type UserRole } from '@/lib/types'
-import UserManager, { InviteForm, type OutletOption } from '@/components/UserManager'
+import UserManager, { DormantMembers, InviteForm, type OutletOption } from '@/components/UserManager'
+import { isDormant } from '@/lib/device'
 import PendingButton from '@/components/cms/PendingButton'
 import StaffRow from '@/components/cms/StaffOutlets'
 import { appointStaff, approveUser, cancelInvite, rejectUser } from './actions'
@@ -55,6 +56,9 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
   // 회원별 2단계 인증 여부 (account-security.sql 전이면 오류 → 출입 정지·초기화 버튼을 숨긴다)
   const mfaRes = await supabase.rpc('admin_member_mfa')
   const mfa = mfaRes.error ? null : Object.fromEntries(((mfaRes.data ?? []) as { id: string; mfa: boolean }[]).map((r) => [r.id, r.mfa]))
+  // 회원별 마지막 접속 (login-security.sql 전이면 마지막 로그인 시각으로 대신한다)
+  const seenRes = await supabase.rpc('member_last_seen')
+  const loginsReady = !seenRes.error
   // 매니저의 담당 매체 (총관리자만, staff-outlets.sql 전이면 오류 → 정하기 버튼을 숨긴다)
   const staffRes = isSuper ? await supabase.from('staff_outlets').select('staff_id, outlet_id') : { data: [], error: null }
   const staffReady = isSuper && !staffRes.error
@@ -78,6 +82,9 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
   const groupName = new Map((groups ?? []).map((g) => [g.id as string, g.name as string]))
   const outletGroup = new Map(outletRows.map((o) => [o.id as string, (o.publisher_id as string | null) ?? null]))
   const info = new Map(((authUsers ?? []) as AuthInfo[]).map((u) => [u.id, u]))
+  const lastSeen: Record<string, string | null> | null = loginsReady
+    ? Object.fromEntries(((seenRes.data ?? []) as { id: string; last_seen: string | null }[]).map((r) => [r.id, r.last_seen]))
+    : authError ? null : Object.fromEntries(Array.from(info, ([id, a]) => [id, a.last_sign_in_at]))
 
   const all = (users ?? []) as Profile[]
   const pending = all.filter((u) => u.approved === false && u.role !== 'admin' && !u.is_super)
@@ -88,6 +95,11 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
   // 총관리자는 그룹별로 나눠 보고, 발행인은 자기 그룹만 본다
   // 매니저는 매체 소속이 아니므로 그룹 회원 표에서 빼고, 아래 매니저 칸에서 담당 매체를 정한다
   const groupMembers = members.filter((u) => !u.is_staff || u.is_super)
+  // 1년 이상 접속하지 않은 회원 (총관리자 본인·이미 정지된 회원 제외, 정지할 권한이 있는 사람만)
+  const dormant = lastSeen && mfa
+    ? groupMembers.filter((u) => u.id !== user.id && !u.is_super && !u.suspended_at && (isSuper || (!u.is_staff && u.role !== 'admin'))
+        && isDormant(lastSeen[u.id], u.created_at))
+    : []
   const sections = isSuper
     ? [...(groups ?? []).map((g) => ({ key: g.id as string, title: g.name as string, list: groupMembers.filter((u) => groupIdOf(u) === g.id) })),
        { key: 'none', title: '그룹 없음 (총관리자 등)', list: groupMembers.filter((u) => !groupIdOf(u)) }].filter((s) => s.list.length)
@@ -101,6 +113,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
           {isSuper ? '모든 그룹의 회원과 가입 신청을 관리합니다.' : '우리 그룹 회원의 역할과 매체를 정하고, 새 기자를 초대합니다.'}
           {' '}기자 = 자기 기사 · 편집장 = 자기 매체 · 발행인 = 그룹의 모든 매체. 기자·편집장은 그룹 안 여러 매체에 소속되고 매체마다 직급을 따로 가질 수 있습니다.
           {' '}퇴사한 사람은 <strong>출입 정지</strong>로 바로 막을 수 있고(쓴 기사는 남음), 휴대폰을 잃어버린 회원은 <strong>2단계 초기화</strong>로 인증 앱을 새로 등록하게 합니다.
+          {' '}<strong>로그인 기록</strong>에서 언제·어느 기기로 들어왔는지 보고, 의심스러우면 <strong>모든 기기 로그아웃</strong>으로 바로 끊습니다.
         </p>
       </header>
 
@@ -193,10 +206,17 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
         </section>
       )}
 
+      {dormant.length > 0 && (
+        <DormantMembers
+          canDelete={isSuper}
+          list={dormant.map((u) => ({ id: u.id, name: u.full_name, email: info.get(u.id)?.email, group: groupOf[u.id] ?? null, lastSeen: lastSeen?.[u.id] ?? null }))}
+        />
+      )}
+
       {sections.map((s) => (
         <section key={s.key}>
           <h2 className="mb-2 text-[15px] font-bold">{s.title} <span className="text-[12.5px] font-normal text-muted">{s.list.length}명</span></h2>
-          <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} memberships={membershipsReady ? memberships : null} canDelete={isSuper} mfa={mfa} viewerIsSuper={isSuper} />
+          <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} memberships={membershipsReady ? memberships : null} canDelete={isSuper} mfa={mfa} viewerIsSuper={isSuper} lastSeen={lastSeen} loginsReady={loginsReady} />
         </section>
       ))}
     </div>

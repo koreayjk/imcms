@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useTransition, useActionState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { deleteMember, inviteMember, resetMemberMfa, setMember, setMemberships, suspendMember, type FormState, type Membership } from '@/app/(main)/admin/users/actions'
+import { deleteMember, inviteMember, resetMemberMfa, setMember, setMemberships, signOutMember, suspendMember, suspendDormant, type FormState, type Membership } from '@/app/(main)/admin/users/actions'
 import type { Profile, UserRole } from '@/lib/types'
 import { ROLE_LABEL } from '@/lib/types'
 import PendingButton from './cms/PendingButton'
+import { isDormant } from '@/lib/device'
 
 export type OutletOption = { id: string; name: string; group: string | null }
 
@@ -48,8 +50,11 @@ export function InviteForm({ outlets }: { outlets: OutletOption[] }) {
 
 type Kind = 'member' | 'admin'
 
-function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete, mfa, viewerIsSuper }: {
+function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete, mfa, viewerIsSuper, lastSeen, loginsReady }: {
   u: Profile; email?: string; outlets: OutletOption[]; isMe: boolean; groupName: string | null
+  // 마지막 접속 (모르면 undefined) · 로그인 기록·원격 로그아웃을 쓸 수 있는가 (login-security.sql)
+  lastSeen?: string | null
+  loginsReady: boolean
   // 총관리자만: 회원 탈퇴(계정 삭제)
   canDelete: boolean
   // 2단계 인증을 켰는가 (account-security.sql 전이면 undefined)
@@ -72,7 +77,10 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
   const multi = memberships !== null
   const locked = isMe || !!u.is_super || !!u.is_staff
   // 출입 정지·2단계 인증 초기화: 발행인은 우리 그룹 기자·편집장, 총관리자는 모두 (DB가 한 번 더 확인)
-  const canGuard = mfa !== undefined && !isMe && !u.is_super && (viewerIsSuper || (!u.is_staff && u.role !== 'admin'))
+  const canManage = !isMe && !u.is_super && (viewerIsSuper || (!u.is_staff && u.role !== 'admin'))
+  const canGuard = mfa !== undefined && canManage
+  const canWatch = loginsReady && canManage
+  const dormant = lastSeen !== undefined && isDormant(lastSeen, u.created_at)
   const suspended = !!u.suspended_at
 
   function guard(run: () => Promise<FormState>, question: string) {
@@ -113,6 +121,7 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
         {u.is_super && <span className="ml-1 rounded bg-[#E5483A] px-1 text-[10.5px] font-bold text-white">총관리자</span>}
         {u.is_staff && !u.is_super && <span className="ml-1 rounded bg-[#2F6BF0] px-1 text-[10.5px] font-bold text-white">매니저</span>}
         {suspended && <span className="ml-1 rounded bg-danger px-1 text-[10.5px] font-bold text-white">출입 정지</span>}
+        {dormant && !suspended && <span title="1년 이상 접속하지 않음" className="ml-1 rounded bg-draft/15 px-1 text-[10.5px] font-bold text-draft">1년 미접속</span>}
         {mfa && <span title="2단계 인증 켬" className="ml-1 rounded bg-published/10 px-1 text-[10.5px] font-bold text-published">2단계</span>}
         {email && <span className="block pl-1.5 text-xs text-muted">{email}</span>}
       </td>
@@ -172,7 +181,14 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
           </>
         )}
       </td>
-      <td className="py-2.5 text-xs text-muted">{new Date(u.created_at).toLocaleDateString('ko-KR')}</td>
+      <td className="py-2.5 text-xs text-muted">
+        {new Date(u.created_at).toLocaleDateString('ko-KR')}
+        {lastSeen !== undefined && (
+          <span className={`block pt-0.5 ${dormant ? 'font-semibold text-draft' : ''}`} title="최근 접속">
+            {lastSeen ? `접속 ${new Date(lastSeen).toLocaleDateString('ko-KR')}` : '접속 기록 없음'}
+          </span>
+        )}
+      </td>
       <td className="py-2.5 text-right">
         {dirty && (
           <button type="button" disabled={pending} onClick={save} className="btn-primary px-3 py-1 text-[12.5px]">
@@ -193,6 +209,21 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
           >
             {suspended ? '정지 풀기' : '출입 정지'}
           </button>
+        )}
+        {canWatch && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => guard(() => signOutMember(u.id), `${u.full_name}님의 로그인을 모든 기기에서 끊을까요?\n\n바로 편집국을 열 수 없게 되고, 다시 로그인해야 합니다.`)}
+            className="mt-1 block w-full whitespace-nowrap text-right text-[11.5px] text-muted hover:text-danger"
+          >
+            모든 기기 로그아웃
+          </button>
+        )}
+        {canWatch && (
+          <Link href={`/admin/users/${u.id}/logins`} className="mt-1 block w-full whitespace-nowrap text-right text-[11.5px] text-muted hover:text-ink">
+            로그인 기록
+          </Link>
         )}
         {canGuard && mfa && (
           <button
@@ -228,7 +259,7 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
   )
 }
 
-export default function UserManager({ users, outlets, currentUserId, emails = {}, groupOf = {}, memberships = null, canDelete = false, mfa = null, viewerIsSuper = false }: {
+export default function UserManager({ users, outlets, currentUserId, emails = {}, groupOf = {}, memberships = null, canDelete = false, mfa = null, viewerIsSuper = false, lastSeen = null, loginsReady = false }: {
   users: Profile[]
   outlets: OutletOption[]
   currentUserId: string
@@ -239,6 +270,9 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
   // 회원별 2단계 인증 여부 (account-security.sql 전이면 null → 정지·초기화 버튼을 숨긴다)
   mfa?: Record<string, boolean> | null
   viewerIsSuper?: boolean
+  // 회원별 마지막 접속 (모르면 null → 칸을 숨긴다)
+  lastSeen?: Record<string, string | null> | null
+  loginsReady?: boolean
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-line bg-white px-5">
@@ -248,13 +282,13 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
             <th className="py-2.5 font-normal">이름 · 이메일</th>
             <th className="w-36 py-2.5 font-normal">직급</th>
             <th className="w-72 py-2.5 font-normal">{memberships ? '소속 매체 · 매체별 직급' : '매체'}</th>
-            <th className="w-24 py-2.5 font-normal">가입일</th>
+            <th className="w-24 py-2.5 font-normal">{lastSeen ? '가입 · 최근 접속' : '가입일'}</th>
             <th className="w-24" />
           </tr>
         </thead>
         <tbody>
           {users.map((u) => (
-            <MemberRow key={u.id} u={u} email={emails[u.id]} outlets={outlets} isMe={u.id === currentUserId} groupName={groupOf[u.id] ?? null} memberships={memberships ? memberships[u.id] ?? [] : null} canDelete={canDelete} mfa={mfa ? !!mfa[u.id] : undefined} viewerIsSuper={viewerIsSuper} />
+            <MemberRow key={u.id} u={u} email={emails[u.id]} outlets={outlets} isMe={u.id === currentUserId} groupName={groupOf[u.id] ?? null} memberships={memberships ? memberships[u.id] ?? [] : null} canDelete={canDelete} mfa={mfa ? !!mfa[u.id] : undefined} viewerIsSuper={viewerIsSuper} lastSeen={lastSeen ? lastSeen[u.id] ?? null : undefined} loginsReady={loginsReady} />
           ))}
           {!users.length && (
             <tr><td colSpan={5} className="py-10 text-center text-sm text-muted">회원이 없습니다.</td></tr>
@@ -263,5 +297,50 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
       </table>
       <div className="py-3 text-xs text-muted">총 {users.length}명</div>
     </div>
+  )
+}
+
+// 1년 이상 접속하지 않은 회원: 한 번에 출입 정지 (탈퇴는 총관리자가 표에서 한 명씩)
+export function DormantMembers({ list, canDelete }: {
+  list: { id: string; name: string; email?: string; group: string | null; lastSeen: string | null }[]
+  canDelete: boolean
+}) {
+  const router = useRouter()
+  const [msg, setMsg] = useState<FormState>({})
+  const [pending, start] = useTransition()
+  function run() {
+    if (!window.confirm(`1년 이상 접속하지 않은 ${list.length}명의 편집국 출입을 정지할까요?\n\n· 다시 로그인해도 편집국을 열 수 없습니다.\n· 쓴 기사는 그대로 남습니다.\n· 다시 일하게 되면 언제든 '정지 풀기'로 되돌릴 수 있습니다.`)) return
+    start(async () => {
+      const r = await suspendDormant(list.map((m) => m.id))
+      setMsg(r)
+      router.refresh()
+    })
+  }
+  return (
+    <section className="rounded-lg border border-draft/40 bg-draft/5 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[15px] font-bold">1년 이상 접속하지 않은 회원 <span className="text-[12.5px] font-normal text-muted">{list.length}명</span></h2>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+            오래 쓰지 않는 계정은 비밀번호가 새도 알아차리기 어렵습니다. 그만둔 사람이면 출입을 정지해 두세요(기사는 남고, 언제든 되돌릴 수 있습니다).
+            {canDelete && ' 완전히 지우려면 아래 표에서 한 명씩 탈퇴시킬 수 있습니다.'}
+          </p>
+        </div>
+        <button type="button" onClick={run} disabled={pending} className="btn-secondary shrink-0 bg-white px-3 py-1.5 text-[13px] disabled:opacity-50">
+          {pending ? '정지하는 중…' : `${list.length}명 모두 출입 정지`}
+        </button>
+      </div>
+      <ul className="mt-3 divide-y divide-line rounded-md border border-line bg-white">
+        {list.map((m) => (
+          <li key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2 text-[13px]">
+            <span className="font-semibold">{m.name}</span>
+            <span className="text-[12px] text-muted">{[m.email, m.group].filter(Boolean).join(' · ')}</span>
+            <span className="ml-auto text-[12px] tabular-nums text-draft">{m.lastSeen ? `마지막 접속 ${new Date(m.lastSeen).toLocaleDateString('ko-KR')}` : '접속한 적 없음'}</span>
+          </li>
+        ))}
+      </ul>
+      {msg.error && <p role="alert" className="mt-2 text-[12.5px] text-danger">{msg.error}</p>}
+      {msg.ok && !msg.error && <p role="status" className="mt-2 text-[12.5px] text-published">{msg.ok}</p>}
+    </section>
   )
 }

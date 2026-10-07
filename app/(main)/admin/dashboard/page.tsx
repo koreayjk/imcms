@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { isDormant } from '@/lib/device'
 import { formatShort } from '@/lib/format'
 import { TICKET_CATEGORIES, TICKET_STATUS, won, type TicketCategory, type TicketStatus } from '@/lib/support'
 import type { OutletSiteSettings } from '@/lib/sites'
@@ -69,6 +70,19 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
   if ((newLeads ?? 0) > 0) todos.push({ text: `아직 연락하지 않은 상담 신청 ${newLeads}건`, href: '/admin/leads' })
   const received = (tickets ?? []).filter((t) => t.status === 'received').length
   if (received) todos.push({ text: `답변을 기다리는 업무요청 ${received}건`, href: '/support/tickets?tab=unread' })
+  // 1년 이상 접속하지 않은 회원 (총관리자만, login-security.sql 전이면 건너뛴다)
+  if (isSuper) {
+    const [seenRes, { data: people }] = await Promise.all([
+      supabase.rpc('member_last_seen'),
+      supabase.from('profiles').select('id, created_at, suspended_at, is_super, approved'),
+    ])
+    if (!seenRes.error) {
+      const seen = new Map(((seenRes.data ?? []) as { id: string; last_seen: string | null }[]).map((r) => [r.id, r.last_seen]))
+      const dormant = ((people ?? []) as { id: string; created_at: string; suspended_at?: string | null; is_super?: boolean; approved?: boolean }[])
+        .filter((p) => p.approved !== false && !p.is_super && !p.suspended_at && isDormant(seen.get(p.id), p.created_at)).length
+      if (dormant) todos.push({ text: `1년 이상 접속하지 않은 회원 ${dormant}명 (출입 정지 검토)`, href: '/admin/users' })
+    }
+  }
   outlets.filter((o) => legalDone(o) < REQUIRED_LEGAL.length).forEach((o) => todos.push({ text: `${o.name}: 하단 필수 표시 정보 ${REQUIRED_LEGAL.length - legalDone(o)}개 비어 있음`, href: `/admin/outlets/${o.id}/site` }))
   outlets.filter((o) => o.domain && st(o.id).published_week === 0).forEach((o) => todos.push({ text: `${o.name}: 최근 7일 발행 기사 없음`, href: `/admin/outlets/${o.id}/site` }))
 

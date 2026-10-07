@@ -6,7 +6,7 @@ export const MFA_DAYS = 90
 export const MFA_DAYS_STAFF = 30
 
 type Factor = { status?: string; factor_type?: string }
-type Claims = { aal?: string; amr?: ({ method?: string; timestamp?: number } | string)[] }
+type Claims = { aal?: string; session_id?: string; amr?: ({ method?: string; timestamp?: number } | string)[] }
 
 // 로그인 토큰 안의 정보 (서명 확인은 getUser가 이미 했으므로 내용만 읽는다)
 export function tokenClaims(token: string | null | undefined): Claims {

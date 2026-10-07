@@ -23,6 +23,9 @@ create or replace function public.session_ok() returns boolean language sql stab
   select auth.uid() is null or (
     not exists (select 1 from profiles where id = auth.uid() and suspended_at is not null)
     and (coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2' or not public.mfa_enabled(auth.uid()))
+    -- 끊긴(로그아웃된) 로그인이 아닐 것 (login-security.sql 의 '모든 기기에서 로그아웃')
+    and (nullif(auth.jwt() ->> 'session_id', '') is null
+         or exists (select 1 from auth.sessions s where s.id = (auth.jwt() ->> 'session_id')::uuid))
   );
 $$;
 grant execute on function public.session_ok() to authenticated, anon;

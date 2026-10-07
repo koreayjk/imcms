@@ -61,3 +61,17 @@ export async function setGroupRequireMfa(on: boolean): Promise<{ error?: string 
   revalidatePath('/account')
   return {}
 }
+
+// 다른 기기 모두 로그아웃: 지금 이 기기만 남기고 내 다른 로그인을 끊는다 (login-security.sql 전이면 Supabase 기본 기능으로)
+export async function signOutOtherDevices(): Promise<{ error?: string; ok?: string }> {
+  const { supabase, user } = await getCmsContext()
+  const { data, error } = await supabase.rpc('admin_signout_user', { target: user.id })
+  if (error) {
+    if (!/admin_signout_user/.test(error.message)) return { error: `끊지 못했습니다: ${error.message}` }
+    const { error: err } = await supabase.auth.signOut({ scope: 'others' })
+    if (err) return { error: `끊지 못했습니다: ${err.message}` }
+    return { ok: '다른 기기의 로그인을 모두 끊었습니다.' }
+  }
+  revalidatePath('/account')
+  return { ok: Number(data) ? `다른 기기 ${Number(data)}곳의 로그인을 끊었습니다.` : '끊을 다른 기기 로그인이 없었습니다.' }
+}

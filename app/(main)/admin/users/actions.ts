@@ -177,3 +177,27 @@ export async function resetMemberMfa(id: string): Promise<FormState> {
   revalidatePath('/admin/users')
   return { ok: '2단계 인증을 초기화했습니다.' }
 }
+
+// 모든 기기에서 로그아웃 (발행인은 우리 그룹 기자·편집장, 총관리자는 모두. DB가 한 번 더 확인)
+export async function signOutMember(id: string): Promise<FormState> {
+  const { supabase } = await groupContext()
+  const { data, error } = await supabase.rpc('admin_signout_user', { target: id })
+  if (error) return { error: /admin_signout_user/.test(error.message) ? '원격 로그아웃을 쓰려면 login-security.sql을 실행해 주세요.' : error.message }
+  revalidatePath('/admin/users')
+  return { ok: Number(data) ? `${Number(data)}곳의 로그인을 끊었습니다.` : '로그인돼 있는 기기가 없었습니다.' }
+}
+
+// 1년 이상 접속하지 않은 회원을 한 번에 출입 정지 (정지는 언제든 풀 수 있다)
+export async function suspendDormant(ids: string[]): Promise<FormState> {
+  const { supabase } = await groupContext()
+  let done = 0
+  const failed: string[] = []
+  for (const id of ids.slice(0, 200)) {
+    const { error } = await supabase.rpc('admin_suspend_user', { target: id, suspend: true })
+    if (error) failed.push(error.message)
+    else done++
+  }
+  revalidatePath('/admin/users')
+  if (!done && failed.length) return { error: /admin_suspend_user/.test(failed[0]) ? '출입 정지를 쓰려면 account-security.sql을 실행해 주세요.' : failed[0] }
+  return { ok: `${done}명을 출입 정지했습니다.${failed.length ? ` (${failed.length}명은 권한이 없어 건너뜀)` : ''}` }
+}
