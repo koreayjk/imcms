@@ -47,10 +47,11 @@ export default async function ArticlesPage(props: Props) {
   ])
 
   const rows = (data ?? []) as any[]
-  // 한꺼번에 승인·반려: 편집장 이상, 이 쪽에 보이는 승인신청 기사
-  const bulk: BulkItem[] = isEditorPlus
-    ? rows.filter((a) => a.status === 'in_review').map((a) => ({ id: a.id, title: a.title, publishedAt: a.published_at ?? null, hasSection: !!a.category }))
-    : []
+  // 골라서 한꺼번에: 승인·반려(편집장 이상, 승인신청 기사) · 삭제(본인 기사 또는 편집장 이상)
+  const bulk: BulkItem[] = rows.map((a) => ({
+    id: a.id, title: a.title, status: a.status, publishedAt: a.published_at ?? null, hasSection: !!a.category,
+    canDelete: a.author_id === user.id || isEditorPlus,
+  }))
   const pages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
   const href = (params: Record<string, string | undefined>) => {
     const sp = new URLSearchParams()
@@ -108,11 +109,11 @@ export default async function ArticlesPage(props: Props) {
         </div>
 
         {rows.length ? (
-          <BulkReview items={bulk} moderated={!!trial}>
+          <BulkReview items={bulk} canReview={isEditorPlus} moderated={!!trial}>
           <ul className="divide-y divide-line">
             {rows.map((a) => (
               <li key={a.id} className="group flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3.5 hover:bg-[#F8F9FA] md:flex-nowrap md:gap-4 md:px-5">
-                {bulk.length > 0 && (a.status === 'in_review' ? <BulkCheck id={a.id} title={a.title} /> : <span className="w-4 shrink-0" aria-hidden />)}
+                <BulkCheck id={a.id} title={a.title} />
                 {isScheduled(a)
                   ? <span className="status-badge status-scheduled w-[64px] shrink-0 justify-center whitespace-nowrap" title={`${formatDateTime(a.published_at)} 공개 예정`}>예약</span>
                   : <span className={`status-badge status-${a.status} w-[64px] shrink-0 justify-center whitespace-nowrap`}>{STATUS_LABEL[a.status as ArticleStatus]}</span>}

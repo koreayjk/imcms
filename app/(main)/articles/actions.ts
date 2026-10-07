@@ -30,3 +30,27 @@ export async function deleteArticle(id: string) {
   revalidatePath('/', 'layout')
   redirect('/articles?deleted=1')
 }
+
+// 기사목록에서 여러 건 삭제: 한 건씩 지울 때와 같은 권한(본인 기사 또는 편집장 이상). 지운 수와 못 지운 기사를 돌려준다
+export async function deleteArticles(ids: string[]): Promise<{ deleted: number; failed: string[] }> {
+  const { supabase, user, isEditorPlus } = await getCmsContext()
+  const list = Array.from(new Set(ids)).filter((id) => /^[0-9a-f-]{36}$/.test(id)).slice(0, 100)
+  const { data: rows } = await supabase.from('articles').select('id, title, author_id, outlet_id').in('id', list)
+  const failed: string[] = []
+  const outlets: (string | null)[] = []
+  let deleted = 0
+  for (const a of (rows ?? []) as { id: string; title: string; author_id: string; outlet_id: string | null }[]) {
+    if (a.author_id !== user.id && !isEditorPlus) { failed.push(`“${a.title}”: 본인이 쓴 기사만 삭제할 수 있습니다`); continue }
+    const { data: copies } = await supabase.from('articles').select('outlet_id').eq('source_article_id', a.id)
+    await supabase.from('articles').delete().eq('source_article_id', a.id)
+    const { data: gone, error } = await supabase.from('articles').delete().eq('id', a.id).select('id')
+    if (error || !gone?.length) { failed.push(`“${a.title}”: ${error?.message ?? '삭제 권한이 없습니다'}`); continue }
+    deleted++
+    outlets.push(a.outlet_id, ...((copies ?? []) as { outlet_id: string | null }[]).map((c) => c.outlet_id))
+  }
+  if (deleted) {
+    await refreshOutlets(outlets)
+    revalidatePath('/', 'layout')
+  }
+  return { deleted, failed }
+}
