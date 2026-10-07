@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import AdManager, { type ManagedBanner } from '@/components/cms/AdManager'
 import AdTabs from '@/components/cms/AdTabs'
+import AdHowItWorks from '@/components/cms/AdHowItWorks'
 
 // 광고 배너 관리 (편집장·발행인·운영팀). 작업 중인 매체의 배너만
 export default async function AdsPage() {
@@ -42,7 +43,6 @@ export default async function AdsPage() {
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
           홈페이지 정해진 자리에 광고를 겁니다. 기간을 정해 두면 그 기간에만 나가고, 노출·클릭 수가 하루 단위로 집계됩니다(검색 로봇 제외).
           배너에는 기사와 헷갈리지 않게 작은 “광고” 표시가 붙습니다.
-          {isEditorPlus && <> 여기 올린 배너는 <strong>기본 배너</strong>입니다. ‘광고 계약’에서 예약한 광고가 나가는 기간에는 같은 자리의 기본 배너가 쉬었다가(오른쪽 자리는 남는 칸에 계속), 계약 광고가 끝나면 다시 나옵니다.</>}
         </p>
         {!isStaff && (
           <p className="mt-3 rounded-lg border border-review/30 bg-review/5 px-4 py-3 text-[13px] leading-relaxed">
@@ -52,6 +52,7 @@ export default async function AdsPage() {
         )}
       </header>
       <AdTabs current="banners" showContracts={isEditorPlus} />
+      {isEditorPlus && <AdHowItWorks current="banners" />}
       {error ? (
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">광고 배너를 쓰려면 Supabase에서 <code>supabase/ad-banners.sql</code>을 실행해 주세요.</p>
       ) : (

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import AdTabs from '@/components/cms/AdTabs'
+import AdHowItWorks from '@/components/cms/AdHowItWorks'
 import AdContracts, { type Contract } from '@/components/cms/AdContracts'
 import type { Booking } from '@/components/cms/AdCalendar'
 
@@ -56,6 +57,7 @@ export default async function AdContractsPage() {
         </p>
       </header>
       <AdTabs current="contracts" showContracts />
+      <AdHowItWorks current="contracts" />
       {contractsRes.error ? (
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">광고 계약을 쓰려면 Supabase에서 <code>supabase/ad-contracts.sql</code>을 실행해 주세요.</p>
       ) : (
