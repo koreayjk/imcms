@@ -7,18 +7,35 @@ import { formatDateTime } from '@/lib/format'
 import { refreshOutletPages } from '@/app/(main)/articles/refresh'
 import {
   FIELDS, PHOTO_TYPES, PhotoIndex, csvTable, decodeText, guessArticleTable, guessMapping, imExport, parseDate, plainText,
-  rewriteBodyImages, sqlRows, sqlTables, storageSafe, toBodyHtml, type FieldKey, type Mapping, type SqlTableInfo, type Table,
+  describeTables, rewriteBodyImages, sectionNameMap, sqlRows, sqlTables, storageSafe, toBodyHtml, type FieldKey, type Mapping, type SqlTableInfo, type Table,
 } from '@/lib/import-parse'
 
 type Outlet = { id: string; name: string; domain: string | null; group: string | null }
 type Cat = { id: string; name: string; slug: string }
 type Source = { file: string; kind: 'sql' | 'csv' | 'im'; encoding: string; text?: string; tables?: SqlTableInfo[]; table: Table }
-type PhotoStats = { files: number; uploaded: number; existed: number; skipped: number; failed: number }
+type PhotoStats = { files: number; uploaded: number; existed: number; skipped: number; failed: number; shrunk: number; total: number; startedAt: number }
 type Result = { inserted: number; existed: number; filtered: number; invalid: number; missingPhotos: number; errors: string[] }
 
 const BATCH = 50
 const PHOTO_PARALLEL = 6
 const MAX_PHOTO = 10 * 1024 * 1024
+// 10MB가 넘는 사진은 줄여서 올린다 (원본이 60MB를 넘으면 건너뛴다)
+const MAX_ORIGINAL = 60 * 1024 * 1024
+const ext = (name: string) => name.split('.').pop()?.toLowerCase() ?? ''
+
+async function shrinkPhoto(blob: Blob): Promise<Blob> {
+  try {
+    const bmp = await createImageBitmap(blob)
+    const scale = Math.min(1, 2400 / Math.max(bmp.width, bmp.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bmp.width * scale)
+    canvas.height = Math.round(bmp.height * scale)
+    canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height)
+    return await new Promise((resolve) => canvas.toBlob((b) => resolve(b ?? blob), 'image/jpeg', 0.85))
+  } catch {
+    return blob
+  }
+}
 
 function hash(s: string) {
   let h = 2166136261
@@ -117,43 +134,100 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
     for (const r of rows) { const v = (r[mapping.section] ?? '').trim(); n.set(v, (n.get(v) ?? 0) + 1) }
     return [...n.entries()].sort((a, b) => b[1] - a[1])
   }, [rows, mapping.section])
-  const sectionOf = (v: string) => sectionMap[v] ?? cats.find((c) => c.slug.toLowerCase() === v.toLowerCase() || c.name === v)?.id ?? ''
+  // 섹션 이름 표 (ND소프트처럼 기사에는 코드만 있는 경우): 코드 옆에 이름을 보여주고 같은 이름의 우리 섹션을 미리 고른다
+  const sectionNames = useMemo(() => {
+    if (src?.kind !== 'sql' || !src.text || !src.tables || !sectionValues.length) return null
+    return sectionNameMap(src.text, src.tables, src.table.name, sectionValues.map(([v]) => v))
+  }, [src, sectionValues])
+  const nameOf = (v: string) => sectionNames?.map.get(v) ?? null
+  const sectionOf = (v: string) => sectionMap[v] ?? cats.find((c) => c.slug.toLowerCase() === v.toLowerCase() || c.name === v || (nameOf(v) && c.name === nameOf(v)))?.id ?? ''
+  const unmatched = sectionValues.filter(([v]) => v && !sectionOf(v))
+  const [making, setMaking] = useState(false)
 
-  // ───── 2. 사진 ZIP 올리기 (이 브라우저에서 풀어 한 장씩 저장소로) ─────
-  async function uploadZip(files: FileList) {
+  // 우리 매체에 없는 섹션을 옛 섹션 이름으로 만든다 (이름이 없으면 코드로). 만든 뒤 섹션 관리에서 순서·메뉴를 정리하면 된다
+  async function makeSections() {
+    if (!unmatched.length || !window.confirm(`우리 매체에 없는 섹션 ${unmatched.length}개를 옛 섹션 이름으로 만들까요?\n\n${unmatched.slice(0, 15).map(([v]) => `· ${nameOf(v) ?? v}`).join('\n')}${unmatched.length > 15 ? '\n…' : ''}`)) return
+    setMaking(true)
+    setError('')
+    const used = new Set(cats.map((c) => c.slug))
+    const made: Record<string, string> = {}
+    for (const [i, [v]] of unmatched.entries()) {
+      const name = (nameOf(v) ?? v).slice(0, 40)
+      // 같은 이름이 이미 있거나 방금 만들었으면 그 섹션으로 (코드 여러 개가 한 이름인 경우)
+      const same = cats.find((c) => c.name === name)
+      if (same) { made[v] = same.id; continue }
+      let slug = `old-${v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || i + 1}`
+      while (used.has(slug)) slug += '-2'
+      used.add(slug)
+      const { data, error: err } = await supabase.from('categories').insert({ outlet_id: outletId, name, slug, sort_order: 200 + i }).select('id, name, slug').single()
+      if (err) { setError(`섹션을 만들지 못했습니다: ${err.message}`); break }
+      cats.push(data as Cat)
+      made[v] = (data as Cat).id
+    }
+    setCats([...cats])
+    setSectionMap({ ...sectionMap, ...made })
+    setMaking(false)
+  }
+
+  // ───── 2. 사진 올리기: 폴더 통째로 또는 ZIP (이 브라우저에서 한 장씩 저장소로) ─────
+  //   이미 올린 사진은 다시 보내지 않아(이어 올리기) 도중에 멈춰도 같은 폴더·ZIP을 다시 고르면 된다
+  async function uploadPhotos(list: File[]) {
     if (!outletId) return setError('먼저 매체를 고르세요.')
     setError('')
-    const stats: PhotoStats = photoStats ?? { files: 0, uploaded: 0, existed: 0, skipped: 0, failed: 0 }
-    const show = () => setPhotoStats({ ...stats })
-    for (const file of Array.from(files)) {
-      setPhotoBusy(`${file.name} 푸는 중…`)
-      const pending = new Set<Promise<void>>()
-      const put = async (name: string, data: Uint8Array, type: string) => {
-        const path = `${outletId}/legacy/${storageSafe(name)}`
-        const { error: err } = await supabase.storage.from('media').upload(path, new Blob([data as BlobPart], { type }), { contentType: type, cacheControl: '31536000', upsert: false })
-        if (err && !/exist|duplicate/i.test(err.message)) { stats.failed++; return show() }
-        if (err) stats.existed++; else stats.uploaded++
-        photos.current.add(name, supabase.storage.from('media').getPublicUrl(path).data.publicUrl)
-        show()
+    const stats: PhotoStats = { files: 0, uploaded: 0, existed: 0, skipped: 0, failed: 0, shrunk: 0, total: 0, startedAt: Date.now() }
+    stats.total += list.filter((f) => PHOTO_TYPES[ext(f.name)]).length
+    let last = 0
+    const show = (force = false) => { if (force || Date.now() - last > 300) { last = Date.now(); setPhotoStats({ ...stats }) } }
+    const pending = new Set<Promise<void>>()
+    const enqueue = (job: () => Promise<void>) => { const p = job().catch(() => { stats.failed++ }).finally(() => { pending.delete(p); show() }); pending.add(p) }
+    const drain = async (limit: number) => { while (pending.size > limit) await Promise.race(pending) }
+
+    const put = async (name: string, data: Blob) => {
+      const path = `${outletId}/legacy/${storageSafe(name)}`
+      const url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
+      const done = () => photos.current.add(name, url)
+      // 이미 올린 사진 (지난번에 올렸거나 다른 ZIP에 같은 사진)
+      const head = await fetch(url, { method: 'HEAD' }).catch(() => null)
+      if (head?.ok) { stats.existed++; return done() }
+      let blob = data
+      if (blob.size > MAX_PHOTO) {
+        blob = await shrinkPhoto(blob)
+        if (blob.size > MAX_PHOTO) { stats.skipped++; return }
+        stats.shrunk++
       }
+      const type = blob.type || PHOTO_TYPES[ext(name)]
+      const { error: err } = await supabase.storage.from('media').upload(path, blob, { contentType: type, cacheControl: '31536000', upsert: false })
+      if (err && !/exist|duplicate/i.test(err.message)) { stats.failed++; return }
+      if (err) stats.existed++; else stats.uploaded++
+      done()
+    }
+
+    for (const file of list) {
+      const name = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name
+      // 사진 파일 (폴더로 고른 경우)
+      if (PHOTO_TYPES[ext(name)]) {
+        stats.files++
+        if (file.size > MAX_ORIGINAL) { stats.skipped++; continue }
+        setPhotoBusy('올리는 중…')
+        enqueue(() => put(name, file))
+        await drain(PHOTO_PARALLEL)
+        continue
+      }
+      if (!/\.zip$/i.test(name)) continue
+      // ZIP: 받으면서 바로 풀어 올린다 (ZIP이 커도 컴퓨터 메모리를 다 쓰지 않는다)
+      setPhotoBusy(`${file.name} 푸는 중…`)
       const uz = new Unzip()
       uz.register(UnzipInflate)
       uz.onfile = (f) => {
-        if (f.name.endsWith('/')) return
-        const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
+        if (f.name.endsWith('/') || !PHOTO_TYPES[ext(f.name)]) return
         stats.files++
-        if (!PHOTO_TYPES[ext] || (f.originalSize ?? 0) > MAX_PHOTO) { stats.skipped++; return }
+        stats.total++
+        if ((f.originalSize ?? 0) > MAX_ORIGINAL) { stats.skipped++; return }
         const chunks: Uint8Array[] = []
         f.ondata = (err, dat, final) => {
           if (err) { stats.failed++; return }
           chunks.push(dat)
-          if (!final) return
-          const all = new Uint8Array(chunks.reduce((a, c) => a + c.length, 0))
-          let o = 0
-          for (const c of chunks) { all.set(c, o); o += c.length }
-          if (all.length > MAX_PHOTO) { stats.skipped++; return }
-          const p = put(f.name, all, PHOTO_TYPES[ext]).finally(() => pending.delete(p))
-          pending.add(p)
+          if (final) enqueue(() => put(f.name, new Blob(chunks as BlobPart[], { type: PHOTO_TYPES[ext(f.name)] })))
         }
         f.start()
       }
@@ -162,14 +236,15 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
         for (;;) {
           const { value, done } = await reader.read()
           uz.push(value ?? new Uint8Array(0), done)
-          while (pending.size >= PHOTO_PARALLEL) await Promise.race(pending)
+          await drain(PHOTO_PARALLEL)
           if (done) break
         }
-        await Promise.all(pending)
       } catch (e) {
-        setError(`${file.name}: ZIP을 풀지 못했습니다 (${e instanceof Error ? e.message : e})`)
+        setError(`${file.name}: ZIP을 풀지 못했습니다 (${e instanceof Error ? e.message : e}). 압축을 풀어 폴더로 올려 보세요.`)
       }
     }
+    await drain(0)
+    show(true)
     setPhotoBusy('')
   }
 
@@ -298,6 +373,13 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
                 </label>
               )}
               <p className="mt-1 text-muted">읽은 행 {src.table.rows.length.toLocaleString()}개 · 칸 {src.table.columns.length}개</p>
+              {src.tables && (
+                <p className="mt-1.5 text-[12px] text-muted">
+                  기사 표나 칸을 자동으로 못 맞추면{' '}
+                  <button type="button" onClick={() => navigator.clipboard.writeText(describeTables(src.tables!)).then(() => alert('표 이름과 칸 이름만 복사했습니다 (기사·회원 내용은 들어 있지 않습니다).'))} className="font-semibold text-review underline underline-offset-2">표 구조 복사</button>
+                  해서 Claude에게 보여 주세요. 어느 칸이 제목·본문인지 알려 드립니다.
+                </p>
+              )}
             </div>
           )}
         </>
@@ -355,13 +437,21 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
 
       {src && mapping.section && step(4, '섹션 맞추기', (
         <>
-          <p className="text-[12.5px] text-muted">예전 섹션(코드)마다 우리 섹션을 고르세요. 우리 섹션은 먼저 “섹션 관리”에서 만들어 두세요. 고르지 않으면 섹션 없이 들어갑니다.</p>
+          <p className="text-[12.5px] text-muted">
+            예전 섹션(코드)마다 우리 섹션을 고르세요. 이름이 같은 섹션은 미리 골라 두었습니다. 고르지 않으면 섹션 없이 들어갑니다.
+            {sectionNames && <> 섹션 이름은 DB 안의 <code>{sectionNames.table}</code> 표에서 찾았습니다.</>}
+          </p>
+          {unmatched.length > 0 && (
+            <button type="button" onClick={makeSections} disabled={making} className="btn-secondary mt-2 px-3 py-1.5 text-[13px]">
+              {making ? '만드는 중…' : `우리 매체에 없는 섹션 ${unmatched.length}개를 옛 이름 그대로 만들기`}
+            </button>
+          )}
           <ul className="mt-3 max-h-[360px] divide-y divide-line overflow-y-auto rounded-md border border-line">
             {sectionValues.map(([v, n]) => {
               const sample = rows.find((r) => (r[mapping.section!] ?? '').trim() === v)
               return (
                 <li key={v} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-[13px]">
-                  <span className="w-28 shrink-0 font-mono font-semibold">{v || '(비어 있음)'}</span>
+                  <span className="w-40 shrink-0"><span className="font-mono font-semibold">{v || '(비어 있음)'}</span>{nameOf(v) && <span className="ml-1.5 font-semibold text-review">{nameOf(v)}</span>}</span>
                   <span className="w-16 shrink-0 text-muted tabular-nums">{n.toLocaleString()}건</span>
                   <span className="min-w-0 flex-1 truncate text-[12px] text-muted">예: {sample ? plainText(sample[mapping.title!] ?? '') : ''}</span>
                   <select value={sectionOf(v)} onChange={(e) => setSectionMap({ ...sectionMap, [v]: e.target.value })} className="rounded border border-line bg-white px-2 py-1">
@@ -375,22 +465,48 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
         </>
       ))}
 
-      {src && step(mapping.section ? 5 : 4, '사진 (ZIP)', (
+      {src && step(mapping.section ? 5 : 4, '사진', (
         <>
           <p className="text-[12.5px] leading-relaxed text-muted">
-            예전 업체에서 받은 사진 ZIP을 고르세요(여러 개 가능). 이 컴퓨터에서 풀어 사진만 저장소에 올리고, 기사 본문 속 사진 주소(/news/photo/… 등)를 새 주소로 바꿉니다.
-            <strong className="text-ink"> 기사를 가져오기 전에</strong> 올려야 본문 사진이 연결됩니다. 이미 올린 사진은 다시 올리지 않습니다.
+            예전 업체에서 받은 사진을 <strong className="text-ink">폴더 통째로</strong> 고르거나 <strong className="text-ink">ZIP 파일</strong>(여러 개 가능)로 고르세요. 폴더 안에 하위 폴더가 몇 개든, ZIP이 몇 GB든 괜찮습니다.
+            이 컴퓨터에서 한 장씩 저장소에 올리고, 기사 본문 속 사진 주소(/news/photo/… 등)를 새 주소로 바꿉니다. <strong className="text-ink">기사를 가져오기 전에</strong> 올려야 본문 사진이 연결됩니다.
           </p>
-          <input type="file" accept=".zip" multiple onChange={(e) => e.target.files?.length && uploadZip(e.target.files)} className="mt-3 block text-[13px]" disabled={!!photoBusy} />
-          {(photoStats || photoBusy) && (
-            <p className="mt-2 text-[13px]">
-              {photoBusy && <span className="text-review">{photoBusy} </span>}
-              {photoStats && <>파일 {photoStats.files.toLocaleString()}개 · 올림 {photoStats.uploaded.toLocaleString()} · 이미 있음 {photoStats.existed.toLocaleString()} · 사진 아님/10MB 넘음 {photoStats.skipped} · 실패 <span className={photoStats.failed ? 'text-danger' : ''}>{photoStats.failed}</span></>}
-            </p>
-          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <label className={`btn-primary cursor-pointer px-4 py-2 text-[13.5px] ${photoBusy ? 'pointer-events-none opacity-50' : ''}`}>
+              사진 폴더 고르기
+              <input type="file" multiple className="sr-only" disabled={!!photoBusy} {...{ webkitdirectory: '', directory: '' }}
+                onChange={(e) => { const f = Array.from(e.target.files ?? []); e.target.value = ''; if (f.length) uploadPhotos(f) }} />
+            </label>
+            <label className={`btn-secondary cursor-pointer px-4 py-2 text-[13.5px] ${photoBusy ? 'pointer-events-none opacity-50' : ''}`}>
+              ZIP 파일 고르기
+              <input type="file" accept=".zip" multiple className="sr-only" disabled={!!photoBusy}
+                onChange={(e) => { const f = Array.from(e.target.files ?? []); e.target.value = ''; if (f.length) uploadPhotos(f) }} />
+            </label>
+          </div>
+          {photoStats && (() => {
+            const handled = photoStats.uploaded + photoStats.existed + photoStats.skipped + photoStats.failed
+            const pct = photoStats.total ? Math.min(100, Math.round((handled / photoStats.total) * 100)) : 0
+            const sec = (Date.now() - photoStats.startedAt) / 1000
+            const rate = handled / Math.max(sec, 1)
+            const left = photoBusy && rate > 0 && photoStats.total > handled ? Math.ceil((photoStats.total - handled) / rate / 60) : 0
+            return (
+              <div className="mt-3 rounded-md bg-paper px-4 py-3 text-[13px]">
+                <div className="h-2 overflow-hidden rounded-full bg-line"><div className="h-full bg-published transition-[width]" style={{ width: `${pct}%` }} /></div>
+                <p className="mt-2 tabular-nums">
+                  {photoBusy && <span className="font-semibold text-review">{photoBusy} </span>}
+                  {handled.toLocaleString()} / {photoStats.total.toLocaleString()}장 ({pct}%)
+                  {left > 0 && <span className="text-muted"> · 남은 시간 약 {left >= 60 ? `${Math.floor(left / 60)}시간 ${left % 60}분` : `${left}분`}</span>}
+                </p>
+                <p className="mt-0.5 text-[12px] text-muted tabular-nums">
+                  새로 올림 {photoStats.uploaded.toLocaleString()} · 이미 올라가 있음 {photoStats.existed.toLocaleString()} · 크기를 줄여 올림 {photoStats.shrunk} · 건너뜀 {photoStats.skipped} · 실패 <span className={photoStats.failed ? 'font-semibold text-danger' : ''}>{photoStats.failed}</span>
+                </p>
+                {photoBusy && <p className="mt-1 text-[12px] text-draft">올리는 동안 이 창을 닫거나 컴퓨터를 잠자기로 두지 마세요. 멈췄다면 같은 폴더·ZIP을 다시 고르면 남은 사진부터 이어서 올립니다.</p>}
+              </div>
+            )
+          })()}
           <p className="mt-2 text-[12.5px] text-muted">
             앞쪽 {photoCheck.sample}건 확인: 사진 있는 기사 {photoCheck.withImg}건 · 짝을 못 찾은 사진 <strong className={photoCheck.missing ? 'text-draft' : 'text-published'}>{photoCheck.missing}장</strong>
-            {photoCheck.missing > 0 && ' (사진 ZIP을 더 올리거나, 없는 사진이면 그대로 가져와도 됩니다)'}
+            {photoCheck.missing > 0 && ' (사진을 더 올리거나, 원래 없는 사진이면 그대로 가져와도 됩니다)'}
           </p>
         </>
       ))}

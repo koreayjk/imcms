@@ -318,3 +318,37 @@ export function storageSafe(path: string) {
 }
 
 export const PHOTO_TYPES: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' }
+
+// 섹션 이름 표 찾기: 기사 표의 섹션 코드(S1N1 등)가 들어 있고, 한글 이름 칸이 있는 작은 표 → 코드 → 이름
+//   (ND소프트처럼 기사에는 섹션 코드만 있고 이름은 다른 표에 있는 경우)
+export function sectionNameMap(text: string, tables: SqlTableInfo[], articleTable: string, codes: string[]) {
+  const want = new Set(codes.map((c) => c.trim()).filter(Boolean))
+  if (!want.size) return null
+  let best: { score: number; map: Map<string, string>; table: string } | null = null
+  for (const t of tables) {
+    if (t.name === articleTable || t.bytes > 3_000_000) continue
+    const { rows, columns } = sqlRows(text, t, 5000)
+    if (!rows.length) continue
+    for (const code of columns) {
+      const hit = new Set(rows.map((r) => (r[code] ?? '').trim()).filter((v) => want.has(v)))
+      if (hit.size / want.size < 0.5) continue
+      for (const name of columns) {
+        if (name === code) continue
+        const named = rows.filter((r) => /[가-힣]/.test(r[name] ?? '')).length
+        if (named / rows.length < 0.5) continue
+        const score = hit.size / want.size + (/name|nm|title|명|이름/i.test(name) ? 0.2 : 0) + (/sect|cate|code|menu|part/i.test(t.name) ? 0.2 : 0)
+        if (!best || score > best.score) {
+          const map = new Map<string, string>()
+          for (const r of rows) { const c = (r[code] ?? '').trim(); const n = plainText(r[name] ?? ''); if (c && n && !map.has(c)) map.set(c, n) }
+          best = { score, map, table: t.name }
+        }
+      }
+    }
+  }
+  return best ? { table: best.table, map: best.map } : null
+}
+
+// 표 구조만 (자료 내용 없이) — 자동으로 못 맞출 때 도움을 받으려고 복사한다
+export function describeTables(tables: SqlTableInfo[]) {
+  return tables.map((t) => `${t.name} (약 ${(t.bytes / 1e6).toFixed(1)}MB): ${t.columns.join(', ')}`).join('\n')
+}
