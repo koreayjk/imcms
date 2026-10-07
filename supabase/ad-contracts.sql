@@ -1,5 +1,6 @@
 -- 광고 계약 장부 (Supabase SQL 에디터에서 실행, ad-banners.sql 다음. 여러 번 실행해도 된다)
---   광고주·담당자·광고 내용·기간·금액(공급가·부가세)·입금·세금계산서를 적고, 배너를 계약에 연결해 노출·클릭을 함께 본다
+--   광고주·담당자·광고 내용·기간·금액(공급가·부가세)·입금·세금계산서를 적고, 광고 자리를 예약해 사진을 미리 올려 두면
+--   그 기간에 자동으로 나가고 끝나면 내려간다. 노출·클릭도 계약별로 본다
 --   보기·쓰기: 그 매체 편집장·발행인과 총관리자만 (매출 정보라 IM 뉴스룸 매니저에게도 보이지 않는다)
 
 create table if not exists ad_contracts (
@@ -25,9 +26,41 @@ create table if not exists ad_contracts (
 );
 create index if not exists ad_contracts_outlet on ad_contracts (outlet_id, ends_on desc);
 
--- 배너 ↔ 계약 (계약을 지워도 배너는 남는다)
+-- 배너 ↔ 계약 (계약 화면에서 올린 광고 소재는 계약을 지울 때 함께 내린다)
 alter table ad_banners add column if not exists contract_id uuid references ad_contracts(id) on delete set null;
 create index if not exists ad_banners_contract on ad_banners (contract_id) where contract_id is not null;
+-- 예약 광고: 그 기간에는 이 자리를 차지한다 (같은 자리의 일반 배너는 쉬었다가 기간이 끝나면 다시 나온다)
+--   한 자리에 예약 광고는 한 개(오른쪽은 세 개)까지 — 겹치는 예약은 편집국에서 막는다
+alter table ad_banners add column if not exists exclusive boolean not null default false;
+create index if not exists ad_banners_booking on ad_banners (outlet_id, slot) where exclusive;
+
+-- 예약 겹침 막기: 같은 자리에 같은 날 예약 광고가 정원(오른쪽 3, 나머지 1)을 넘으면 저장하지 않는다 (한국 날짜 기준)
+create or replace function public.ad_booking_guard() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  cap int := case when new.slot = 'sidebar' then 3 else 1 end;
+  d date;
+  n int;
+  who text;
+begin
+  if not new.exclusive or not new.active then return new; end if;
+  if new.starts_at is null or new.ends_at is null then
+    raise exception '예약 광고는 시작일과 끝나는 날이 있어야 합니다.';
+  end if;
+  for d in select generate_series((new.starts_at at time zone 'Asia/Seoul')::date,
+                                  ((new.ends_at - interval '1 second') at time zone 'Asia/Seoul')::date, interval '1 day')::date loop
+    select count(*), min(b.name) into n, who from ad_banners b
+    where b.outlet_id = new.outlet_id and b.slot = new.slot and b.exclusive and b.active and b.id <> new.id
+      and b.starts_at < ((d + 1)::timestamp at time zone 'Asia/Seoul') and b.ends_at > (d::timestamp at time zone 'Asia/Seoul');
+    if n >= cap then
+      raise exception '광고 자리 예약이 겹칩니다: % (%)', to_char(d, 'YYYY.MM.DD'), who;
+    end if;
+  end loop;
+  return new;
+end $$;
+drop trigger if exists ad_booking_guard on ad_banners;
+create trigger ad_booking_guard before insert or update of exclusive, active, slot, starts_at, ends_at on ad_banners
+  for each row execute function public.ad_booking_guard();
 
 create or replace function public.ad_contracts_touch() returns trigger language plpgsql as $$
 begin

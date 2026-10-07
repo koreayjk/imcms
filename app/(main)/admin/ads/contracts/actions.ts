@@ -2,6 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
+import { slotOf } from '@/lib/ads'
 
 export type ContractState = { error?: string; ok?: string }
 
@@ -20,10 +21,20 @@ export type ContractInput = {
   paid_on: string
   tax_invoice_on: string
   memo: string
-  banner_ids: string[]
-  // 연결한 배너의 게재 기간을 계약 기간에 맞춘다
-  sync_banners: boolean
+  // 예약할 광고 자리와 소재 (자리마다 하나). 계약 기간에 자동으로 나가고 끝나면 내려간다
+  creatives: Creative[]
 }
+
+export type Creative = { id?: string; slot: string; image_url: string; mobile_image_url: string; link_url: string }
+
+const httpUrl = (v: string) => {
+  const t = (v ?? '').trim()
+  if (!t) return null
+  const u = /^https?:\/\//i.test(t) ? t : `https://${t}`
+  try { return new URL(u).protocol.startsWith('http') ? u : null } catch { return null }
+}
+const capOf = (slot: string) => (slotOf(slot)?.many ? 3 : 1)
+const kstDay = (iso: string) => new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(0, 10)
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const cut = (v: string, n: number) => v.trim().replace(/\s+/g, ' ').slice(0, n) || null
@@ -51,6 +62,36 @@ export async function saveContract(input: ContractInput): Promise<ContractState>
   if (input.ends_on < input.starts_on) return { error: '끝나는 날이 시작일보다 빠릅니다.' }
   const email = cut(input.contact_email, 120)
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: '담당자 이메일을 확인해 주세요.' }
+  // 광고 소재 확인
+  const creatives: { id?: string; slot: string; image: string; mobile: string | null; link: string | null }[] = []
+  for (const cr of (input.creatives ?? []).slice(0, 5)) {
+    const slot = slotOf(cr.slot)
+    if (!slot) return { error: '광고 자리를 확인해 주세요.' }
+    if (creatives.some((x) => x.slot === cr.slot)) return { error: `${slot.label} 자리가 두 번 들어 있습니다.` }
+    const image = httpUrl(cr.image_url)
+    if (!image) return { error: `${slot.label} 자리에 쓸 광고 사진(PC용)을 올려 주세요.` }
+    if (cr.link_url?.trim() && !httpUrl(cr.link_url)) return { error: `${slot.label} 광고를 누르면 갈 주소를 확인해 주세요. 예: https://example.com` }
+    creatives.push({ id: cr.id, slot: cr.slot, image, mobile: httpUrl(cr.mobile_image_url), link: httpUrl(cr.link_url) })
+  }
+  // 예약 겹침 확인 (DB도 한 번 더 막는다): 같은 자리·같은 날의 다른 예약 광고 수가 정원 이상이면 안 된다
+  if (creatives.length) {
+    const { data: taken } = await supabase.from('ad_banners')
+      .select('slot, name, starts_at, ends_at, contract_id')
+      .eq('outlet_id', outletId!).eq('exclusive', true).eq('active', true)
+      .in('slot', creatives.map((x) => x.slot))
+      .lt('starts_at', kstEnd(input.ends_on)).gt('ends_at', kstStart(input.starts_on))
+    const others = ((taken ?? []) as { slot: string; name: string; starts_at: string; ends_at: string; contract_id: string | null }[])
+      .filter((b) => !input.id || b.contract_id !== input.id)
+    for (const cr of creatives) {
+      const mine = others.filter((b) => b.slot === cr.slot)
+      for (let d = input.starts_on; d <= input.ends_on; d = new Date(Date.parse(d) + 864e5).toISOString().slice(0, 10)) {
+        const on = mine.filter((b) => kstDay(b.starts_at) <= d && kstDay(new Date(Date.parse(b.ends_at) - 1000).toISOString()) >= d)
+        if (on.length >= capOf(cr.slot)) {
+          return { error: `${slotOf(cr.slot)!.label} 자리는 ${d.replace(/-/g, '.')}에 이미 예약이 있습니다 (${on.map((b) => b.name.split(' · ')[0]).join(', ')}). 달력에서 빈 날짜를 골라 주세요.` }
+        }
+      }
+    }
+  }
   const row = {
     outlet_id: outletId!,
     advertiser, title,
@@ -73,15 +114,26 @@ export async function saveContract(input: ContractInput): Promise<ContractState>
   const id = (res.data as { id: string } | null)?.id
   if (!id) return { error: '이 계약을 고칠 권한이 없습니다.' }
 
-  // 배너 연결: 고른 배너는 이 계약으로, 빠진 배너는 연결 해제
-  const ids = (input.banner_ids ?? []).filter((x) => /^[0-9a-f-]{36}$/.test(x)).slice(0, 30)
-  const { error: e1 } = await supabase.from('ad_banners').update({ contract_id: null }).eq('contract_id', id).eq('outlet_id', outletId!)
-  if (!e1 && ids.length) {
-    const patch: Record<string, unknown> = { contract_id: id }
-    if (input.sync_banners) { patch.starts_at = kstStart(row.starts_on); patch.ends_at = kstEnd(row.ends_on) }
-    await supabase.from('ad_banners').update(patch).in('id', ids).eq('outlet_id', outletId!)
-    revalidateTag('ads', { expire: 0 })
+  // 예약 광고 소재: 자리마다 배너 하나 (계약 기간 = 게재 기간, 그 기간에는 이 자리를 차지)
+  const { data: had } = await supabase.from('ad_banners').select('id').eq('contract_id', id).eq('outlet_id', outletId!)
+  const hadIds = new Set(((had ?? []) as { id: string }[]).map((b) => b.id))
+  const keep = new Set<string>()
+  for (const cr of creatives) {
+    const bannerRow = {
+      slot: cr.slot, kind: 'image', name: `${advertiser} · ${slotOf(cr.slot)!.label}`.slice(0, 80),
+      image_url: cr.image, mobile_image_url: cr.mobile, link_url: cr.link,
+      starts_at: kstStart(row.starts_on), ends_at: kstEnd(row.ends_on),
+      active: true, exclusive: true, contract_id: id, updated_at: new Date().toISOString(),
+    }
+    const r = cr.id && hadIds.has(cr.id)
+      ? await supabase.from('ad_banners').update(bannerRow).eq('id', cr.id).select('id').single()
+      : await supabase.from('ad_banners').insert({ ...bannerRow, outlet_id: outletId! }).select('id').single()
+    if (r.error) return { error: /겹칩니다/.test(r.error.message) ? `계약은 저장했지만 ${r.error.message.replace(/^.*?(광고 자리)/, '$1')} — 날짜를 바꿔 다시 저장해 주세요.` : `계약은 저장했지만 광고 소재를 올리지 못했습니다: ${r.error.message}` }
+    keep.add((r.data as { id: string }).id)
   }
+  const drop = [...hadIds].filter((x) => !keep.has(x))
+  if (drop.length) await supabase.from('ad_banners').delete().in('id', drop).eq('outlet_id', outletId!)
+  revalidateTag('ads', { expire: 0 })
   revalidatePath('/admin/ads/contracts')
   revalidatePath('/admin/ads')
   return { ok: input.id ? '고쳤습니다.' : '계약을 등록했습니다.' }
@@ -90,8 +142,11 @@ export async function saveContract(input: ContractInput): Promise<ContractState>
 export async function deleteContract(id: string): Promise<ContractState> {
   const c = await ctx()
   if (!c) return { error: '광고 계약은 편집장·발행인만 관리할 수 있습니다.' }
+  // 이 계약으로 예약한 광고 소재도 함께 내린다
+  await c.supabase.from('ad_banners').delete().eq('contract_id', id).eq('outlet_id', c.outletId!)
   const { error } = await c.supabase.from('ad_contracts').delete().eq('id', id).eq('outlet_id', c.outletId!)
   if (error) return { error: `지우지 못했습니다: ${error.message}` }
+  revalidateTag('ads', { expire: 0 })
   revalidatePath('/admin/ads/contracts')
-  return { ok: '지웠습니다. 연결된 배너는 그대로 남습니다.' }
+  return { ok: '지웠습니다. 이 계약의 광고도 홈페이지에서 내렸습니다.' }
 }

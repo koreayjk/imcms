@@ -23,20 +23,21 @@ export type AdBanner = {
   link_url: string | null
   code: string | null
   sort_order: number
+  // 예약 광고(광고 계약): 그 기간에는 같은 자리의 일반 배너보다 먼저 나간다
+  exclusive?: boolean
 }
 
 // 지금 나가는 배너 (DB 권한이 켜져 있고 기간 안인 것만 준다). 5분마다, 저장하면 바로 새로 읽는다
 const loadLive = unstable_cache(
   async (outletId: string): Promise<AdBanner[]> => {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-    const { data, error } = await supabase
-      .from('ad_banners')
-      .select('id, slot, kind, name, image_url, mobile_image_url, link_url, code, sort_order')
-      .eq('outlet_id', outletId)
-      .order('sort_order')
-      .order('created_at', { ascending: false })
+    const fields = 'id, slot, kind, name, image_url, mobile_image_url, link_url, code, sort_order'
+    const read = (cols: string) => supabase.from('ad_banners').select(cols).eq('outlet_id', outletId).order('sort_order').order('created_at', { ascending: false })
+    // ad-contracts.sql 전이면 예약 광고 칸이 없다 → 예전처럼
+    let { data, error } = await read(`${fields}, exclusive`)
+    if (error) ({ data, error } = await read(fields))
     if (error || !data) return []
-    return data as AdBanner[]
+    return data as unknown as AdBanner[]
   },
   ['ad-banners'],
   { revalidate: 300, tags: ['ads'] }
@@ -45,8 +46,11 @@ const loadLive = unstable_cache(
 export async function liveBanners(outletId: string | undefined, slot: AdSlotId): Promise<AdBanner[]> {
   if (!outletId || !process.env.NEXT_PUBLIC_SUPABASE_URL) return []
   try {
-    const all = (await loadLive(outletId)).filter((b) => b.slot === slot)
-    if (slotOf(slot)?.many) return all.slice(0, 3)
+    const here = (await loadLive(outletId)).filter((b) => b.slot === slot)
+    // 예약 광고가 나가는 기간에는 그 광고가 자리를 차지한다 (일반 배너는 쉬었다가 기간이 끝나면 다시)
+    const booked = here.filter((b) => b.exclusive)
+    if (slotOf(slot)?.many) return [...booked, ...here.filter((b) => !b.exclusive)].slice(0, 3)
+    const all = booked.length ? booked : here
     if (slot === 'popup') return all.slice(0, 1)
     // 한 자리에 여러 개면 들어올 때마다 하나씩 돌아가며
     return all.length ? [all[Math.floor(Math.random() * all.length)]] : []

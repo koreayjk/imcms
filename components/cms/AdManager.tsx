@@ -34,7 +34,7 @@ function toInput(b: ManagedBanner): AdInput {
   }
 }
 
-function ImagePick({ label, hint, value, onChange, outletId }: { label: string; hint: string; value: string; onChange: (v: string) => void; outletId: string }) {
+export function ImagePick({ label, hint, value, onChange, outletId }: { label: string; hint: string; value: string; onChange: (v: string) => void; outletId: string }) {
   const ref = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')

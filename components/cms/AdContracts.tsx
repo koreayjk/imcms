@@ -2,8 +2,11 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { deleteContract, saveContract, type ContractInput } from '@/app/(main)/admin/ads/contracts/actions'
-import { slotOf } from '@/lib/ads'
+import { deleteContract, saveContract, type ContractInput, type Creative } from '@/app/(main)/admin/ads/contracts/actions'
+import { AD_SLOTS, slotOf } from '@/lib/ads'
+import AdCalendar, { conflicts, firstFree, type Booking } from './AdCalendar'
+import { ImagePick } from './AdManager'
+import { SlotThumb } from './AdSlotMap'
 
 export type Contract = {
   id: string; advertiser: string; title: string
@@ -12,8 +15,9 @@ export type Contract = {
   supply_amount: number; vat_amount: number; paid_amount: number; paid_on: string | null; tax_invoice_on: string | null
   memo: string | null
   banner_ids: string[]; views: number; clicks: number
+  // 이 계약으로 예약한 광고 자리·소재
+  creatives: (Creative & { id: string })[]
 }
-export type BannerOption = { id: string; name: string; slot: string; contract_id: string | null }
 
 type VatMode = 'separate' | 'included' | 'none'
 type PayMode = 'unpaid' | 'paid' | 'partial'
@@ -49,7 +53,7 @@ const FILTERS = [
 
 const csvCell = (v: unknown) => { const s = v == null ? '' : String(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
 
-export default function AdContracts({ contracts, banners, today, outletName }: { contracts: Contract[]; banners: BannerOption[]; today: string; outletName: string }) {
+export default function AdContracts({ contracts, bookings, today, outletName, outletId }: { contracts: Contract[]; bookings: Booking[]; today: string; outletName: string; outletId: string }) {
   const router = useRouter()
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('now')
   const [editing, setEditing] = useState<Contract | 'new' | null>(null)
@@ -118,7 +122,8 @@ export default function AdContracts({ contracts, banners, today, outletName }: {
         <ContractForm
           key={editing === 'new' ? 'new' : editing.id}
           initial={editing === 'new' ? null : editing}
-          banners={banners}
+          bookings={bookings}
+          outletId={outletId}
           today={today}
           onClose={(saved) => { setEditing(null); if (saved) router.refresh() }}
         />
@@ -133,7 +138,7 @@ export default function AdContracts({ contracts, banners, today, outletName }: {
                 <th className="px-2 py-2.5 font-normal">기간</th>
                 <th className="px-2 py-2.5 text-right font-normal">금액(합계)</th>
                 <th className="px-2 py-2.5 font-normal">입금 · 세금계산서</th>
-                <th className="px-2 py-2.5 text-right font-normal">노출 · 클릭</th>
+                <th className="px-2 py-2.5 text-right font-normal">광고 자리 · 노출 · 클릭</th>
                 <th className="w-16" />
               </tr>
             </thead>
@@ -161,12 +166,15 @@ export default function AdContracts({ contracts, banners, today, outletName }: {
                       <span className="mt-1 block text-[11.5px] text-muted">{c.tax_invoice_on ? `계산서 ${dot(c.tax_invoice_on)}` : total(c) > 0 ? '계산서 미발행' : ''}</span>
                     </td>
                     <td className="whitespace-nowrap px-2 py-3 text-right tabular-nums">
-                      {c.banner_ids.length ? (
+                      {c.creatives.length > 0 && <span className="block text-[12px] font-semibold">{c.creatives.map((x) => slotOf(x.slot)?.label ?? x.slot).join(' · ')}</span>}
+                      {c.creatives.length > 0 && c.starts_on > today ? (
+                        <span className="block text-[11.5px] text-[#6D28D9]">{dot(c.starts_on).slice(5)} 0시 자동 게재 예약됨</span>
+                      ) : c.banner_ids.length ? (
                         <>
                           {c.views.toLocaleString()} · {c.clicks.toLocaleString()}
                           <span className="block text-[11.5px] text-muted">배너 {c.banner_ids.length}개 · 클릭률 {c.views ? ((c.clicks / c.views) * 100).toFixed(2) : '0.00'}%</span>
                         </>
-                      ) : <span className="text-[12px] text-muted">배너 연결 안 됨</span>}
+                      ) : <span className="text-[12px] text-muted">광고 자리 없음</span>}
                     </td>
                     <td className="px-3 py-3 text-right">
                       <button type="button" onClick={() => setEditing(c)} className="whitespace-nowrap rounded border border-line px-2.5 py-1 text-[12.5px] text-muted hover:border-ink hover:text-ink">고치기</button>
@@ -186,7 +194,7 @@ export default function AdContracts({ contracts, banners, today, outletName }: {
   )
 }
 
-function ContractForm({ initial, banners, today, onClose }: { initial: Contract | null; banners: BannerOption[]; today: string; onClose: (saved: boolean) => void }) {
+function ContractForm({ initial, bookings, outletId, today, onClose }: { initial: Contract | null; bookings: Booking[]; outletId: string; today: string; onClose: (saved: boolean) => void }) {
   const [pending, start] = useTransition()
   const [error, setError] = useState('')
   const [f, setF] = useState({
@@ -204,9 +212,16 @@ function ContractForm({ initial, banners, today, onClose }: { initial: Contract 
   const sumAll = supply + vatAmount
   const [pay, setPay] = useState<PayMode>(!initial || !initial.paid_amount ? 'unpaid' : initial.paid_amount >= total(initial) ? 'paid' : 'partial')
   const [paid, setPaid] = useState(initial?.paid_amount ?? 0)
-  const [picked, setPicked] = useState<string[]>(initial?.banner_ids ?? [])
-  const [sync, setSync] = useState(true)
-  const choosable = banners.filter((b) => !b.contract_id || b.contract_id === initial?.id)
+  // 예약할 광고 자리와 소재 (자리마다 하나)
+  const [creatives, setCreatives] = useState<Creative[]>(initial?.creatives ?? [])
+  const slots = creatives.map((c) => c.slot)
+  const toggleSlot = (slot: string) => setCreatives((list) => list.some((c) => c.slot === slot)
+    ? list.filter((c) => c.slot !== slot)
+    : [...list, { slot, image_url: '', mobile_image_url: '', link_url: list[0]?.link_url ?? '' }])
+  const setCreative = (slot: string, p: Partial<Creative>) => setCreatives((list) => list.map((c) => (c.slot === slot ? { ...c, ...p } : c)))
+  const clash = conflicts(f.starts_on, f.ends_on, slots, bookings, initial?.id)
+  const length = f.starts_on && f.ends_on ? Math.round((Date.parse(f.ends_on) - Date.parse(f.starts_on)) / 864e5) + 1 : 30
+  const free = slots.length && clash.length ? firstFree(today, length, slots, bookings, initial?.id) : null
 
   // 기간 빠르게 정하기
   const addMonths = (n: number) => {
@@ -223,8 +238,9 @@ function ContractForm({ initial, banners, today, onClose }: { initial: Contract 
       supply_amount: supply, vat_amount: vatAmount,
       paid_amount: pay === 'paid' ? sumAll : pay === 'partial' ? Math.min(paid, sumAll) : 0,
       paid_on: pay === 'unpaid' ? '' : f.paid_on,
-      banner_ids: picked, sync_banners: sync,
+      creatives,
     }
+    if (clash.length) return setError('고른 기간에 이미 예약된 광고가 있습니다. 달력에서 빈 날짜를 골라 주세요.')
     start(async () => {
       const r = await saveContract(input)
       if (r.error) return setError(r.error)
@@ -233,7 +249,7 @@ function ContractForm({ initial, banners, today, onClose }: { initial: Contract 
   }
 
   function remove() {
-    if (!initial || !window.confirm(`“${initial.advertiser} · ${initial.title}” 계약을 지울까요?\n\n연결된 배너는 그대로 남습니다. 되돌릴 수 없습니다.`)) return
+    if (!initial || !window.confirm(`“${initial.advertiser} · ${initial.title}” 계약을 지울까요?\n\n이 계약으로 예약한 광고도 홈페이지에서 함께 내립니다. 되돌릴 수 없습니다.`)) return
     start(async () => {
       const r = await deleteContract(initial.id)
       if (r.error) return setError(r.error)
@@ -255,14 +271,61 @@ function ContractForm({ initial, banners, today, onClose }: { initial: Contract 
         </div>
 
         <div className="md:col-span-2">
-          <label className={L}>광고 기간 *</label>
+          <label className={L}>광고 자리 (여러 개 가능)</label>
+          <div className="flex flex-wrap gap-2">
+            {AD_SLOTS.map((x) => {
+              const on = slots.includes(x.id)
+              return (
+                <button key={x.id} type="button" onClick={() => toggleSlot(x.id)} aria-pressed={on}
+                  className={`flex items-center gap-2 rounded-md border-2 px-3 py-1.5 text-[13px] ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white hover:border-ink/50'}`}>
+                  {on ? '✓' : '+'} {x.label}
+                </button>
+              )
+            })}
+          </div>
+          <p className="mt-1 text-[12px] text-muted">자리를 고르면 아래 달력에 그 자리의 예약 현황이 나옵니다. 기사형 광고·협찬처럼 배너가 없는 계약이면 고르지 않아도 됩니다.</p>
+        </div>
+
+        <div className="md:col-span-2">
+          <label className={L}>광고 기간 * <span className="font-normal">(게재 기간 — 시작일 0시에 자동으로 나가고, 끝나는 날이 지나면 내려갑니다)</span></label>
           <div className="flex flex-wrap items-center gap-2">
             <input type="date" value={f.starts_on} onChange={(e) => set({ starts_on: e.target.value })} className="field-input !w-auto" />
             <span>~</span>
             <input type="date" value={f.ends_on} min={f.starts_on} onChange={(e) => set({ ends_on: e.target.value })} className="field-input !w-auto" />
             {[1, 3, 6, 12].map((n) => <button key={n} type="button" onClick={() => addMonths(n)} className="rounded border border-line px-2 py-1 text-[12px] hover:border-ink">{n === 12 ? '1년' : `${n}개월`}</button>)}
           </div>
+          {slots.length > 0 && (
+            <div className="mt-2">
+              <AdCalendar slots={slots} bookings={bookings} start={f.starts_on} end={f.ends_on} today={today} exclude={initial?.id}
+                onChange={(st, en) => set({ starts_on: st, ends_on: en })} />
+              {clash.length > 0 ? (
+                <div className="mt-2 rounded bg-danger/5 px-3 py-2 text-[12.5px] text-danger">
+                  {clash.map((c) => <p key={c}>⚠ {c}</p>)}
+                  {free && <button type="button" onClick={() => set({ starts_on: free, ends_on: new Date(Date.parse(free) + (length - 1) * 864e5).toISOString().slice(0, 10) })} className="mt-1 font-semibold underline underline-offset-2">→ 같은 길이({length}일)로 가장 빠른 빈 날짜: {free.replace(/-/g, '.')}부터</button>}
+                </div>
+              ) : f.ends_on ? <p className="mt-2 text-[12.5px] text-published">✓ 고른 기간에 {slots.map((x) => slotOf(x)?.label).join(' · ')} 자리가 비어 있습니다.</p> : null}
+            </div>
+          )}
         </div>
+
+        {creatives.length > 0 && (
+          <div className="space-y-3 md:col-span-2">
+            <label className={L}>광고 사진 (미리 올려 두면 시작일에 자동으로 나갑니다)</label>
+            {creatives.map((c) => {
+              const slot = slotOf(c.slot)!
+              return (
+                <div key={c.slot} className="rounded-md border border-line p-3">
+                  <div className="mb-2 flex items-center gap-2 text-[13px] font-bold"><SlotThumb id={slot.id} /><span>{slot.label} <span className="font-normal text-muted">· {slot.where} · 권장 {slot.size}</span></span></div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <ImagePick label="PC용 사진 *" hint="JPG·PNG·GIF" value={c.image_url} onChange={(v) => setCreative(c.slot, { image_url: v })} outletId={outletId} />
+                    <ImagePick label="휴대폰용 사진 (없으면 PC용)" hint="세로가 조금 더 긴 사진" value={c.mobile_image_url} onChange={(v) => setCreative(c.slot, { mobile_image_url: v })} outletId={outletId} />
+                  </div>
+                  <input value={c.link_url} onChange={(e) => setCreative(c.slot, { link_url: e.target.value })} placeholder="광고를 누르면 갈 주소 (예: https://광고주홈페이지.com)" className="field-input mt-2" />
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         <div className="md:col-span-2">
           <label className={L}>광고 금액</label>
@@ -296,33 +359,11 @@ function ContractForm({ initial, banners, today, onClose }: { initial: Contract 
           <p className="mt-1 text-[12px] text-muted">비워 두면 ‘미발행’으로 표시됩니다.</p>
         </div>
 
-        <div className="md:col-span-2">
-          <label className={L}>연결할 배너</label>
-          {choosable.length ? (
-            <>
-              <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-[13px]">
-                {choosable.map((b) => (
-                  <label key={b.id} className="flex items-center gap-1.5">
-                    <input type="checkbox" checked={picked.includes(b.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, b.id] : picked.filter((x) => x !== b.id))} />
-                    {b.name} <span className="text-[12px] text-muted">({slotOf(b.slot)?.label ?? b.slot})</span>
-                  </label>
-                ))}
-              </div>
-              {picked.length > 0 && (
-                <label className="mt-2 flex items-center gap-1.5 text-[12.5px] text-muted">
-                  <input type="checkbox" checked={sync} onChange={(e) => setSync(e.target.checked)} />
-                  배너 게재 기간도 계약 기간에 맞추기 (끝나는 날이 지나면 배너가 저절로 내려갑니다)
-                </label>
-              )}
-            </>
-          ) : <p className="text-[12.5px] text-muted">연결할 배너가 없습니다. ‘배너’ 탭에서 먼저 배너를 올리면, 노출·클릭 수를 계약과 함께 볼 수 있습니다.</p>}
-        </div>
-
         <div className="md:col-span-2"><label className={L}>메모</label><textarea value={f.memo} onChange={(e) => set({ memo: e.target.value })} rows={2} maxLength={2000} placeholder="예: 매월 말 입금, 재계약 시 10% 할인 약속" className="field-input resize-y" /></div>
       </div>
       {error && <p role="alert" className="mt-3 text-[13px] text-danger">{error}</p>}
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button type="button" onClick={submit} disabled={pending} className="btn-primary">{pending ? '저장 중…' : initial ? '고친 내용 저장' : '계약 등록'}</button>
+        <button type="button" onClick={submit} disabled={pending || clash.length > 0} className="btn-primary">{pending ? '저장 중…' : initial ? '고친 내용 저장' : '계약 등록'}</button>
         <button type="button" onClick={() => onClose(false)} disabled={pending} className="btn-secondary">취소</button>
         {initial && <button type="button" onClick={remove} disabled={pending} className="ml-auto text-[12.5px] text-muted hover:text-danger">계약 지우기</button>}
       </div>
