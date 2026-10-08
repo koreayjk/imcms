@@ -70,6 +70,21 @@ export async function createTicket(input: { category: string; title: string; bod
   return { id: data.id }
 }
 
+// 업무요청 지우기: 쓴 사람과 총관리자. 첨부파일(비공개 저장소)을 먼저 지우고 요청을 지운다 (답글은 함께 지워진다)
+export async function deleteTicket(ticketId: string): Promise<{ error?: string }> {
+  const { supabase, user, isSuper } = await getCmsContext()
+  const { data: t } = await supabase.from('support_tickets').select('id, requester_id').eq('id', ticketId).maybeSingle()
+  if (!t) return { error: '요청을 찾지 못했습니다.' }
+  if (t.requester_id !== user.id && !isSuper) return { error: '본인이 쓴 요청만 지울 수 있습니다.' }
+  const { data: files } = await supabase.from('support_files').select('path').eq('ticket_id', ticketId)
+  const paths = ((files ?? []) as { path: string }[]).map((f) => f.path)
+  if (paths.length) await supabase.storage.from('support').remove(paths)
+  const { data: gone, error } = await supabase.from('support_tickets').delete().eq('id', ticketId).select('id')
+  if (error || !gone?.length) return { error: error?.message ?? '지울 권한이 없습니다. 운영팀이 support-ai.sql을 다시 실행해야 할 수 있습니다.' }
+  revalidatePath('/support', 'layout')
+  return {}
+}
+
 // 요청한 사람: AI 첫 답변으로 해결됐는지 (해결 → 완료, 아니면 담당자 차례)
 export async function aiTicketFeedback(ticketId: string, solved: boolean): Promise<{ state?: string; error?: string }> {
   const { supabase } = await getCmsContext()

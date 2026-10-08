@@ -54,8 +54,9 @@ select '11. scale.sql (매체 100곳 대비 색인)',
   case when to_regclass('public.articles_outlet_published') is not null and to_regclass('public.articles_outlet_updated') is not null
        then '실행됨' else '아직 안 됨' end
 union all
-select '12. support-ai.sql (업무요청 AI 첫 답변·요청 저장 오류 고침)',
+select '12. support-ai.sql (업무요청 AI 첫 답변·저장 오류·지우기)',
   case when to_regprocedure('public.support_ai_reply(text,uuid,text,text,text,text,boolean)') is not null
+        and exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'support_tickets' and policyname = 'tickets_delete')
         and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'support_tickets' and policyname = 'tickets_select' and qual like '%can_see_ticket%')
        then '실행됨' else '아직 안 됨' end
 ) x order by split_part(x."파일", '.', 1)::int;

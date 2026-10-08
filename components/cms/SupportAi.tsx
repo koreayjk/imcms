@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { aiTicketFeedback } from '@/app/(main)/support/actions'
+import { aiTicketFeedback, deleteTicket } from '@/app/(main)/support/actions'
 import { SUPPORT_LINKS } from '@/lib/support-ai-links'
 
 // AI 답글 본문: 편집국 주소(/articles/new 등)는 눌러서 가는 링크로
@@ -56,5 +56,26 @@ export function AiWaiting() {
       <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#2F6BF0] border-t-transparent" aria-hidden />
       AI가 먼저 안내를 준비하고 있습니다… 운영팀에도 함께 전달되었습니다.
     </p>
+  )
+}
+
+// 업무요청 지우기 (쓴 사람·총관리자)
+export function DeleteTicketButton({ ticketId, answered }: { ticketId: string; answered: boolean }) {
+  const [pending, start] = useTransition()
+  const router = useRouter()
+  function remove() {
+    const msg = `이 업무요청을 지울까요?${answered ? '\n달린 답변과 첨부파일도 함께 지워집니다.' : ''}\n지우면 되돌릴 수 없습니다.`
+    if (!window.confirm(msg)) return
+    start(async () => {
+      const r = await deleteTicket(ticketId)
+      if (r.error) { window.alert(r.error); return }
+      router.push('/support/tickets')
+      router.refresh()
+    })
+  }
+  return (
+    <button type="button" onClick={remove} disabled={pending} className="text-[13px] text-muted hover:text-danger disabled:opacity-50">
+      {pending ? '지우는 중…' : '요청 삭제'}
+    </button>
   )
 }

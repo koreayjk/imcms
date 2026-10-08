@@ -5,7 +5,7 @@ import { formatDateTime } from '@/lib/format'
 import { STAFF_NAME, TICKET_CATEGORIES, TICKET_STATUS, type TicketCategory, type TicketStatus } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import ReplyBox from '@/components/cms/ReplyBox'
-import { AiFeedback, AiReplyBody, AiWaiting } from '@/components/cms/SupportAi'
+import { AiFeedback, AiReplyBody, AiWaiting, DeleteTicketButton } from '@/components/cms/SupportAi'
 import { SUPPORT_KIND_LABEL, type SupportKind } from '@/lib/support-ai-links'
 import { setTicketAssignee, setTicketStatus } from '../../actions'
 
@@ -28,7 +28,7 @@ function Files({ files, urls }: { files: FileRow[]; urls: Map<string, string> })
 
 export default async function TicketPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params
-  const { supabase, user, isStaff } = await getCmsContext()
+  const { supabase, user, isStaff, isSuper } = await getCmsContext()
 
   const { data: t } = await supabase
     .from('support_tickets')
@@ -60,7 +60,10 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
 
   return (
     <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
-      <Link href="/support/tickets" className="text-[13px] text-muted hover:text-ink">← 업무요청 목록</Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link href="/support/tickets" className="text-[13px] text-muted hover:text-ink">← 업무요청 목록</Link>
+        {(t.requester_id === user.id || isSuper) && <DeleteTicketButton ticketId={t.id} answered={!!replies?.length} />}
+      </div>
 
       <header className="mt-4 border-b border-line pb-6 text-center">
         <p className="text-[13px] text-muted">[{TICKET_CATEGORIES[t.category as TicketCategory]}]</p>

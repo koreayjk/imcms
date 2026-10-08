@@ -96,8 +96,21 @@ grant execute on function public.support_ai_reply(text, uuid, text, text, text, 
 grant execute on function public.support_ai_failed(text, uuid) to anon, authenticated;
 grant execute on function public.support_ai_feedback(uuid, boolean) to authenticated;
 
+-- 업무요청 지우기: 쓴 사람과 총관리자 (답글·첨부 기록은 함께 지워진다)
+drop policy if exists "tickets_delete" on support_tickets;
+create policy "tickets_delete" on support_tickets for delete to authenticated
+  using (requester_id = auth.uid() or public.is_super());
+-- 첨부파일(비공개 저장소 support/요청번호/…)도 같은 사람만 지운다
+drop policy if exists "support_delete" on storage.objects;
+create policy "support_delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'support' and exists (
+    select 1 from support_tickets s
+    where s.id::text = (storage.foldername(name))[1] and (s.requester_id = auth.uid() or public.is_super())
+  ));
+
 -- 확인
-select '업무요청 AI 첫 답변' as "기능",
+select '업무요청 AI 첫 답변·지우기' as "기능",
   case when to_regprocedure('public.support_ai_reply(text,uuid,text,text,text,text,boolean)') is not null
+        and exists (select 1 from pg_policies where tablename = 'support_tickets' and policyname = 'tickets_delete')
         and exists (select 1 from information_schema.columns where table_name = 'support_replies' and column_name = 'is_ai')
        then '준비됨' else '아직 안 됨' end as "결과";
