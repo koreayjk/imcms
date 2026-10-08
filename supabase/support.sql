@@ -38,7 +38,9 @@ $$;
 
 alter table support_tickets enable row level security;
 drop policy if exists "tickets_select" on support_tickets;
-create policy "tickets_select" on support_tickets for select to authenticated using (public.can_see_ticket(id));
+-- 행의 칸으로 직접 확인한다 (요청 번호로 다시 찾으면 저장 직후에는 못 찾아 저장이 막힌다)
+create policy "tickets_select" on support_tickets for select to authenticated
+  using (public.is_staff() or requester_id = auth.uid() or (outlet_id is not null and public.is_outlet_editor(outlet_id)));
 drop policy if exists "tickets_insert" on support_tickets;
 create policy "tickets_insert" on support_tickets for insert to authenticated
   with check (requester_id = auth.uid() and outlet_id is not distinct from public.my_outlet() and status = 'received');

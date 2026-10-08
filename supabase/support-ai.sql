@@ -3,6 +3,12 @@
 --   [담당자 답변이 필요해요]를 누르면 운영팀 차례로 남는다. AI는 안내만 하고 아무것도 바꾸지 않는다
 --   AI 답글은 서버만 달 수 있다 (서버 열쇠 payment_db_secret 확인). 회원이 'AI 답변'을 흉내 낼 수 없다
 
+-- 업무요청 보기 권한: 방금 쓴 요청도 바로 읽히게 행의 칸으로 직접 확인한다
+--   (전에는 요청 번호로 다시 찾는 함수를 써서, 저장 직후에는 '아직 없는 글'로 보고 기자·편집장의 요청 저장이 막혔다)
+drop policy if exists "tickets_select" on support_tickets;
+create policy "tickets_select" on support_tickets for select to authenticated
+  using (public.is_staff() or requester_id = auth.uid() or (outlet_id is not null and public.is_outlet_editor(outlet_id)));
+
 -- AI 답글은 사람이 쓴 글이 아니라 글쓴이가 없다
 alter table support_replies add column if not exists is_ai boolean not null default false;
 alter table support_replies alter column author_id drop not null;

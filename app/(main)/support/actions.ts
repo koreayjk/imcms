@@ -41,7 +41,7 @@ export async function createTicket(input: { category: string; title: string; bod
   if (!body) return { error: '요청 내용을 적어주세요.' }
   const { data, error } = await supabase
     .from('support_tickets').insert({ category, title, body, requester_id: user.id, outlet_id: outletId }).select('id').single()
-  if (error || !data) return { error: /support_tickets/.test(error?.message ?? '') ? '고객센터를 쓰려면 관리자가 support.sql을 실행해야 합니다.' : `요청을 저장하지 못했습니다: ${error?.message ?? ''}` }
+  if (error || !data) return { error: /support_tickets/.test(error?.message ?? '') && /does not exist|schema cache|not find/i.test(error?.message ?? '') ? '고객센터를 쓰려면 관리자가 support.sql을 실행해야 합니다.' : `요청을 저장하지 못했습니다: ${error?.message ?? ''}` }
   revalidatePath('/support', 'layout')
   // AI 첫 답변: 응답을 먼저 돌려준 뒤 만든다 (요청 화면이 기다리지 않게). 운영팀이 쓴 요청에는 달지 않는다
   if (!isStaff && process.env.PAYMENT_DB_SECRET) {
