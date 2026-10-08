@@ -1,6 +1,9 @@
 import { getCmsContext } from '@/lib/cms'
 import TicketForm from '@/components/cms/TicketForm'
 
+// 요청을 저장한 뒤 AI 첫 답변을 이어서 만든다 (support/actions.ts createTicket)
+export const maxDuration = 60
+
 export default async function NewTicketPage() {
   const { profile } = await getCmsContext()
   return (

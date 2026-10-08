@@ -5,6 +5,8 @@ import { formatDateTime } from '@/lib/format'
 import { STAFF_NAME, TICKET_CATEGORIES, TICKET_STATUS, type TicketCategory, type TicketStatus } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import ReplyBox from '@/components/cms/ReplyBox'
+import { AiFeedback, AiReplyBody, AiWaiting } from '@/components/cms/SupportAi'
+import { SUPPORT_KIND_LABEL, type SupportKind } from '@/lib/support-ai-links'
 import { setTicketAssignee, setTicketStatus } from '../../actions'
 
 type FileRow = { id: string; reply_id: string | null; path: string; name: string; size: number }
@@ -26,7 +28,7 @@ function Files({ files, urls }: { files: FileRow[]; urls: Map<string, string> })
 
 export default async function TicketPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params
-  const { supabase, isStaff } = await getCmsContext()
+  const { supabase, user, isStaff } = await getCmsContext()
 
   const { data: t } = await supabase
     .from('support_tickets')
@@ -36,7 +38,7 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
   if (!t) notFound()
 
   const [{ data: replies }, { data: files }] = await Promise.all([
-    supabase.from('support_replies').select('id, body, is_staff, created_at, author:profiles!support_replies_author_id_fkey(full_name)').eq('ticket_id', t.id).order('created_at'),
+    supabase.from('support_replies').select('*, author:profiles!support_replies_author_id_fkey(full_name)').eq('ticket_id', t.id).order('created_at'),
     supabase.from('support_files').select('id, reply_id, path, name, size').eq('ticket_id', t.id).order('created_at'),
   ])
   if (!isStaff) await supabase.rpc('mark_ticket_read', { t: t.id })
@@ -50,6 +52,11 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
   const urls = new Map((signed ?? []).filter((s) => s.signedUrl).map((s) => [s.path as string, s.signedUrl as string]))
 
   const steps: TicketStatus[] = ['received', 'in_progress', 'done']
+  // AI 첫 답변 (support-ai.sql 전이면 칸이 없어 아무것도 보이지 않는다)
+  const aiState = (t as { ai_state?: string | null }).ai_state ?? null
+  const hasAi = (replies ?? []).some((r: any) => r.is_ai)
+  const aiWaiting = 'ai_state' in t && !aiState && !hasAi && t.status !== 'done' && Date.now() - Date.parse(t.created_at) < 90_000
+  const mine = t.requester_id === user.id
 
   return (
     <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
@@ -92,13 +99,33 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
             </form>
           </div>
         )}
+        {isStaff && aiState && (
+          <p className="mx-auto mt-4 max-w-xl rounded-xl bg-[#F4F6FB] px-4 py-2.5 text-[12.5px] text-[#3B4048]">
+            <strong className="text-[#2F6BF0]">AI 분류</strong> · {SUPPORT_KIND_LABEL[(t as any).ai_kind as SupportKind] ?? '기타'}
+            {(t as any).ai_urgency === 'high' && <strong className="text-danger"> · 급함</strong>}
+            {(t as any).ai_summary && <> · {(t as any).ai_summary}</>}
+            <span className="ml-1 text-muted">({aiState === 'answered' ? 'AI가 안내함, 요청자 확인 전' : aiState === 'handoff' ? '담당자 답변 필요' : aiState === 'resolved' ? '요청자가 AI 안내로 해결' : 'AI 답변 실패'})</span>
+          </p>
+        )}
       </header>
 
       <div className="whitespace-pre-line py-8 text-[15px] leading-[1.85]">{t.body}</div>
       <Files files={fileRows.filter((f) => !f.reply_id)} urls={urls} />
 
       <div className="mt-10 space-y-4">
-        {(replies ?? []).map((r: any) => (
+        {(replies ?? []).map((r: any) => r.is_ai ? (
+          <article key={r.id} className="rounded-2xl bg-[#F4F6FB] p-5 ring-1 ring-[#2F6BF0]/15">
+            <header className="flex items-center gap-2 text-[13px]">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-[#2F6BF0] text-[11px] font-bold text-white">AI</span>
+              <strong>AI 안내</strong>
+              <span className="rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11px] font-semibold text-[#2F6BF0]">자동 답변 · 운영팀도 함께 확인합니다</span>
+              <time className="ml-auto text-[12px] tabular-nums text-muted">{formatDateTime(r.created_at)}</time>
+            </header>
+            <div className="mt-3 whitespace-pre-line rounded-xl bg-white px-5 py-4 text-[14.5px] leading-[1.8]"><AiReplyBody body={r.body} /></div>
+            {mine && !isStaff && aiState && t.status !== 'done' && <AiFeedback ticketId={t.id} state={aiState} />}
+            {aiState === 'resolved' && <p className="mt-3 text-[12.5px] font-semibold text-published">요청자가 이 안내로 해결했다고 표시했습니다.</p>}
+          </article>
+        ) : (
           <article key={r.id} className={`rounded-2xl p-5 ${r.is_staff ? 'bg-[#EEF2F8]' : 'bg-white ring-1 ring-black/5'}`}>
             <header className="flex items-center gap-2 text-[13px]">
               <span className={`grid h-8 w-8 place-items-center rounded-full text-[12px] font-bold text-white ${r.is_staff ? 'bg-gradient-to-br from-[#F5B83D] to-[#E5483A]' : 'bg-muted'}`}>
@@ -112,7 +139,8 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
             <Files files={fileRows.filter((f) => f.reply_id === r.id)} urls={urls} />
           </article>
         ))}
-        {!replies?.length && (
+        {aiWaiting && <AiWaiting />}
+        {!replies?.length && !aiWaiting && (
           <p className="rounded-2xl border border-dashed border-line px-5 py-8 text-center text-[13.5px] text-muted">
             {isStaff ? '아직 답변하지 않은 요청입니다.' : '요청이 접수되었습니다. 운영팀이 확인 후 답변드립니다.'}
           </p>

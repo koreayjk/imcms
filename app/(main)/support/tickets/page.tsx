@@ -72,6 +72,11 @@ export default async function TicketsPage(props: Props) {
                     {t.title}
                   </Link>
                   {!isStaff && hasUnreadReply(t) && <span className="ml-2 rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">새 답변</span>}
+                  {/* AI 첫 답변 상태 (support-ai.sql) */}
+                  {t.ai_state === 'answered' && <span className="ml-2 rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11px] font-semibold text-[#2F6BF0]">AI 안내함</span>}
+                  {t.ai_state === 'resolved' && <span className="ml-2 rounded bg-published/10 px-1.5 py-0.5 text-[11px] font-semibold text-published">AI로 해결</span>}
+                  {isStaff && t.ai_state === 'handoff' && <span className="ml-2 rounded bg-[#E5483A]/10 px-1.5 py-0.5 text-[11px] font-semibold text-[#E5483A]">담당자 필요</span>}
+                  {isStaff && t.ai_urgency === 'high' && t.status !== 'done' && <span className="ml-2 rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">급함</span>}
                 </td>
                 {isStaff && <td className="py-4 text-[13px] text-muted">{t.outlet?.name ?? '미배정'}</td>}
                 <td className="py-4 text-[13px]">{t.requester?.full_name}</td>

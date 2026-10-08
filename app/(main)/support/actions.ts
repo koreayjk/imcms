@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { notify } from '@/lib/notify'
@@ -8,6 +9,9 @@ import { notifyInvoiceIssued } from '@/lib/invoice-mail'
 import { cmsOrigin } from '@/lib/origin'
 import { billingItems, billingTargets, type BillingTarget } from '@/lib/billing'
 import { planById } from '@/lib/pricing'
+import { answerSupportTicket } from '@/lib/ai-support'
+import { paymentDbSecret } from '@/lib/toss'
+import { ROLE_LABEL, type UserRole } from '@/lib/types'
 import { NOTICE_CATEGORIES, TICKET_CATEGORIES, TICKET_STATUS, invoiceTotals, type InvoiceItem } from '@/lib/support'
 
 const text = (form: FormData, k: string, max: number) => String(form.get(k) ?? '').trim().slice(0, max)
@@ -28,7 +32,7 @@ async function superContext() {
 
 // ── 업무요청 ── (첨부파일은 요청이 만들어진 뒤 화면에서 비공개 저장소로 바로 올린다)
 export async function createTicket(input: { category: string; title: string; body: string }): Promise<{ id?: string; error?: string }> {
-  const { supabase, user, outletId } = await getCmsContext()
+  const { supabase, user, outletId, isStaff, isGroupAdmin, profile } = await getCmsContext()
   const category = input.category in TICKET_CATEGORIES ? input.category : null
   const title = input.title.trim().slice(0, 200)
   const body = input.body.trim().slice(0, 20000)
@@ -39,7 +43,32 @@ export async function createTicket(input: { category: string; title: string; bod
     .from('support_tickets').insert({ category, title, body, requester_id: user.id, outlet_id: outletId }).select('id').single()
   if (error || !data) return { error: /support_tickets/.test(error?.message ?? '') ? '고객센터를 쓰려면 관리자가 support.sql을 실행해야 합니다.' : `요청을 저장하지 못했습니다: ${error?.message ?? ''}` }
   revalidatePath('/support', 'layout')
+  // AI 첫 답변: 응답을 먼저 돌려준 뒤 만든다 (요청 화면이 기다리지 않게). 운영팀이 쓴 요청에는 달지 않는다
+  if (!isStaff && process.env.PAYMENT_DB_SECRET) {
+    const id = data.id as string
+    const role = isGroupAdmin ? '발행인' : ROLE_LABEL[(profile?.role ?? 'reporter') as UserRole] ?? '기자'
+    after(async () => {
+      const secret = paymentDbSecret()
+      try {
+        const { data: o } = outletId ? await supabase.from('outlets').select('name').eq('id', outletId).maybeSingle() : { data: null }
+        const a = await answerSupportTicket({ category: TICKET_CATEGORIES[category as keyof typeof TICKET_CATEGORIES], title, body, role, outletName: (o as { name?: string } | null)?.name ?? null })
+        if (!a) return
+        await supabase.rpc('support_ai_reply', { secret, t: id, p_body: a.answer || null, p_kind: a.kind, p_urgency: a.urgency, p_summary: a.summary, p_handoff: a.handoff })
+      } catch {
+        await supabase.rpc('support_ai_failed', { secret, t: id }).then(() => null, () => null)
+      }
+    })
+  }
   return { id: data.id }
+}
+
+// 요청한 사람: AI 첫 답변으로 해결됐는지 (해결 → 완료, 아니면 담당자 차례)
+export async function aiTicketFeedback(ticketId: string, solved: boolean): Promise<{ state?: string; error?: string }> {
+  const { supabase } = await getCmsContext()
+  const { data, error } = await supabase.rpc('support_ai_feedback', { t: ticketId, solved })
+  if (error) return { error: error.message }
+  revalidatePath('/support', 'layout')
+  return { state: data as string }
 }
 
 export async function addReply(ticketId: string, body: string): Promise<{ id?: string; error?: string }> {
