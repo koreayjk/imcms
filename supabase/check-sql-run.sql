@@ -1,5 +1,6 @@
 -- 최근 SQL 실행 여부 확인 (읽기만 한다. Supabase SQL 에디터에 붙여 넣고 Run)
 --   '실행됨'이 아니면 그 파일을 실행해 주세요
+select * from (
 select '1. billing-dunning.sql (미납 처리)' as "파일",
   case when exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'outlets' and column_name = 'billing_hold')
         and to_regprocedure('public.billing_dunning(text)') is not null
@@ -35,4 +36,21 @@ select '7. data-migration.sql (자료 옮기기·옛 기사 주소)',
   case when exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'articles' and column_name = 'legacy_id')
         and to_regprocedure('public.legacy_article(uuid,text)') is not null
        then '실행됨' else '아직 안 됨' end
-order by 1;
+union all
+select '8. ad-contracts.sql (광고 계약·견적서·메일 보낸 기록)',
+  case when exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'ad_documents' and column_name = 'sent_at')
+       then '실행됨' else '아직 안 됨' end
+union all
+select '9. feedback.sql (개선 요청: 본인 글만 보기)',
+  case when to_regprocedure('public.can_see_feedback(uuid)') is not null
+        and coalesce(pg_get_functiondef(to_regprocedure('public.can_see_feedback(uuid)')), '') not like '%can_view_outlet%'
+       then '실행됨' else '아직 안 됨' end
+union all
+select '10. view-count.sql (조회수가 수정 시각을 안 바꾸게)',
+  case when coalesce(pg_get_functiondef(to_regprocedure('public.set_updated_at()')), '') like '%view_only%'
+       then '실행됨' else '아직 안 됨' end
+union all
+select '11. scale.sql (매체 100곳 대비 색인)',
+  case when to_regclass('public.articles_outlet_published') is not null and to_regclass('public.articles_outlet_updated') is not null
+       then '실행됨' else '아직 안 됨' end
+) x order by split_part(x."파일", '.', 1)::int;

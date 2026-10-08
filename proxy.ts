@@ -98,6 +98,12 @@ export async function proxy(request: NextRequest) {
   // Supabase 미연결(미리보기) 상태에서는 공개 페이지만 샘플 데이터로 보여준다
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return pass()
 
+  // 로그인하지 않은 독자가 공개 화면을 볼 때는 로그인 확인이 필요 없다 (매체가 많아도 독자 한 번 방문에 하는 일을 줄인다)
+  {
+    const p = rewriteTo ? rewriteTo.pathname : request.nextUrl.pathname
+    if (isPublicPath(p) && !request.cookies.getAll().some((c) => c.name.startsWith('sb-'))) return pass()
+  }
+
   let supabaseResponse = pass()
 
   const supabase = createServerClient(
