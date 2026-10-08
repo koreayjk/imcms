@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { after } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { notify } from '@/lib/notify'
@@ -44,18 +45,25 @@ export async function createTicket(input: { category: string; title: string; bod
   if (error || !data) return { error: /support_tickets/.test(error?.message ?? '') && /does not exist|schema cache|not find/i.test(error?.message ?? '') ? '고객센터를 쓰려면 관리자가 support.sql을 실행해야 합니다.' : `요청을 저장하지 못했습니다: ${error?.message ?? ''}` }
   revalidatePath('/support', 'layout')
   // AI 첫 답변: 응답을 먼저 돌려준 뒤 만든다 (요청 화면이 기다리지 않게). 운영팀이 쓴 요청에는 달지 않는다
+  //   응답 뒤에는 로그인 쿠키를 읽을 수 없으므로 로그인 없는 연결 + 서버 열쇠로 기록한다
   if (!isStaff && process.env.PAYMENT_DB_SECRET) {
     const id = data.id as string
     const role = isGroupAdmin ? '발행인' : ROLE_LABEL[(profile?.role ?? 'reporter') as UserRole] ?? '기자'
+    const { data: o } = outletId ? await supabase.from('outlets').select('name').eq('id', outletId).maybeSingle() : { data: null }
+    const outletName = (o as { name?: string } | null)?.name ?? null
     after(async () => {
       const secret = paymentDbSecret()
+      const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false, autoRefreshToken: false } })
+      // 실패하면 운영팀이 볼 수 있게 이유를 한 줄 남기고 담당자 차례로 넘긴다
+      const giveUp = (why: string) => db.rpc('support_ai_reply', { secret, t: id, p_body: null, p_kind: 'other', p_urgency: 'normal', p_summary: `AI 답변 못 함: ${why}`.slice(0, 280), p_handoff: true })
       try {
-        const { data: o } = outletId ? await supabase.from('outlets').select('name').eq('id', outletId).maybeSingle() : { data: null }
-        const a = await answerSupportTicket({ category: TICKET_CATEGORIES[category as keyof typeof TICKET_CATEGORIES], title, body, role, outletName: (o as { name?: string } | null)?.name ?? null })
-        if (!a) return
-        await supabase.rpc('support_ai_reply', { secret, t: id, p_body: a.answer || null, p_kind: a.kind, p_urgency: a.urgency, p_summary: a.summary, p_handoff: a.handoff })
-      } catch {
-        await supabase.rpc('support_ai_failed', { secret, t: id }).then(() => null, () => null)
+        const a = await answerSupportTicket({ category: TICKET_CATEGORIES[category as keyof typeof TICKET_CATEGORIES], title, body, role, outletName })
+        if (!a) { await giveUp('AI 키가 설정되지 않았습니다'); return }
+        const { error: e } = await db.rpc('support_ai_reply', { secret, t: id, p_body: a.answer || null, p_kind: a.kind, p_urgency: a.urgency, p_summary: a.summary, p_handoff: a.handoff })
+        if (e) { console.error('support_ai_reply', e.message); await giveUp(e.message) }
+      } catch (e) {
+        console.error('support ai', e)
+        await giveUp(e instanceof Error ? e.message : '알 수 없는 오류')
       }
     })
   }
