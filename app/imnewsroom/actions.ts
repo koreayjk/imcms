@@ -33,6 +33,9 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
   if (form.get('agree') !== 'on') return { error: '개인정보 수집·이용에 동의해야 신청할 수 있습니다.' }
   if (form.get('agree_terms') !== 'on') return { error: '서비스 이용약관에 동의해야 신청할 수 있습니다.' }
 
+  // 광고 봇 거르기: 걸리면 저장하지 않고 '접수됨'처럼 보여 준다 (봇이 다른 방법을 찾지 않게)
+  if (looksLikeSpam({ company, contactName, currentCms, phone, email, message })) return { ok: true }
+
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return { error: '지금은 신청을 받을 수 없습니다. 잠시 뒤 다시 시도해 주세요.' }
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
 
@@ -69,4 +72,27 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
     if (e2) return { error: '신청을 저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }
   }
   return { ok: true }
+}
+
+// 상담 신청 스팸 점수 (3점 이상이면 스팸)
+//   예) 'search-imnewsroom.com' 같은 가짜 우리 주소로 "구글 검색 등록해 드립니다"를 보내는 광고 봇
+function looksLikeSpam(f: { company: string; contactName: string; currentCms: string; phone: string; email: string; message: string }) {
+  const hangul = /[가-힣]/
+  const emailDomain = f.email.split('@')[1]?.toLowerCase() ?? ''
+  let score = 0
+  // 우리 이름을 흉내 낸 주소 (진짜 imnewsroom.com 은 제외)
+  if (/imnewsroom/.test(emailDomain) && emailDomain !== 'imnewsroom.com') score += 3
+  // 한글이 한 글자도 없다
+  if (![f.company, f.contactName, f.currentCms, f.message].some((v) => hangul.test(v))) score += 2
+  // 요청사항에 다른 사이트 주소를 넣었다
+  if (/https?:\/\/|www\.|\b[a-z0-9-]+\.(?:pro|xyz|top|site|online|info|biz|ru|cn)\b/i.test(f.message)) score += 1
+  // 이름·언론사·쓰는 프로그램을 같은 말로 채웠다
+  const names = [f.company, f.contactName, f.currentCms].map((v) => v.toLowerCase()).filter(Boolean)
+  if (names.length >= 2 && new Set(names).size < names.length) score += 1
+  // 광고 문구
+  if (/search index|seo|backlink|web search results|rank(ing)? (higher|first)|submit your (site|website)/i.test(f.message)) score += 2
+  // 한국 전화번호 모양이 아니다 (0으로 시작하거나 +국가번호)
+  const digits = f.phone.replace(/[^\d+]/g, '')
+  if (!/^(0\d{8,10}|\+\d{9,14})$/.test(digits)) score += 1
+  return score >= 3
 }
