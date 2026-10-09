@@ -65,7 +65,16 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
     || (i.minRole === 'staff' && isStaff)
     || (i.minRole === 'super' && isSuper)
 
-  const items = ITEMS.filter(allowed)
+  // 운영팀(총관리자·매니저)은 고객 응대 메뉴(고객센터·개선 요청·고객상담)를 대시보드 바로 아래에
+  const STAFF_TOP = ['/support', '/feedback', '/admin/leads']
+  const visible = ITEMS.filter(allowed)
+  const items = isStaff
+    ? [
+        ...visible.filter((i) => i.href === '/admin/dashboard'),
+        ...STAFF_TOP.map((h) => visible.find((i) => i.href === h)).filter((i): i is Item => !!i),
+        ...visible.filter((i) => i.href !== '/admin/dashboard' && !STAFF_TOP.includes(i.href)),
+      ]
+    : visible
   const badge = (href: string) =>
     href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/users' ? pendingCount : 0
   const badgeLabel = (href: string, n: number) =>
