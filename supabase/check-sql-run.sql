@@ -60,4 +60,7 @@ select '12. support-ai.sql (업무요청 AI 첫 답변·저장 오류·지우기
         and exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'support_tickets' and policyname = 'tickets_delete')
         and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'support_tickets' and policyname = 'tickets_select' and qual like '%can_see_ticket%')
        then '실행됨' else '아직 안 됨' end
+union all
+select '13. trial-checkin.sql (체험 5일째 자동 안내)',
+  case when to_regprocedure('public.trial_checkin_run(text)') is not null then '실행됨' else '아직 안 됨' end
 ) x order by split_part(x."파일", '.', 1)::int;

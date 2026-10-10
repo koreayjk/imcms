@@ -3,6 +3,7 @@ import { getCmsContext } from '@/lib/cms'
 import { formatDateTime } from '@/lib/format'
 import { PRODUCT } from '@/lib/product'
 import LeadCard, { type Lead } from '@/components/cms/LeadCard'
+import AutoMessageEditor from '@/components/cms/AutoMessageEditor'
 
 type Props = { searchParams: Promise<{ tab?: string }> }
 
@@ -24,6 +25,14 @@ export default async function LeadsPage(props: Props) {
   const { data: trialProfiles } = trials.length
     ? await supabase.from('profiles').select('id, trial_until').in('id', trials.map((t) => t.user_id))
     : { data: [] }
+  // 5일째 자동 안내 (trial-checkin.sql 전이면 표가 없어 숨긴다)
+  const [{ data: autoMsg }, { data: checkins }] = tab === 'trial'
+    ? await Promise.all([
+        supabase.from('auto_messages').select('title, body, enabled').eq('key', 'trial_day5').maybeSingle(),
+        supabase.from('trial_checkins').select('user_id, sent_at'),
+      ])
+    : [{ data: null }, { data: null }]
+  const checkedAt = new Map(((checkins ?? []) as { user_id: string; sent_at: string }[]).map((c) => [c.user_id, c.sent_at]))
   const trialUntil = new Map(((trialProfiles ?? []) as { id: string; trial_until: string | null }[]).map((p) => [p.id, p.trial_until]))
   // 체험신문 발행 전 검사에 걸려 총관리자 확인을 기다리는 기사 (trial-moderation.sql 전이면 칸이 없어 빈 목록)
   type HeldRow = { id: string; title: string; moderation_note: string | null; updated_at: string; author: { full_name: string | null } | null }
@@ -81,6 +90,7 @@ export default async function LeadsPage(props: Props) {
           </ul>
         </section>
       )}
+      {tab === 'trial' && autoMsg && <AutoMessageEditor initial={autoMsg as { title: string; body: string; enabled: boolean }} />}
       {tab === 'trial' ? (
         trials.length ? (
           <div className="overflow-x-auto rounded-lg border border-line bg-white">
@@ -95,7 +105,7 @@ export default async function LeadsPage(props: Props) {
                     <td className="px-4 py-3 font-semibold">{t.name}</td>
                     <td className="px-4 py-3">{t.company}{t.position ? ` · ${t.position}` : ''}</td>
                     <td className="px-4 py-3"><a href={`tel:${t.phone ?? ''}`} className="hover:underline">{t.phone}</a><br /><a href={`mailto:${t.email ?? ''}`} className="text-muted hover:underline">{t.email}</a></td>
-                    <td className="px-4 py-3">{trialState(t.user_id)}</td>
+                    <td className="px-4 py-3">{trialState(t.user_id)}{checkedAt.get(t.user_id) && <><br /><span className="text-[12px] text-[#2F6BF0]">5일째 안내 보냄 · {formatDateTime(checkedAt.get(t.user_id)!)}</span></>}</td>
                     <td className="px-4 py-3 text-right"><a href={`/support/tickets/new?to=${t.user_id}`} className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-[12.5px] font-semibold hover:border-ink">고객센터로 안내 보내기</a></td>
                   </tr>
                 ))}

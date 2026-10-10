@@ -69,3 +69,17 @@ export async function openCustomer(leadId: string, _prev: LeadState, form: FormD
   if (iErr) return { ok: `그룹·매체를 만들었습니다. 발행인 초대는 실패했습니다(${iErr.message}) — 회원 메뉴에서 다시 초대하세요.` }
   return { ok: `‘${groupName}’ 그룹과 ‘${outletName}’ 매체를 만들고 ${email}을 발행인으로 초대했습니다. 이제 홈페이지 설정을 해 주세요.` }
 }
+
+// 무료 체험 5일째 자동 안내 문구 (trial-checkin.sql)
+export async function saveAutoMessage(input: { title: string; body: string; enabled: boolean }): Promise<{ error?: string }> {
+  const { supabase, user } = await staffContext()
+  const title = input.title.trim().slice(0, 200)
+  const body = input.body.trim().slice(0, 20000)
+  if (!title || !body) return { error: '제목과 내용을 적어 주세요.' }
+  const { data, error } = await supabase.from('auto_messages')
+    .update({ title, body, enabled: input.enabled, updated_at: new Date().toISOString(), updated_by: user.id })
+    .eq('key', 'trial_day5').select('key')
+  if (error || !data?.length) return { error: error?.message ?? '저장하지 못했습니다. trial-checkin.sql을 실행했는지 확인해 주세요.' }
+  revalidatePath('/admin/leads')
+  return {}
+}
