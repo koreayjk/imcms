@@ -13,16 +13,32 @@ type FileRow = { id: string; reply_id: string | null; path: string; name: string
 
 function Files({ files, urls }: { files: FileRow[]; urls: Map<string, string> }) {
   if (!files.length) return null
+  // 사진은 화면에 바로 보여 준다 (운영팀 안내의 기능 설명 사진 등)
+  const isImg = (n: string) => /\.(png|jpe?g|gif|webp)$/i.test(n)
+  const imgs = files.filter((f) => isImg(f.name) && urls.get(f.path))
+  const others = files.filter((f) => !imgs.includes(f))
   return (
-    <ul className="mt-4 flex flex-wrap gap-2">
-      {files.map((f) => (
+    <>
+    {imgs.length > 0 && (
+      <div className="mt-4 space-y-3">
+        {imgs.map((f) => (
+          <a key={f.id} href={urls.get(f.path)} target="_blank" rel="noopener" className="block overflow-hidden rounded-xl ring-1 ring-black/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={urls.get(f.path)} alt={f.name} className="h-auto w-full" loading="lazy" />
+          </a>
+        ))}
+      </div>
+    )}
+    {others.length > 0 && <ul className="mt-4 flex flex-wrap gap-2">
+      {others.map((f) => (
         <li key={f.id}>
           <a href={urls.get(f.path) ?? '#'} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded border border-line bg-white px-3 py-1.5 text-[12.5px] hover:border-ink">
             📎 {f.name} <span className="text-muted">{Math.max(1, Math.round(f.size / 1024))}KB</span>
           </a>
         </li>
       ))}
-    </ul>
+    </ul>}
+    </>
   )
 }
 
@@ -55,7 +71,7 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
   // AI 첫 답변 (support-ai.sql 전이면 칸이 없어 아무것도 보이지 않는다)
   const aiState = (t as { ai_state?: string | null }).ai_state ?? null
   const hasAi = (replies ?? []).some((r: any) => r.is_ai)
-  const aiWaiting = 'ai_state' in t && !aiState && !hasAi && t.status !== 'done' && Date.now() - Date.parse(t.created_at) < 90_000
+  const aiWaiting = 'ai_state' in t && !(t as { from_staff?: boolean }).from_staff && !aiState && !hasAi && t.status !== 'done' && Date.now() - Date.parse(t.created_at) < 90_000
   const mine = t.requester_id === user.id
 
   return (
@@ -66,10 +82,14 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
       </div>
 
       <header className="mt-4 border-b border-line pb-6 text-center">
-        <p className="text-[13px] text-muted">[{TICKET_CATEGORIES[t.category as TicketCategory]}]</p>
+        {(t as { from_staff?: boolean }).from_staff
+          ? <p className="text-[13px] font-semibold text-[#2F6BF0]">IM 뉴스룸 운영팀 안내</p>
+          : <p className="text-[13px] text-muted">[{TICKET_CATEGORIES[t.category as TicketCategory]}]</p>}
         <h1 className="mt-1 text-[26px] font-extrabold leading-snug tracking-tight [text-wrap:balance]">{t.title}</h1>
         <p className="mt-2 text-[13px] text-muted">
-          {isStaff && t.outlet?.name && <>{t.outlet.name} · </>}요청인 {t.requester?.full_name} · 요청일 {formatDateTime(t.created_at)}
+          {(t as { from_staff?: boolean }).from_staff
+            ? <>운영팀 → {t.requester?.full_name} · {formatDateTime(t.created_at)} · 받은 분과 운영팀만 볼 수 있습니다</>
+            : <>{isStaff && t.outlet?.name && <>{t.outlet.name} · </>}요청인 {t.requester?.full_name} · 요청일 {formatDateTime(t.created_at)}</>}
         </p>
         <div className="mt-4 flex items-center justify-center gap-2">
           {steps.map((s, i) => {
@@ -112,7 +132,7 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
         )}
       </header>
 
-      <div className="whitespace-pre-line py-8 text-[15px] leading-[1.85]">{t.body}</div>
+      <div className={`whitespace-pre-line text-[15px] leading-[1.85] ${(t as { from_staff?: boolean }).from_staff ? 'mt-8 rounded-2xl bg-[#EEF2F8] px-6 py-6' : 'py-8'}`}>{t.body}</div>
       <Files files={fileRows.filter((f) => !f.reply_id)} urls={urls} />
 
       <div className="mt-10 space-y-4">

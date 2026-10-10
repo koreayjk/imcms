@@ -108,9 +108,30 @@ create policy "support_delete" on storage.objects for delete to authenticated
     where s.id::text = (storage.foldername(name))[1] and (s.requester_id = auth.uid() or public.is_super())
   ));
 
+-- 운영팀이 먼저 보내는 안내: 회원 한 사람에게만 보이는 업무요청을 운영팀이 만든다 (체험 소감 묻기·기능 안내 등)
+--   매체를 붙이지 않아 그 사람과 운영팀만 본다 (같은 매체 편집장에게도 안 보인다). 받은 사람은 답글로 답한다
+alter table support_tickets add column if not exists from_staff boolean not null default false;
+alter table support_tickets add column if not exists created_by uuid references profiles(id) on delete set null;
+
+create or replace function public.staff_message_to(target uuid, p_title text, p_body text) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare tid uuid;
+begin
+  if not public.is_staff() then raise exception '운영팀만 보낼 수 있습니다.'; end if;
+  if not exists (select 1 from profiles where id = target) then raise exception '받는 사람을 찾지 못했습니다.'; end if;
+  if char_length(trim(coalesce(p_title, ''))) = 0 or char_length(trim(coalesce(p_body, ''))) = 0 then raise exception '제목과 내용을 적어 주세요.'; end if;
+  insert into support_tickets (outlet_id, requester_id, category, title, body, status, from_staff, created_by, last_staff_reply_at, ai_state)
+  values (null, target, 'etc', left(trim(p_title), 200), left(p_body, 20000), 'in_progress', true, auth.uid(), now(), null)
+  returning id into tid;
+  return tid;
+end $$;
+revoke all on function public.staff_message_to(uuid, text, text) from public;
+grant execute on function public.staff_message_to(uuid, text, text) to authenticated;
+
 -- 확인
-select '업무요청 AI 첫 답변·지우기' as "기능",
+select '업무요청 AI 첫 답변·지우기·운영팀 안내' as "기능",
   case when to_regprocedure('public.support_ai_reply(text,uuid,text,text,text,text,boolean)') is not null
+        and to_regprocedure('public.staff_message_to(uuid,text,text)') is not null
         and exists (select 1 from pg_policies where tablename = 'support_tickets' and policyname = 'tickets_delete')
         and exists (select 1 from information_schema.columns where table_name = 'support_replies' and column_name = 'is_ai')
        then '준비됨' else '아직 안 됨' end as "결과";

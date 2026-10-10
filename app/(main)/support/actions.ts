@@ -70,6 +70,23 @@ export async function createTicket(input: { category: string; title: string; bod
   return { id: data.id }
 }
 
+// 운영팀 → 회원 한 사람에게 먼저 보내는 안내 (그 사람과 운영팀만 본다, support-ai.sql). 받은 사람에게 알림 메일
+export async function sendStaffMessage(to: string, title: string, body: string): Promise<{ id?: string; error?: string }> {
+  const { supabase, isStaff } = await getCmsContext()
+  if (!isStaff) return { error: '운영팀만 보낼 수 있습니다.' }
+  const { data: id, error } = await supabase.rpc('staff_message_to', { target: to, p_title: title.trim().slice(0, 200), p_body: body.trim().slice(0, 20000) })
+  if (error || !id) return { error: /staff_message_to/.test(error?.message ?? '') ? '이 기능을 쓰려면 support-ai.sql을 다시 실행해야 합니다.' : `보내지 못했습니다: ${error?.message ?? ''}` }
+  const url = `${(await cmsOrigin())}/support/tickets/${id}`
+  await notify(supabase, 'ticket_staff_reply', id as string, `staffmsg:${id}`, () => ({
+    subject: `[IM 뉴스룸] ${title.trim()}`,
+    title: 'IM 뉴스룸 운영팀이 안내를 보냈습니다',
+    lines: [`“${title.trim()}”`, body.trim().length > 300 ? `${body.trim().slice(0, 300)}…` : body.trim()],
+    button: { label: '고객센터에서 보기', url },
+  }))
+  revalidatePath('/support', 'layout')
+  return { id: id as string }
+}
+
 // 업무요청 지우기: 쓴 사람과 총관리자. 첨부파일(비공개 저장소)을 먼저 지우고 요청을 지운다 (답글은 함께 지워진다)
 export async function deleteTicket(ticketId: string): Promise<{ error?: string }> {
   const { supabase, user, isSuper } = await getCmsContext()

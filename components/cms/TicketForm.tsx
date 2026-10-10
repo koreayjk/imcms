@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createTicket } from '@/app/(main)/support/actions'
+import { createTicket, sendStaffMessage } from '@/app/(main)/support/actions'
 import { TICKET_CATEGORIES, type TicketCategory } from '@/lib/support'
 import { uploadSupportFiles } from './support-upload'
 import FilePicker from './FilePicker'
@@ -16,7 +16,8 @@ const HINTS: Record<TicketCategory, string> = {
   etc: '그 밖에 궁금한 점',
 }
 
-export default function TicketForm({ requesterName }: { requesterName: string }) {
+// recipient: 운영팀이 회원 한 사람에게 먼저 보내는 안내 (작업 유형 없이 제목·내용·사진만)
+export default function TicketForm({ requesterName, recipient }: { requesterName: string; recipient?: { id: string; name: string; note?: string } }) {
   const router = useRouter()
   const [category, setCategory] = useState<TicketCategory | ''>('')
   const [title, setTitle] = useState('')
@@ -29,7 +30,7 @@ export default function TicketForm({ requesterName }: { requesterName: string })
     e.preventDefault()
     setError('')
     setBusy(true)
-    const res = await createTicket({ category, title, body })
+    const res = recipient ? await sendStaffMessage(recipient.id, title, body) : await createTicket({ category, title, body })
     if (res.error || !res.id) { setError(res.error ?? '저장하지 못했습니다.'); setBusy(false); return }
     const failed = files.length ? await uploadSupportFiles(res.id, null, files) : []
     if (failed.length) window.alert(`요청은 접수됐지만 올리지 못한 파일이 있습니다: ${failed.join(', ')}`)
@@ -40,10 +41,13 @@ export default function TicketForm({ requesterName }: { requesterName: string })
   return (
     <form onSubmit={submit} className="space-y-6 rounded-2xl bg-white p-8 ring-1 ring-black/5">
       <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center sm:gap-4">
-        <span className="text-[14px] font-bold">요청인</span>
-        <span className="w-fit rounded-full bg-ink px-4 py-1.5 text-[13.5px] font-semibold text-white">{requesterName}</span>
+        <span className="text-[14px] font-bold">{recipient ? '받는 사람' : '요청인'}</span>
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="w-fit rounded-full bg-ink px-4 py-1.5 text-[13.5px] font-semibold text-white">{recipient ? recipient.name : requesterName}</span>
+          {recipient && <span className="text-[12.5px] text-muted">{recipient.note ? `${recipient.note} · ` : ''}이 분과 운영팀만 볼 수 있습니다. 받은 분에게 알림 메일이 갑니다.</span>}
+        </span>
       </div>
-      <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-start sm:gap-4 border-t border-line pt-6">
+      {!recipient && <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-start sm:gap-4 border-t border-line pt-6">
         <span className="pt-1.5 text-[14px] font-bold">작업 유형</span>
         <div>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="작업 유형">
@@ -62,21 +66,21 @@ export default function TicketForm({ requesterName }: { requesterName: string })
           </div>
           {category && <p className="mt-2 text-[12.5px] text-muted">{HINTS[category]}</p>}
         </div>
-      </div>
+      </div>}
       <div className="space-y-3 border-t border-line pt-6">
         <label htmlFor="t-title" className="sr-only">제목</label>
         <input id="t-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder="제목을 입력해주세요" className="field-input py-3 text-[15px]" />
         <label htmlFor="t-body" className="sr-only">요청 내용</label>
-        <textarea id="t-body" value={body} onChange={(e) => setBody(e.target.value)} rows={12} placeholder="요청 내용을 자세히 적어주세요. 어느 화면인지, 원하는 결과가 무엇인지 적어주시면 더 빨리 처리됩니다." className="field-input resize-y text-[14.5px] leading-relaxed" />
+        <textarea id="t-body" value={body} onChange={(e) => setBody(e.target.value)} rows={12} placeholder={recipient ? '예) 대표님, 체험은 어떠세요? 써 보시면 좋은 기능을 사진과 함께 안내드립니다. 좋았던 점·아쉬운 점을 답글로 남겨 주시면 바로 반영하겠습니다.' : '요청 내용을 자세히 적어주세요. 어느 화면인지, 원하는 결과가 무엇인지 적어주시면 더 빨리 처리됩니다.'} className="field-input resize-y text-[14.5px] leading-relaxed" />
       </div>
       <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-start sm:gap-4">
-        <span className="pt-1.5 text-[14px] font-bold">파일 첨부</span>
+        <span className="pt-1.5 text-[14px] font-bold">{recipient ? '사진 첨부' : '파일 첨부'}</span>
         <FilePicker files={files} setFiles={setFiles} />
       </div>
       {error && <p role="alert" className="text-[14px] font-semibold text-danger">{error}</p>}
       <div className="flex justify-center pt-2">
         <button type="submit" disabled={busy} className="rounded-full bg-[#2F6BF0] px-16 py-3.5 text-[16px] font-bold text-white hover:opacity-90 disabled:opacity-60">
-          {busy ? (files.length ? '파일 올리는 중…' : '보내는 중…') : '작성완료'}
+          {busy ? (files.length ? '파일 올리는 중…' : '보내는 중…') : recipient ? '안내 보내기' : '작성완료'}
         </button>
       </div>
     </form>

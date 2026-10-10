@@ -86,7 +86,7 @@ export default async function LeadsPage(props: Props) {
           <div className="overflow-x-auto rounded-lg border border-line bg-white">
             <table className="w-full min-w-[760px] text-[13.5px]">
               <thead className="bg-paper text-left text-[12.5px] text-muted">
-                <tr><th className="px-4 py-2.5">신청일</th><th className="px-4 py-2.5">이름</th><th className="px-4 py-2.5">언론사 · 직함</th><th className="px-4 py-2.5">연락처</th><th className="px-4 py-2.5">상태</th></tr>
+                <tr><th className="px-4 py-2.5">신청일</th><th className="px-4 py-2.5">이름</th><th className="px-4 py-2.5">언론사 · 직함</th><th className="px-4 py-2.5">연락처</th><th className="px-4 py-2.5">상태</th><th className="px-4 py-2.5"></th></tr>
               </thead>
               <tbody>
                 {trials.map((t) => (
@@ -96,6 +96,7 @@ export default async function LeadsPage(props: Props) {
                     <td className="px-4 py-3">{t.company}{t.position ? ` · ${t.position}` : ''}</td>
                     <td className="px-4 py-3"><a href={`tel:${t.phone ?? ''}`} className="hover:underline">{t.phone}</a><br /><a href={`mailto:${t.email ?? ''}`} className="text-muted hover:underline">{t.email}</a></td>
                     <td className="px-4 py-3">{trialState(t.user_id)}</td>
+                    <td className="px-4 py-3 text-right"><a href={`/support/tickets/new?to=${t.user_id}`} className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-[12.5px] font-semibold hover:border-ink">고객센터로 안내 보내기</a></td>
                   </tr>
                 ))}
               </tbody>

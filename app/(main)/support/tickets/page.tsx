@@ -68,7 +68,9 @@ export default async function TicketsPage(props: Props) {
                 <td className="py-4"><span className={`rounded px-2 py-1 text-[12px] font-semibold ${s.className}`}>{s.label}</span></td>
                 <td className="py-4">
                   <Link href={`/support/tickets/${t.id}`} className="font-medium hover:underline">
-                    <span className="mr-1.5 text-[12.5px] text-muted">[{TICKET_CATEGORIES[t.category as TicketCategory]}]</span>
+                    {t.from_staff
+                      ? <span className="mr-1.5 rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11.5px] font-semibold text-[#2F6BF0]">운영팀 안내</span>
+                      : <span className="mr-1.5 text-[12.5px] text-muted">[{TICKET_CATEGORIES[t.category as TicketCategory]}]</span>}
                     {t.title}
                   </Link>
                   {!isStaff && hasUnreadReply(t) && <span className="ml-2 rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">새 답변</span>}
