@@ -185,7 +185,7 @@ function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <span className="flex items-center gap-2">
       <BrandMark size={34} className={dark ? 'ring-1 ring-white/30' : ''} />
-      <span className={`text-[18px] font-extrabold tracking-[-0.02em] ${dark ? 'text-white' : ''}`}>뉴스룸</span>
+      <span className={`text-[18px] font-extrabold tracking-[-0.02em] ${dark ? 'text-white' : ''}`}>IM 뉴스룸</span>
     </span>
   )
 }
