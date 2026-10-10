@@ -8,4 +8,6 @@ export const ANDROID_PACKAGE = 'com.imnewsroom.app'
 export const ANDROID_CERT_SHA256: string[] = [
   // ① 업로드 키 (PWABuilder에서 만든 signing.keystore)
   'AD:16:13:91:79:CC:D0:4E:8E:BC:56:56:E3:24:95:1F:A6:78:FA:7D:4E:20:1B:48:26:6A:E5:73:CF:A5:68:37',
+  // ② 앱 서명 키 (플레이 콘솔 → Google Play로 보호됨 → Play 앱 서명)
+  'E8:33:4C:6E:0A:89:F3:F0:3C:E1:36:68:1F:D0:68:7C:6C:25:CA:44:DA:8A:85:70:46:26:7E:F1:EB:20:5F:BC',
 ]
