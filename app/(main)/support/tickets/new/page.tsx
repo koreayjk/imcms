@@ -10,8 +10,12 @@ export default async function NewTicketPage(props: { searchParams: Promise<{ to?
   // 운영팀: ?to=회원 → 그 사람에게만 보이는 안내 보내기 (체험 신청자 등)
   let recipient: { id: string; name: string; note?: string } | undefined
   if (isStaff && to && /^[0-9a-f-]{36}$/.test(to)) {
-    const { data: p } = await supabase.from('profiles').select('id, full_name, trial_until, outlet:outlets(name)').eq('id', to).maybeSingle()
-    if (p) recipient = { id: p.id, name: p.full_name ?? '회원', note: (p as { trial_until?: string | null }).trial_until ? '무료 체험 중' : ((p as unknown as { outlet?: { name: string } | null }).outlet?.name ?? undefined) }
+    // 회원 정보는 매체와 두 갈래로 이어져 있어(소속·가입 때 신청한 매체) 묶어 읽지 않고 따로 읽는다
+    const { data: p } = await supabase.from('profiles').select('*').eq('id', to).maybeSingle()
+    if (p) {
+      const { data: o } = p.outlet_id ? await supabase.from('outlets').select('name').eq('id', p.outlet_id).maybeSingle() : { data: null }
+      recipient = { id: p.id as string, name: (p.full_name as string | null) ?? '회원', note: p.trial_until ? '무료 체험 중' : ((o as { name?: string } | null)?.name ?? undefined) }
+    }
   }
   return (
     <div className="mx-auto max-w-[820px] px-4 py-6 md:px-8 md:py-10">
