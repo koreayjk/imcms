@@ -6,6 +6,7 @@ import MfaSettings from '@/components/cms/MfaSettings'
 import LoginHistory, { type LoginRow } from '@/components/cms/LoginHistory'
 import { signOutOtherDevices } from './actions'
 import DeleteAccountRequest from '@/components/cms/DeleteAccountRequest'
+import { PolicyLinks } from '@/components/auth/AuthShell'
 
 export default async function AccountPage() {
   const { supabase, user, profile, outletId, isGroupAdmin, isSuper, publisherId, trial } = await getCmsContext()
@@ -52,6 +53,7 @@ export default async function AccountPage() {
           역할과 소속은 관리자가 정합니다.
         </p>
         {!isSuper && <DeleteAccountRequest />}
+        <PolicyLinks className="border-t border-line pt-5" />
       </div>
     </div>
   )
