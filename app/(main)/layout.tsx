@@ -1,5 +1,6 @@
 import type { Viewport } from 'next'
 import { APP_METADATA } from '@/lib/brand'
+import AppServiceWorker from '@/components/AppServiceWorker'
 import Rail from '@/components/cms/Rail'
 import { outletHomeUrl } from '@/lib/product'
 import TopBar from '@/components/cms/TopBar'
@@ -81,6 +82,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-[#F4F5F7] print:block print:h-auto print:overflow-visible print:bg-white">
+      <AppServiceWorker />
       <div className="contents print:hidden">
         <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} feedbackCount={feedbackCount ?? 0} />
       </div>

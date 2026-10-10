@@ -5,6 +5,7 @@ import EmailNotifyToggle from '@/components/cms/EmailNotifyToggle'
 import MfaSettings from '@/components/cms/MfaSettings'
 import LoginHistory, { type LoginRow } from '@/components/cms/LoginHistory'
 import { signOutOtherDevices } from './actions'
+import DeleteAccountRequest from '@/components/cms/DeleteAccountRequest'
 
 export default async function AccountPage() {
   const { supabase, user, profile, outletId, isGroupAdmin, isSuper, publisherId, trial } = await getCmsContext()
@@ -50,6 +51,7 @@ export default async function AccountPage() {
           이미 쓴 기사 본문 첫머리의 “[매체=이름 기자]”는 그대로이니, 필요하면 기사 수정에서 기자명을 다시 저장해 주세요.
           역할과 소속은 관리자가 정합니다.
         </p>
+        {!isSuper && <DeleteAccountRequest />}
       </div>
     </div>
   )

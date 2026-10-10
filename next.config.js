@@ -13,6 +13,10 @@ const nextConfig = {
     minimumCacheTTL: 2678400,
     formats: ['image/webp'],
   },
+  // 편집국 앱의 오프라인 도우미(public/sw.js)는 늘 새로 받게 한다
+  async headers() {
+    return [{ source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }, { key: 'Content-Type', value: 'application/javascript; charset=utf-8' }] }]
+  },
 }
 
 module.exports = nextConfig

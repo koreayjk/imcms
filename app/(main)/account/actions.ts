@@ -75,3 +75,26 @@ export async function signOutOtherDevices(): Promise<{ error?: string; ok?: stri
   revalidatePath('/account')
   return { ok: Number(data) ? `다른 기기 ${Number(data)}곳의 로그인을 끊었습니다.` : '끊을 다른 기기 로그인이 없었습니다.' }
 }
+
+// 계정 삭제 요청 (구글 플레이 정책: 앱 안에서 계정 삭제를 요청할 수 있어야 한다)
+//   고객센터에 '계정 삭제 요청'을 남기고, 운영팀(총관리자)이 회원 관리에서 탈퇴 처리한다. AI 답변은 달지 않는다
+const DELETE_REQUEST_TITLE = '계정 삭제 요청'
+export async function requestAccountDeletion(reason: string): Promise<{ id?: string; error?: string }> {
+  const { supabase, user, outletId, profile } = await getCmsContext()
+  const { data: open } = await supabase.from('support_tickets').select('id')
+    .eq('requester_id', user.id).eq('title', DELETE_REQUEST_TITLE).neq('status', 'done').limit(1).maybeSingle()
+  if (open) return { id: (open as { id: string }).id }
+  const body = [
+    '편집국 "내 정보"에서 계정 삭제를 요청했습니다.',
+    `이름: ${profile?.full_name ?? '-'}`,
+    `이메일: ${user.email ?? '-'}`,
+    reason.trim() ? `사유: ${reason.trim().slice(0, 1000)}` : '',
+    '',
+    '운영팀 처리: 회원 관리 → 이 회원 → 관리 ⋯ → 탈퇴. 쓴 기사는 기자명과 함께 매체에 남습니다.',
+  ].filter((l, i, a) => l || a[i - 1]).join('\n')
+  const { data, error } = await supabase.from('support_tickets')
+    .insert({ category: 'etc', title: DELETE_REQUEST_TITLE, body, requester_id: user.id, outlet_id: outletId }).select('id').single()
+  if (error || !data) return { error: `요청을 저장하지 못했습니다: ${error?.message ?? ''}` }
+  revalidatePath('/support', 'layout')
+  return { id: (data as { id: string }).id }
+}
