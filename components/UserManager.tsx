@@ -199,6 +199,7 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
         <RowMenu
           disabled={pending}
           items={[
+            viewerIsSuper && !isMe && { label: '고객센터로 안내 보내기', href: `/support/tickets/new?to=${u.id}` },
             canWatch && { label: '로그인 기록', href: `/admin/users/${u.id}/logins` },
             canWatch && { label: '모든 기기 로그아웃', onClick: () => guard(() => signOutMember(u.id), `${u.full_name}님의 로그인을 모든 기기에서 끊을까요?\n\n바로 편집국을 열 수 없게 되고, 다시 로그인해야 합니다.`) },
             canGuard && mfa && { label: '2단계 인증 초기화', onClick: () => guard(() => resetMemberMfa(u.id), `${u.full_name}님의 2단계 인증을 초기화할까요?\n\n휴대폰을 잃어버렸을 때 씁니다. 다음 로그인 때 인증 앱을 새로 등록합니다. 본인이 맞는지 꼭 확인하세요.`) },
