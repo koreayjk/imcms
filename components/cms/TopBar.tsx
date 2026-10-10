@@ -7,6 +7,7 @@ import { switchOutlet } from '@/app/(main)/account/actions'
 import { createClient } from '@/lib/supabase'
 import { ROLE_LABEL, type UserRole } from '@/lib/types'
 import { ExternalIcon, SearchIcon } from './icons'
+import BrandMark from '@/components/BrandMark'
 
 type Props = {
   outletName: string | null
@@ -44,7 +45,7 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
 
   return (
     <header className="flex h-14 min-w-0 shrink-0 items-center gap-2.5 border-b border-line bg-white px-3 print:hidden md:h-16 md:gap-6 md:px-6">
-      <Link href="/newsroom" className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[#1C1F26] text-[12px] font-extrabold text-white md:hidden" aria-label="뉴스룸 첫 화면">IM</Link>
+      <Link href="/newsroom" className="shrink-0 md:hidden" aria-label="뉴스룸 첫 화면"><BrandMark size={36} /></Link>
       <div className="min-w-0 flex-1 md:flex-none">
         {outlets.length > 1 ? (
           <div className="flex min-w-0 items-center gap-2.5">

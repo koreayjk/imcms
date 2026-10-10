@@ -95,8 +95,9 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
         aria-label="편집국 메뉴"
         className="relative hidden w-[76px] shrink-0 flex-col overflow-y-auto bg-[#262A33] text-[#AEB4C0] [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden"
       >
-        <Link href="/newsroom" className="flex h-14 shrink-0 items-center justify-center bg-[#1C1F26] text-[13px] font-extrabold tracking-tight text-white [@media(max-height:780px)]:h-12">
-          IM
+        <Link href="/newsroom" aria-label="IM 뉴스룸 첫 화면" className="flex h-14 shrink-0 items-center justify-center bg-[#1D3461] [@media(max-height:780px)]:h-12">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/im-newsroom-mark.svg" alt="" width={54} height={36} className="block [@media(max-height:780px)]:w-[48px]" />
         </Link>
         <ul className="flex-1 py-2 [@media(max-height:780px)]:py-1">
           {items.map((item) => {

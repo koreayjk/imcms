@@ -2,9 +2,10 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import AuthShell from '@/components/auth/AuthShell'
 import SignupForm from '@/components/auth/SignupForm'
+import { BRAND_ICONS } from '@/lib/brand'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: '회원가입 | IM CMS' }
+export const metadata = { title: '회원가입 | IM 뉴스룸', icons: BRAND_ICONS }
 
 // 승인 칸(signup.sql)이 없으면 가입하자마자 기사를 쓸 수 있게 되므로 가입을 열지 않는다
 async function signupReady() {

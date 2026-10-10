@@ -12,6 +12,7 @@ import type { IndexSeries } from '@/lib/market-index'
 import { CountUp, Reveal } from '@/components/product/Motion'
 import Pricing from '@/components/product/Pricing'
 import { LoginHistoryMock, MfaMock } from '@/components/product/SecurityMocks'
+import BrandMark from '@/components/BrandMark'
 
 export const dynamic = 'force-dynamic'
 
@@ -183,7 +184,7 @@ const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메�
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <span className={`grid h-8 w-8 place-items-center rounded-md text-[11px] font-black tracking-tight ${dark ? 'bg-white text-[#1D3461]' : 'bg-[#1D3461] text-white'}`}>IM</span>
+      <BrandMark size={34} className={dark ? 'ring-1 ring-white/30' : ''} />
       <span className={`text-[18px] font-extrabold tracking-[-0.02em] ${dark ? 'text-white' : ''}`}>뉴스룸</span>
     </span>
   )

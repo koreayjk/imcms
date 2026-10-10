@@ -1,0 +1,18 @@
+{
+  "id": "/newsroom",
+  "name": "IM 뉴스룸 편집국",
+  "short_name": "IM 뉴스룸",
+  "description": "언론사 편집국을 휴대폰 하나로. 기사 쓰기·승인·발행·보도자료·AI 초안",
+  "lang": "ko",
+  "start_url": "/newsroom",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1D3461",
+  "theme_color": "#1D3461",
+  "icons": [
+    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

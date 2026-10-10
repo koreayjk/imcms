@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
+import BrandMark from '@/components/BrandMark'
 
 export default function AuthShell({ subtitle, children, footer }: { subtitle: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper py-12">
       <div className="w-full max-w-sm px-4">
         <div className="mb-10 text-center">
-          <h1 className="text-xl font-semibold tracking-tight">IM CMS</h1>
+          <h1 className="flex flex-col items-center gap-3 text-xl font-semibold tracking-tight"><BrandMark size={56} className="rounded-xl" />IM 뉴스룸 편집국</h1>
           <p className="mt-1.5 text-sm text-muted">{subtitle}</p>
         </div>
         {children}

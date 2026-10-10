@@ -1,10 +1,11 @@
 // 제품 홈페이지용 CMS 화면 모형 (실제 CMS와 같은 구성·색을 줄여서 보여준다)
+import BrandMark from '@/components/BrandMark'
 
 function Rail({ active }: { active: string }) {
   const items = ['뉴스룸', '기사쓰기', '기사목록', '보도자료', '홈편집']
   return (
     <div className="hidden w-[64px] shrink-0 flex-col items-center gap-1 bg-[#262A33] py-3 text-[10px] text-[#AEB4C0] sm:flex">
-      <span className="mb-2 grid h-8 w-8 place-items-center rounded bg-[#1C1F26] text-[10px] font-black text-white">IM</span>
+      <BrandMark size={32} className="mb-2 rounded" />
       {items.map((i) => (
         <span key={i} className={`relative w-full py-2.5 text-center ${i === active ? 'bg-white/[0.06] text-[#F2B544]' : ''}`}>
           {i === active && <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-r bg-[#F2B544]" />}
@@ -193,8 +194,9 @@ export function MailForwardVisual() {
     <div className="mt-8 max-w-[420px]">
       <Node title="기자 지메일" sub="[보도자료] ○○군, 경로당 냉난방비 지원 확대" color="#EA4335">{mail}</Node>
       <Arrow label="필터: 제목에 ‘보도자료’ → 자동 전달" />
-      <Node title="내 전용 주소" sub="press+hong…@imnewsroom" color="#0F1115">
-        <span className="text-[12px] font-black">IM</span>
+      <Node title="내 전용 주소" sub="press+hong…@imnewsroom" color="#1D3461">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/im-newsroom-mark.svg" alt="" width={30} height={20} className="block" />
       </Node>
       <Arrow label="보낸 기관·제목 자동 정리, 사진 첨부 저장" />
       <Node title="보도자료함" sub="메일 · ○○군청 기획홍보실 · 방금" color="#3F7D5C">
@@ -233,7 +235,7 @@ export function SupportMock() {
       </div>
       <div className="mx-4 mb-4 rounded-xl bg-[#EEF2F8] p-3.5">
         <p className="flex items-center gap-2 text-[11.5px]">
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-[#1D3461] text-[9px] font-bold text-white">IM</span>
+          <BrandMark size={24} rounded="full" />
           <strong>IM 뉴스룸 운영팀</strong>
           <span className="ml-auto text-[#8C929B]">방금</span>
         </p>
@@ -257,7 +259,7 @@ export function TeamMock() {
   return (
     <div className="overflow-hidden rounded-xl border border-black/10 bg-[#F4F5F7] text-[#14171C] shadow-[0_30px_80px_-25px_rgba(11,16,32,0.45)]">
       <div className="flex items-center gap-3 border-b border-[#E4E6EA] bg-white px-5 py-3 text-[12.5px]">
-        <span className="grid h-7 w-7 place-items-center rounded-md bg-[#1C1F26] text-[10px] font-extrabold text-white">IM</span>
+        <BrandMark size={28} />
         <span className="rounded border border-[#E4E6EA] px-2.5 py-1 font-bold">케어타임즈 (편집장) ▾</span>
         <span className="ml-auto text-[11px] text-[#8C929B]">매체를 바꾸면 그 매체의 직급으로</span>
       </div>

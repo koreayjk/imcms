@@ -123,7 +123,7 @@ export function noticeMail(o: { title: string; lines: string[]; button?: { label
   const html = `<!doctype html><html lang="ko"><body style="margin:0;background:#F4F5F7;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#14171C">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:12px;padding:28px">
-<tr><td style="font-size:13px;font-weight:700;color:#E5483A">IM 뉴스룸</td></tr>
+<tr><td style="font-size:14px;font-weight:800;color:#1D3461"><img src="https://app.imnewsroom.com/brand/icon-192.png" width="32" height="32" alt="" style="vertical-align:middle;border-radius:7px;margin-right:8px;border:0">IM 뉴스룸</td></tr>
 <tr><td style="padding-top:10px;font-size:20px;font-weight:800;line-height:1.4">${esc(o.title)}</td></tr>
 ${o.lines.map((l) => `<tr><td style="padding-top:12px;font-size:15px;line-height:1.7;color:#3B4048">${esc(l)}</td></tr>`).join('')}
 ${o.button ? `<tr><td style="padding-top:22px"><a href="${esc(o.button.url)}" style="display:inline-block;background:#14171C;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 20px;border-radius:8px">${esc(o.button.label)}</a></td></tr>` : ''}

@@ -5,8 +5,9 @@ import AuthShell from '@/components/auth/AuthShell'
 import SignOutButton from '@/components/auth/SignOutButton'
 import PendingButton from '@/components/cms/PendingButton'
 import { changeRequestedOutlet } from './actions'
+import { BRAND_ICONS } from '@/lib/brand'
 
-export const metadata = { title: '승인 대기 | IM CMS' }
+export const metadata = { title: '승인 대기 | IM 뉴스룸', icons: BRAND_ICONS }
 
 export default async function PendingPage() {
   const supabase = await createServerSupabaseClient()

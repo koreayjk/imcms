@@ -8,6 +8,7 @@ import ReplyBox from '@/components/cms/ReplyBox'
 import { AiFeedback, AiReplyBody, AiWaiting, DeleteTicketButton, RetryAiButton } from '@/components/cms/SupportAi'
 import { SUPPORT_KIND_LABEL, type SupportKind } from '@/lib/support-ai-links'
 import { setTicketAssignee, setTicketStatus } from '../../actions'
+import BrandMark from '@/components/BrandMark'
 
 // 운영팀의 'AI 답변 지금 만들기'가 AI 응답을 기다린다
 export const maxDuration = 60
@@ -160,9 +161,9 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
         ) : (
           <article key={r.id} className={`rounded-2xl p-5 ${r.is_staff ? 'bg-[#EEF2F8]' : 'bg-white ring-1 ring-black/5'}`}>
             <header className="flex items-center gap-2 text-[13px]">
-              <span className={`grid h-8 w-8 place-items-center rounded-full text-[12px] font-bold text-white ${r.is_staff ? 'bg-gradient-to-br from-[#F5B83D] to-[#E5483A]' : 'bg-muted'}`}>
-                {r.is_staff ? 'IM' : (r.author?.full_name ?? '?').slice(0, 1)}
-              </span>
+              {r.is_staff ? <BrandMark size={32} rounded="full" /> : (
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-[12px] font-bold text-white">{(r.author?.full_name ?? '?').slice(0, 1)}</span>
+              )}
               <strong>{r.author?.full_name}</strong>
               {r.is_staff && <span className="rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11px] font-semibold text-[#2F6BF0]">{STAFF_NAME}</span>}
               <time className="ml-auto text-[12px] tabular-nums text-muted">{formatDateTime(r.created_at)}</time>

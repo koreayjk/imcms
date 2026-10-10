@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   try { metadataBase = host ? new URL(`${proto}://${host}`) : undefined } catch {}
   return {
     metadataBase,
-    title: 'IM CMS',
+    title: 'IM 뉴스룸',
     description: '언론사용 기사 관리 시스템',
     robots: { index: false, follow: false },
   }

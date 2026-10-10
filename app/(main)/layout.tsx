@@ -1,4 +1,5 @@
 import type { Viewport } from 'next'
+import { APP_METADATA } from '@/lib/brand'
 import Rail from '@/components/cms/Rail'
 import { outletHomeUrl } from '@/lib/product'
 import TopBar from '@/components/cms/TopBar'
@@ -10,7 +11,8 @@ import { formatDate } from '@/lib/format'
 
 // 편집국: 아이폰 사파리는 글씨가 16px보다 작은 입력칸(매체 고르기 등)을 누르면 화면을 확대하고 그대로 둬서 좌우가 잘린다 → 자동 확대를 막는다
 //   (아이폰은 두 손가락 확대는 그대로 된다)
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover' }
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover', themeColor: '#1D3461' }
+export const metadata = APP_METADATA
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin, isEditorPlus, trial } = await getCmsContext()
