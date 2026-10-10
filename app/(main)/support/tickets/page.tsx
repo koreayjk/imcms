@@ -80,8 +80,8 @@ export default async function TicketsPage(props: Props) {
                   {isStaff && t.ai_state === 'handoff' && <span className="ml-2 rounded bg-[#E5483A]/10 px-1.5 py-0.5 text-[11px] font-semibold text-[#E5483A]">담당자 필요</span>}
                   {isStaff && t.ai_urgency === 'high' && t.status !== 'done' && <span className="ml-2 rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">급함</span>}
                 </td>
-                {isStaff && <td className="py-4 text-[13px] text-muted">{t.outlet?.name ?? '미배정'}</td>}
-                <td className="py-4 text-[13px]">{t.requester?.full_name}</td>
+                {isStaff && <td className="py-4 text-[13px] text-muted">{t.from_staff ? '개별 안내' : t.outlet?.name ?? '미배정'}</td>}
+                <td className="py-4 text-[13px]">{t.from_staff ? <span title="운영팀이 보낸 안내를 받는 분">→ {t.requester?.full_name} <span className="text-[11.5px] text-muted">(받는 분)</span></span> : t.requester?.full_name}</td>
                 <td className="py-4 text-center text-[12.5px] tabular-nums text-muted">
                   {formatShort(t.created_at)}
                   {t.done_at && <><br />{formatShort(t.done_at)}</>}
