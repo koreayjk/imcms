@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { aiTicketFeedback, deleteTicket } from '@/app/(main)/support/actions'
+import { aiTicketFeedback, deleteTicket, retryTicketAi } from '@/app/(main)/support/actions'
 import { SUPPORT_LINKS } from '@/lib/support-ai-links'
 
 // AI 답글 본문: 편집국 주소(/articles/new 등)는 눌러서 가는 링크로
@@ -77,5 +77,25 @@ export function DeleteTicketButton({ ticketId, answered }: { ticketId: string; a
     <button type="button" onClick={remove} disabled={pending} className="text-[13px] text-muted hover:text-danger disabled:opacity-50">
       {pending ? '지우는 중…' : '요청 삭제'}
     </button>
+  )
+}
+
+// 운영팀: AI 첫 답변 지금 만들기 (실패하면 이유를 보여 준다)
+export function RetryAiButton({ ticketId }: { ticketId: string }) {
+  const [pending, start] = useTransition()
+  const [msg, setMsg] = useState('')
+  const router = useRouter()
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <button type="button" disabled={pending} onClick={() => start(async () => {
+        setMsg('')
+        const r = await retryTicketAi(ticketId)
+        setMsg(r.error ? `AI 답변 못 함: ${r.error}` : 'AI 답변을 달았습니다.')
+        router.refresh()
+      })} className="rounded-full bg-[#2F6BF0] px-3 py-1 text-[12px] font-bold text-white hover:opacity-90 disabled:opacity-60">
+        {pending ? 'AI 답변 만드는 중… (최대 40초)' : 'AI 답변 지금 만들기'}
+      </button>
+      {msg && <span role="status" className={`text-[12px] ${msg.startsWith('AI 답변 못 함') ? 'text-danger' : 'text-published'}`}>{msg}</span>}
+    </span>
   )
 }

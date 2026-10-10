@@ -45,29 +45,59 @@ export async function createTicket(input: { category: string; title: string; bod
   if (error || !data) return { error: /support_tickets/.test(error?.message ?? '') && /does not exist|schema cache|not find/i.test(error?.message ?? '') ? '고객센터를 쓰려면 관리자가 support.sql을 실행해야 합니다.' : `요청을 저장하지 못했습니다: ${error?.message ?? ''}` }
   revalidatePath('/support', 'layout')
   // AI 첫 답변: 응답을 먼저 돌려준 뒤 만든다 (요청 화면이 기다리지 않게). 운영팀이 쓴 요청에는 달지 않는다
-  //   응답 뒤에는 로그인 쿠키를 읽을 수 없으므로 로그인 없는 연결 + 서버 열쇠로 기록한다
-  if (!isStaff && process.env.PAYMENT_DB_SECRET) {
+  if (!isStaff) {
     const id = data.id as string
     const role = isGroupAdmin ? '발행인' : ROLE_LABEL[(profile?.role ?? 'reporter') as UserRole] ?? '기자'
     const { data: o } = outletId ? await supabase.from('outlets').select('name').eq('id', outletId).maybeSingle() : { data: null }
     const outletName = (o as { name?: string } | null)?.name ?? null
-    after(async () => {
-      const secret = paymentDbSecret()
-      const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false, autoRefreshToken: false } })
-      // 실패하면 운영팀이 볼 수 있게 이유를 한 줄 남기고 담당자 차례로 넘긴다
-      const giveUp = (why: string) => db.rpc('support_ai_reply', { secret, t: id, p_body: null, p_kind: 'other', p_urgency: 'normal', p_summary: `AI 답변 못 함: ${why}`.slice(0, 280), p_handoff: true })
-      try {
-        const a = await answerSupportTicket({ category: TICKET_CATEGORIES[category as keyof typeof TICKET_CATEGORIES], title, body, role, outletName })
-        if (!a) { await giveUp('AI 키가 설정되지 않았습니다'); return }
-        const { error: e } = await db.rpc('support_ai_reply', { secret, t: id, p_body: a.answer || null, p_kind: a.kind, p_urgency: a.urgency, p_summary: a.summary, p_handoff: a.handoff })
-        if (e) { console.error('support_ai_reply', e.message); await giveUp(e.message) }
-      } catch (e) {
-        console.error('support ai', e)
-        await giveUp(e instanceof Error ? e.message : '알 수 없는 오류')
-      }
-    })
+    const kind = TICKET_CATEGORIES[category as keyof typeof TICKET_CATEGORIES]
+    after(() => runTicketAi(id, { category: kind, title, body, role, outletName }).then(() => undefined))
   }
   return { id: data.id }
+}
+
+// AI 첫 답변을 만들어 요청에 단다. 응답 뒤에도 돌 수 있게 로그인 없는 연결 + 서버 열쇠로 기록한다
+//   실패하면 운영팀이 볼 수 있게 이유를 한 줄 남기고 담당자 차례로 넘긴다
+async function runTicketAi(id: string, input: { category: string; title: string; body: string; role: string; outletName: string | null }): Promise<{ error?: string }> {
+  if (!process.env.PAYMENT_DB_SECRET) return { error: '서버 열쇠(PAYMENT_DB_SECRET)가 Vercel 환경변수에 없습니다.' }
+  const secret = paymentDbSecret()
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false, autoRefreshToken: false } })
+  const giveUp = async (why: string) => {
+    await db.rpc('support_ai_reply', { secret, t: id, p_body: null, p_kind: 'other', p_urgency: 'normal', p_summary: `AI 답변 못 함: ${why}`.slice(0, 280), p_handoff: true })
+    return { error: why }
+  }
+  try {
+    const a = await answerSupportTicket(input)
+    if (!a) return giveUp('AI 키(GEMINI_API_KEY 또는 ANTHROPIC_API_KEY)가 설정되지 않았습니다')
+    const { data: ok, error: e } = await db.rpc('support_ai_reply', { secret, t: id, p_body: a.answer || null, p_kind: a.kind, p_urgency: a.urgency, p_summary: a.summary, p_handoff: a.handoff })
+    if (e) { console.error('support_ai_reply', e.message); return giveUp(`기록 실패: ${e.message}`) }
+    if (ok === false) return { error: '이미 AI 답변이 있거나 완료된 요청입니다.' }
+    return {}
+  } catch (e) {
+    console.error('support ai', e)
+    return giveUp(e instanceof Error ? e.message : '알 수 없는 오류')
+  }
+}
+
+// 운영팀: AI 첫 답변을 지금 다시 만든다 (안 붙었거나 실패한 요청). 실패 이유를 그대로 돌려준다
+export async function retryTicketAi(ticketId: string): Promise<{ error?: string }> {
+  const { supabase, isStaff } = await getCmsContext()
+  if (!isStaff) return { error: '운영팀만 할 수 있습니다.' }
+  const { data: t } = await supabase.from('support_tickets').select('id, category, title, body, requester_id, outlet_id, from_staff').eq('id', ticketId).maybeSingle()
+  if (!t) return { error: '요청을 찾지 못했습니다.' }
+  if (t.from_staff) return { error: '운영팀 안내에는 AI 답변을 달지 않습니다.' }
+  const [{ data: who }, { data: o }] = await Promise.all([
+    supabase.from('profiles').select('role, publisher_id, is_super').eq('id', t.requester_id).maybeSingle(),
+    t.outlet_id ? supabase.from('outlets').select('name').eq('id', t.outlet_id).maybeSingle() : Promise.resolve({ data: null }),
+  ])
+  const w = who as { role?: string; publisher_id?: string | null; is_super?: boolean } | null
+  const role = w?.is_super ? '총관리자' : w?.role === 'admin' && w.publisher_id ? '발행인' : ROLE_LABEL[(w?.role ?? 'reporter') as UserRole] ?? '기자'
+  const r = await runTicketAi(t.id, {
+    category: TICKET_CATEGORIES[t.category as keyof typeof TICKET_CATEGORIES] ?? '기타',
+    title: t.title, body: t.body, role, outletName: (o as { name?: string } | null)?.name ?? null,
+  })
+  revalidatePath(`/support/tickets/${ticketId}`)
+  return r
 }
 
 // 운영팀 → 회원 한 사람에게 먼저 보내는 안내 (그 사람과 운영팀만 본다, support-ai.sql). 받은 사람에게 알림 메일

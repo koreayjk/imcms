@@ -5,9 +5,12 @@ import { formatDateTime } from '@/lib/format'
 import { STAFF_NAME, TICKET_CATEGORIES, TICKET_STATUS, type TicketCategory, type TicketStatus } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import ReplyBox from '@/components/cms/ReplyBox'
-import { AiFeedback, AiReplyBody, AiWaiting, DeleteTicketButton } from '@/components/cms/SupportAi'
+import { AiFeedback, AiReplyBody, AiWaiting, DeleteTicketButton, RetryAiButton } from '@/components/cms/SupportAi'
 import { SUPPORT_KIND_LABEL, type SupportKind } from '@/lib/support-ai-links'
 import { setTicketAssignee, setTicketStatus } from '../../actions'
+
+// 운영팀의 'AI 답변 지금 만들기'가 AI 응답을 기다린다
+export const maxDuration = 60
 
 type FileRow = { id: string; reply_id: string | null; path: string; name: string; size: number }
 
@@ -121,6 +124,12 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
               <PendingButton pending="…" className="rounded border border-line bg-white px-2 py-1 hover:border-ink">지정</PendingButton>
             </form>
           </div>
+        )}
+        {isStaff && 'ai_state' in t && !(t as { from_staff?: boolean }).from_staff && !hasAi && t.status !== 'done' && !aiWaiting && (
+          <p className="mx-auto mt-3 flex max-w-xl flex-wrap items-center justify-center gap-2 text-[12.5px] text-muted">
+            {aiState ? null : <span>AI 첫 답변이 아직 없습니다.</span>}
+            <RetryAiButton ticketId={t.id} />
+          </p>
         )}
         {isStaff && aiState && (
           <p className="mx-auto mt-4 max-w-xl rounded-xl bg-[#F4F6FB] px-4 py-2.5 text-[12.5px] text-[#3B4048]">
