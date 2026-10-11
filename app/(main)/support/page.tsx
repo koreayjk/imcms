@@ -40,13 +40,13 @@ export default async function SupportHome() {
       </div>
 
       <section className="mt-12">
-        <div className="flex items-end justify-between">
-          <h2 className="text-[24px] font-extrabold tracking-tight">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 className="whitespace-nowrap text-[20px] font-extrabold tracking-tight md:text-[24px]">
             <Link href="/support/tickets" className="hover:underline">{isStaff ? '회원사 업무요청' : '나의 업무요청'} ›</Link>
           </h2>
-          <div className="flex items-center gap-4 text-[13.5px]">
+          <div className="flex items-center gap-3 whitespace-nowrap text-[13.5px] md:gap-4">
             <span className="text-muted">진행 중 <strong className="tabular-nums text-ink">{openCount ?? 0}</strong></span>
-            <Link href="/support/tickets/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 font-bold text-white hover:opacity-90">+ 업무요청</Link>
+            <Link href="/support/tickets/new" className="rounded-full bg-[#2F6BF0] px-4 py-2 font-bold text-white hover:opacity-90 md:px-5">+ 업무요청</Link>
           </div>
         </div>
         {tickets?.length ? (

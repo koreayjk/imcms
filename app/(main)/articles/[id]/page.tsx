@@ -135,10 +135,12 @@ export default async function ArticleDetailPage(
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <Link href="/articles" className="text-[13px] text-muted hover:text-ink">← 목록으로</Link>
-        <div className="flex gap-2">
+        {/* 휴대폰: 버튼을 2칸씩 꽉 차게 / PC: 오른쪽에 한 줄로 */}
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto [&>*]:w-full sm:[&>*]:w-auto [&_button]:w-full">
           {article.status === 'published' && (
             <a href={outletHomeUrl((article as { outlet?: { id: string; domain: string | null } | null }).outlet, `/news/${article.id}`)} target="_blank" rel="noopener" className="btn-secondary">홈페이지에서 보기 ↗</a>
           )}
+          <CopyLinkButton articleId={article.id} className="btn-secondary" />
           {canDelete && (
             <form action={deleteArticle.bind(null, article.id)}>
               <PendingButton
@@ -150,7 +152,6 @@ export default async function ArticleDetailPage(
               </PendingButton>
             </form>
           )}
-          <CopyLinkButton articleId={article.id} className="btn-secondary" />
           {canEdit && <Link href={`/articles/${article.id}/edit`} className="btn-primary">수정</Link>}
         </div>
       </div>

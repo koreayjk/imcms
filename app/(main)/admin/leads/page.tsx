@@ -68,9 +68,9 @@ export default async function LeadsPage(props: Props) {
           {PRODUCT.name} 소개 페이지에서 들어온 신청입니다. 담당 매니저를 정하고 상담 기록을 남긴 뒤, 계약되면 “고객사 개설”로 그룹·매체·발행인을 한 번에 만듭니다. 신청일로부터 1년이 지나면 자동으로 지워집니다.
         </p>
       </header>
-      <nav className="mb-4 flex gap-1 text-[14px]">
+      <nav className="-mx-1 mb-4 flex gap-1 overflow-x-auto whitespace-nowrap px-1 text-[14px]">
         {tabs.map((t) => (
-          <a key={t.key} href={`/admin/leads?tab=${t.key}`} className={`rounded-full px-3.5 py-1.5 ${tab === t.key ? 'bg-ink font-bold text-white' : 'text-muted hover:text-ink'}`}>
+          <a key={t.key} href={`/admin/leads?tab=${t.key}`} className={`shrink-0 rounded-full px-3 py-1.5 md:px-3.5 ${tab === t.key ? 'bg-ink font-bold text-white' : 'text-muted hover:text-ink'}`}>
             {t.label} <span className="tabular-nums opacity-70">{t.n}</span>
           </a>
         ))}

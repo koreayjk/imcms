@@ -34,11 +34,11 @@ export default async function TicketsPage(props: Props) {
 
   return (
     <div className="mx-auto max-w-[1180px] px-4 py-6 md:px-8 md:py-10">
-      <div className="flex items-center justify-between border-b-2 border-ink pb-4">
-        <div className="flex items-center gap-1 text-[14.5px]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-ink pb-4">
+        <div className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap px-1 text-[14.5px]">
           {tabs.map((t, i) => (
             <span key={t.key} className="flex items-center">
-              {i > 0 && <span className="mx-3 text-line">|</span>}
+              {i > 0 && <span className="mx-2 text-line md:mx-3">|</span>}
               <Link href={t.key === 'all' ? '/support/tickets' : `/support/tickets?tab=${t.key}`} className={tab === t.key ? 'font-bold text-[#2F6BF0]' : 'text-[#3B4048] hover:text-ink'}>
                 {t.label}
                 {t.n !== null && <span className={`ml-1.5 rounded-full px-1.5 text-[11.5px] tabular-nums text-white ${t.n ? 'bg-[#E5483A]' : 'bg-muted/60'}`}>{t.n}</span>}
@@ -46,18 +46,18 @@ export default async function TicketsPage(props: Props) {
             </span>
           ))}
         </div>
-        <Link href="/support/tickets/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[14px] font-bold text-white hover:opacity-90">+ 업무요청</Link>
+        <Link href="/support/tickets/new" className="shrink-0 whitespace-nowrap rounded-full bg-[#2F6BF0] px-4 py-2 text-[14px] font-bold text-white hover:opacity-90 md:px-5">+ 업무요청</Link>
       </div>
 
       <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] text-[14px]">
+      <table className="w-full text-[14px] md:min-w-[560px]">
         <thead>
           <tr className="border-b border-line text-left text-[13px] text-muted">
-            <th className="w-20 py-3 font-medium">상태</th>
+            <th className="w-16 py-3 font-medium md:w-20">상태</th>
             <th className="py-3 font-medium">제목</th>
-            {isStaff && <th className="w-32 py-3 font-medium">매체</th>}
-            <th className="w-24 py-3 font-medium">요청인</th>
-            <th className="w-28 py-3 text-center font-medium">요청 / 완료</th>
+            {isStaff && <th className="hidden w-32 py-3 font-medium md:table-cell">매체</th>}
+            <th className="hidden w-24 py-3 font-medium md:table-cell">요청인</th>
+            <th className="hidden w-28 py-3 text-center font-medium md:table-cell">요청 / 완료</th>
           </tr>
         </thead>
         <tbody>
@@ -65,7 +65,7 @@ export default async function TicketsPage(props: Props) {
             const s = TICKET_STATUS[t.status as TicketStatus]
             return (
               <tr key={t.id} className="border-b border-line/70 hover:bg-white">
-                <td className="py-4"><span className={`rounded px-2 py-1 text-[12px] font-semibold ${s.className}`}>{s.label}</span></td>
+                <td className="py-4 align-top md:align-middle"><span className={`whitespace-nowrap rounded px-2 py-1 text-[12px] font-semibold ${s.className}`}>{s.label}</span></td>
                 <td className="py-4">
                   <Link href={`/support/tickets/${t.id}`} className="font-medium hover:underline">
                     {t.from_staff
@@ -79,10 +79,14 @@ export default async function TicketsPage(props: Props) {
                   {t.ai_state === 'resolved' && <span className="ml-2 rounded bg-published/10 px-1.5 py-0.5 text-[11px] font-semibold text-published">AI로 해결</span>}
                   {isStaff && t.ai_state === 'handoff' && <span className="ml-2 rounded bg-[#E5483A]/10 px-1.5 py-0.5 text-[11px] font-semibold text-[#E5483A]">담당자 필요</span>}
                   {isStaff && t.ai_urgency === 'high' && t.status !== 'done' && <span className="ml-2 rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">급함</span>}
+                  {/* 휴대폰: 매체·요청인·날짜를 제목 아래 한 줄로 */}
+                  <p className="mt-1 text-[12px] text-muted md:hidden">
+                    {[isStaff ? (t.from_staff ? '개별 안내' : t.outlet?.name ?? '미배정') : null, t.from_staff ? `→ ${t.requester?.full_name ?? ''} (받는 분)` : t.requester?.full_name, formatShort(t.created_at), t.done_at ? `완료 ${formatShort(t.done_at)}` : null].filter(Boolean).join(' · ')}
+                  </p>
                 </td>
-                {isStaff && <td className="py-4 text-[13px] text-muted">{t.from_staff ? '개별 안내' : t.outlet?.name ?? '미배정'}</td>}
-                <td className="py-4 text-[13px]">{t.from_staff ? <span title="운영팀이 보낸 안내를 받는 분">→ {t.requester?.full_name} <span className="text-[11.5px] text-muted">(받는 분)</span></span> : t.requester?.full_name}</td>
-                <td className="py-4 text-center text-[12.5px] tabular-nums text-muted">
+                {isStaff && <td className="hidden py-4 text-[13px] text-muted md:table-cell">{t.from_staff ? '개별 안내' : t.outlet?.name ?? '미배정'}</td>}
+                <td className="hidden py-4 text-[13px] md:table-cell">{t.from_staff ? <span title="운영팀이 보낸 안내를 받는 분">→ {t.requester?.full_name} <span className="text-[11.5px] text-muted">(받는 분)</span></span> : t.requester?.full_name}</td>
+                <td className="hidden py-4 text-center text-[12.5px] tabular-nums text-muted md:table-cell">
                   {formatShort(t.created_at)}
                   {t.done_at && <><br />{formatShort(t.done_at)}</>}
                 </td>

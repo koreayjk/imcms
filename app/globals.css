@@ -81,7 +81,8 @@ body {
 .field-label { @apply block text-xs font-medium text-muted mb-1.5; }
 
 /* 버튼 공통 */
-.btn        { @apply rounded px-4 py-2 text-sm font-medium disabled:opacity-40 transition-opacity; }
+/* 버튼 글자는 한 줄로 (휴대폰에서 “삭/제”처럼 꺾이지 않게. 자리가 모자라면 버튼째 다음 줄로 간다) */
+.btn        { @apply whitespace-nowrap rounded px-4 py-2 text-center text-sm font-medium disabled:opacity-40 transition-opacity; }
 .btn-primary   { @apply btn bg-ink text-white hover:opacity-90; }
 .btn-secondary { @apply btn border border-line hover:bg-line/50; }
 .btn-review    { @apply btn bg-review text-white hover:opacity-90; }
