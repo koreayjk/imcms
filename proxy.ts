@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server'
 import { APP_PATHS, PRODUCT, isAppHost, isProductHost } from '@/lib/product'
 import { isGdpaHost } from '@/lib/gdpa'
 import { hasVerifiedFactor, mfaSession, tokenClaims } from '@/lib/mfa'
+import { VERIFIED_USER_HEADER, signVerifiedUser } from '@/lib/verified-user'
 
 // 로그인 기록(login-security.sql): 이 브라우저에서 이미 남긴 로그인 번호. 새 로그인일 때만 DB에 한 번 남긴다
 const LOGIN_COOKIE = 'im_sid'
@@ -56,6 +57,8 @@ function isPublicPath(pathname: string) {
 }
 
 export async function proxy(request: NextRequest) {
+  // 바깥에서 보낸 '확인된 회원' 헤더는 믿지 않는다 (아래에서 proxy가 직접 만든 것만 화면에 간다)
+  request.headers.delete(VERIFIED_USER_HEADER)
   // 매체 홈페이지 미리보기: ?preview_outlet=매체ID 로 들어오면 쿠키에 기억 (clear면 끝내기)
   const previewParam = request.nextUrl.searchParams.get('preview_outlet')
   if (previewParam) {
@@ -159,6 +162,14 @@ export async function proxy(request: NextRequest) {
       url.search = `?next=${encodeURIComponent(request.nextUrl.pathname + request.nextUrl.search)}`
       const res = NextResponse.redirect(url)
       // 방금 새로 받은 로그인 쿠키를 잃지 않게 옮겨 담는다
+      supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c))
+      return remember(res)
+    }
+    // 화면(getCmsContext)이 인증 서버에 한 번 더 묻지 않도록 방금 확인한 회원 정보를 서명해 넘긴다
+    const signed = await signVerifiedUser(user).catch(() => null)
+    if (signed) {
+      request.headers.set(VERIFIED_USER_HEADER, signed)
+      const res = pass()
       supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c))
       return remember(res)
     }

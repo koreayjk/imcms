@@ -34,7 +34,12 @@ export default async function NewsroomPage(props: Props) {
   const countOf = (status: ArticleStatus) =>
     scoped(supabase.from('articles').select('id', { count: 'exact', head: true })).eq('status', status)
 
-  const [counts, list, reviewQueue, popular, { data: notices }, { data: myTickets }, aiUsage] = await Promise.all([
+  // 광고 계약 알림 (편집장·발행인): 7일 안에 끝나는 광고, 시작했는데 입금 안 된 광고 (ad-contracts.sql 전이면 조용히 없음)
+  const kstToday = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)
+  // 체험 기자 화면: 내 기사만 세므로, 체험신문 전체에 이미 발행된 기사 수를 함께 알려 준다
+  const trialReporter = !!trial && !isEditorPlus && !!outletId
+  // 화면에 필요한 조회는 모두 한꺼번에 보낸다 (하나씩 기다리면 메뉴를 열 때마다 그만큼 느려진다)
+  const [counts, list, reviewQueue, popular, { data: notices }, { data: myTickets }, aiUsage, adRes, trialCount, trialOutlet] = await Promise.all([
     Promise.all(CARDS.map((c) => countOf(c.status))),
     scoped(
       supabase
@@ -52,16 +57,18 @@ export default async function NewsroomPage(props: Props) {
     supabase.from('support_notices').select('id, title, category, created_at').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     supabase.from('support_tickets').select('id, title, status, last_staff_reply_at, requester_read_at').eq('requester_id', user.id).order('updated_at', { ascending: false }).limit(3),
     getAiStatus(supabase, outletId),
+    isEditorPlus && outletId && !trial
+      ? supabase.from('ad_contracts').select('advertiser, starts_on, ends_on, supply_amount, vat_amount, paid_amount').eq('outlet_id', outletId).lte('starts_on', kstToday).limit(500)
+      : Promise.resolve({ data: null }),
+    trialReporter
+      ? supabase.from('articles').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId!).eq('status', 'published')
+      : Promise.resolve({ count: null }),
+    trialReporter ? supabase.from('outlets').select('id, domain').eq('id', outletId!).maybeSingle() : Promise.resolve({ data: null }),
   ])
   // 이번 달 AI 사용 한도(초안·법적 검수)의 80%를 넘으면 알린다
   const aiLvl = aiLevel(aiUsage)
   const aiAlert = aiUsage && (aiLvl === 'near' || aiLvl === 'full' || aiLvl === 'over') ? aiLvl : null
 
-  // 광고 계약 알림 (편집장·발행인): 7일 안에 끝나는 광고, 시작했는데 입금 안 된 광고 (ad-contracts.sql 전이면 조용히 없음)
-  const kstToday = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)
-  const adRes = isEditorPlus && outletId && !trial
-    ? await supabase.from('ad_contracts').select('advertiser, starts_on, ends_on, supply_amount, vat_amount, paid_amount').eq('outlet_id', outletId).lte('starts_on', kstToday).limit(500)
-    : { data: null }
   const adRows = (adRes.data ?? []) as { advertiser: string; starts_on: string; ends_on: string; supply_amount: number; vat_amount: number; paid_amount: number }[]
   const weekLater = new Date(Date.parse(kstToday) + 7 * 864e5).toISOString().slice(0, 10)
   const adEnding = adRows.filter((c) => c.ends_on >= kstToday && c.ends_on <= weekLater)
@@ -69,13 +76,8 @@ export default async function NewsroomPage(props: Props) {
   const adDueSum = adDue.reduce((n, c) => n + Number(c.supply_amount) + Number(c.vat_amount) - Number(c.paid_amount), 0)
 
   const rows = (list.data ?? []) as any[]
-  // 체험 기자 화면: 내 기사만 세므로, 체험신문 전체에 이미 발행된 기사 수를 함께 알려 준다
-  const trialPublished = trial && !isEditorPlus && outletId
-    ? (await supabase.from('articles').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId).eq('status', 'published')).count ?? 0
-    : null
-  const trialSite = trialPublished !== null
-    ? outletHomeUrl((await supabase.from('outlets').select('id, domain').eq('id', outletId!).maybeSingle()).data)
-    : '/'
+  const trialPublished = trialReporter ? trialCount.count ?? 0 : null
+  const trialSite = trialReporter ? outletHomeUrl(trialOutlet.data) : '/'
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">

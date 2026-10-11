@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase'
 import type { UserRole } from '@/lib/types'
 import { BulbIcon, BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, GlobeIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, UsersIcon, WriteIcon } from './icons'
+import LinkPending from './LinkPending'
 
 type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
 
@@ -114,6 +115,7 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
                   }`}
                 >
                   {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-[#F2B544]" />}
+                  <LinkPending className="inset-0 bg-white/[0.08] shadow-[inset_3px_0_0_#F2B544]" />
                   {item.icon}
                   {item.label}
                   {n > 0 && (
@@ -150,8 +152,9 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
               key={item.href}
               href={item.href}
               aria-current={active ? 'page' : undefined}
-              className={`flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${active ? 'text-[#F2B544]' : ''}`}
+              className={`relative flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${active ? 'text-[#F2B544]' : ''}`}
             >
+              <LinkPending className="inset-x-3 top-0 h-[3px] rounded-b bg-[#F2B544]" />
               {item.icon}
               {item.label}
             </Link>

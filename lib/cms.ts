@@ -1,21 +1,27 @@
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { createServerSupabaseClient } from './supabase-server'
 import type { UserRole } from './types'
-import { hasVerifiedFactor, mfaExpired, mfaSession } from './mfa'
+import { hasVerifiedFactor, mfaExpired, mfaSession, tokenClaims } from './mfa'
+import { VERIFIED_USER_HEADER, readVerifiedUser } from './verified-user'
 
 // 한 번의 요청 안에서는 레이아웃과 페이지가 같은 결과를 나눠 쓴다 (로그인 확인·회원 정보 조회를 두 번 하지 않도록)
 export const getCmsContext = cache(async function getCmsContext() {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // proxy가 방금 확인한 회원이면 그대로 쓰고(인증 서버 왕복 한 번 절약), 아니면 인증 서버에 묻는다
+  //   로그인 쿠키 속 회원 번호와 같을 때만 쓴다 (DB는 늘 그 쿠키로 권한을 확인한다)
+  const { data: { session } } = await supabase.auth.getSession()
+  const passed = await readVerifiedUser((await headers()).get(VERIFIED_USER_HEADER), (tokenClaims(session?.access_token) as { sub?: string }).sub)
+  const user = passed ?? (await supabase.auth.getUser()).data.user
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  // 회원 정보와 2단계 인증 필수 여부는 함께 묻는다 (차례로 기다리면 메뉴를 열 때마다 그만큼 느려진다)
+  const mfaCheck = !hasVerifiedFactor(user)
+  const [{ data: profile }, mfaReq] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    mfaCheck ? supabase.rpc('my_mfa_required') : Promise.resolve({ data: null }),
+  ])
 
   const role = (profile?.role ?? 'reporter') as UserRole
   if (!isApproved(profile)) redirect('/pending')
@@ -43,13 +49,11 @@ export const getCmsContext = cache(async function getCmsContext() {
   //   필수 = 총관리자·매니저, 발행인이 필수로 정한 그룹의 발행인·편집장 (SQL 실행 전이면 아무것도 바뀌지 않는다)
   if (!trial) {
     if (hasVerifiedFactor(user)) {
-      const { data: { session } } = await supabase.auth.getSession()
       const m = mfaSession(session?.access_token)
       if (!m.aal2) redirect('/login/mfa')
       if (mfaExpired(m.verifiedAt, isStaff)) redirect('/login/mfa?again=1')
     } else if (isStaff || role === 'admin' || role === 'editor') {
-      const { data: required } = await supabase.rpc('my_mfa_required')
-      if (required === true) redirect('/login/mfa/setup?required=1')
+      if (mfaReq.data === true) redirect('/login/mfa/setup?required=1')
     }
   }
 

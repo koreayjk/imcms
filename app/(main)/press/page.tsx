@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { after } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
 import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, usableKeywords } from '@/lib/press-sources'
@@ -24,7 +26,12 @@ export default async function PressPage(props: Props) {
   const searchParams = await props.searchParams
   const { supabase, outletId } = await getCmsContext()
 
-  const probe = await supabase.from('press_fetch_log').select('source_key').limit(1)
+  // 저장 공간 확인과 매체 설정은 함께 묻는다
+  const [probe, { data: outlet }, { data: { session } }] = await Promise.all([
+    supabase.from('press_fetch_log').select('source_key').limit(1),
+    outletId ? supabase.from('outlets').select('*').eq('id', outletId).single() : Promise.resolve({ data: null }),
+    supabase.auth.getSession(),
+  ])
   if (probe.error) {
     return (
       <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
@@ -35,9 +42,15 @@ export default async function PressPage(props: Props) {
     )
   }
 
-  await refreshPress(supabase)
-
-  const { data: outlet } = outletId ? await supabase.from('outlets').select('*').eq('id', outletId).single() : { data: null }
+  // 새 보도자료 받아 오기(바깥 사이트 여러 곳)는 화면을 먼저 보여준 뒤 뒤에서 한다 (기다리면 몇 초씩 걸린다)
+  //   응답 뒤에는 로그인 쿠키를 못 읽으므로, 지금 로그인 토큰으로 같은 권한의 연결을 만든다
+  const token = session?.access_token
+  if (token) {
+    after(() => refreshPress(createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    })).catch(() => {}))
+  }
   // 매체 홈페이지 설정의 '보도자료 추천 키워드' (없으면 추천 탭은 직접 등록·메일 자료만)
   const outletSite = outlet ? buildSite(outlet as OutletRow, []) : null
   const keywords = outletSite?.pressKeywords ?? []
