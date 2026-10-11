@@ -7,11 +7,12 @@ import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import { aiLevel, aiLimitMessage, getAiStatus } from '@/lib/ai-usage'
 import { NOTICE_CATEGORIES, TICKET_STATUS, hasUnreadReply, type NoticeCategory, type TicketStatus } from '@/lib/support'
 
-const CARDS: { status: ArticleStatus; tone: string; note: string }[] = [
-  { status: 'draft', tone: 'bg-[#F2B544] text-[#3B2A00]', note: '저장만 하고 아직 제출하지 않은 기사' },
-  { status: 'in_review', tone: 'bg-[#3D7BE0] text-white', note: '편집장 승인을 기다리는 기사' },
-  { status: 'rejected', tone: 'bg-[#D9534F] text-white', note: '수정이 필요한 기사' },
-  { status: 'published', tone: 'bg-[#2E8B57] text-white', note: '홈페이지에 공개된 기사' },
+// 기사 현황 칸: 원색을 깔지 않고, 아주 옅은 바탕에 숫자·점만 깊은 색으로 (남색 로고와 어울리는 차분한 색)
+const CARDS: { status: ArticleStatus; tone: string; dot: string; num: string; ring: string; note: string }[] = [
+  { status: 'draft', tone: 'bg-gradient-to-br from-[#FFFBF2] to-[#F8EDD5]', dot: 'bg-[#C08A2E]', num: 'text-[#8A5F17]', ring: 'ring-[#C08A2E]/60', note: '저장만 하고 아직 제출하지 않은 기사' },
+  { status: 'in_review', tone: 'bg-gradient-to-br from-[#F6F8FD] to-[#E3E9F6]', dot: 'bg-[#3A5A9B]', num: 'text-[#1D3461]', ring: 'ring-[#3A5A9B]/60', note: '편집장 승인을 기다리는 기사' },
+  { status: 'rejected', tone: 'bg-gradient-to-br from-[#FFF8F6] to-[#F6E2DE]', dot: 'bg-[#B4513F]', num: 'text-[#8E3426]', ring: 'ring-[#B4513F]/60', note: '수정이 필요한 기사' },
+  { status: 'published', tone: 'bg-gradient-to-br from-[#F5FAF7] to-[#DDEEE5]', dot: 'bg-[#2F7A5B]', num: 'text-[#1F5A42]', ring: 'ring-[#2F7A5B]/60', note: '홈페이지에 공개된 기사' },
 ]
 
 type Props = { searchParams: Promise<{ tab?: string }> }
@@ -109,11 +110,14 @@ export default async function NewsroomPage(props: Props) {
             key={c.status}
             href={`/newsroom?tab=${c.status}`}
             aria-current={tab === c.status ? 'true' : undefined}
-            className={`rounded-lg px-4 py-4 transition-transform md:px-6 md:py-5 hover:-translate-y-0.5 ${c.tone} ${tab === c.status ? 'ring-2 ring-offset-2 ring-ink/70' : ''}`}
+            className={`rounded-xl px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.05)] transition md:px-6 md:py-5 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_-10px_rgba(16,24,40,0.25)] ${c.tone} ${tab === c.status ? `ring-2 ${c.ring}` : 'ring-1 ring-black/[0.05]'}`}
           >
-            <div className="text-[32px] font-bold leading-none tabular-nums md:text-[40px]">{counts[i].count ?? 0}</div>
-            <div className="mt-2 text-[15px] font-semibold">{STATUS_LABEL[c.status]}</div>
-            <div className="mt-0.5 hidden text-[12px] opacity-80 sm:block">{c.note}</div>
+            <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-[#3B4250]">
+              <span className={`h-2 w-2 rounded-full ${c.dot}`} aria-hidden />
+              {STATUS_LABEL[c.status]}
+            </div>
+            <div className={`mt-2.5 text-[32px] font-extrabold leading-none tracking-tight tabular-nums md:text-[40px] ${c.num}`}>{counts[i].count ?? 0}</div>
+            <div className="mt-1.5 hidden text-[12px] text-[#6B7280] sm:block">{c.note}</div>
           </Link>
         ))}
       </div>
@@ -121,12 +125,13 @@ export default async function NewsroomPage(props: Props) {
       <div className="mt-6 grid grid-cols-1 gap-6 md:mt-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <section className="min-w-0 rounded-lg border border-line bg-white">
           <div className="flex items-center justify-between gap-2 border-b border-line px-2 md:px-5">
-            <div className="flex min-w-0 overflow-x-auto">
+            {/* 휴대폰: 탭이 넘치면 옆으로 밀어서 본다 (오른쪽 끝을 흐리게 해 잘린 듯 보이지 않게) */}
+            <div className="flex min-w-0 overflow-x-auto [mask-image:linear-gradient(to_right,black_88%,transparent)] md:[mask-image:none]">
               {CARDS.map((c, i) => (
                 <Link
                   key={c.status}
                   href={`/newsroom?tab=${c.status}`}
-                  className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 py-3.5 text-[14px] md:px-4 ${
+                  className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2 py-3.5 text-[14px] md:px-4 ${
                     tab === c.status ? 'border-ink font-bold text-ink' : 'border-transparent text-muted hover:text-ink'
                   }`}
                 >
@@ -135,7 +140,7 @@ export default async function NewsroomPage(props: Props) {
                 </Link>
               ))}
             </div>
-            <Link href={`/articles?status=${tab}`} className="shrink-0 pr-2 text-[12.5px] text-muted hover:text-ink md:pr-0">더보기 +</Link>
+            <Link href={`/articles?status=${tab}`} className="shrink-0 whitespace-nowrap pl-1 pr-2 text-[12.5px] text-muted hover:text-ink md:pr-0">더보기 +</Link>
           </div>
 
           {rows.length ? (
@@ -185,7 +190,7 @@ export default async function NewsroomPage(props: Props) {
             <section className="rounded-lg border border-line bg-white">
               <h2 className="flex items-center gap-2 border-b border-line px-5 py-3.5 text-[14px] font-bold">
                 승인 대기
-                <span className="rounded-full bg-[#3D7BE0] px-1.5 text-[11px] text-white tabular-nums">{counts[1].count ?? 0}</span>
+                <span className="rounded-full bg-[#3A5A9B] px-1.5 text-[11px] text-white tabular-nums">{counts[1].count ?? 0}</span>
               </h2>
               {reviewQueue.data?.length ? (
                 <ul className="divide-y divide-line">
