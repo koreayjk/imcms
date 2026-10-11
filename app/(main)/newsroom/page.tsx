@@ -7,12 +7,13 @@ import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import { aiLevel, aiLimitMessage, getAiStatus } from '@/lib/ai-usage'
 import { NOTICE_CATEGORIES, TICKET_STATUS, hasUnreadReply, type NoticeCategory, type TicketStatus } from '@/lib/support'
 
-// 기사 현황 칸: 원색 대신 깊고 차분한 색에 은은한 그라데이션 (남색 로고와 어울리게)
-const CARDS: { status: ArticleStatus; tone: string; ring: string; note: string }[] = [
-  { status: 'draft', tone: 'bg-gradient-to-br from-[#D4A243] to-[#A8761D] text-white', ring: 'ring-[#A8761D]', note: '저장만 하고 아직 제출하지 않은 기사' },
-  { status: 'in_review', tone: 'bg-gradient-to-br from-[#3B5F9E] to-[#1D3461] text-white', ring: 'ring-[#1D3461]', note: '편집장 승인을 기다리는 기사' },
-  { status: 'rejected', tone: 'bg-gradient-to-br from-[#C2604D] to-[#8E3426] text-white', ring: 'ring-[#8E3426]', note: '수정이 필요한 기사' },
-  { status: 'published', tone: 'bg-gradient-to-br from-[#3C8A69] to-[#1F5A42] text-white', ring: 'ring-[#1F5A42]', note: '홈페이지에 공개된 기사' },
+// 기사 현황 칸 (팔레트 '현대적인' 회청 + '고급스러운' 금·주황 + 로고 남색)
+//   승인신청(편집장이 먼저 볼 것)이 가장 눈에 띄고, 작성중은 조용하게
+const CARDS: { status: ArticleStatus; tone: string; sub: string; ring: string; note: string }[] = [
+  { status: 'draft', tone: 'bg-[#AEB3C9] text-[#1F2340]', sub: 'text-[#1F2340]/70', ring: 'ring-[#6E728C]', note: '저장만 하고 아직 제출하지 않은 기사' },
+  { status: 'in_review', tone: 'bg-[#E8A93A] text-[#2A1C00]', sub: 'text-[#2A1C00]/70', ring: 'ring-[#B9831F]', note: '편집장 승인을 기다리는 기사' },
+  { status: 'rejected', tone: 'bg-[#C47A2C] text-white', sub: 'text-white/80', ring: 'ring-[#9A5D1E]', note: '수정이 필요한 기사' },
+  { status: 'published', tone: 'bg-[#1D3461] text-white', sub: 'text-white/75', ring: 'ring-[#1D3461]', note: '홈페이지에 공개된 기사' },
 ]
 
 type Props = { searchParams: Promise<{ tab?: string }> }
@@ -110,11 +111,11 @@ export default async function NewsroomPage(props: Props) {
             key={c.status}
             href={`/newsroom?tab=${c.status}`}
             aria-current={tab === c.status ? 'true' : undefined}
-            className={`rounded-xl px-4 py-4 shadow-[0_6px_16px_-8px_rgba(16,24,40,0.45)] transition md:px-6 md:py-5 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.5)] ${c.tone} ${tab === c.status ? `ring-2 ring-offset-2 ring-offset-[#F4F5F7] ${c.ring}` : ''}`}
+            className={`rounded-xl px-4 py-4 shadow-[0_6px_16px_-8px_rgba(16,24,40,0.35)] transition md:px-6 md:py-5 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.5)] ${c.tone} ${tab === c.status ? `ring-2 ring-offset-2 ring-offset-[#F4F5F7] ${c.ring}` : ''}`}
           >
-            <div className="text-[13.5px] font-semibold text-white/85">{STATUS_LABEL[c.status]}</div>
+            <div className={`text-[13.5px] font-semibold ${c.sub}`}>{STATUS_LABEL[c.status]}</div>
             <div className="mt-2 text-[32px] font-extrabold leading-none tracking-tight tabular-nums md:text-[40px]">{counts[i].count ?? 0}</div>
-            <div className="mt-1.5 hidden text-[12px] text-white/75 sm:block">{c.note}</div>
+            <div className={`mt-1.5 hidden text-[12px] sm:block ${c.sub}`}>{c.note}</div>
           </Link>
         ))}
       </div>
@@ -187,7 +188,7 @@ export default async function NewsroomPage(props: Props) {
             <section className="rounded-lg border border-line bg-white">
               <h2 className="flex items-center gap-2 border-b border-line px-5 py-3.5 text-[14px] font-bold">
                 승인 대기
-                <span className="rounded-full bg-[#3A5A9B] px-1.5 text-[11px] text-white tabular-nums">{counts[1].count ?? 0}</span>
+                <span className="rounded-full bg-[#E8A93A] px-1.5 text-[11px] font-semibold text-[#2A1C00] tabular-nums">{counts[1].count ?? 0}</span>
               </h2>
               {reviewQueue.data?.length ? (
                 <ul className="divide-y divide-line">
