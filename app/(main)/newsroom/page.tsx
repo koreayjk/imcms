@@ -7,12 +7,12 @@ import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
 import { aiLevel, aiLimitMessage, getAiStatus } from '@/lib/ai-usage'
 import { NOTICE_CATEGORIES, TICKET_STATUS, hasUnreadReply, type NoticeCategory, type TicketStatus } from '@/lib/support'
 
-// 기사 현황 칸: 원색을 깔지 않고, 아주 옅은 바탕에 숫자·점만 깊은 색으로 (남색 로고와 어울리는 차분한 색)
-const CARDS: { status: ArticleStatus; tone: string; dot: string; num: string; ring: string; note: string }[] = [
-  { status: 'draft', tone: 'bg-gradient-to-br from-[#FFFBF2] to-[#F8EDD5]', dot: 'bg-[#C08A2E]', num: 'text-[#8A5F17]', ring: 'ring-[#C08A2E]/60', note: '저장만 하고 아직 제출하지 않은 기사' },
-  { status: 'in_review', tone: 'bg-gradient-to-br from-[#F6F8FD] to-[#E3E9F6]', dot: 'bg-[#3A5A9B]', num: 'text-[#1D3461]', ring: 'ring-[#3A5A9B]/60', note: '편집장 승인을 기다리는 기사' },
-  { status: 'rejected', tone: 'bg-gradient-to-br from-[#FFF8F6] to-[#F6E2DE]', dot: 'bg-[#B4513F]', num: 'text-[#8E3426]', ring: 'ring-[#B4513F]/60', note: '수정이 필요한 기사' },
-  { status: 'published', tone: 'bg-gradient-to-br from-[#F5FAF7] to-[#DDEEE5]', dot: 'bg-[#2F7A5B]', num: 'text-[#1F5A42]', ring: 'ring-[#2F7A5B]/60', note: '홈페이지에 공개된 기사' },
+// 기사 현황 칸: 원색 대신 깊고 차분한 색에 은은한 그라데이션 (남색 로고와 어울리게)
+const CARDS: { status: ArticleStatus; tone: string; ring: string; note: string }[] = [
+  { status: 'draft', tone: 'bg-gradient-to-br from-[#D4A243] to-[#A8761D] text-white', ring: 'ring-[#A8761D]', note: '저장만 하고 아직 제출하지 않은 기사' },
+  { status: 'in_review', tone: 'bg-gradient-to-br from-[#3B5F9E] to-[#1D3461] text-white', ring: 'ring-[#1D3461]', note: '편집장 승인을 기다리는 기사' },
+  { status: 'rejected', tone: 'bg-gradient-to-br from-[#C2604D] to-[#8E3426] text-white', ring: 'ring-[#8E3426]', note: '수정이 필요한 기사' },
+  { status: 'published', tone: 'bg-gradient-to-br from-[#3C8A69] to-[#1F5A42] text-white', ring: 'ring-[#1F5A42]', note: '홈페이지에 공개된 기사' },
 ]
 
 type Props = { searchParams: Promise<{ tab?: string }> }
@@ -110,14 +110,11 @@ export default async function NewsroomPage(props: Props) {
             key={c.status}
             href={`/newsroom?tab=${c.status}`}
             aria-current={tab === c.status ? 'true' : undefined}
-            className={`rounded-xl px-4 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.05)] transition md:px-6 md:py-5 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_-10px_rgba(16,24,40,0.25)] ${c.tone} ${tab === c.status ? `ring-2 ${c.ring}` : 'ring-1 ring-black/[0.05]'}`}
+            className={`rounded-xl px-4 py-4 shadow-[0_6px_16px_-8px_rgba(16,24,40,0.45)] transition md:px-6 md:py-5 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.5)] ${c.tone} ${tab === c.status ? `ring-2 ring-offset-2 ring-offset-[#F4F5F7] ${c.ring}` : ''}`}
           >
-            <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-[#3B4250]">
-              <span className={`h-2 w-2 rounded-full ${c.dot}`} aria-hidden />
-              {STATUS_LABEL[c.status]}
-            </div>
-            <div className={`mt-2.5 text-[32px] font-extrabold leading-none tracking-tight tabular-nums md:text-[40px] ${c.num}`}>{counts[i].count ?? 0}</div>
-            <div className="mt-1.5 hidden text-[12px] text-[#6B7280] sm:block">{c.note}</div>
+            <div className="text-[13.5px] font-semibold text-white/85">{STATUS_LABEL[c.status]}</div>
+            <div className="mt-2 text-[32px] font-extrabold leading-none tracking-tight tabular-nums md:text-[40px]">{counts[i].count ?? 0}</div>
+            <div className="mt-1.5 hidden text-[12px] text-white/75 sm:block">{c.note}</div>
           </Link>
         ))}
       </div>
