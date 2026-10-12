@@ -6,7 +6,7 @@ import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, BETA_PERIOD_LABEL, EXTRA_OU
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
-import { ApprovalFlow, HomeBoardMock, MailForwardVisual, PressInboxMock, SupportMock, SyndicateVisual, TeamMock } from '@/components/product/Mockups'
+import { ApprovalFlow, HomeBoardMock, MailForwardVisual, PressInboxMock, SearchMock, SupportMock, SyndicateVisual, TeamMock } from '@/components/product/Mockups'
 import IndexWidget from '@/components/site/IndexWidget'
 import type { IndexSeries } from '@/lib/market-index'
 import { CountUp, Reveal } from '@/components/product/Motion'
@@ -185,7 +185,7 @@ function pricingFaq(beta: boolean) {
   ]
 }
 
-const MARQUEE = ['여러 매체 한 계정', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인', '언론사별 자료 잠금', '2단계 인증', '퇴사자 출입 정지', '로그인 기록', '원격 로그아웃']
+const MARQUEE = ['여러 매체 한 계정', '네이버·구글 검색 등록 대행', '구글 뉴스 형식 자동', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인', '언론사별 자료 잠금', '2단계 인증', '퇴사자 출입 정지', '로그인 기록', '원격 로그아웃']
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
@@ -467,6 +467,29 @@ export default function ProductHome() {
               </ul>
             </Reveal>
             <Reveal delay={150}><SupportMock /></Reveal>
+          </div>
+        </section>
+
+        {/* ─── 검색 등록 대행 ─── */}
+        <section id="search" className="scroll-mt-16 bg-[#F7F8FA]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <Reveal className="order-2 lg:order-1"><SearchMock /></Reveal>
+            <Reveal delay={150} className="order-1 lg:order-2">
+              <Eyebrow icon="search" color="#16294D">검색 등록 대행</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>네이버·구글 검색 등록,<br />저희가 대신 합니다.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">
+                기사는 검색에 떠야 읽힙니다. 개통할 때 운영팀이 <strong>네이버 서치어드바이저·구글 서치콘솔 등록부터 소유 확인, 사이트맵 제출까지</strong> 대신 끝내 드립니다. 대표님과 기자는 기사만 쓰시면 됩니다.
+              </p>
+              <ul className="mt-7 space-y-3">
+                <Check>네이버·구글 등록과 소유 확인, 사이트맵·RSS 제출을 운영팀이 대행 (세팅비 포함)</Check>
+                <Check>기사를 발행하면 구글 뉴스가 알아보는 형식(기자·발행 시각·언론사 정보)으로 자동 표시</Check>
+                <Check>새 기사는 뉴스 사이트맵·RSS로 바로 검색엔진에 알림</Check>
+                <Check>여러 매체에 함께 송고해도 원문 기사로 대표 주소를 알려 검색 순위가 나뉘지 않게</Check>
+                <Check>프로그램을 옮겨도 옛 기사 주소는 새 기사로 연결해 쌓아 온 검색 노출을 지킵니다</Check>
+                <Check>구글 서치콘솔에 대표님 계정을 소유자로 추가해 검색 성적을 직접 확인</Check>
+              </ul>
+              <p className="mt-5 text-[13px] leading-relaxed text-[#5B616B]">검색 결과 반영에는 보통 며칠~2주가 걸리며, 노출 순위는 보장되지 않습니다. 네이버 “뉴스” 탭 노출은 언론사의 뉴스 검색제휴 심사가 따로 필요합니다.</p>
+            </Reveal>
           </div>
         </section>
 

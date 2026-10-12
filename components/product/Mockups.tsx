@@ -285,3 +285,40 @@ export function TeamMock() {
     </div>
   )
 }
+
+// 검색 등록 대행: 위는 검색 결과에 뜬 기사(예시), 아래는 편집국의 [검색 등록 점검하기] 결과
+export function SearchMock() {
+  const checks = ['홈페이지가 열림', '네이버 확인 코드', '구글 확인 코드', '검색 허용 (robots.txt)', '사이트맵 · 뉴스 사이트맵 · RSS']
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-black/10 bg-white p-5 text-[#14171C] shadow-[0_30px_80px_-25px_rgba(11,16,32,0.35)]">
+        <div className="flex items-center gap-2 rounded-full border border-[#E4E6EA] px-4 py-2 text-[13px] text-[#5B616B]">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></svg>
+          요양병원 간병비 급여화
+        </div>
+        <div className="mt-4 space-y-4">
+          {[
+            { site: '우리 신문', url: 'news.example.kr › news', title: '요양병원 간병비 급여화 시범사업, 참여 기관 확대 논의', meta: '3시간 전 · 김기자 기자', top: true },
+            { site: '우리 신문', url: 'news.example.kr › section › welfare', title: '보건·복지 — 우리 신문', meta: '요양·돌봄·복지 정책 소식' },
+          ].map((r) => (
+            <div key={r.title}>
+              <p className="flex items-center gap-2 text-[12px] text-[#5B616B]"><span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#3F7D5C] text-[10px] font-bold text-white" aria-hidden>우</span> <span className="font-semibold text-[#14171C]">{r.site}</span> <span>{r.url}</span></p>
+              <p className="mt-1 text-[16px] font-semibold leading-snug text-[#1A0DAB]">{r.title}</p>
+              <p className="mt-0.5 text-[12.5px] text-[#5B616B]">{r.meta}{r.top && <span className="ml-2 rounded bg-[#E8F0FE] px-1.5 py-px text-[11px] font-semibold text-[#1A56DB]">뉴스</span>}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-xl border border-black/10 bg-white p-4 text-[#14171C] shadow-[0_20px_50px_-25px_rgba(11,16,32,0.35)]">
+        <p className="text-[13px] font-bold">검색 등록 점검하기</p>
+        <ul className="mt-2 space-y-1.5">
+          {checks.map((c) => (
+            <li key={c} className="flex items-center gap-2 text-[12.5px]">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#2E7D4F] text-[9px] font-bold text-white" aria-hidden>✓</span>{c}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
