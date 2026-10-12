@@ -18,7 +18,7 @@ export const PRODUCT = {
   // 제품 도메인으로 들어온 경우에만 검색 수집을 허락한다 (imcms.vercel.app/imnewsroom 미리보기는 막는다)
   indexable: true,
   // 검색엔진 소유 확인 코드 (네이버 서치어드바이저·구글 서치콘솔 'HTML 태그'의 content 값. 공개 값이다)
-  verification: { naver: '1e8200bdedef681f5d9052db40c9d0ca910b59be', google: '' } as { naver: string; google: string },
+  verification: { naver: '1e8200bdedef681f5d9052db40c9d0ca910b59be', google: 'Jk8bFtUR-kOsBP1_1boqJo6hkFvpTp4I7KsDyMe9GEo' } as { naver: string; google: string },
 }
 
 // 검색엔진에 알릴 제품 홈페이지 주소들
