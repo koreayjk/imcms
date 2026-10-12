@@ -26,6 +26,11 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: { type: 'website', siteName: PRODUCT.name, title, description, locale: 'ko_KR', images: [{ url: PRODUCT.ogImage, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', title, description, images: [PRODUCT.ogImage] },
     ...(indexable ? { robots: { index: true, follow: true }, alternates: { canonical: `${PRODUCT.url}/` } } : {}),
+    // 네이버·구글 소유 확인 (lib/product.ts)
+    verification: {
+      google: PRODUCT.verification.google || undefined,
+      other: PRODUCT.verification.naver ? { 'naver-site-verification': PRODUCT.verification.naver } : undefined,
+    },
   }
 }
 
