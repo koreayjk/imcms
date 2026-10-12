@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { currentSite, getHomeData, getIndexSeries, isDemo, type PublicArticle } from '@/lib/public-data'
+import { headers } from 'next/headers'
+import { currentSite, getHomeData, getIndexSeries, isDemo, siteBaseUrl, type PublicArticle } from '@/lib/public-data'
+import { siteJsonLd } from '@/lib/news-jsonld'
 import { topSections, siteIcon } from '@/lib/sites'
 import IndexWidget from '@/components/site/IndexWidget'
 import { formatDate, formatShort } from '@/lib/format'
@@ -81,8 +83,12 @@ export default async function HomePage() {
   const specialty = topSections(site).filter((s) => s.specialty)
   const general = topSections(site).filter((s) => !s.specialty)
 
+  const base = siteBaseUrl(site, (await headers()).get('host'))
+
   return (
     <SiteFrame site={site}>
+      {/* 매체 이름·로고 구조화 데이터 (구글 검색·구글 뉴스용, 화면에는 안 보임) */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
       <div className="mx-auto max-w-[1200px] px-4">
         {/* ── 톱 기사: PC ── */}
         <section aria-label="톱 기사" className="hidden grid-cols-[250px_1fr_300px] gap-8 border-b border-rule py-7 lg:grid">

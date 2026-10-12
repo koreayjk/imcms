@@ -80,8 +80,9 @@ export function defaultOgImage(logo?: string) {
   return dir && OG_DIRS.includes(dir) ? `/sites/${dir}/og.png` : undefined
 }
 
-// 브라우저 탭 아이콘: 로고가 없으면 매체 이름 첫 글자 아이콘 (app/site-icon.svg)
-export const siteIcon = (site: SiteConfig) => site.logoMark || '/site-icon.svg'
+// 브라우저 탭 아이콘: 매체 로고를 정사각형으로 맞춘 PNG (app/site-favicon.png, 구글은 정사각형만 쓴다)
+//   로고가 없으면 매체 이름 첫 글자 아이콘 (app/site-icon.svg)
+export const siteIcon = (site: SiteConfig) => (site.logoMark ? '/site-favicon.png' : '/site-icon.svg')
 
 export const SITES: SiteConfig[] = [
   {

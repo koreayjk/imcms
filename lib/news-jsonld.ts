@@ -27,3 +27,34 @@ export function newsArticleJsonLd(site: SiteConfig, a: PublicArticle, base: stri
   // </script> 로 끝나는 글자가 기사 안에 있어도 깨지지 않게
   return JSON.stringify(data).replace(/</g, '\\u003c')
 }
+
+// 매체 첫 화면 구조화 데이터 (WebSite + NewsMediaOrganization)
+//   구글 검색·구글 뉴스가 매체 이름(사이트 이름)과 로고를 이 값으로 정한다
+export function siteJsonLd(site: SiteConfig, base: string) {
+  const abs = (u: string | null | undefined) => (!u ? undefined : /^https?:\/\//.test(u) ? u : `${base}${u.startsWith('/') ? '' : '/'}${u}`)
+  const logo = abs(site.logoMark)
+  const data = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${base}/#website`,
+        url: `${base}/`,
+        name: site.name,
+        ...(site.nameEn && site.nameEn !== site.name ? { alternateName: site.nameEn } : {}),
+        inLanguage: 'ko-KR',
+        publisher: { '@id': `${base}/#organization` },
+      },
+      {
+        '@type': 'NewsMediaOrganization',
+        '@id': `${base}/#organization`,
+        name: site.name,
+        ...(site.nameEn && site.nameEn !== site.name ? { alternateName: site.nameEn } : {}),
+        url: `${base}/`,
+        ...(logo ? { logo: { '@type': 'ImageObject', url: logo } } : {}),
+        ...(site.description ? { description: site.description } : {}),
+      },
+    ],
+  }
+  return JSON.stringify(data).replace(/</g, '\\u003c')
+}
