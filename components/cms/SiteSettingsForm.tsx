@@ -309,7 +309,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <Field label="네이버 서치어드바이저 확인 코드" hint="“HTML 태그” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다">
             <input value={s.naverVerification ?? ''} onChange={(e) => set({ naverVerification: e.target.value })} maxLength={300} placeholder='<meta name="naver-site-verification" content="…" />' className="field-input" />
           </Field>
-          <Field label="구글 서치콘솔 확인 코드" hint="“HTML 태그” 방식의 content 값">
+          <Field label="구글 서치콘솔 확인 코드" hint="“HTML 태그” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다">
             <input value={s.googleVerification ?? ''} onChange={(e) => set({ googleVerification: e.target.value })} maxLength={300} placeholder='<meta name="google-site-verification" content="…" />' className="field-input" />
           </Field>
         </div>
