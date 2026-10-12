@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { currentSite, getHomeData, getIndexSeries, isDemo, siteBaseUrl, type PublicArticle } from '@/lib/public-data'
 import { siteJsonLd } from '@/lib/news-jsonld'
+import { outletApp } from '@/lib/android'
 import { topSections, siteIcon } from '@/lib/sites'
 import IndexWidget from '@/components/site/IndexWidget'
 import { formatDate, formatShort } from '@/lib/format'
@@ -21,6 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: `${site.name} | ${site.nameEn}`,
     description: site.description,
     icons: { icon: siteIcon(site) },
+    // 독자용 앱이 있는 매체만 앱 설치 정보 (lib/android.ts)
+    ...(outletApp(site.domains) ? { manifest: '/site.webmanifest' } : {}),
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
     openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website', images: site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined },
     twitter: { card: site.ogImage ? 'summary_large_image' : 'summary' },

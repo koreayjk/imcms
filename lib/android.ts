@@ -14,3 +14,12 @@ export const ANDROID_CERT_SHA256: string[] = [
 
 // 플레이 스토어 앱 주소 (카톡에 그대로 보내면 미리보기가 안 떠서, 공유는 imnewsroom.com/app 으로 한다)
 export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`
+
+// 매체 독자용 앱 (매체 홈페이지를 주소창 없이 여는 앱, TWA). IM 회사 개발자 계정으로 올린다
+//   도메인별로 적는다. 지문은 앱을 만든 뒤(업로드 키)·플레이 콘솔 앱 서명 키 화면에서 받아 넣는다
+// live: 스토어에 공개된 뒤 true (그때부터 크롬이 매체 홈페이지에서 스토어 앱을 권한다)
+export type OutletApp = { package: string; sha256: string[]; live?: boolean }
+export const OUTLET_APPS: Record<string, OutletApp> = {
+  'thecaretimes.net': { package: 'net.thecaretimes.app', sha256: [] },
+}
+export const outletApp = (domains: string[]) => domains.map((d) => OUTLET_APPS[d.replace(/^www\./, '')]).find(Boolean)
