@@ -50,7 +50,10 @@ export default function LoginPage() {
           <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="field-input" placeholder="reporter@example.com" autoComplete="email" />
         </div>
         <div>
-          <label htmlFor="password" className="field-label">비밀번호</label>
+          <div className="flex items-baseline justify-between">
+            <label htmlFor="password" className="field-label">비밀번호</label>
+            <Link href="/login/forgot" className="text-[13px] text-muted underline-offset-2 hover:text-ink hover:underline">비밀번호 찾기</Link>
+          </div>
           <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="field-input" placeholder="••••••••" autoComplete="current-password" />
         </div>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
