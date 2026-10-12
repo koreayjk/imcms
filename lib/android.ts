@@ -11,3 +11,6 @@ export const ANDROID_CERT_SHA256: string[] = [
   // ② 앱 서명 키 (플레이 콘솔 → Google Play로 보호됨 → Play 앱 서명)
   'E8:33:4C:6E:0A:89:F3:F0:3C:E1:36:68:1F:D0:68:7C:6C:25:CA:44:DA:8A:85:70:46:26:7E:F1:EB:20:5F:BC',
 ]
+
+// 플레이 스토어 앱 주소 (카톡에 그대로 보내면 미리보기가 안 떠서, 공유는 imnewsroom.com/app 으로 한다)
+export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`
