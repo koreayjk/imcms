@@ -255,21 +255,17 @@ export default function ProductHome() {
       <header className="fixed inset-x-0 top-0 z-40 border-b border-[#DADFE8] bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-4 sm:px-6">
           <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo /></a>
-          <nav className="ml-auto hidden items-center gap-5 whitespace-nowrap text-[14px] text-[#5B616B] lg:flex xl:gap-7" aria-label="소개 메뉴">
-            <a href="#multi" className="hover:text-[#0F1115]">여러 매체</a>
-            <a href="#team" className="hover:text-[#0F1115]">권한</a>
+          <nav className="ml-auto hidden items-center gap-6 whitespace-nowrap text-[14.5px] text-[#5B616B] lg:flex xl:gap-8" aria-label="소개 메뉴">
+            {/* 머리 줄은 꼭 필요한 것만 (나머지 기능은 아래로 내려 보면 나온다) */}
+            <a href="#multi" className="hover:text-[#0F1115]">기능</a>
             <a href="#ai" className="hover:text-[#0F1115]">AI 초안</a>
-            <a href="#press" className="hover:text-[#0F1115]">보도자료</a>
-            <a href="#support" className="hover:text-[#0F1115]">고객센터</a>
-            <a href="#vertical" className="hover:text-[#0F1115]">전문지</a>
-            <a href="#showcase" className="hover:text-[#0F1115]">디자인</a>
+            <a href="#search" className="hover:text-[#0F1115]">검색 등록</a>
             <a href="#security" className="hover:text-[#0F1115]">보안</a>
             <a href="#pricing" className="hover:text-[#0F1115]">요금</a>
-            {beta && <a href="#beta" className="hover:text-[#0F1115]">베타 혜택</a>}
+            <a href="#faq" className="hover:text-[#0F1115]">자주 묻는 질문</a>
           </nav>
           <div className="ml-auto flex items-center gap-2 whitespace-nowrap lg:ml-0">
-            <Link href={appLink('/login')} className="hidden rounded-md px-3 py-2 text-[13.5px] text-[#5B616B] hover:text-[#0F1115] sm:block">편집국 로그인</Link>
-            <a href="#apply" className="hidden rounded-md border border-[#DADFE8] bg-white px-3.5 py-2 text-[13.5px] font-semibold text-[#16294D] hover:bg-[#EFF2F7] sm:block">서비스 신청</a>
+            <Link href={appLink('/login')} className="hidden rounded-md px-3 py-2 text-[13.5px] text-[#5B616B] hover:text-[#0F1115] sm:block">로그인</Link>
             <TrialButton className="rounded-md bg-[#1D3461] px-4 py-2 text-[13.5px] font-bold text-white hover:bg-[#152748]">1주일 무료 체험</TrialButton>
           </div>
         </div>
