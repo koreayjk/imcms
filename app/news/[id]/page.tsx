@@ -1,6 +1,8 @@
 import { notFound, permanentRedirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
-import { currentSite, getArticleData, legacyArticleId } from '@/lib/public-data'
+import { currentSite, getArticleData, legacyArticleId, siteBaseUrl } from '@/lib/public-data'
+import { newsArticleJsonLd } from '@/lib/news-jsonld'
 import { findSection, siteIcon } from '@/lib/sites'
 import SiteFrame from '@/components/site/SiteFrame'
 import { sanitizeBody } from '@/lib/article-html'
@@ -37,7 +39,8 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     description,
     icons: { icon: siteIcon(site) },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
-    alternates: data.source?.url ? { canonical: data.source.url } : undefined,
+    // 대표 주소: 다른 매체에서 받아 온 기사는 원문 주소, 아니면 이 매체 도메인의 기사 주소
+    alternates: { canonical: data.source?.url || `${siteBaseUrl(site, (await headers()).get('host'))}/news/${a.id}` },
     openGraph: {
       title,
       description,
@@ -65,9 +68,12 @@ export default async function ArticlePage(props: Props) {
   if (!data) notFound()
   const { article: a, related, relatedLinks, mostViewed, latest, source } = data
   const section = a.category ? findSection(site, a.category.slug) : undefined
+  const base = siteBaseUrl(site, (await headers()).get('host'))
 
   return (
     <SiteFrame site={site} current={a.category?.slug}>
+      {/* 기사 구조화 데이터 (구글 뉴스·주요 뉴스용, 화면에는 안 보임) */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: newsArticleJsonLd(site, a, base, `${base}/news/${a.id}`) }} />
       {!a.id.startsWith('demo-') && <ViewCounter id={a.id} />}
       <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-10">
         <ArticleMain
