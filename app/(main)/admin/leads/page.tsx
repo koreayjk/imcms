@@ -4,6 +4,8 @@ import { formatDateTime } from '@/lib/format'
 import { PRODUCT } from '@/lib/product'
 import LeadCard, { type Lead } from '@/components/cms/LeadCard'
 import AutoMessageEditor from '@/components/cms/AutoMessageEditor'
+import type { LaunchOutlet } from '@/components/cms/LaunchChecklist'
+import type { LaunchDone } from '@/lib/launch-checklist'
 
 type Props = { searchParams: Promise<{ tab?: string }> }
 
@@ -52,6 +54,20 @@ export default async function LeadsPage(props: Props) {
   const rows = tab === 'mine' ? all.filter((l) => l.assigned_to === user.id && l.status !== 'done')
     : tab === 'done' ? all.filter((l) => l.status === 'done')
     : all.filter((l) => l.status !== 'done')
+
+  // 개설된 고객사의 매체와 개통 체크리스트 (launch-checklist.sql 전이면 표가 없다고 알려 준다)
+  const pubIds = [...new Set(rows.map((l) => l.publisher_id).filter(Boolean))] as string[]
+  const [{ data: pubOutlets }, launchRes] = pubIds.length
+    ? await Promise.all([
+        supabase.from('outlets').select('id, name, domain, publisher_id').in('publisher_id', pubIds).order('created_at'),
+        supabase.from('launch_checklists').select('outlet_id, done'),
+      ])
+    : [{ data: [] }, { data: [], error: null }]
+  const launchDone = new Map(((launchRes.data ?? []) as { outlet_id: string; done: LaunchDone }[]).map((r) => [r.outlet_id, r.done]))
+  const launchMissing = !!launchRes.error
+  const launchOf = (pid: string): LaunchOutlet[] =>
+    ((pubOutlets ?? []) as { id: string; name: string; domain: string | null; publisher_id: string }[])
+      .filter((o) => o.publisher_id === pid).map((o) => ({ id: o.id, name: o.name, domain: o.domain, done: launchDone.get(o.id) ?? {} }))
 
   const tabs = [
     { key: 'open', label: '처리할 상담', n: all.filter((l) => l.status !== 'done').length },
@@ -120,7 +136,7 @@ export default async function LeadsPage(props: Props) {
       ) : rows.length ? (
         <ul className="space-y-3">
           {rows.map((l) => (
-            <LeadCard key={l.id} lead={l} staff={staff} createdLabel={formatDateTime(l.created_at)} groupName={l.publisher_id ? groupName.get(l.publisher_id) ?? null : null} />
+            <LeadCard key={l.id} lead={l} staff={staff} createdLabel={formatDateTime(l.created_at)} groupName={l.publisher_id ? groupName.get(l.publisher_id) ?? null : null} launch={l.publisher_id ? launchOf(l.publisher_id) : undefined} launchMissing={launchMissing} />
           ))}
         </ul>
       ) : (

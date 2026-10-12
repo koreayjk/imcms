@@ -4,6 +4,7 @@ import { useState, useTransition, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { openCustomer, saveLead, type LeadState } from '@/app/(main)/admin/leads/actions'
 import PendingButton from './PendingButton'
+import LaunchChecklist, { type LaunchOutlet } from './LaunchChecklist'
 import { BILLING_LABEL, planById, won, type Billing } from '@/lib/pricing'
 
 export type Lead = {
@@ -20,7 +21,7 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   done: { label: '완료', cls: 'bg-line text-muted' },
 }
 
-export default function LeadCard({ lead, staff, createdLabel, groupName }: { lead: Lead; staff: { id: string; name: string }[]; createdLabel: string; groupName: string | null }) {
+export default function LeadCard({ lead, staff, createdLabel, groupName, launch, launchMissing }: { lead: Lead; staff: { id: string; name: string }[]; createdLabel: string; groupName: string | null; launch?: LaunchOutlet[]; launchMissing?: boolean }) {
   const router = useRouter()
   const [status, setStatus] = useState(lead.status)
   const [note, setNote] = useState(lead.note ?? '')
@@ -82,6 +83,9 @@ export default function LeadCard({ lead, staff, createdLabel, groupName }: { lea
         </div>
       </div>
       {(msg.error || msg.ok) && <p role={msg.error ? 'alert' : 'status'} className={`mt-2 text-[12.5px] ${msg.error ? 'text-danger' : 'text-published'}`}>{msg.error ?? msg.ok}</p>}
+
+      {/* 개설된 고객사: 매체별 개통 체크리스트 (도메인·법정 표기·검색 등록 등) */}
+      {lead.publisher_id && launch && <LaunchChecklist outlets={launch} missing={launchMissing} />}
 
       {open && (
         <form action={openAction} className="mt-4 rounded-lg border border-published/30 bg-published/5 p-4">

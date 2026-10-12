@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { LAUNCH_KEYS, type LaunchDone } from '@/lib/launch-checklist'
 
 const STATUSES = ['new', 'contacted', 'done']
 export type LeadState = { error?: string; ok?: string }
@@ -82,4 +83,18 @@ export async function saveAutoMessage(input: { title: string; body: string; enab
   if (error || !data?.length) return { error: error?.message ?? '저장하지 못했습니다. trial-checkin.sql을 실행했는지 확인해 주세요.' }
   revalidatePath('/admin/leads')
   return {}
+}
+
+// 고객사 개통 체크리스트: 항목 하나 체크/해제 (launch-checklist.sql)
+export async function setLaunchItem(outletId: string, key: string, done: boolean): Promise<{ done?: LaunchDone; error?: string }> {
+  const { supabase, user } = await staffContext()
+  if (!LAUNCH_KEYS.includes(key)) return { error: '없는 항목입니다.' }
+  const { data: row, error: rErr } = await supabase.from('launch_checklists').select('done').eq('outlet_id', outletId).maybeSingle()
+  if (rErr) return { error: /launch_checklists/.test(rErr.message) ? '체크리스트를 쓰려면 launch-checklist.sql을 실행해 주세요.' : rErr.message }
+  const next: LaunchDone = { ...((row?.done as LaunchDone | undefined) ?? {}) }
+  if (done) next[key] = new Date().toISOString()
+  else delete next[key]
+  const { error } = await supabase.from('launch_checklists').upsert({ outlet_id: outletId, done: next, updated_at: new Date().toISOString(), updated_by: user.id })
+  if (error) return { error: error.message }
+  return { done: next }
 }
