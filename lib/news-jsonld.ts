@@ -1,5 +1,6 @@
 import type { PublicArticle } from './public-data'
 import type { SiteConfig } from './sites'
+import { reporterHref } from './reporter'
 
 // 기사 구조화 데이터 (schema.org NewsArticle): 구글이 제목·발행 시각·기자·사진·언론사를 정확히 읽게 한다
 //   구글 뉴스 탭·“주요 뉴스”에 뽑힐 때 쓰인다. 화면에는 보이지 않는다
@@ -16,7 +17,7 @@ export function newsArticleJsonLd(site: SiteConfig, a: PublicArticle, base: stri
     ...(a.meta_description || a.excerpt ? { description: (a.meta_description || a.excerpt)!.slice(0, 300) } : {}),
     ...(image ? { image: [image] } : {}),
     ...(a.published_at ? { datePublished: a.published_at, dateModified: a.published_at } : {}),
-    ...(a.author_name ? { author: [{ '@type': 'Person', name: a.author_name }] } : { author: [{ '@type': 'Organization', name: site.name, url: base }] }),
+    ...(a.author_name ? { author: [{ '@type': 'Person', name: a.author_name, url: `${base}${reporterHref(a.author_name)}` }] } : { author: [{ '@type': 'Organization', name: site.name, url: base }] }),
     publisher: { '@type': 'NewsMediaOrganization', name: site.name, url: base, ...(logo ? { logo: { '@type': 'ImageObject', url: logo } } : {}) },
     ...(a.category ? { articleSection: a.category.name } : {}),
     ...(a.tags?.length ? { keywords: a.tags.join(', ') } : {}),
