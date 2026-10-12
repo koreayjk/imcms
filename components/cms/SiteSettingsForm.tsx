@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
+import SearchRegisterGuide from './SearchRegisterGuide'
 import { buildSite, DEFAULT_COLORS, foreignTopics, pressFields, type CategoryRow, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { FOREIGN_TOPICS, PRESS_FIELDS } from '@/lib/press-sources'
 import { uploadImage } from '@/components/editor/upload'
@@ -313,9 +314,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             <input value={s.googleVerification ?? ''} onChange={(e) => set({ googleVerification: e.target.value })} maxLength={300} placeholder='<meta name="google-site-verification" content="…" />' className="field-input" />
           </Field>
         </div>
-        <p className="mt-3 rounded bg-[#F8F9FA] px-3 py-2.5 text-[12.5px] leading-relaxed text-muted">
-          포털에 등록할 주소 — 사이트맵: <code>/sitemap.xml</code> · 뉴스 사이트맵: <code>/news-sitemap.xml</code> · RSS: <code>/rss.xml</code> (매체 도메인 뒤에 붙입니다. 예: https://{domain || '매체도메인'}/sitemap.xml)
-        </p>
+        <SearchRegisterGuide outletId={outlet.id} domain={outlet.domain} />
       </Card>
 
       {/* 하단 미리보기 */}

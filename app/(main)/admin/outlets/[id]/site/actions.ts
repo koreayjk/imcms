@@ -94,3 +94,37 @@ export async function reconnectDomain(outletId: string): Promise<{ error?: strin
   revalidatePath(`/admin/outlets/${outletId}/site`)
   return err ? { error: err } : { ok: 'Vercel에 등록했습니다. 아래 DNS 설정을 확인해 주세요.' }
 }
+
+// 검색 등록 점검 (운영팀): 매체 주소에서 확인 코드·robots.txt·사이트맵이 실제로 보이는지 확인한다
+//   저장된 매체 도메인만 열어 본다 (다른 주소는 열지 않는다)
+export type SearchCheck = { label: string; ok: boolean; detail: string }
+export async function checkSearchSetup(outletId: string): Promise<{ items?: SearchCheck[]; error?: string }> {
+  const { supabase, isStaff } = await getCmsContext()
+  if (!isStaff) return { error: '운영팀만 확인할 수 있습니다.' }
+  const { data: o } = await supabase.from('outlets').select('domain, site').eq('id', outletId).maybeSingle()
+  const domain = String((o as { domain?: string | null } | null)?.domain ?? '').toLowerCase()
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain)) return { error: '먼저 위 “도메인” 칸에 매체 주소를 저장해 주세요.' }
+  const site = ((o as { site?: OutletSiteSettings | null } | null)?.site ?? {}) as OutletSiteSettings
+  const base = `https://${domain}`
+  const get = async (path: string) => {
+    try {
+      const r = await fetch(base + path, { redirect: 'follow', cache: 'no-store', signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'IMNewsroom-SearchCheck/1.0' } })
+      return { status: r.status, text: (await r.text()).slice(0, 400_000) }
+    } catch (e) {
+      return { status: 0, text: e instanceof Error ? e.message : '' }
+    }
+  }
+  const [home, robots, sitemap] = await Promise.all([get('/'), get('/robots.txt'), get('/sitemap.xml')])
+  const items: SearchCheck[] = []
+  items.push({ label: '홈페이지가 열림', ok: home.status === 200, detail: home.status ? `응답 ${home.status}` : `열리지 않음 (${home.text.slice(0, 80)})` })
+  const meta = (name: string) => home.text.match(new RegExp(`<meta[^>]+name="${name}"[^>]+content="([^"]+)"`))?.[1] ?? null
+  const nv = meta('naver-site-verification')
+  const gv = meta('google-site-verification')
+  items.push({ label: '네이버 확인 코드', ok: !!nv && (!site.naverVerification || nv === site.naverVerification), detail: nv ? (site.naverVerification && nv !== site.naverVerification ? '저장한 코드와 다릅니다. 저장했는지 확인하세요' : '홈페이지에 들어 있음') : site.naverVerification ? '저장은 됐지만 홈페이지에 아직 안 보입니다. 1분 뒤 다시 확인하세요' : '아직 넣지 않음' })
+  items.push({ label: '구글 확인 코드', ok: !!gv && (!site.googleVerification || gv === site.googleVerification), detail: gv ? (site.googleVerification && gv !== site.googleVerification ? '저장한 코드와 다릅니다. 저장했는지 확인하세요' : '홈페이지에 들어 있음') : site.googleVerification ? '저장은 됐지만 홈페이지에 아직 안 보입니다. 1분 뒤 다시 확인하세요' : '아직 넣지 않음' })
+  const allowed = robots.status === 200 && /^Allow: \/\s*$/m.test(robots.text) && !/^Disallow: \/\s*$/m.test(robots.text)
+  items.push({ label: '검색 허용 (robots.txt)', ok: allowed, detail: allowed ? '검색엔진이 읽을 수 있음' : '막혀 있습니다. 위 “구글·네이버 검색에 노출하기”를 켜고 저장했는지, 매체 도메인으로 열었는지 확인하세요' })
+  const n = (sitemap.text.match(/<url>/g) ?? []).length
+  items.push({ label: '사이트맵', ok: sitemap.status === 200 && n > 0, detail: sitemap.status === 200 ? `주소 ${n}개` : `응답 ${sitemap.status || '없음'}` })
+  return { items }
+}
