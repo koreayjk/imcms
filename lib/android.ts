@@ -20,6 +20,13 @@ export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${A
 // live: 스토어에 공개된 뒤 true (그때부터 크롬이 매체 홈페이지에서 스토어 앱을 권한다)
 export type OutletApp = { package: string; sha256: string[]; live?: boolean }
 export const OUTLET_APPS: Record<string, OutletApp> = {
-  'thecaretimes.net': { package: 'net.thecaretimes.app', sha256: [] },
+  'thecaretimes.net': {
+    package: 'net.thecaretimes.app',
+    sha256: [
+      // ① 업로드 키 (PWABuilder)
+      '07:A1:FB:94:97:21:C0:C4:DC:7C:FC:BE:47:05:06:31:52:BA:92:3C:6F:BF:3D:85:34:4B:34:0E:A9:C5:C2:8D',
+      // ② 앱 서명 키 (플레이 콘솔 → 앱 무결성) — 받으면 추가
+    ],
+  },
 }
 export const outletApp = (domains: string[]) => domains.map((d) => OUTLET_APPS[d.replace(/^www\./, '')]).find(Boolean)
