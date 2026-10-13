@@ -55,7 +55,7 @@ function Consent({ name, title, checked, onChange, children, link }: { name: str
 export default function ApplyForm() {
   const [state, action] = useActionState<ApplyState, FormData>(submitBetaRequest, {})
   const [plan, setPlan] = useState<PlanId>('standard')
-  const [billing, setBilling] = useState<Billing>('annual')
+  const [billing, setBilling] = useState<Billing>('monthly')
   const [agree, setAgree] = useState(false)
   const [agreeTerms, setAgreeTerms] = useState(false)
 
@@ -108,7 +108,7 @@ export default function ApplyForm() {
         </div>
         {chosen.monthly != null && (
           <div role="group" aria-label="결제 방식" className="mt-2 grid grid-cols-2 gap-2">
-            {(['annual', 'monthly'] as Billing[]).map((b) => (
+            {(['monthly', 'annual'] as Billing[]).map((b) => (
               <button
                 key={b}
                 type="button"

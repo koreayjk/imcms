@@ -32,7 +32,7 @@ const COMMON = [
 ]
 
 export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }) {
-  const [annual, setAnnual] = useState(true)
+  const [annual, setAnnual] = useState(false)
   // 베타(출시 전 테스트): 10월 31일까지 가입하면 첫 3개월 반값, 4개월째부터 정상가
   const BETA = isBeta()
   const daysLeft = betaDaysLeft()
