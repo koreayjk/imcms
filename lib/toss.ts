@@ -62,8 +62,9 @@ export const confirmPayment = (paymentKey: string, orderId: string, amount: numb
 
 export const getPayment = (paymentKey: string) => call<TossPayment>('GET', `/payments/${encodeURIComponent(paymentKey)}`)
 
-export const cancelPayment = (paymentKey: string, reason: string, key: string) =>
-  call<TossPayment>('POST', `/payments/${encodeURIComponent(paymentKey)}/cancel`, { cancelReason: reason.slice(0, 200) }, key)
+// amount 를 주면 그 금액만 부분 취소 (안 주면 남은 금액 전부)
+export const cancelPayment = (paymentKey: string, reason: string, key: string, amount?: number) =>
+  call<TossPayment>('POST', `/payments/${encodeURIComponent(paymentKey)}/cancel`, { cancelReason: reason.slice(0, 200), ...(amount ? { cancelAmount: amount } : {}) }, key)
 
 export type TossBilling = {
   billingKey: string
@@ -85,7 +86,9 @@ export const chargeBilling = (billingKey: string, body: { customerKey: string; a
 // 토스 결제 상태 → 우리 결제 상태
 export function ourStatus(s: TossPayment['status']): 'done' | 'failed' | 'canceled' | null {
   if (s === 'DONE') return 'done'
-  if (s === 'CANCELED' || s === 'PARTIAL_CANCELED') return 'canceled'
+  // 부분 취소는 결제가 살아 있다 (환불액은 payment_refunds 에 따로 남긴다)
+  if (s === 'PARTIAL_CANCELED') return 'done'
+  if (s === 'CANCELED') return 'canceled'
   if (s === 'ABORTED' || s === 'EXPIRED') return 'failed'
   return null
 }

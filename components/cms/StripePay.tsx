@@ -29,21 +29,21 @@ export function StripePayButton({ invoiceId, testMode }: { invoiceId: string; te
   )
 }
 
-export function StripeSetupButton({ label = '카드·간편결제 등록' }: { label?: string }) {
+export function StripeSetupButton({ label = '카드·간편결제 등록', consent = false }: { label?: string; consent?: boolean }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   return (
     <span className="inline-flex flex-col gap-1">
       <button
         type="button"
-        disabled={busy}
+        disabled={busy || !consent}
         onClick={async () => {
           setBusy(true); setError('')
-          const r = await startStripeSetup()
+          const r = await startStripeSetup(consent)
           if (r.ok) { window.location.assign(r.url); return }
           setError(r.error); setBusy(false)
         }}
-        className="btn-secondary bg-white"
+        className="btn-secondary bg-white disabled:opacity-50"
       >
         {busy ? '이동 중…' : label}
       </button>

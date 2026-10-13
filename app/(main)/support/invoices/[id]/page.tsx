@@ -20,11 +20,14 @@ export default async function InvoicePage(
   const { data: inv } = await supabase.from('invoices').select('*, outlet:outlets(name)').eq('id', params.id).maybeSingle()
   if (!inv) notFound()
   // payments.sql 실행 전이면 결제 기록·자동결제 표가 없어 비어 있다
-  const [{ data: billing }, { data: payments }, { data: autopay }] = await Promise.all([
+  const [{ data: billingRow }, { data: payments }, { data: autopay }] = await Promise.all([
     supabase.from('outlet_billing').select('*').eq('outlet_id', inv.outlet_id).maybeSingle(),
-    supabase.from('payments').select('id, status, kind, amount, method, approved_at, receipt_url, fail_message, test_mode, created_at').eq('invoice_id', inv.id).order('created_at', { ascending: false }),
+    supabase.from('payments').select('*').eq('invoice_id', inv.id).order('created_at', { ascending: false }),
     supabase.from('outlet_autopay').select('card_company, card_number, last_error').eq('outlet_id', inv.outlet_id).eq('active', true).maybeSingle(),
   ])
+  // 자료를 지운(해지) 매체의 청구서: 매체 이름·청구 정보는 청구서에 남겨 둔 값으로 보여 준다
+  const billing = billingRow ?? ((inv as { bill_to_snapshot?: typeof billingRow }).bill_to_snapshot ?? null)
+  const outletName = (inv.outlet as { name?: string } | null)?.name ?? (inv as { outlet_name?: string | null }).outlet_name ?? null
   const items = (inv.items ?? []) as InvoiceItem[]
   const row = (k: string, v: string | null | undefined) => (
     <div className="flex gap-3"><dt className="w-32 shrink-0 text-muted">{k}</dt><dd>{v || '-'}</dd></div>
@@ -69,7 +72,7 @@ export default async function InvoicePage(
           <section>
             <h2 className="mb-2 text-[13px] font-bold">공급받는 자</h2>
             <dl className="space-y-1">
-              {row('매체', (inv.outlet as any)?.name)}
+              {row('매체', outletName)}
               {row('상호', billing?.company_name)}
               {row('사업자번호', billing?.biz_no)}
               {row('대표자', billing?.ceo_name)}
@@ -127,6 +130,7 @@ export default async function InvoicePage(
         autopay={autopay ?? null}
         payments={(payments ?? []) as PaymentRow[]}
         isStaff={isStaff}
+        isSuper={isSuper}
       />
     </div>
   )

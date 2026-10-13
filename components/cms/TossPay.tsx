@@ -67,14 +67,14 @@ export function PayButtons({ invoiceId, clientKey, testMode }: { invoiceId: stri
   )
 }
 
-export function AutopayRegister({ clientKey, label = '카드 등록', method = 'CARD' }: { clientKey: string; label?: string; method?: 'CARD' | 'TRANSFER' }) {
+export function AutopayRegister({ clientKey, label = '카드 등록', method = 'CARD', consent = false }: { clientKey: string; label?: string; method?: 'CARD' | 'TRANSFER'; consent?: boolean }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   async function register() {
     setBusy(true); setError('')
     try {
-      const [Toss, key] = await Promise.all([loadToss(), autopayCustomerKey()])
+      const [Toss, key] = await Promise.all([loadToss(), autopayCustomerKey(consent)])
       if (!key.ok) throw new Error(key.error)
       const payment = Toss(clientKey).payment({ customerKey: key.customerKey })
       await payment.requestBillingAuth({
@@ -92,7 +92,7 @@ export function AutopayRegister({ clientKey, label = '카드 등록', method = '
 
   return (
     <span className="inline-flex flex-col gap-1">
-      <button type="button" disabled={busy} onClick={register} className="btn-secondary bg-white">{busy ? '여는 중…' : label}</button>
+      <button type="button" disabled={busy || !consent} onClick={register} className="btn-secondary bg-white disabled:opacity-50">{busy ? '여는 중…' : label}</button>
       {error && <span role="alert" className="text-[12.5px] font-semibold text-danger">{error}</span>}
     </span>
   )

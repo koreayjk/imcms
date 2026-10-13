@@ -8,13 +8,14 @@ import RefundButton from './RefundButton'
 export type PaymentRow = {
   id: string; status: string; kind: string; amount: number; method: string | null; approved_at: string | null
   receipt_url: string | null; fail_message: string | null; test_mode: boolean; created_at: string
+  refunded_amount?: number | null
 }
 
 // 청구서 아래: 온라인 결제 버튼과 결제 기록 (인쇄할 때는 숨김)
-export default function InvoicePayments({ invoiceId, unpaid, provider, clientKey, testMode, autopay, payments, isStaff }: {
+export default function InvoicePayments({ invoiceId, unpaid, provider, clientKey, testMode, autopay, payments, isSuper = false }: {
   invoiceId: string; unpaid: boolean; provider: 'stripe' | 'toss' | null; clientKey: string; testMode: boolean
   autopay: { card_company: string | null; card_number: string | null; last_error: string | null } | null
-  payments: PaymentRow[] | null; isStaff: boolean
+  payments: PaymentRow[] | null; isStaff: boolean; isSuper?: boolean
 }) {
   const shown = (payments ?? []).filter((p) => p.status !== 'ready' || Date.now() - Date.parse(p.created_at) < 30 * 60_000)
   return (
@@ -50,12 +51,13 @@ export default function InvoicePayments({ invoiceId, unpaid, provider, clientKey
                 <span className={`rounded px-2 py-0.5 text-[12px] font-semibold ${st.cls}`}>{st.label}</span>
                 {p.test_mode && <span className="rounded bg-draft/15 px-1.5 py-0.5 text-[11px] font-bold text-draft">시험</span>}
                 <span className="tabular-nums">{won(p.amount)}</span>
+                {!!p.refunded_amount && <span className="rounded bg-line px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums text-muted">{p.refunded_amount >= p.amount ? '전액' : `${won(p.refunded_amount)}`} 환불</span>}
                 <span className="text-muted">{KIND_LABEL[p.kind] ?? p.kind}{p.method ? ` · ${p.method}` : ''}</span>
                 <span className="tabular-nums text-muted">{formatDateTime(p.approved_at ?? p.created_at)}</span>
                 {p.fail_message && <span className="text-danger">{p.fail_message}</span>}
                 <span className="ml-auto flex items-center gap-2">
                   {p.receipt_url && <a href={p.receipt_url} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">영수증</a>}
-                  {isStaff && p.status === 'done' && <RefundButton paymentId={p.id} amountLabel={won(p.amount)} />}
+                  {isSuper && p.status === 'done' && <RefundButton paymentId={p.id} remaining={p.amount - (p.refunded_amount ?? 0)} />}
                 </span>
               </li>
             )

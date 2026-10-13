@@ -6,6 +6,7 @@ import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/service-terms'
 import { ISSUER, PRODUCT } from '@/lib/product'
 import { noticeMail, sendMails } from '@/lib/mail'
 import { quoteUrl } from '@/lib/quote'
+import { paymentDbSecret } from '@/lib/toss'
 
 export type ApplyState = { ok?: boolean; error?: string }
 
@@ -53,24 +54,36 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
     current_cms: currentCms || null,
     agreed_at: now,
   }
-  let { error } = await supabase.from('beta_requests').insert({
-    ...base,
-    message: message || null,
-    plan: plan.id,
-    billing,
-    domain: domain || null,
-    terms_agreed_at: now,
-    terms_version: TERMS_VERSION,
-    privacy_version: PRIVACY_VERSION,
-    quoted_total: pay?.total ?? null,
-    beta_discount: isBeta(),
-  })
-  // legal-billing-safety.sql 전: 개인정보 동의 버전 칸 없이 다시 저장
-  if (error && /privacy_version/.test(error.message)) {
-    ({ error } = await supabase.from('beta_requests').insert({
+  // 서버만 아는 열쇠로 저장 함수를 부른다 (billing-safety-2.sql: 공개 키로는 신청서 표에 바로 넣을 수 없다)
+  let error: { message: string } | null = null
+  const viaServer = process.env.PAYMENT_DB_SECRET
+    ? await supabase.rpc('apply_submit', {
+        secret: paymentDbSecret(),
+        p: {
+          company, contact_name: contactName, phone, email, outlet_count: base.outlet_count ?? '', current_cms: currentCms,
+          message, plan: plan.id, billing, domain, terms_version: TERMS_VERSION, privacy_version: PRIVACY_VERSION,
+          quoted_total: pay?.total ?? null, beta_discount: isBeta(),
+        },
+      })
+    : null
+  if (!viaServer || (viaServer.error && /apply_submit|function/i.test(viaServer.error.message))) {
+    // billing-safety-2.sql 전: 예전처럼 바로 저장
+    ;({ error } = await supabase.from('beta_requests').insert({
       ...base, message: message || null, plan: plan.id, billing, domain: domain || null,
-      terms_agreed_at: now, terms_version: TERMS_VERSION, quoted_total: pay?.total ?? null, beta_discount: isBeta(),
+      terms_agreed_at: now, terms_version: TERMS_VERSION, privacy_version: PRIVACY_VERSION, quoted_total: pay?.total ?? null, beta_discount: isBeta(),
     }))
+    // legal-billing-safety.sql 전: 개인정보 동의 버전 칸 없이 다시 저장
+    if (error && /privacy_version/.test(error.message)) {
+      ({ error } = await supabase.from('beta_requests').insert({
+        ...base, message: message || null, plan: plan.id, billing, domain: domain || null,
+        terms_agreed_at: now, terms_version: TERMS_VERSION, quoted_total: pay?.total ?? null, beta_discount: isBeta(),
+      }))
+    }
+  } else if (viaServer.error) {
+    return { error: '신청을 저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }
+  } else if (viaServer.data == null) {
+    // 같은 이메일로 짧은 시간에 여러 번: 이미 받은 신청이 있으니 메일은 다시 보내지 않는다
+    return { ok: true }
   }
   if (error) {
     // service-apply.sql 실행 전: 새 칸 없이 저장하고 요금제·도메인·약관 동의는 요청사항 앞에 적어 둔다

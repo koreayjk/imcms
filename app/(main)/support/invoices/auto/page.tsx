@@ -47,7 +47,10 @@ export default async function AutoBillingPage(props: Props) {
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-6 md:px-8 md:py-10">
       <div className="border-b-2 border-ink pb-4">
-        <Link href="/support/invoices" className="text-[13px] text-muted hover:text-ink">‹ 청구서</Link>
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/support/invoices" className="text-[13px] text-muted hover:text-ink">‹ 청구서</Link>
+          {isSuper && <Link href="/support/invoices/terminations" className="text-[13px] font-semibold text-danger hover:underline">해지 관리 ›</Link>}
+        </div>
         <h1 className="mt-1 text-[22px] font-extrabold tracking-tight">자동 청구</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
           자동 청구를 켠 매체는 <strong className="text-ink">매월 1일</strong>에 청구서가 만들어지고 안내 메일이 나갑니다. 납부 기한은 <strong className="text-ink">5일</strong>이고,

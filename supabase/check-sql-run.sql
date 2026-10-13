@@ -73,4 +73,12 @@ select '15. legal-billing-safety.sql (동의 기록·청구서 번호·결제 �
         and exists (select 1 from pg_trigger where tgname = 'invoice_guard' and not tgisinternal)
         and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'payments' and column_name = 'needs_review')
        then '실행됨' else '아직 안 됨' end
+union all
+select '16. billing-safety-2.sql (신청서 서버 저장·부분 환불·정기결제 동의·해지·청구 기록 보관)',
+  case when to_regprocedure('public.apply_submit(text,jsonb)') is not null
+        and to_regprocedure('public.payment_refund_record(text,uuid,bigint,text,uuid,text)') is not null
+        and to_regprocedure('public.admin_purge_outlet(uuid,integer)') is not null
+        and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'beta_requests' and policyname = 'beta_requests_insert')
+        and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'invoices' and column_name = 'outlet_name')
+       then '실행됨' else '아직 안 됨' end
 ) x order by split_part(x."파일", '.', 1)::int;
