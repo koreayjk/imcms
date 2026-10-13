@@ -48,7 +48,7 @@ export const SETUP_ITEMS: [string, string][] = [
   ['사용법 안내', '기사 쓰기·승인·홈 편집·보도자료·AI 초안 사용법 1:1 안내'],
 ]
 // 매체 추가: 프리미엄 전용. 프리미엄은 추가 매체 1개 포함(매체 2개), 그다음부터 매체마다.
-//   추가 매체는 베이직 사양 (AI 월 300회·뉴스레터 회당 2,000명 등, extra-outlet-basic.sql)
+//   추가 매체는 베이직 사양 (AI 월 300회·뉴스레터 없음 등, extra-outlet-basic.sql)
 export const EXTRA_OUTLET_FEE = 90_000
 export const PREMIUM_INCLUDED_EXTRA = 1
 export const EXTRA_AI_FEE = 11_000 // 100회마다 (AI 초안·법적 검수 합계)
@@ -72,7 +72,7 @@ export const PLANS: Plan[] = [
     name: '베이직',
     for: '기자 몇 명이 매일 기사를 내는 소규모 인터넷신문',
     monthly: 110_000,
-    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 300회'], ['저장 용량', '30G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 3건'], ['뉴스레터', '회당 2,000명']],
+    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 300회'], ['저장 용량', '30G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 3건'], ['뉴스레터', '없음']],
     extras: [],
   },
   {
@@ -81,7 +81,7 @@ export const PLANS: Plan[] = [
     for: '섹션이 많고 기사량이 꾸준한 일반 언론사',
     monthly: 150_000,
     pick: true,
-    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 900회'], ['저장 용량', '60G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 5건'], ['뉴스레터', '회당 2,000명']],
+    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 900회'], ['저장 용량', '60G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 5건'], ['뉴스레터', '월 4회 · 회당 2,000명']],
     extras: ['홈페이지 맞춤 수정 지원'],
   },
   {
@@ -89,7 +89,7 @@ export const PLANS: Plan[] = [
     name: '프리미엄',
     for: '방문자가 많거나 매체를 여럿 운영하는 언론사',
     monthly: 230_000,
-    specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '회당 10,000명']],
+    specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '월 8회 · 회당 5,000명']],
     extras: ['홈페이지 맞춤 수정 지원', '그룹장 화면 · 여러 매체 동시 송고', '3번째 매체부터 매체마다 월 90,000원 (베이직 사양)', '우선 지원'],
   },
   {
@@ -104,11 +104,16 @@ export const PLANS: Plan[] = [
 
 export const planById = (id: string | null | undefined) => PLANS.find((p) => p.id === id) ?? null
 
-// 뉴스레터 한 번에 보낼 수 있는 인원 (요금제 없음 = 운영사 자체 매체는 넉넉히)
-export function newsletterLimit(plan: string | null | undefined) {
-  if (plan === 'premium' || plan === 'enterprise' || !plan) return 10_000
-  return 2_000
+// 뉴스레터: 베이직(추가 매체 포함)은 없음, 스탠다드 월 4회·회당 2,000명, 프리미엄 월 8회·회당 5,000명
+//   엔터프라이즈·요금제 없음(운영사 자체 매체)은 월 30회·회당 5,000명. 회당 5,000명은 한 번에 끊김 없이 보낼 수 있는 양이다
+export type NewsletterQuota = { perSend: number; perMonth: number }
+export function newsletterQuota(plan: string | null | undefined): NewsletterQuota | null {
+  if (plan === 'basic') return null
+  if (plan === 'standard') return { perSend: 2_000, perMonth: 4 }
+  if (plan === 'premium') return { perSend: 5_000, perMonth: 8 }
+  return { perSend: 5_000, perMonth: 30 }
 }
+export const newsletterLabel = (q: NewsletterQuota | null) => (q ? `월 ${q.perMonth}회 · 회당 ${q.perSend.toLocaleString('ko-KR')}명` : '없음')
 export const BILLING_LABEL: Record<Billing, string> = { monthly: '월 결제', annual: '1년 결제' }
 
 export const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`

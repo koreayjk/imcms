@@ -31,7 +31,7 @@ export async function saveOutletPlan(form: FormData) {
     updated_at: new Date().toISOString(),
   })
   if (error) back(/outlet_plans/.test(error.message) ? 'Supabase에서 billing-auto.sql을 먼저 실행해 주세요.' : `저장하지 못했습니다: ${error.message}`, 'error')
-  // 추가 매체는 베이직 사양 (AI 월 300회·뉴스레터 회당 2,000명 등) — 요금제를 베이직으로 맞춘다
+  // 추가 매체는 베이직 사양 (AI 월 300회·뉴스레터 없음 등) — 요금제를 베이직으로 맞춘다
   let note = ''
   if (bill_to) {
     const { data: cur } = await supabase.from('outlets').select('plan').eq('id', outlet_id).maybeSingle()

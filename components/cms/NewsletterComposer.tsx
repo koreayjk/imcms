@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addSubscribers, previewNewsletter, removeSubscriber, sendNewsletter, sendTestNewsletter, type NlState } from '@/app/(main)/admin/newsletter/actions'
 import { formatDate, formatDateTime } from '@/lib/format'
+import { newsletterLabel, type NewsletterQuota } from '@/lib/pricing'
 
 type Art = { id: string; title: string; published_at: string | null; category: string | null }
 type Sub = { id: string; email: string; status: string; source: string; created_at: string }
@@ -11,10 +12,12 @@ type Camp = { id: string; subject: string; recipient_count: number; failed_count
 
 const SUB_STATUS: Record<string, string> = { subscribed: '구독 중', pending: '확인 대기', unsubscribed: '수신거부' }
 
-export default function NewsletterComposer({ outletName, articles, counts, subscribers, campaigns, limit, mailOn }: {
+export default function NewsletterComposer({ outletName, articles, counts, subscribers, campaigns, quota, usedThisMonth, mailOn }: {
   outletName: string; articles: Art[]; counts: { subscribed: number; pending: number; unsubscribed: number }
-  subscribers: Sub[]; campaigns: Camp[]; limit: number; mailOn: boolean
+  subscribers: Sub[]; campaigns: Camp[]; quota: NewsletterQuota | null; usedThisMonth: number; mailOn: boolean
 }) {
+  const left = quota ? Math.max(0, quota.perMonth - usedThisMonth) : 0
+  const overPerSend = !!quota && counts.subscribed > quota.perSend
   const router = useRouter()
   const today = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric' }).format(new Date())
   const [subject, setSubject] = useState(`${outletName} ${today} 주요 뉴스`)
@@ -41,6 +44,12 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
         ))}
       </dl>
 
+      {!quota && (
+        <p className="rounded-lg border border-line bg-white px-5 py-4 text-[13.5px] leading-relaxed">
+          <b>뉴스레터는 스탠다드 요금제부터 쓸 수 있습니다.</b> 스탠다드는 {newsletterLabel({ perSend: 2000, perMonth: 4 })}, 프리미엄은 {newsletterLabel({ perSend: 5000, perMonth: 8 })}까지 보낼 수 있습니다.
+          요금제를 바꾸려면 고객센터 업무요청으로 알려 주세요. 지금 있는 구독자 명단은 그대로 남아 있습니다.
+        </p>
+      )}
       {!mailOn && <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-3 text-[13.5px]">메일 발송이 아직 설정되지 않았습니다. 설정되면 홈페이지 아래에 구독 신청 칸이 생기고, 여기서 보낼 수 있습니다.</p>}
 
       {/* ─── 쓰기 ─── */}
@@ -75,13 +84,16 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
           <button type="button" disabled={pending || !mailOn} onClick={() => run(() => sendTestNewsletter(draft()))} className="btn-secondary">나에게 시험 발송</button>
           <button
             type="button"
-            disabled={pending || !mailOn || !counts.subscribed}
+            disabled={pending || !mailOn || !counts.subscribed || !quota || left <= 0 || overPerSend}
             onClick={() => { if (window.confirm(`구독자 ${counts.subscribed.toLocaleString()}명에게 “${subject}”를 보낼까요? 보낸 뒤에는 되돌릴 수 없습니다.`)) run(() => sendNewsletter(draft()), true) }}
             className="btn-publish px-5"
           >
             {pending ? '처리 중…' : `구독자 ${counts.subscribed.toLocaleString()}명에게 보내기`}
           </button>
-          <span className="text-[12px] text-muted">한 번에 {limit.toLocaleString()}명까지</span>
+          <span className="text-[12px] text-muted">
+            {quota ? <>요금제 한도 {newsletterLabel(quota)} · 이번 달 <b className={left ? 'text-ink' : 'text-danger'}>{left}회 남음</b></> : '스탠다드 요금제부터 보낼 수 있습니다'}
+          </span>
+          {overPerSend && <span className="w-full text-[12.5px] font-semibold text-danger">구독자({counts.subscribed.toLocaleString()}명)가 회당 한도({quota!.perSend.toLocaleString()}명)보다 많습니다. 요금제 변경을 문의해 주세요.</span>}
         </div>
         {(msg.error || msg.ok) && <p role={msg.error ? 'alert' : 'status'} className={`text-[13.5px] font-semibold ${msg.error ? 'text-danger' : 'text-published'}`}>{msg.error ?? msg.ok}</p>}
         {preview && (

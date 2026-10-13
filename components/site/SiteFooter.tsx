@@ -3,6 +3,7 @@ import { topSections, type SiteConfig } from '@/lib/sites'
 import Logo from './Logo'
 import { POLICIES } from '@/lib/policies'
 import NewsletterBox from './NewsletterBox'
+import { newsletterQuota } from '@/lib/pricing'
 import { mailReady } from '@/lib/mail'
 
 export default function SiteFooter({ site }: { site: SiteConfig }) {
@@ -29,7 +30,7 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
         </nav>
       </div>
 
-      {site.outletId && mailReady() && (
+      {site.outletId && mailReady() && newsletterQuota(site.plan) && (
         <div className="border-b border-rule bg-white">
           <div className="mx-auto max-w-[1200px] px-4 py-6"><NewsletterBox siteName={site.name} /></div>
         </div>

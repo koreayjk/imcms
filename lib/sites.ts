@@ -71,6 +71,8 @@ export type SiteConfig = {
   ogImage?: string
   // IM 뉴스룸 체험용 신문 (trial.sql) — 홈페이지 맨 위에 체험판 안내 띠
   trial?: boolean
+  // 요금제 (DB 매체만). 베이직은 뉴스레터 구독 칸을 보이지 않는다
+  plan?: string | null
 }
 
 // public/sites/<폴더>/og.png 가 있는 매체: 로고가 이 폴더에 있으면 대표 이미지도 자동으로 쓴다
@@ -243,6 +245,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
   return {
     key: o.id,
     outletId: o.id,
+    plan: (o as { plan?: string | null }).plan ?? null,
     preview,
     domains: o.domain ? [o.domain, `www.${o.domain}`] : [],
     indexable: s.indexable ?? code?.indexable ?? false,

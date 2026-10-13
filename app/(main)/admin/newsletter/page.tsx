@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { mailReady } from '@/lib/mail'
-import { newsletterLimit } from '@/lib/pricing'
+import { newsletterQuota } from '@/lib/pricing'
 import NewsletterComposer from '@/components/cms/NewsletterComposer'
 
-// 발송에 시간이 걸릴 수 있다 (구독자가 많으면 500명씩 나눠 보낸다)
+// 발송에 시간이 걸릴 수 있다 (구독자가 많으면 100명씩 나눠 보낸다. 회당 최대 5,000명)
 export const maxDuration = 60
 
 export default async function NewsletterPage() {
@@ -19,8 +19,10 @@ export default async function NewsletterPage() {
     supabase.from('articles').select('id, title, published_at, category:categories(name)').eq('outlet_id', outletId).eq('status', 'published').lte('published_at', new Date().toISOString()).order('published_at', { ascending: false }).limit(40),
     count('subscribed'), count('pending'), count('unsubscribed'),
     supabase.from('newsletter_subscribers').select('id, email, status, source, created_at').eq('outlet_id', outletId).order('created_at', { ascending: false }).limit(100),
-    supabase.from('newsletter_campaigns').select('id, subject, recipient_count, failed_count, sent_at').eq('outlet_id', outletId).order('sent_at', { ascending: false }).limit(20),
+    supabase.from('newsletter_campaigns').select('id, subject, recipient_count, failed_count, sent_at, status').eq('outlet_id', outletId).order('sent_at', { ascending: false }).limit(20),
   ])
+  const monthStart = Date.parse(`${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 7)}-01T00:00:00+09:00`)
+  const usedThisMonth = ((camps ?? []) as { status?: string; sent_at: string }[]).filter((c) => c.status !== 'failed' && Date.parse(c.sent_at) >= monthStart).length
 
   return (
     <div className="mx-auto max-w-[960px] px-4 py-5 md:px-8 md:py-8">
@@ -39,7 +41,8 @@ export default async function NewsletterPage() {
           counts={{ subscribed: sub.count ?? 0, pending: pend.count ?? 0, unsubscribed: uns.count ?? 0 }}
           subscribers={(subs ?? []) as any}
           campaigns={(camps ?? []) as any}
-          limit={newsletterLimit((outlet as { plan?: string | null } | null)?.plan)}
+          quota={newsletterQuota((outlet as { plan?: string | null } | null)?.plan)}
+          usedThisMonth={usedThisMonth}
           mailOn={mailReady()}
         />
       )}

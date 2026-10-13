@@ -5,7 +5,7 @@ import { getCmsContext } from '@/lib/cms'
 import { buildSite } from '@/lib/sites'
 import { mailReady, sendMails, type Mail } from '@/lib/mail'
 import { legalLine, newsletterMail, type NewsletterArticle } from '@/lib/newsletter'
-import { newsletterLimit } from '@/lib/pricing'
+import { newsletterLabel, newsletterQuota } from '@/lib/pricing'
 import { siteOrigin } from '@/lib/origin'
 
 export type NlState = { error?: string; ok?: string }
@@ -82,7 +82,13 @@ export async function sendNewsletter(d: Draft): Promise<NlState> {
     const c = await outletContext()
     if (!mailReady()) return { error: '메일 발송이 아직 설정되지 않았습니다. 운영팀에 문의해 주세요.' }
     const r = await render(c, d)
-    const limit = newsletterLimit((c.outlet as { plan?: string | null }).plan)
+    const quota = newsletterQuota((c.outlet as { plan?: string | null }).plan)
+    if (!quota) return { error: '뉴스레터는 스탠다드 요금제부터 쓸 수 있습니다. 요금제 변경은 고객센터 업무요청으로 문의해 주세요.' }
+    const limit = quota.perSend
+    // 이번 달(한국 시각) 보낸 횟수
+    const monthStart = `${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 7)}-01T00:00:00+09:00`
+    const { count: used } = await c.supabase.from('newsletter_campaigns').select('id', { count: 'exact', head: true }).eq('outlet_id', c.outletId!).eq('status', 'sent').gte('sent_at', monthStart)
+    if ((used ?? 0) >= quota.perMonth) return { error: `이번 달 발송 횟수(${newsletterLabel(quota)})를 다 썼습니다. 다음 달 1일부터 다시 보낼 수 있습니다.` }
     const { data: subs, error } = await c.supabase.from('newsletter_subscribers').select('email, token').eq('outlet_id', c.outletId!).eq('status', 'subscribed').limit(limit + 1)
     if (error) return { error: '구독자 목록을 읽지 못했습니다. 운영팀에 mail.sql 실행을 요청해 주세요.' }
     if (!subs?.length) return { error: '구독 중인 독자가 없습니다.' }

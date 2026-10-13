@@ -5,6 +5,7 @@ import { currentSite } from '@/lib/public-data'
 import { mailReady, noticeMail, sendMails } from '@/lib/mail'
 import { siteOrigin } from '@/lib/origin'
 import { paymentDbSecret } from '@/lib/toss'
+import { newsletterQuota } from '@/lib/pricing'
 
 export type SubscribeState = { ok?: boolean; error?: string }
 
@@ -18,7 +19,7 @@ export async function subscribeNewsletter(_prev: SubscribeState, form: FormData)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: '이메일 주소를 확인해 주세요.' }
   if (form.get('agree') !== 'on') return { error: '개인정보 수집·이용에 동의해야 구독할 수 있습니다.' }
   const site = await currentSite()
-  if (!site.outletId || !mailReady() || !process.env.PAYMENT_DB_SECRET) return { error: '뉴스레터는 준비 중입니다.' }
+  if (!site.outletId || !mailReady() || !process.env.PAYMENT_DB_SECRET || !newsletterQuota(site.plan)) return { error: '뉴스레터는 준비 중입니다.' }
 
   const { data: token, error } = await anon().rpc('newsletter_subscribe', { secret: paymentDbSecret(), o: site.outletId, p_email: email, p_name: name })
   if (error) return { error: '신청을 받지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }
