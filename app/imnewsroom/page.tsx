@@ -510,11 +510,11 @@ export default function ProductHome() {
                 홈페이지 아래 <strong>구독 칸</strong>으로 독자를 모으고, 편집국에서 기사만 고르면 <strong>매체 로고·색 그대로</strong> 뉴스레터가 나갑니다. 따로 메일 프로그램을 쓰거나 제작을 맡길 필요가 없습니다.
               </p>
               <ul className="mt-7 space-y-3">
-                <Check>매체 홈페이지에 구독 신청 칸 기본 제공</Check>
+                <Check>매체 홈페이지에 구독 신청 칸 기본 제공 — 독자가 신청하면 구독자 명단에 자동으로 쌓임</Check>
                 <Check>확인 메일을 눌러야 구독되는 이중 확인, 메일마다 수신거부 링크 자동 — 정보통신망법 수신 동의 절차를 대비</Check>
                 <Check>발행한 기사를 골라 몇 번 누르면 끝 — 미리보기·나에게 시험 발송·보낸 기록</Check>
                 <Check>매체 로고와 대표 색으로 만들어져 독자가 한눈에 알아봄</Check>
-                <Check>동의를 받은 기존 독자 명단은 직접 추가</Check>
+                <Check>쓰던 프로그램의 구독자 명단(수신 동의 받은 분)도 한 번에 옮겨 오기</Check>
               </ul>
               <p className="mt-5 text-[13px] leading-relaxed text-[#5B616B]">스탠다드 월 4회 · 회당 2,000명, 프리미엄 월 8회 · 회당 5,000명까지 추가 비용 없이 보낼 수 있습니다 (베이직은 제공하지 않습니다).</p>
             </Reveal>
