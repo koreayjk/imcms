@@ -173,6 +173,15 @@ const FAQ = [
 ]
 
 // 요금 질문은 베타 기간(10월 31일까지 신청)인지에 따라 답이 바뀐다
+const PRODUCT_JSONLD = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'WebSite', '@id': `${PRODUCT.url}/#website`, url: `${PRODUCT.url}/`, name: PRODUCT.name, alternateName: ['IM Newsroom', 'IM뉴스룸', '아이엠 뉴스룸'], inLanguage: 'ko-KR', publisher: { '@id': `${PRODUCT.url}/#organization` } },
+    { '@type': 'Organization', '@id': `${PRODUCT.url}/#organization`, name: PRODUCT.name, alternateName: 'IM Newsroom', url: `${PRODUCT.url}/`, logo: `${PRODUCT.url}/brand/icon-512.png`, ...(ISSUER.contact ? { email: ISSUER.contact } : {}) },
+    { '@type': 'SoftwareApplication', name: PRODUCT.name, applicationCategory: 'BusinessApplication', operatingSystem: 'Web, Android', url: `${PRODUCT.url}/`, description: '인터넷신문을 위한 AI 편집국 클라우드. 보도자료 자동 수집, AI 기사 초안, 기자·편집장 승인, 여러 매체 동시 송고.', offers: { '@type': 'Offer', price: '110000', priceCurrency: 'KRW' } },
+  ],
+}).replace(/</g, '\\u003c')
+
 function pricingFaq(beta: boolean) {
   return [
     { q: '무료 체험은 어떻게 하나요?', a: '“1주일 무료 체험”에서 이름·연락처·소속 언론사만 적으면 바로 시작합니다. 카드 등록이나 결제는 없습니다. 샘플 기사가 채워진 체험용 신문에서 기자·편집장·그룹장 역할을 바꿔 가며 모든 기능을 써 볼 수 있고, 7일이 지나면 자동으로 끝납니다.' },
@@ -252,6 +261,8 @@ export default function ProductHome() {
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&display=swap" />
 
+      {/* 검색엔진용 사이트 이름·로고 (구글이 검색 결과에 “IM 뉴스룸” 이름과 로고를 이 값으로 띄운다) */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: PRODUCT_JSONLD }} />
       <header className="fixed inset-x-0 top-0 z-40 border-b border-[#DADFE8] bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-4 sm:px-6">
           <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo /></a>
