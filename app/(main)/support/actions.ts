@@ -233,7 +233,16 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
     .map((name, i) => ({ name: name.trim().slice(0, 100), qty: qtys[i] || 0, unit_price: prices[i] || 0 }))
     .filter((i) => i.name && i.qty)
   if (!items.length) return { error: '청구 항목을 한 줄 이상 적어주세요.' }
+  if (items.some((i) => i.qty < 0 || i.unit_price < 0)) return { error: '수량·단가는 0 이상으로 적어 주세요. 할인은 항목 금액에서 빼서 적습니다.' }
   const t = invoiceTotals(items)
+
+  // 이미 낸 청구서(또는 결제가 끝난 청구서)는 금액을 고치지 않는다 (DB도 막는다: legal-billing-safety.sql)
+  const { data: cur } = await supabase.from('invoices').select('id, status').eq('outlet_id', outlet_id).eq('month', `${month}-01`).maybeSingle()
+  if (cur?.status === 'paid') return { error: '이미 납부된 청구서라 고칠 수 없습니다. 환불한 뒤 새로 발행해 주세요.' }
+  if (cur) {
+    const { data: done } = await supabase.from('payments').select('id').eq('invoice_id', cur.id).eq('status', 'done').eq('test_mode', false).limit(1)
+    if (done?.length) return { error: '결제가 끝난 청구서라 고칠 수 없습니다. 환불한 뒤 새로 발행해 주세요.' }
+  }
 
   const { data, error } = await supabase
     .from('invoices')
@@ -242,7 +251,7 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
       due_date: text(form, 'due_date', 10) || null, memo: text(form, 'memo', 1000) || null,
     }, { onConflict: 'outlet_id,month' })
     .select('id').single()
-  if (error || !data) return { error: `저장하지 못했습니다: ${error?.message ?? ''}` }
+  if (error || !data) return { error: /납부된 청구서/.test(error?.message ?? '') ? '이미 납부된 청구서라 고칠 수 없습니다. 환불한 뒤 새로 발행해 주세요.' : `저장하지 못했습니다: ${error?.message ?? ''}` }
   await notifyInvoice(supabase, data.id)
   revalidatePath('/support', 'layout')
   redirect(`/support/invoices/${data.id}`)

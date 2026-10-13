@@ -127,7 +127,7 @@ export default function ApplyForm() {
           {pay ? (
             <>
               <p className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-[13px] font-semibold text-[#5B616B]">첫 결제 금액 (VAT 별도 없음)</span>
+                <span className="text-[13px] font-semibold text-[#5B616B]">첫 결제 금액 (최종 금액 · 부가세 없음)</span>
                 <span className="text-[24px] font-extrabold tabular-nums tracking-[-0.02em] text-[#16294D]">{won(pay.total)}</span>
               </p>
               <ul className="mt-1.5 space-y-0.5 text-[12.5px] tabular-nums text-[#5B616B]">
@@ -140,6 +140,7 @@ export default function ApplyForm() {
                   ? <li>{BETA_PERIOD_LABEL} 매달 {won(pay.price)}, {REGULAR_AFTER_LABEL} 정상가 매달 {won(pay.regular)}</li>
                   : <li>다음 달부터 매달 {won(pay.price)}</li>)}
               </ul>
+              <a href={`/imnewsroom/quote?plan=${chosen.id}&billing=${billing}`} target="_blank" rel="noopener" className="mt-2 inline-block text-[12.5px] font-semibold text-[#1D3461] underline underline-offset-2">이 조건으로 견적서 보기 (PDF 저장)</a>
             </>
           ) : (
             <p className="text-[13.5px] text-[#3B4048]">엔터프라이즈는 방문자 수와 필요한 기능을 여쭤본 뒤 견적을 드립니다.</p>

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/service-terms'
 
 // 구글 로그인·가입 확인 메일 링크가 돌아오는 곳: 받은 코드를 로그인 세션으로 바꾼다
 export async function GET(request: NextRequest) {
@@ -25,5 +26,9 @@ export async function GET(request: NextRequest) {
   // 구글 가입: 가입 화면에서 고른 소속 매체를 신청 매체로 기억 (이미 승인된 회원에게는 아무 일도 하지 않는다)
   const outlet = searchParams.get('outlet')
   if (outlet && /^[0-9a-f-]{36}$/.test(outlet)) await supabase.rpc('set_requested_outlet', { o: outlet })
+  // 구글 가입: 가입 화면에서 받은 약관·개인정보 동의를 서버 시각으로 기록 (legal-billing-safety.sql 전이면 조용히 넘어간다)
+  if (searchParams.get('consent') === 'google') {
+    await supabase.rpc('record_consent', { p_terms: TERMS_VERSION, p_privacy: PRIVACY_VERSION, p_source: 'google' }).then(() => null, () => null)
+  }
   return NextResponse.redirect(new URL(safeNext, origin))
 }

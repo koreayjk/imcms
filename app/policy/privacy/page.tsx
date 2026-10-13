@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `개인정보처리방침 | ${site.name}`, icons: { icon: siteIcon(site) } }
 }
 
-const EFFECTIVE = '2026년 10월 2일'
+const EFFECTIVE = '2026년 10월 13일'
 
 // 인터넷신문 표준 형태의 개인정보처리방침. 정식 오픈 전 매체 상황에 맞게 법무 검토를 권장한다
 export default async function PrivacyPage() {
@@ -42,12 +42,13 @@ export default async function PrivacyPage() {
         <h2>3. 처리 위탁과 국외 이전</h2>
         <p>신문사는 홈페이지·편집국 운영을 위해 다음과 같이 업무를 맡기고 있으며, 일부는 국외 서버에 저장됩니다.</p>
         <table>
-          <thead><tr><th>받는 자</th><th>맡기는 업무</th><th>이전 국가</th></tr></thead>
+          <thead><tr><th>받는 자</th><th>맡기는 업무</th><th>이전 국가</th><th>연락처</th></tr></thead>
           <tbody>
-            <tr><td>Supabase Inc.</td><td>데이터베이스·사진 저장</td><td>일본 (도쿄 데이터센터)</td></tr>
-            <tr><td>Vercel Inc.</td><td>홈페이지 호스팅·접속 기록</td><td>미국·일본 등</td></tr>
-            <tr><td>Google LLC</td><td>편집국 회원 구글 계정 로그인</td><td>미국</td></tr>
-            <tr><td>Resend, Inc.</td><td>보도자료 메일 수신, 뉴스레터·알림 메일 발송</td><td>미국</td></tr>
+            <tr><td>IM America Group Corp (IM 뉴스룸)</td><td>홈페이지·편집국 시스템 운영과 관리 (아래 업체에 다시 맡김)</td><td>미국 법인 (자료 저장은 아래와 같음)</td><td>contact@imnewsroom.com</td></tr>
+            <tr><td>Supabase Inc.</td><td>데이터베이스·사진 저장</td><td>일본 (도쿄 데이터센터)</td><td>supabase.com/privacy</td></tr>
+            <tr><td>Vercel Inc.</td><td>홈페이지 호스팅·접속 기록</td><td>미국·일본 등</td><td>vercel.com/legal/privacy-policy</td></tr>
+            <tr><td>Google LLC</td><td>편집국 회원 구글 계정 로그인</td><td>미국</td><td>policies.google.com/privacy</td></tr>
+            <tr><td>Resend, Inc.</td><td>보도자료 메일 수신, 뉴스레터·알림 메일 발송</td><td>미국</td><td>resend.com/legal/privacy-policy</td></tr>
           </tbody>
         </table>
         <p>이전 시기는 서비스 이용 시점이며, 이전 방법은 암호화된 네트워크 전송입니다. 보유 기간은 위 1항과 같습니다. 국외 이전을 원하지 않으면 기사제보는 전화로 해 주시기 바랍니다.</p>

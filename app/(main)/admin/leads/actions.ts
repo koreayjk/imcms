@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { LAUNCH_KEYS, type LaunchDone } from '@/lib/launch-checklist'
+import { sendInviteMail } from '@/lib/invite-mail'
 
 const STATUSES = ['new', 'contacted', 'done']
 export type LeadState = { error?: string; ok?: string }
@@ -52,6 +53,9 @@ export async function openCustomer(leadId: string, _prev: LeadState, form: FormD
   const fullName = get('full_name', 30)
   if (!groupName || !outletName) return { error: '그룹 이름과 매체 이름을 적어주세요.' }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: '발행인 이메일을 확인해 주세요.' }
+  // 두 번 누름 방지: 이미 고객사를 만든 신청서면 멈춘다
+  const { data: already } = await supabase.from('beta_requests').select('publisher_id').eq('id', leadId).maybeSingle()
+  if (already?.publisher_id) return { error: '이미 고객사를 만든 신청서입니다. 그룹·매체 관리에서 확인해 주세요.' }
 
   const { data: group, error: gErr } = await supabase.from('publishers').insert({ name: groupName }).select('id').single()
   if (gErr || !group) return { error: `그룹을 만들지 못했습니다: ${gErr?.message ?? ''}` }
@@ -61,14 +65,22 @@ export async function openCustomer(leadId: string, _prev: LeadState, form: FormD
   if (oErr || !outlet) return { error: `매체를 만들지 못했습니다: ${oErr?.message ?? ''} (그룹은 만들어졌으니 그룹·매체 관리에서 이어서 하세요)` }
   await supabase.from('categories').insert(DEFAULT_SECTIONS.map((c, i) => ({ ...c, outlet_id: outlet.id, sort_order: i + 1 })))
   // 신청서에서 고른 요금제를 새 매체에 넣는다 (ai-usage.sql·service-apply.sql 실행 전이면 조용히 넘어간다)
-  const { data: lead } = await supabase.from('beta_requests').select('plan').eq('id', leadId).maybeSingle()
+  const { data: lead } = await supabase.from('beta_requests').select('plan, billing, beta_discount').eq('id', leadId).maybeSingle()
   if (lead?.plan && lead.plan !== 'enterprise') await supabase.from('outlets').update({ plan: lead.plan }).eq('id', outlet.id)
+  // 청구 설정: 신청서의 결제 방식·베타 반값·세팅비를 그대로 넘긴다 (billing-auto.sql 전이면 조용히 넘어간다)
+  //   자동 청구는 꺼 둔다 → 개통 일정이 정해지면 매체 청구 설정에서 첫 청구 월을 넣고 켠다 (모르는 사이 청구서가 나가지 않게)
+  const { error: pErr } = await supabase.from('outlet_plans').upsert({
+    outlet_id: outlet.id, auto: false, cycle: lead?.billing === 'monthly' ? 'monthly' : 'annual',
+    beta: !!lead?.beta_discount, setup_fee_pending: !lead?.beta_discount, updated_at: new Date().toISOString(),
+  })
   const { error: iErr } = await supabase.from('invitations').insert({ email, full_name: fullName || null, role: 'admin', publisher_id: group.id, outlet_id: outlet.id })
   await supabase.from('beta_requests').update({ status: 'done', publisher_id: group.id, updated_at: new Date().toISOString() }).eq('id', leadId)
 
   revalidatePath('/', 'layout')
   if (iErr) return { ok: `그룹·매체를 만들었습니다. 발행인 초대는 실패했습니다(${iErr.message}) — 회원 메뉴에서 다시 초대하세요.` }
-  return { ok: `‘${groupName}’ 그룹과 ‘${outletName}’ 매체를 만들고 ${email}을 발행인으로 초대했습니다. 이제 홈페이지 설정을 해 주세요.` }
+  const mailed = await sendInviteMail({ email, fullName, outletName, role: '발행인' })
+  const billingNote = pErr ? ' 청구 설정은 직접 넣어 주세요.' : ' 청구 설정(결제 방식·베타·세팅비)도 넣었습니다. 개통일이 정해지면 첫 청구 월을 넣고 자동 청구를 켜 주세요.'
+  return { ok: `‘${groupName}’ 그룹과 ‘${outletName}’ 매체를 만들고 ${email}을 발행인으로 초대했습니다${mailed ? '(초대 메일 보냄)' : ' (메일 설정 전이라 초대 메일은 못 보냈습니다. 가입 주소를 직접 알려 주세요)'}.${billingNote}` }
 }
 
 // 무료 체험 5일째 자동 안내 문구 (trial-checkin.sql)

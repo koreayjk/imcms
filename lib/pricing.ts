@@ -27,9 +27,10 @@ export function addMonth(month: string, n: number) {
 export const betaRateFor = (month: string, beta: boolean, start: string | null | undefined) =>
   (beta && start && month >= start && month < addMonth(start, BETA_MONTHS) ? BETA_RATE : 1)
 // 1년 결제: 12개월을 달마다(첫 3개월 반값, 그다음 정상가) 더한 뒤 1개월 무료(11/12). 10원 단위
-export function annualPrice(monthly: number, start: string, beta: boolean) {
+//   discountStart: 베타 반값을 셀 기준 월(첫 청구 월). 1년 갱신 청구서는 시작 월이 아니라 처음 청구한 월부터 센다
+export function annualPrice(monthly: number, start: string, beta: boolean, discountStart: string | null = start) {
   let sum = 0
-  for (let i = 0; i < 12; i++) sum += monthly * betaRateFor(addMonth(start, i), beta, start)
+  for (let i = 0; i < 12; i++) sum += monthly * betaRateFor(addMonth(start, i), beta, discountStart)
   return Math.round((sum * ANNUAL_MONTHS) / 12 / 10) * 10
 }
 // 1년 결제 혜택 표시 ("1개월 무료")

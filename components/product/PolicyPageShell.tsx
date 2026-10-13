@@ -4,7 +4,7 @@ import { TERMS_EFFECTIVE, type PolicySection } from '@/lib/service-terms'
 import PolicyDoc from './PolicyDoc'
 
 // IM 뉴스룸 소개 사이트의 약관·방침 전문 페이지 틀
-export default function PolicyPageShell({ title, sections, other }: { title: string; sections: PolicySection[]; other: { href: string; label: string } }) {
+export default function PolicyPageShell({ title, sections, other, effective = TERMS_EFFECTIVE, note, footer }: { title: string; sections: PolicySection[]; other: { href: string; label: string }; effective?: string; note?: React.ReactNode; footer?: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#F4F5F7] text-[#14171C]">
       <header className="border-b border-[#E4E6EA] bg-white">
@@ -15,10 +15,12 @@ export default function PolicyPageShell({ title, sections, other }: { title: str
       </header>
       <main className="mx-auto max-w-[860px] px-4 py-12 sm:px-6">
         <h1 className="text-[30px] font-extrabold tracking-[-0.03em]">{title}</h1>
-        <p className="mt-2 text-[14px] text-[#5B616B]">시행일 {TERMS_EFFECTIVE}</p>
+        <p className="mt-2 text-[14px] text-[#5B616B]">시행일 {effective}</p>
+        {note}
         <article className="mt-8 rounded-2xl bg-white p-6 ring-1 ring-black/5 sm:p-10">
           <PolicyDoc sections={sections} />
         </article>
+        {footer}
       </main>
     </div>
   )

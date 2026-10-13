@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import AuthShell, { OrDivider } from '@/components/auth/AuthShell'
 import GoogleButton from '@/components/auth/GoogleButton'
+import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/service-terms'
 
 export default function SignupForm({ outlets }: { outlets: { id: string; name: string }[] }) {
   const [name, setName] = useState('')
@@ -17,6 +18,8 @@ export default function SignupForm({ outlets }: { outlets: { id: string; name: s
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [sentTo, setSentTo] = useState('')
+  const [agree, setAgree] = useState({ terms: false, privacy: false })
+  const agreeError = () => (!agree.terms || !agree.privacy ? '이용약관과 개인정보 수집·이용에 동의해 주세요.' : '')
   const router = useRouter()
 
   async function handleSignup(e: React.FormEvent) {
@@ -25,13 +28,15 @@ export default function SignupForm({ outlets }: { outlets: { id: string; name: s
     if (password.length < 8) return setError('비밀번호는 8자 이상으로 정해주세요.')
     if (password !== confirm) return setError('비밀번호 확인이 일치하지 않습니다.')
     if (!outlet) return setError('소속 매체를 골라 주세요.')
+    if (agreeError()) return setError(agreeError())
 
     setLoading(true)
     const { data, error: authError } = await createClient().auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: name.trim(), ...(outlet !== 'unknown' ? { requested_outlet_id: outlet } : {}) },
+        // 동의 버전은 가입 순간 서버 시각으로 기록된다 (legal-billing-safety.sql)
+        data: { full_name: name.trim(), terms_version: TERMS_VERSION, privacy_version: PRIVACY_VERSION, consent_source: 'signup', ...(outlet !== 'unknown' ? { requested_outlet_id: outlet } : {}) },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/pending`,
       },
     })
@@ -84,7 +89,8 @@ export default function SignupForm({ outlets }: { outlets: { id: string; name: s
           <p className="mt-1 text-xs leading-relaxed text-muted">고른 매체의 발행인이 가입을 승인합니다. 구글 가입도 먼저 매체를 골라 주세요.</p>
         </div>
       )}
-      <GoogleButton label="구글 계정으로 가입" requestedOutlet={outlet} />
+      <SignupConsent agree={agree} setAgree={setAgree} />
+      <GoogleButton label="구글 계정으로 가입" requestedOutlet={outlet} consent before={() => { const m = agreeError(); setError(m); return !m }} />
       <OrDivider />
 
       <form onSubmit={handleSignup} className="space-y-4">
@@ -111,5 +117,26 @@ export default function SignupForm({ outlets }: { outlets: { id: string; name: s
         <p className="text-center text-xs leading-relaxed text-muted">가입 후 소속 매체의 발행인이 승인하면 기사를 쓸 수 있습니다.</p>
       </form>
     </AuthShell>
+  )
+}
+
+// 편집국 가입 동의 (이용약관 + 개인정보 수집·이용). 구글 가입·이메일 가입 모두 먼저 체크해야 한다
+function SignupConsent({ agree, setAgree }: { agree: { terms: boolean; privacy: boolean }; setAgree: React.Dispatch<React.SetStateAction<{ terms: boolean; privacy: boolean }>> }) {
+  const all = agree.terms && agree.privacy
+  return (
+    <div className="mb-4 space-y-2 rounded-lg bg-paper p-4 text-[13px]">
+      <label className="flex items-start gap-2 font-semibold">
+        <input type="checkbox" checked={all} onChange={(e) => setAgree({ terms: e.target.checked, privacy: e.target.checked })} className="mt-0.5" />
+        <span>아래 내용에 모두 동의합니다</span>
+      </label>
+      <label className="flex items-start gap-2 pl-5">
+        <input type="checkbox" checked={agree.terms} onChange={(e) => setAgree((a) => ({ ...a, terms: e.target.checked }))} className="mt-0.5" />
+        <span><b>[필수]</b> 서비스 이용약관 <a href="/imnewsroom/terms" target="_blank" rel="noopener" className="text-muted underline">전문 보기</a></span>
+      </label>
+      <label className="flex items-start gap-2 pl-5">
+        <input type="checkbox" checked={agree.privacy} onChange={(e) => setAgree((a) => ({ ...a, privacy: e.target.checked }))} className="mt-0.5" />
+        <span><b>[필수]</b> 개인정보 수집·이용 (이름·이메일·소속 매체, 로그인·권한 관리와 기자명 표시, 탈퇴하거나 계약이 끝날 때까지 보관) <a href="/imnewsroom/privacy" target="_blank" rel="noopener" className="text-muted underline">처리방침 보기</a></span>
+      </label>
+    </div>
   )
 }

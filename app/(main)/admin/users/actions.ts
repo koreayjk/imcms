@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
-import type { UserRole } from '@/lib/types'
+import { ROLE_LABEL, type UserRole } from '@/lib/types'
+import { PRODUCT } from '@/lib/product'
+import { sendInviteMail } from '@/lib/invite-mail'
 
 const ROLES: UserRole[] = ['reporter', 'editor', 'admin']
 export type FormState = { error?: string; ok?: string }
@@ -111,10 +113,11 @@ export async function inviteMember(_prev: FormState, form: FormData): Promise<Fo
     return { error: `초대하지 못했습니다: ${error.message}` }
   }
   revalidatePath('/admin/users')
+  if (data?.accepted_at) return { ok: `${email}은(는) 이미 가입한 계정이라 바로 적용했습니다.` }
+  const { data: o } = await supabase.from('outlets').select('name').eq('id', outlet_id).maybeSingle()
+  const mailed = await sendInviteMail({ email, fullName: full_name, outletName: o?.name ?? PRODUCT.name, role: ROLE_LABEL[role] })
   return {
-    ok: data?.accepted_at
-      ? `${email}은(는) 이미 가입한 계정이라 바로 적용했습니다.`
-      : `${email}을(를) 초대했습니다. 이 이메일(또는 같은 주소의 구글 계정)로 가입하면 바로 승인되어 들어옵니다.`,
+    ok: `${email}을(를) 초대했습니다${mailed ? '. 초대 메일을 보냈습니다' : ' (메일 설정 전이라 초대 메일은 못 보냈습니다. app.imnewsroom.com/signup 주소를 직접 알려 주세요)'}. 이 이메일(또는 같은 주소의 구글 계정)로 가입하면 바로 승인되어 들어옵니다.`,
   }
 }
 

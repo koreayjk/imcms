@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/service-terms'
 
 // 구글로 들어온 회원을 체험 계정으로 바꾼다 (trial-google.sql)
 export async function joinTrial(info: { name: string; company: string; position: string; phone: string; agreed_at: string }): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -14,5 +15,7 @@ export async function joinTrial(info: { name: string; company: string; position:
     if (/function .*trial_join|could not find/i.test(error.message)) return { ok: false, error: '구글 체험 가입이 아직 준비되지 않았습니다. 이메일로 가입해 주세요.' }
     return { ok: false, error: error.message }
   }
+  // 동의 기록 (legal-billing-safety.sql 전이면 조용히 넘어간다)
+  await supabase.rpc('record_consent', { p_terms: TERMS_VERSION, p_privacy: PRIVACY_VERSION, p_source: 'trial' }).then(() => null, () => null)
   return { ok: true }
 }

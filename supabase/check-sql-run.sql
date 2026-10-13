@@ -66,4 +66,11 @@ select '13. trial-checkin.sql (체험 5일째 자동 안내)',
 union all
 select '14. launch-checklist.sql (고객사 개통 체크리스트)',
   case when to_regclass('public.launch_checklists') is not null then '실행됨' else '아직 안 됨' end
+union all
+select '15. legal-billing-safety.sql (동의 기록·청구서 번호·결제 안전장치)',
+  case when to_regclass('public.consents') is not null
+        and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'invoices' and column_name = 'invoice_no')
+        and exists (select 1 from pg_trigger where tgname = 'invoice_guard' and not tgisinternal)
+        and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'payments' and column_name = 'needs_review')
+       then '실행됨' else '아직 안 됨' end
 ) x order by split_part(x."파일", '.', 1)::int;

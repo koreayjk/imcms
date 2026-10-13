@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import GoogleButton from './GoogleButton'
+import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/service-terms'
 
 // 구글 가입: 구글에 다녀오는 동안 적은 정보를 이 브라우저에 잠시 맡겨 두었다가 /trial/complete 에서 쓴다
 export const TRIAL_JOIN_KEY = 'im-trial-join'
@@ -73,6 +74,8 @@ export default function TrialSignupForm() {
         data: {
           site: 'trial', full_name: f.name.trim(), company: f.company.trim(), position: f.position.trim(),
           phone: f.phone.trim(), agreed_at: new Date().toISOString(),
+          // 동의 기록 (legal-billing-safety.sql: 가입 순간 서버 시각으로 남긴다)
+          terms_version: TERMS_VERSION, privacy_version: PRIVACY_VERSION, consent_source: 'trial',
         },
       },
     })

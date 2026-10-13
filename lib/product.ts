@@ -61,7 +61,9 @@ export const ISSUER = {
   // 계약 상대방 (이용약관의 “회사”)
   legalName: 'IM America Group Corp' as string | null,
   dba: 'IM Genesis' as string | null,
-  bizNo: null as string | null,
+  // 미국 연방 사업자번호 (EIN). 청구서·견적서 공급자 칸에 나온다
+  bizNo: '99-1555318' as string | null,
+  bizNoLabel: '사업자번호(미국 EIN)',
   ceo: 'Sang W Lee' as string | null,
   address: '1608 Hollow Hill Dr, Apt 912, Bryan, TX 77802, USA' as string | null,
   contact: 'contact@imnewsroom.com' as string | null,

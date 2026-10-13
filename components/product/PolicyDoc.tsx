@@ -34,16 +34,16 @@ export default function PolicyDoc({ sections, compact = false }: { sections: Pol
 function Processors({ compact }: { compact: boolean }) {
   return (
     <div className="overflow-x-auto">
-      <table className={`w-full min-w-[520px] border-collapse text-left ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
+      <table className={`w-full min-w-[640px] border-collapse text-left ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
         <thead>
           <tr className="border-b border-[#D5D8DD] text-[#14171C]">
-            <th className="py-2 pr-3 font-semibold">받는 곳</th><th className="py-2 pr-3 font-semibold">국가·위치</th><th className="py-2 pr-3 font-semibold">맡기는 일</th><th className="py-2 font-semibold">항목</th>
+            <th className="py-2 pr-3 font-semibold">받는 곳</th><th className="py-2 pr-3 font-semibold">국가·위치</th><th className="py-2 pr-3 font-semibold">맡기는 일</th><th className="py-2 pr-3 font-semibold">항목</th><th className="py-2 font-semibold">연락처</th>
           </tr>
         </thead>
         <tbody>
           {PROCESSORS.map((x) => (
             <tr key={x.name} className="border-b border-[#EEF0F3] align-top">
-              <td className="py-2 pr-3 font-medium">{x.name}</td><td className="py-2 pr-3">{x.country}</td><td className="py-2 pr-3">{x.what}</td><td className="py-2">{x.items}</td>
+              <td className="py-2 pr-3 font-medium">{x.name}</td><td className="py-2 pr-3">{x.country}</td><td className="py-2 pr-3">{x.what}</td><td className="py-2 pr-3">{x.items}</td><td className="py-2 break-all">{x.contact}</td>
             </tr>
           ))}
         </tbody>

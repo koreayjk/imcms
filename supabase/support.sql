@@ -2,9 +2,17 @@
 -- 운영팀 = 관리자(admin). 회원사 = 매체(outlet). 편집장은 자기 매체의 요청·청구서를, 기자는 자기 요청만 본다
 
 -- 권한 도우미
-create or replace function public.is_staff() returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from profiles where id = auth.uid() and role = 'admin');
-$$;
+--   운영팀 확인(is_staff)은 staff.sql·account-security.sql 이 더 엄격하게 정한다. 이 파일을 다시 실행해도 덮어쓰지 않게 없을 때만 만든다
+--   (예전처럼 'role = admin'으로 덮어쓰면 모든 발행인이 운영팀 권한을 얻는다)
+do $$
+begin
+  if to_regprocedure('public.is_staff()') is null then
+    execute $f$create function public.is_staff() returns boolean language sql stable security definer set search_path = public as $b$
+      select exists (select 1 from profiles where id = auth.uid() and role = 'admin');
+    $b$
+    $f$;
+  end if;
+end $$;
 create or replace function public.my_outlet() returns uuid language sql stable security definer set search_path = public as $$
   select outlet_id from profiles where id = auth.uid();
 $$;

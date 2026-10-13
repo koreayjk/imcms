@@ -16,7 +16,8 @@ function GoogleMark() {
 
 // requestedOutlet: 가입 화면에서 고른 소속 매체 ('unknown' = 모름). undefined면 로그인 버튼
 // next: 로그인 뒤 갈 곳, before: 구글로 가기 전 확인 (false면 가지 않는다)
-export default function GoogleButton({ label, requestedOutlet, next, before }: { label: string; requestedOutlet?: string; next?: string; before?: () => boolean }) {
+// consent: 가입 화면에서 약관·개인정보 동의를 받은 경우 → 돌아온 뒤 서버가 동의를 기록한다
+export default function GoogleButton({ label, requestedOutlet, next, before, consent }: { label: string; requestedOutlet?: string; next?: string; before?: () => boolean; consent?: boolean }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -28,6 +29,7 @@ export default function GoogleButton({ label, requestedOutlet, next, before }: {
     const back = new URL('/auth/callback', window.location.origin)
     if (next) back.searchParams.set('next', next)
     if (requestedOutlet && requestedOutlet !== 'unknown') back.searchParams.set('outlet', requestedOutlet)
+    if (consent) back.searchParams.set('consent', 'google')
     const { error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: back.toString() },

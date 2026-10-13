@@ -26,6 +26,10 @@ export default async function PaymentSuccessPage(
   if (!o) return <PaymentResult ok={false} title="주문을 찾지 못했습니다" actions={back}>이 매체의 청구서 결제가 아니거나 권한이 없습니다.</PaymentResult>
   const invoiceLink = { href: `/support/invoices/${o.invoiceId}`, label: '청구서 보기', primary: true }
 
+  // 이미 끝났거나(새로 고침·뒤로 가기) 무효가 된 주문(청구서 금액이 바뀜)은 승인하지 않는다 → 돈이 빠져나가지 않는다
+  if (o.status === 'done') return <PaymentResult ok title="이미 결제가 끝난 주문입니다" actions={[invoiceLink, ...back]}>청구서에서 결제 내역과 영수증을 볼 수 있습니다.</PaymentResult>
+  if (o.status !== 'ready') return <PaymentResult ok={false} title="이 결제는 진행할 수 없습니다" actions={[invoiceLink]}>청구서 금액이 바뀌었거나 이미 끝난 주문입니다. 청구서에서 다시 결제해 주세요. 돈은 빠져나가지 않았습니다.</PaymentResult>
+
   // 결제창에서 넘어온 금액이 주문 금액과 다르면 승인하지 않는다
   if (Number(o.amount) !== amount) {
     await recordFailure(supabase, orderId, '결제 금액이 청구 금액과 달라 승인하지 않았습니다.')

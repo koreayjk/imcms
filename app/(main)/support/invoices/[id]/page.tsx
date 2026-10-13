@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
-import { formatDateTime } from '@/lib/format'
+import { formatDate, formatDateTime } from '@/lib/format'
 import { ISSUER, PRODUCT } from '@/lib/product'
 import { TAX_NOTE, monthLabel, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
@@ -27,7 +27,7 @@ export default async function InvoicePage(
   ])
   const items = (inv.items ?? []) as InvoiceItem[]
   const row = (k: string, v: string | null | undefined) => (
-    <div className="flex gap-3"><dt className="w-24 shrink-0 text-muted">{k}</dt><dd>{v || '-'}</dd></div>
+    <div className="flex gap-3"><dt className="w-32 shrink-0 text-muted">{k}</dt><dd>{v || '-'}</dd></div>
   )
 
   return (
@@ -56,6 +56,9 @@ export default async function InvoicePage(
           <div>
             <p className="text-[13px] font-bold text-muted">{PRODUCT.name}</p>
             <h1 className="mt-1 text-[28px] font-extrabold tracking-tight">{monthLabel(inv.month)} 청구서</h1>
+            <p className="mt-1.5 text-[12.5px] text-muted tabular-nums">
+              {inv.invoice_no && <>청구서 번호 {inv.invoice_no} · </>}발행일 {formatDate(inv.created_at)}
+            </p>
           </div>
           <span className={`rounded px-3 py-1.5 text-[13px] font-bold ${inv.status === 'paid' ? 'bg-published/10 text-published' : 'bg-danger/10 text-danger'}`}>
             {inv.status === 'paid' ? `납부 완료${inv.paid_at ? ` · ${formatDateTime(inv.paid_at)}` : ''}` : '미납'}
@@ -77,7 +80,7 @@ export default async function InvoicePage(
             <h2 className="mb-2 text-[13px] font-bold">공급자</h2>
             <dl className="space-y-1">
               {row('상호', ISSUER.company ?? `${PRODUCT.name} (사업자 정보 등록 예정)`)}
-              {ISSUER.bizNo && row('사업자번호', ISSUER.bizNo)}
+              {ISSUER.bizNo && row(ISSUER.bizNoLabel, ISSUER.bizNo)}
               {row('대표자', ISSUER.ceo)}
               {row('주소', ISSUER.address)}
               {row('연락처', ISSUER.contact)}

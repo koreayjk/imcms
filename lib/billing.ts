@@ -58,7 +58,7 @@ export function billingItems(t: BillingTarget, month: string) {
   if (billPlan) {
     if (monthly != null && planName) {
       items.push(annual
-        ? { name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${annualBeta})`, qty: 1, unit_price: annualPrice(monthly, month, beta) }
+        ? { name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${annualBeta})`, qty: 1, unit_price: annualPrice(monthly, month, beta, start) }
         : { name: `IM 뉴스룸 ${planName} (${label(m)}${betaTag})`, qty: 1, unit_price: Math.round(monthly * rate) })
     }
     // 매체 추가는 프리미엄 전용: 추가 매체 1개 포함, 그다음부터 매체마다 (맞춤 금액이면 포함 없이 모두 청구)
