@@ -6,7 +6,7 @@ import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, BETA_PERIOD_LABEL, EXTRA_OU
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
-import { ApprovalFlow, HomeBoardMock, MailForwardVisual, PressInboxMock, SearchMock, SupportMock, SyndicateVisual, TeamMock } from '@/components/product/Mockups'
+import { ApprovalFlow, HomeBoardMock, MailForwardVisual, NewsletterMock, PressInboxMock, SearchMock, SupportMock, SyndicateVisual, TeamMock } from '@/components/product/Mockups'
 import IndexWidget from '@/components/site/IndexWidget'
 import type { IndexSeries } from '@/lib/market-index'
 import { CountUp, Reveal } from '@/components/product/Motion'
@@ -194,7 +194,7 @@ function pricingFaq(beta: boolean) {
   ]
 }
 
-const MARQUEE = ['여러 매체 한 계정', '네이버·구글 검색 등록 대행', '구글 뉴스 형식 자동', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인', '언론사별 자료 잠금', '2단계 인증', '퇴사자 출입 정지', '로그인 기록', '원격 로그아웃']
+const MARQUEE = ['여러 매체 한 계정', '네이버·구글 검색 등록 대행', '구글 뉴스 형식 자동', '뉴스레터 발송', '보도자료 자동 수집', '메일로 받은 보도자료', 'AI 기사 초안', 'AI 법적 검수', '홈페이지 모양 미리보기', '미리보기 링크 공유', '사진 워터마크', 'AI 모델 비교', '예약 발행', '매체별 직급', '휴대폰 편집국', '워드 파일 읽기', '업종 위젯', '고객센터 내장', '홈 편집판', '모바일 신문', '승인 흐름', '구글 로그인', '언론사별 자료 잠금', '2단계 인증', '퇴사자 출입 정지', '로그인 기록', '원격 로그아웃']
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
@@ -497,6 +497,28 @@ export default function ProductHome() {
               </ul>
               <p className="mt-5 text-[13px] leading-relaxed text-[#5B616B]">검색 결과 반영에는 보통 며칠~2주가 걸리며, 노출 순위는 보장되지 않습니다. 네이버 “뉴스” 탭 노출은 언론사의 뉴스 검색제휴 심사가 따로 필요합니다.</p>
             </Reveal>
+          </div>
+        </section>
+
+        {/* ─── 뉴스레터 ─── */}
+        <section id="newsletter" className="scroll-mt-16">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
+            <Reveal>
+              <Eyebrow icon="mail" color="#16294D">뉴스레터</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>독자를 다시 불러오는<br />뉴스레터, 편집국에서 바로.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">
+                홈페이지 아래 <strong>구독 칸</strong>으로 독자를 모으고, 편집국에서 기사만 고르면 <strong>매체 로고·색 그대로</strong> 뉴스레터가 나갑니다. 따로 메일 프로그램을 쓰거나 제작을 맡길 필요가 없습니다.
+              </p>
+              <ul className="mt-7 space-y-3">
+                <Check>매체 홈페이지에 구독 신청 칸 기본 제공</Check>
+                <Check>확인 메일을 눌러야 구독되는 이중 확인, 메일마다 수신거부 링크 자동 — 정보통신망법 수신 동의 절차를 대비</Check>
+                <Check>발행한 기사를 골라 몇 번 누르면 끝 — 미리보기·나에게 시험 발송·보낸 기록</Check>
+                <Check>매체 로고와 대표 색으로 만들어져 독자가 한눈에 알아봄</Check>
+                <Check>동의를 받은 기존 독자 명단은 직접 추가</Check>
+              </ul>
+              <p className="mt-5 text-[13px] leading-relaxed text-[#5B616B]">스탠다드 월 4회 · 회당 2,000명, 프리미엄 월 8회 · 회당 5,000명까지 추가 비용 없이 보낼 수 있습니다 (베이직은 제공하지 않습니다).</p>
+            </Reveal>
+            <Reveal delay={150}><NewsletterMock /></Reveal>
           </div>
         </section>
 

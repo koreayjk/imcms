@@ -322,3 +322,45 @@ export function SearchMock() {
     </div>
   )
 }
+
+// 뉴스레터: 홈페이지 구독 칸 → 매체 로고·색 그대로 나가는 메일
+export function NewsletterMock() {
+  const brand = '#1F5C46'
+  return (
+    <div className="mx-auto max-w-[520px] space-y-4">
+      <div className="overflow-hidden rounded-xl border border-black/10 bg-white text-[#14171C] shadow-[0_30px_80px_-25px_rgba(11,16,32,0.35)]">
+        <div className="flex items-center gap-3 px-5 py-4" style={{ background: brand }}>
+          <span className="grid h-10 w-10 place-items-center rounded-lg bg-white text-[15px] font-black" style={{ color: brand }} aria-hidden>우</span>
+          <div>
+            <p className="text-[17px] font-extrabold text-white">우리 신문</p>
+            <p className="text-[11.5px] text-white/75">이번 주 꼭 읽을 기사</p>
+          </div>
+        </div>
+        <div className="px-5 pb-4 pt-4">
+          <p className="text-[16px] font-extrabold">우리 신문 10월 둘째 주 주요 뉴스</p>
+          <ul className="mt-3 divide-y divide-[#E6E8EB]">
+            {[
+              ['보건·복지', '요양병원 간병비 급여화 시범사업, 참여 기관 확대'],
+              ['돌봄산업', '“버튼 하나로 보호자에게” 돌봄 알림 서비스 확산'],
+              ['정책', '내년 노인 일자리 예산 늘어… 신청은 12월부터'],
+            ].map(([c, t]) => (
+              <li key={t} className="py-2.5">
+                <p className="text-[11px] font-bold" style={{ color: brand }}>{c}</p>
+                <p className="text-[14px] font-bold leading-snug">{t}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 border-t border-[#E6E8EB] pt-2.5 text-[11px] text-[#8A9099]">구독을 신청하신 분께 보내 드립니다 · <u>수신거부</u></p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-black/10 bg-white p-4 text-[#14171C] shadow-[0_20px_50px_-25px_rgba(11,16,32,0.35)]">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
+          <p className="text-[13px] font-bold">뉴스레터 보내기</p>
+          <p className="mt-0.5 text-[12px] text-[#5B616B]">기사 3건 선택 · 구독자 1,240명 · 이번 달 3회 남음</p>
+        </div>
+        <span className="rounded-md border border-[#D5D8DD] px-3 py-1.5 text-[12px] font-semibold">나에게 시험 발송</span>
+        <span className="rounded-md px-3 py-1.5 text-[12px] font-bold text-white" style={{ background: brand }}>구독자에게 보내기</span>
+      </div>
+    </div>
+  )
+}
