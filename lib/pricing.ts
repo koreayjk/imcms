@@ -81,7 +81,7 @@ export const PLANS: Plan[] = [
     for: '섹션이 많고 기사량이 꾸준한 일반 언론사',
     monthly: 150_000,
     pick: true,
-    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 900회'], ['저장 용량', '60G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 5건'], ['뉴스레터', '월 4회 · 회당 2,000명']],
+    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 900회'], ['저장 용량', '60G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 5건'], ['뉴스레터', '주 1회 · 회당 2,000명']],
     extras: ['홈페이지 맞춤 수정 지원'],
   },
   {
@@ -89,7 +89,7 @@ export const PLANS: Plan[] = [
     name: '프리미엄',
     for: '방문자가 많거나 매체를 여럿 운영하는 언론사',
     monthly: 230_000,
-    specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '월 8회 · 회당 5,000명']],
+    specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '주 2회 · 회당 5,000명']],
     extras: ['홈페이지 맞춤 수정 지원', '그룹장 화면 · 여러 매체 동시 송고', '3번째 매체부터 매체마다 월 90,000원 (베이직 사양)', '우선 지원'],
   },
   {
@@ -104,16 +104,17 @@ export const PLANS: Plan[] = [
 
 export const planById = (id: string | null | undefined) => PLANS.find((p) => p.id === id) ?? null
 
-// 뉴스레터: 베이직(추가 매체 포함)은 없음, 스탠다드 월 4회·회당 2,000명, 프리미엄 월 8회·회당 5,000명
+// 뉴스레터: 베이직(추가 매체 포함)은 없음, 스탠다드 주 1회(월 5회)·회당 2,000명, 프리미엄 주 2회(월 10회)·회당 5,000명
+//   월 한도는 월요일이 5번 있는 달에도 '매주'가 빠지지 않게 주 횟수 × 5
 //   엔터프라이즈·요금제 없음(운영사 자체 매체)은 월 30회·회당 5,000명. 회당 5,000명은 한 번에 끊김 없이 보낼 수 있는 양이다
-export type NewsletterQuota = { perSend: number; perMonth: number }
+export type NewsletterQuota = { perSend: number; perMonth: number; perWeek?: number }
 export function newsletterQuota(plan: string | null | undefined): NewsletterQuota | null {
   if (plan === 'basic') return null
-  if (plan === 'standard') return { perSend: 2_000, perMonth: 4 }
-  if (plan === 'premium') return { perSend: 5_000, perMonth: 8 }
+  if (plan === 'standard') return { perSend: 2_000, perMonth: 5, perWeek: 1 }
+  if (plan === 'premium') return { perSend: 5_000, perMonth: 10, perWeek: 2 }
   return { perSend: 5_000, perMonth: 30 }
 }
-export const newsletterLabel = (q: NewsletterQuota | null) => (q ? `월 ${q.perMonth}회 · 회당 ${q.perSend.toLocaleString('ko-KR')}명` : '없음')
+export const newsletterLabel = (q: NewsletterQuota | null) => (q ? `${q.perWeek ? `주 ${q.perWeek}회` : `월 ${q.perMonth}회`} · 회당 ${q.perSend.toLocaleString('ko-KR')}명` : '없음')
 export const BILLING_LABEL: Record<Billing, string> = { monthly: '월 결제', annual: '1년 결제' }
 
 export const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`

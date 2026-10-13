@@ -4,9 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
 import { buildSite } from '@/lib/sites'
 import { mailReady, sendMails, type Mail } from '@/lib/mail'
-import { legalLine, newsletterMail, type NewsletterArticle } from '@/lib/newsletter'
+import { newsletterMailFor, type NewsletterArticle } from '@/lib/newsletter'
 import { newsletterLabel, newsletterQuota } from '@/lib/pricing'
 import { siteOrigin } from '@/lib/origin'
+import { formatKst, nextRun, perMonthOf, type NewsletterSchedule, type ScheduleKind } from '@/lib/newsletter-schedule'
 
 export type NlState = { error?: string; ok?: string }
 export type Draft = { subject: string; intro: string; articleIds: string[] }
@@ -42,13 +43,7 @@ async function render(c: Awaited<ReturnType<typeof outletContext>>, d: Draft) {
 }
 
 function mailFor(c: Awaited<ReturnType<typeof outletContext>>, r: Awaited<ReturnType<typeof render>>, to: string, token: string | null): Mail {
-  const unsubscribeUrl = token ? `${c.baseUrl}/newsletter/unsubscribe?t=${token}` : `${c.baseUrl}/newsletter/unsubscribe`
-  const { html, text } = newsletterMail({ site: c.site, baseUrl: c.baseUrl, subject: r.subject, intro: r.intro, articles: r.articles, unsubscribeUrl, legalLine: legalLine(c.site) })
-  return {
-    to, subject: r.subject, html, text, fromName: c.site.name, tag: 'newsletter',
-    replyTo: c.site.legal.email || null,
-    headers: token ? { 'List-Unsubscribe': `<${c.baseUrl}/api/newsletter/unsubscribe?t=${token}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : undefined,
-  }
+  return newsletterMailFor(c.site, c.baseUrl, r, to, token)
 }
 
 // 미리보기 HTML (화면에서 보여주기용)
@@ -88,7 +83,7 @@ export async function sendNewsletter(d: Draft): Promise<NlState> {
     // 이번 달(한국 시각) 보낸 횟수
     const monthStart = `${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 7)}-01T00:00:00+09:00`
     const { count: used } = await c.supabase.from('newsletter_campaigns').select('id', { count: 'exact', head: true }).eq('outlet_id', c.outletId!).eq('status', 'sent').gte('sent_at', monthStart)
-    if ((used ?? 0) >= quota.perMonth) return { error: `이번 달 발송 횟수(${newsletterLabel(quota)})를 다 썼습니다. 다음 달 1일부터 다시 보낼 수 있습니다.` }
+    if ((used ?? 0) >= quota.perMonth) return { error: `이번 달 발송 횟수(월 ${quota.perMonth}회, ${newsletterLabel(quota)})를 다 썼습니다. 다음 달 1일부터 다시 보낼 수 있습니다.` }
     const { data: subs, error } = await c.supabase.from('newsletter_subscribers').select('email, token').eq('outlet_id', c.outletId!).eq('status', 'subscribed').limit(limit + 1)
     if (error) return { error: '구독자 목록을 읽지 못했습니다. 운영팀에 mail.sql 실행을 요청해 주세요.' }
     if (!subs?.length) return { error: '구독 중인 독자가 없습니다.' }
@@ -136,4 +131,85 @@ export async function removeSubscriber(id: string): Promise<NlState> {
   if (error || !data?.length) return { error: error?.message ?? '지울 권한이 없습니다.' }
   revalidatePath('/admin/newsletter')
   return { ok: '지웠습니다.' }
+}
+
+// ───────── 자동 발송 예약 (newsletter-schedule.sql) ─────────
+export type ScheduleInput = {
+  id?: string; kind: ScheduleKind; send_on?: string | null; weekday?: number | null; month_day?: number | null; hour: number
+  article_count: number; section_slug?: string | null; subject_template: string; intro?: string | null
+}
+
+const scheduleSqlMissing = (m: string) => /newsletter_schedules/.test(m) ? '자동 발송을 쓰려면 운영팀이 Supabase에서 newsletter-schedule.sql을 먼저 실행해야 합니다.' : m
+
+export async function saveSchedule(input: ScheduleInput): Promise<NlState> {
+  try {
+    const c = await outletContext()
+    const quota = newsletterQuota((c.outlet as { plan?: string | null }).plan)
+    if (!quota) return { error: '뉴스레터는 스탠다드 요금제부터 쓸 수 있습니다.' }
+    const kind = (['once', 'weekly', 'biweekly', 'monthly'] as const).includes(input.kind) ? input.kind : 'weekly'
+    const hour = Math.min(23, Math.max(0, Math.round(input.hour)))
+    const row = {
+      outlet_id: c.outletId!, kind, hour,
+      send_on: kind === 'once' ? (input.send_on && /^\d{4}-\d{2}-\d{2}$/.test(input.send_on) ? input.send_on : null) : null,
+      weekday: kind === 'weekly' || kind === 'biweekly' ? Math.min(6, Math.max(0, Math.round(input.weekday ?? 1))) : null,
+      month_day: kind === 'monthly' ? Math.min(28, Math.max(1, Math.round(input.month_day ?? 1))) : null,
+      article_count: Math.min(15, Math.max(1, Math.round(input.article_count || 5))),
+      section_slug: input.section_slug || null,
+      subject_template: input.subject_template.trim().slice(0, 150) || '{매체} {날짜} 주요 뉴스',
+      intro: input.intro?.trim().slice(0, 3000) || null,
+    }
+    if (kind === 'once' && !row.send_on) return { error: '보낼 날짜를 골라 주세요.' }
+    const next = nextRun(row, new Date())
+    if (!next) return { error: '이미 지난 날짜·시각입니다. 앞으로의 날짜를 골라 주세요.' }
+    // 요금제 한 달 한도 안에 들어오는지 (켜 둔 다른 예약과 합쳐서)
+    const { data: others, error: oErr } = await c.supabase.from('newsletter_schedules').select('id, kind').eq('outlet_id', c.outletId!).eq('enabled', true)
+    if (oErr) return { error: scheduleSqlMissing(oErr.message) }
+    const planned = ((others ?? []) as { id: string; kind: ScheduleKind }[]).filter((o) => o.id !== input.id && o.kind !== 'once').reduce((n, o) => n + perMonthOf(o.kind), 0) + (kind === 'once' ? 0 : perMonthOf(kind))
+    if (planned > quota.perMonth) return { error: `켜 둔 자동 발송을 합치면 한 달 최대 ${planned}회로, 요금제 한도(${newsletterLabel(quota)}, 월 ${quota.perMonth}회)를 넘습니다. 다른 예약을 끄거나 주기를 늘려 주세요.` }
+    const payload = { ...row, enabled: true, next_run_at: next.toISOString(), updated_at: new Date().toISOString() }
+    const { error } = input.id
+      ? await c.supabase.from('newsletter_schedules').update(payload).eq('id', input.id).eq('outlet_id', c.outletId!)
+      : await c.supabase.from('newsletter_schedules').insert(payload)
+    if (error) return { error: scheduleSqlMissing(error.message) }
+    revalidatePath('/admin/newsletter')
+    return { ok: `저장했습니다. 첫 발송: ${formatKst(next.toISOString())}` }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : '저장하지 못했습니다.' }
+  }
+}
+
+async function scheduleRow(id: string) {
+  const c = await outletContext()
+  const { data } = await c.supabase.from('newsletter_schedules').select('*').eq('id', id).eq('outlet_id', c.outletId!).maybeSingle()
+  return { c, s: data as NewsletterSchedule | null }
+}
+
+// 이번 회차만 건너뛰기 (다음 회차로 넘긴다. 한 번만 보내기는 취소)
+export async function skipNextSchedule(id: string): Promise<NlState> {
+  const { c, s } = await scheduleRow(id)
+  if (!s?.next_run_at) return { error: '예약을 찾지 못했습니다.' }
+  const cur = new Date(s.next_run_at)
+  const next = nextRun(s, cur, cur)
+  const { error } = await c.supabase.from('newsletter_schedules').update({ next_run_at: next?.toISOString() ?? null, enabled: !!next, last_result: `${formatKst(s.next_run_at)} 회차를 건너뛰었습니다.`, updated_at: new Date().toISOString() }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/newsletter')
+  return { ok: next ? `이번 회차를 건너뛰었습니다. 다음 발송: ${formatKst(next.toISOString())}` : '이 예약을 취소했습니다.' }
+}
+
+export async function toggleSchedule(id: string, on: boolean): Promise<NlState> {
+  const { c, s } = await scheduleRow(id)
+  if (!s) return { error: '예약을 찾지 못했습니다.' }
+  if (on) return saveSchedule({ ...s, id })
+  const { error } = await c.supabase.from('newsletter_schedules').update({ enabled: false, updated_at: new Date().toISOString() }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/newsletter')
+  return { ok: '자동 발송을 멈췄습니다.' }
+}
+
+export async function deleteSchedule(id: string): Promise<NlState> {
+  const { c } = await scheduleRow(id)
+  const { error } = await c.supabase.from('newsletter_schedules').delete().eq('id', id).eq('outlet_id', c.outletId!)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/newsletter')
+  return { ok: '예약을 지웠습니다.' }
 }

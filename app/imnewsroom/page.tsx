@@ -516,7 +516,7 @@ export default function ProductHome() {
                 <Check>매체 로고와 대표 색으로 만들어져 독자가 한눈에 알아봄</Check>
                 <Check>쓰던 프로그램의 구독자 명단(수신 동의 받은 분)도 한 번에 옮겨 오기</Check>
               </ul>
-              <p className="mt-5 text-[13px] leading-relaxed text-[#5B616B]">스탠다드 월 4회 · 회당 2,000명, 프리미엄 월 8회 · 회당 5,000명까지 추가 비용 없이 보낼 수 있습니다 (베이직은 제공하지 않습니다).</p>
+              <p className="mt-5 text-[13px] leading-relaxed text-[#5B616B]">스탠다드 주 1회 · 회당 2,000명, 프리미엄 주 2회 · 회당 5,000명까지 추가 비용 없이 보낼 수 있습니다 (베이직은 제공하지 않습니다).</p>
             </Reveal>
             <Reveal delay={150}><NewsletterMock /></Reveal>
           </div>

@@ -1,5 +1,5 @@
 import type { SiteConfig } from './sites'
-import { esc } from './mail'
+import { esc, type Mail } from './mail'
 import { formatDate } from './format'
 
 // 뉴스레터 메일 본문 (매체 색·이름, 머리말, 기사 목록, 수신거부)
@@ -49,4 +49,15 @@ export function newsletterMail(o: { site: Pick<SiteConfig, 'name' | 'colors' | '
 export function legalLine(site: Pick<SiteConfig, 'name' | 'legal'>) {
   const l = site.legal
   return [l.company || site.name, l.publisher && `발행인 ${l.publisher}`, l.address, l.phone, l.email].filter(Boolean).join(' · ')
+}
+
+// 받는 사람 한 명분 메일 (수신거부 링크·원클릭 수신거부 머리글 포함). 편집국 발송·자동 발송이 같이 쓴다
+export function newsletterMailFor(site: SiteConfig, baseUrl: string, r: { subject: string; intro: string; articles: NewsletterArticle[] }, to: string, token: string | null): Mail {
+  const unsubscribeUrl = token ? `${baseUrl}/newsletter/unsubscribe?t=${token}` : `${baseUrl}/newsletter/unsubscribe`
+  const { html, text } = newsletterMail({ site, baseUrl, subject: r.subject, intro: r.intro, articles: r.articles, unsubscribeUrl, legalLine: legalLine(site) })
+  return {
+    to, subject: r.subject, html, text, fromName: site.name, tag: 'newsletter',
+    replyTo: site.legal.email || null,
+    headers: token ? { 'List-Unsubscribe': `<${baseUrl}/api/newsletter/unsubscribe?t=${token}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : undefined,
+  }
 }

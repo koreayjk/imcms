@@ -81,4 +81,10 @@ select '16. billing-safety-2.sql (신청서 서버 저장·부분 환불·정기
         and not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'beta_requests' and policyname = 'beta_requests_insert')
         and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'invoices' and column_name = 'outlet_name')
        then '실행됨' else '아직 안 됨' end
+union all
+select '17. newsletter-schedule.sql (뉴스레터 자동 발송 예약)',
+  case when to_regclass('public.newsletter_schedules') is not null
+        and to_regprocedure('public.nl_schedule_take(text,integer)') is not null
+        and to_regprocedure('public.nl_preview_take(text)') is not null
+       then '실행됨' else '아직 안 됨' end
 ) x order by split_part(x."파일", '.', 1)::int;

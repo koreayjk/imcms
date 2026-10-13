@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { addSubscribers, previewNewsletter, removeSubscriber, sendNewsletter, sendTestNewsletter, type NlState } from '@/app/(main)/admin/newsletter/actions'
 import { formatDate, formatDateTime } from '@/lib/format'
@@ -12,9 +12,9 @@ type Camp = { id: string; subject: string; recipient_count: number; failed_count
 
 const SUB_STATUS: Record<string, string> = { subscribed: '구독 중', pending: '확인 대기', unsubscribed: '수신거부' }
 
-export default function NewsletterComposer({ outletName, articles, counts, subscribers, campaigns, quota, usedThisMonth, mailOn }: {
+export default function NewsletterComposer({ outletName, articles, counts, subscribers, campaigns, quota, usedThisMonth, mailOn, children }: {
   outletName: string; articles: Art[]; counts: { subscribed: number; pending: number; unsubscribed: number }
-  subscribers: Sub[]; campaigns: Camp[]; quota: NewsletterQuota | null; usedThisMonth: number; mailOn: boolean
+  subscribers: Sub[]; campaigns: Camp[]; quota: NewsletterQuota | null; usedThisMonth: number; mailOn: boolean; children?: ReactNode
 }) {
   const left = quota ? Math.max(0, quota.perMonth - usedThisMonth) : 0
   const overPerSend = !!quota && counts.subscribed > quota.perSend
@@ -46,7 +46,7 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
 
       {!quota && (
         <p className="rounded-lg border border-line bg-white px-5 py-4 text-[13.5px] leading-relaxed">
-          <b>뉴스레터는 스탠다드 요금제부터 쓸 수 있습니다.</b> 스탠다드는 {newsletterLabel({ perSend: 2000, perMonth: 4 })}, 프리미엄은 {newsletterLabel({ perSend: 5000, perMonth: 8 })}까지 보낼 수 있습니다.
+          <b>뉴스레터는 스탠다드 요금제부터 쓸 수 있습니다.</b> 스탠다드는 {newsletterLabel({ perSend: 2000, perMonth: 5, perWeek: 1 })}, 프리미엄은 {newsletterLabel({ perSend: 5000, perMonth: 10, perWeek: 2 })}까지 보낼 수 있습니다.
           요금제를 바꾸려면 고객센터 업무요청으로 알려 주세요. 지금 있는 구독자 명단은 그대로 남아 있습니다.
         </p>
       )}
@@ -91,7 +91,7 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
             {pending ? '처리 중…' : `구독자 ${counts.subscribed.toLocaleString()}명에게 보내기`}
           </button>
           <span className="text-[12px] text-muted">
-            {quota ? <>요금제 한도 {newsletterLabel(quota)} · 이번 달 <b className={left ? 'text-ink' : 'text-danger'}>{left}회 남음</b></> : '스탠다드 요금제부터 보낼 수 있습니다'}
+            {quota ? <>요금제 한도 {newsletterLabel(quota)} (월 {quota.perMonth}회) · 이번 달 <b className={left ? 'text-ink' : 'text-danger'}>{left}회 남음</b></> : '스탠다드 요금제부터 보낼 수 있습니다'}
           </span>
           {overPerSend && <span className="w-full text-[12.5px] font-semibold text-danger">구독자({counts.subscribed.toLocaleString()}명)가 회당 한도({quota!.perSend.toLocaleString()}명)보다 많습니다. 요금제 변경을 문의해 주세요.</span>}
         </div>
@@ -103,6 +103,8 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
           </div>
         )}
       </section>
+
+      {children}
 
       {/* ─── 보낸 기록 ─── */}
       <section aria-labelledby="nl-sent" className="rounded-xl border border-line bg-white">
