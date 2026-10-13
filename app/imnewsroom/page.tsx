@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     ...(indexable ? { robots: { index: true, follow: true }, alternates: { canonical: `${PRODUCT.url}/` } } : {}),
     // 네이버·구글 소유 확인 (lib/product.ts)
     verification: {
-      google: PRODUCT.verification.google || undefined,
+      google: PRODUCT.verification.google.length ? PRODUCT.verification.google : undefined,
       other: PRODUCT.verification.naver ? { 'naver-site-verification': PRODUCT.verification.naver } : undefined,
     },
   }
