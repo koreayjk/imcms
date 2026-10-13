@@ -5,8 +5,10 @@ import { formatDate } from './format'
 // 뉴스레터 메일 본문 (매체 색·이름, 머리말, 기사 목록, 수신거부)
 export type NewsletterArticle = { id: string; title: string; excerpt: string | null; thumbnail_url: string | null; published_at: string | null; category?: string | null }
 
-export function newsletterMail(o: { site: Pick<SiteConfig, 'name' | 'colors' | 'slogan'>; baseUrl: string; subject: string; intro: string; articles: NewsletterArticle[]; unsubscribeUrl: string; legalLine: string }) {
+export function newsletterMail(o: { site: Pick<SiteConfig, 'name' | 'colors' | 'slogan'> & Partial<Pick<SiteConfig, 'logoMark'>>; baseUrl: string; subject: string; intro: string; articles: NewsletterArticle[]; unsubscribeUrl: string; legalLine: string }) {
   const brand = o.site.colors.brand
+  // 매체 로고: 흰 정사각형으로 맞춘 PNG (app/site-favicon.png). 메일 프로그램은 SVG를 잘 못 보여 주니 로고가 없으면 넣지 않는다
+  const logo = o.site.logoMark ? `${o.baseUrl}/site-favicon.png?size=192` : null
   const link = (id: string) => `${o.baseUrl}/news/${id}`
   const items = o.articles.map((a) => `
 <tr><td style="padding:18px 0;border-top:1px solid #E6E8EB">
@@ -21,7 +23,10 @@ export function newsletterMail(o: { site: Pick<SiteConfig, 'name' | 'colors' | '
   const html = `<!doctype html><html lang="ko"><body style="margin:0;background:#F4F5F7;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#14171C">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:20px 10px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:10px;overflow:hidden">
-<tr><td style="background:${esc(brand)};padding:22px 32px"><a href="${esc(o.baseUrl)}" style="color:#fff;text-decoration:none;font-size:22px;font-weight:800">${esc(o.site.name)}</a>${o.site.slogan ? `<div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:4px">${esc(o.site.slogan)}</div>` : ''}</td></tr>
+<tr><td style="background:${esc(brand)};padding:22px 32px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
+  ${logo ? `<td style="padding-right:14px;vertical-align:middle"><a href="${esc(o.baseUrl)}"><img src="${esc(logo)}" width="48" height="48" alt="${esc(o.site.name)} 로고" style="display:block;width:48px;height:48px;border-radius:10px;border:0;background:#fff"></a></td>` : ''}
+  <td style="vertical-align:middle"><a href="${esc(o.baseUrl)}" style="color:#fff;text-decoration:none;font-size:22px;font-weight:800">${esc(o.site.name)}</a>${o.site.slogan ? `<div style="color:rgba(255,255,255,.8);font-size:12px;margin-top:4px">${esc(o.site.slogan)}</div>` : ''}</td>
+</tr></table></td></tr>
 <tr><td style="padding:26px 32px 6px">
   <div style="font-size:21px;font-weight:800;line-height:1.4">${esc(o.subject)}</div>
   ${o.intro ? `<div style="margin-top:12px;font-size:15px;line-height:1.75;color:#3B4048;white-space:pre-line">${esc(o.intro)}</div>` : ''}
