@@ -11,10 +11,11 @@ export type PressSource = {
 }
 
 // 해외 언론 묶음: 매체 설정에서 묶음마다 켠다 (출처 key 는 묶음의 앞글자로 시작한다)
-export type ForeignTopic = 'israel' | 'education'
+export type ForeignTopic = 'israel' | 'education' | 'reformed'
 export const FOREIGN_TOPICS: { key: ForeignTopic; prefix: string; label: string; hint: string }[] = [
   { key: 'israel', prefix: 'il-', label: '이스라엘 언론', hint: '예루살렘포스트·JNS·와이넷 등' },
   { key: 'education', prefix: 'ed-', label: '해외 교육·유학 언론', hint: 'Inside Higher Ed·The PIE News·ICEF Monitor 등' },
+  { key: 'reformed', prefix: 'rf-', label: '해외 개혁주의·기독교교육 언론', hint: '가스펠코얼리션·리포메이션21·9Marks·기독교 고전교육(ACCS·CiRCE) 등' },
 ]
 export const foreignTopicOf = (key: string): ForeignTopic | null => FOREIGN_TOPICS.find((t) => key.startsWith(t.prefix))?.key ?? null
 export const isForeignSource = (key: string) => foreignTopicOf(key) !== null
@@ -56,6 +57,13 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'ed-pie', name: '해외 · 더파이뉴스(유학)', outlet: '더파이뉴스(The PIE News)', url: 'https://thepienews.com/feed/', kind: 'foreign' },
   { key: 'ed-icef', name: '해외 · ICEF 모니터(유학)', outlet: 'ICEF 모니터(ICEF Monitor)', url: 'https://monitor.icef.com/feed/', kind: 'foreign' },
   { key: 'ed-edsurge', name: '해외 · 에드서지(에듀테크)', outlet: '에드서지(EdSurge)', url: 'https://www.edsurge.com/articles_rss', kind: 'foreign' },
+  // 개혁주의·기독교교육 언론 (다음세대타임즈 등 '해외 개혁주의·기독교교육 언론'을 켠 매체): 개혁신학·교회·기독교학교·고전 기독교교육
+  { key: 'rf-tgc', name: '해외 · 가스펠코얼리션', outlet: '가스펠코얼리션(The Gospel Coalition)', url: 'https://www.thegospelcoalition.org/feed/', kind: 'foreign' },
+  { key: 'rf-ref21', name: '해외 · 리포메이션21', outlet: '리포메이션21(Reformation21)', url: 'https://www.reformation21.org/rss', kind: 'foreign' },
+  { key: 'rf-9marks', name: '해외 · 9Marks(교회)', outlet: '9Marks', url: 'https://www.9marks.org/feed/', kind: 'foreign' },
+  { key: 'rf-aquila', name: '해외 · 아퀼라리포트', outlet: '아퀼라리포트(The Aquila Report)', url: 'https://theaquilareport.com/feed/', kind: 'foreign' },
+  { key: 'rf-accs', name: '해외 · ACCS(기독교 고전교육 학교)', outlet: '고전기독교학교협회(ACCS)', url: 'https://classicalchristian.org/feed/', kind: 'foreign' },
+  { key: 'rf-circe', name: '해외 · CiRCE(기독교 고전교육)', outlet: 'CiRCE 연구소(CiRCE Institute)', url: 'https://circeinstitute.org/feed/', kind: 'foreign' },
   // 이스라엘 언론 (Israel Today 등 '이스라엘 언론'을 켠 매체). 타임스오브이스라엘·이스라엘하욤은 서버 접속을 막을 때가 있다
   { key: 'il-jpost', name: '해외 · 예루살렘포스트', outlet: '예루살렘포스트(The Jerusalem Post)', url: 'https://www.jpost.com/rss/rssfeedsisraelnews.aspx', kind: 'foreign' },
   { key: 'il-jpost-mideast', name: '해외 · 예루살렘포스트 중동', outlet: '예루살렘포스트(The Jerusalem Post)', url: 'https://www.jpost.com/rss/rssfeedsmiddleeastnews.aspx', kind: 'foreign' },
