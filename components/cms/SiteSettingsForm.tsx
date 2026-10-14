@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from 'react'
+import { AI_NOTICE_DEFAULT } from '@/lib/ai-notice'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
 import SearchRegisterGuide from './SearchRegisterGuide'
@@ -151,6 +152,21 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <input type="checkbox" checked={s.lang === 'en'} onChange={(e) => set({ lang: e.target.checked ? 'en' : 'ko' })} className="mt-1" />
               <span><strong>영문 홈페이지</strong> (메뉴·날짜·안내 문구·개인정보처리방침을 영어로) <span className="block text-[12px] text-muted">기사는 쓴 언어 그대로 나갑니다. 해외 독자를 위한 영문 매체에 켜세요.</span></span>
             </label>
+            <div className="space-y-1.5 rounded-lg border border-line p-3 text-[13.5px]">
+              <label className="flex items-start gap-2">
+                <input type="checkbox" checked={!!s.aiNotice?.on} onChange={(e) => set({ aiNotice: { ...s.aiNotice, on: e.target.checked } })} className="mt-1" />
+                <span><strong>AI 활용 표시</strong> (AI 초안으로 만든 기사 본문 끝에 아래 문구를 자동으로 넣기) <span className="block text-[12px] text-muted">네이버 뉴스제휴 운영평가는 AI로 만든 글·사진을 표시하지 않으면 벌점(0.5점)입니다. 넣은 문구는 기사 편집 화면에서 지울 수 있습니다. <a href="/support/guide#ai" target="_blank" className="underline">기사 작성 가이드</a></span></span>
+              </label>
+              {s.aiNotice?.on && (
+                <input
+                  value={s.aiNotice?.text ?? ''} maxLength={150} className="field-input"
+                  placeholder={AI_NOTICE_DEFAULT[s.lang === 'en' ? 'en' : 'ko']}
+                  onChange={(e) => set({ aiNotice: { on: true, text: e.target.value } })}
+                  aria-label="AI 활용 표시 문구"
+                />
+              )}
+              {s.aiNotice?.on && <p className="text-[12px] text-muted">비워 두면 위의 기본 문구를 씁니다. 바꿀 때는 문구에 “AI”나 “인공지능”을 넣어 주세요. 본문 끝에 “※ 문구” 모양으로 들어갑니다.</p>}
+            </div>
             <fieldset className="space-y-1.5 text-[13.5px]">
               <legend className="font-bold">해외 언론 자료 받기</legend>
               <p className="text-[12px] text-muted">보도자료함에 영문 기사 요약을 함께 보여주고, AI가 출처를 밝힌 한국어 기사 초안으로 씁니다. 매체 분야에 맞는 묶음만 고르세요.</p>

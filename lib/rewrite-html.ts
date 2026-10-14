@@ -1,4 +1,5 @@
 // 기사 본문 HTML을 문단 단위로 나눠, 글 문단만 다시 쓰고 사진·영상·표·목록은 그대로 둔다 (함께 송고 AI 변환용)
+import { isAiNoticeInner } from './ai-notice'
 
 export type Block = { html: string; kind: 'text' | 'heading' | 'keep'; tag?: string; attrs?: string; text?: string }
 
@@ -21,7 +22,8 @@ export function splitBlocks(html: string): Block[] {
     const tag = m[1]?.toLowerCase()
     const inner = tag ? m[0].slice(m[0].indexOf('>') + 1, -(`</${tag}>`.length)) : ''
     // 사진 설명(<p><em>▲ …</em></p>)·빈 문단은 그대로
-    const isCaption = tag === 'p' && /^\s*<em>\s*▲/.test(inner)
+    // AI 활용 표시 문단(<p><em>※ …AI…</em></p>)도 그대로 둔다
+    const isCaption = tag === 'p' && (/^\s*<em>\s*▲/.test(inner) || isAiNoticeInner(inner))
     if ((tag === 'p' || tag === 'h2' || tag === 'h3' || tag === 'h4') && !isCaption && textOf(inner)) {
       out.push({ html: m[0], kind: tag === 'p' ? 'text' : 'heading', tag, attrs: m[2] ?? '', text: textOf(inner) })
     } else {

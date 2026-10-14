@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { mentionsAi } from '@/lib/ai-notice'
 import { getCmsContext } from '@/lib/cms'
 import { foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal, cleanStats } from '@/lib/sites'
 import { connectDomain } from '@/lib/vercel-domains'
@@ -69,6 +70,10 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
   if (prevSite.trial) site.trial = prevSite.trial
   site.lang = s.lang === 'en' ? 'en' : s.lang === 'ko' ? 'ko' : prevSite.lang
   site.statsBoard = s.statsBoard !== undefined ? cleanStats(s.statsBoard) : prevSite.statsBoard
+  if (s.aiNotice?.on && cut(s.aiNotice.text, 150) && !mentionsAi(cut(s.aiNotice.text, 150))) return { error: 'AI 활용 표시 문구에 "AI" 또는 "인공지능"을 넣어 주세요.' }
+  site.aiNotice = s.aiNotice !== undefined
+    ? { on: !!s.aiNotice?.on, text: cut(s.aiNotice?.text, 150) || undefined }
+    : prevSite.aiNotice
 
   const { error } = await supabase.from('outlets').update({ name, domain: domain || null, site }).eq('id', outletId)
   if (error) {

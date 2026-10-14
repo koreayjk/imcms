@@ -80,6 +80,8 @@ export type SiteConfig = {
   // 홈페이지 언어: ko(기본) / en(영문 매체 — 메뉴·날짜·안내 문구가 영어, lib/site-text.tsx)
   lang?: SiteLang
   statsBoard?: StatsBoard
+  // AI 활용 표시: 켜면 AI 초안 기사 본문 끝에 문구를 붙인다 (lib/ai-notice.ts)
+  aiNotice?: { on: boolean; text?: string }
 }
 
 export type SiteLang = 'ko' | 'en'
@@ -196,6 +198,8 @@ export type OutletSiteSettings = {
   trial?: boolean
   lang?: SiteLang
   statsBoard?: StatsBoard
+  // AI 활용 표시: 켜면 AI 초안 기사 본문 끝에 문구를 붙인다 (lib/ai-notice.ts)
+  aiNotice?: { on: boolean; text?: string }
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }

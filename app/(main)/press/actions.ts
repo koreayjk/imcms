@@ -9,6 +9,8 @@ import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, refreshPress, so
 import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 import { duplicateNotes } from '@/lib/duplicate-check'
+import { aiNoticeText, withAiNotice } from '@/lib/ai-notice'
+import type { OutletSiteSettings } from '@/lib/sites'
 
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
 
@@ -69,6 +71,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   let body = original
   let aiNotes: string | null = null
   let keywords: string[] = []
+  let usedAi = false
 
   if (mode === 'ai') {
     // 이번 달 AI 사용 한도 확인 (요금제별, 초안·법적 검수 합계). 한도를 다 쓰면 원문 그대로 만들기만 된다
@@ -90,8 +93,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       body = [paras[0], ...photoBlocks(original), ...paras.slice(1)].join('')
       aiNotes = draft.review_notes.length ? draft.review_notes.map((n) => `• ${n}`).join('\n') : null
       keywords = draft.keywords ?? []
-      // AI 글을 거의 그대로 내보내면 AI 활용 사실을 밝혀야 한다 (기사 작성 가이드 · 네이버 운영평가 D항)
-      aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• AI 초안입니다. 거의 그대로 내보낸다면 본문에 AI 활용 사실을 밝혀 주세요(네이버 운영평가 D항).`
+      usedAi = true
       // 해외 언론: 확인용 원문 주소를 메모에 남긴다 (본문에는 넣지 않는다)
       if (foreign) aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• 원문(${sourceLabel(r)}): ${r.link}`
     } catch (e) {
@@ -117,10 +119,19 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   }
 
   const { data: outlet } = outletId
-    ? await supabase.from('outlets').select('name').eq('id', outletId).single()
+    ? await supabase.from('outlets').select('name, site').eq('id', outletId).single()
     : { data: null }
   const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${profile?.full_name ?? ''} 기자]&nbsp;`
   body = body.startsWith('<p>') ? body.replace(/^<p>/, `<p>${byline}`) : `<p>${byline}</p>${body}`
+  // AI 활용 표시 (기사 작성 가이드 · 네이버 운영평가 D항): 매체 설정이 켜져 있으면 본문 끝에 붙이고, 아니면 메모로 알린다
+  if (usedAi) {
+    const notice = aiNoticeText((outlet as { site?: OutletSiteSettings | null } | null)?.site)
+    if (notice) body = withAiNotice(body, notice)
+    const memo = notice
+      ? '본문 끝에 AI 활용 표시 문구를 넣었습니다(매체 설정). 기사를 거의 새로 썼다면 지워도 됩니다.'
+      : 'AI 초안입니다. 거의 그대로 내보낸다면 본문에 AI 활용 사실을 밝혀 주세요(네이버 운영평가 D항). 매체 홈페이지 설정에서 자동 표시를 켤 수 있습니다.'
+    aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• ${memo}`
+  }
 
   const row: Record<string, unknown> = {
     title,

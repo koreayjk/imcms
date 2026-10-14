@@ -1,5 +1,7 @@
 import { createClient } from './supabase'
 import { rewriteForOutlet } from '@/app/(main)/articles/rewrite'
+import { aiNoticeText, AI_NOTICE_DEFAULT, hasAiNotice, withAiNotice } from './ai-notice'
+import type { OutletSiteSettings } from './sites'
 
 export type SyndicateResult = { created: string[]; updated: string[]; warnings: string[]; rewritten?: string[] }
 
@@ -21,7 +23,7 @@ export async function syndicate(articleId: string, { rewrite = true }: { rewrite
   if (!targets.length) return result
 
   const [{ data: outlets }, { data: cats }, { data: copies }] = await Promise.all([
-    supabase.from('outlets').select('id, name').in('id', targets),
+    supabase.from('outlets').select('id, name, site').in('id', targets),
     supabase.from('categories').select('id, outlet_id, slug, name').in('outlet_id', targets),
     supabase.from('articles').select('id, outlet_id').eq('source_article_id', src.id),
   ])
@@ -50,7 +52,13 @@ export async function syndicate(articleId: string, { rewrite = true }: { rewrite
 
     const rw = rewrites.get(outlet.id)
     if (rw && !rw.ok) result.warnings.push(`${outlet.name}: AI로 문장을 바꾸지 못해 원문 그대로 올렸습니다 (${rw.error})`)
-    const body = rw?.ok ? rw.body : srcOutletName ? (src.body as string).replace(`[${srcOutletName}=`, `[${outlet.name}=`) : src.body
+    let body = rw?.ok ? rw.body : srcOutletName ? (src.body as string).replace(`[${srcOutletName}=`, `[${outlet.name}=`) : src.body
+    // AI로 다시 쓴 사본: 받는 매체가 AI 활용 표시를 켰거나 원본에 표시가 있으면, 받는 매체 문구로 본문 끝에 붙인다
+    if (rw?.ok) {
+      const site = (outlet as { site?: OutletSiteSettings | null }).site ?? null
+      const text = aiNoticeText(site) ?? (hasAiNotice(src.body ?? '') ? AI_NOTICE_DEFAULT[site?.lang === 'en' ? 'en' : 'ko'] : null)
+      if (text) body = withAiNotice(body, text)
+    }
     const content: Record<string, unknown> = {
       title: rw?.ok ? rw.title : src.title,
       body,
