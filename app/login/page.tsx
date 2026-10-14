@@ -12,28 +12,50 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  // 메일 인증이 안 된 계정: 인증 메일 다시 보내기
+  const [unconfirmed, setUnconfirmed] = useState(false)
+  const [resent, setResent] = useState('')
   const router = useRouter()
 
   // 구글 로그인·메일 인증이 실패해서 돌아온 경우
   useEffect(() => {
     const e = new URLSearchParams(window.location.search).get('error')
     if (e) setError(e)
+    // 인증 링크가 만료된 경우: 이메일을 적고 인증 메일을 다시 받을 수 있게
+    if (e && /인증 링크|만료/.test(e)) setUnconfirmed(true)
   }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setResent('')
     setLoading(true)
     const { error: authError } = await createClient().auth.signInWithPassword({ email, password })
     if (authError) {
-      setError(/email not confirmed/i.test(authError.message)
-        ? '이메일 인증이 아직 안 됐습니다. 가입할 때 받은 메일의 인증 링크를 눌러주세요.'
+      const notConfirmed = /email not confirmed/i.test(authError.message)
+      setUnconfirmed(notConfirmed)
+      setError(notConfirmed
+        ? '이메일 인증이 아직 안 됐습니다. 아래 “인증 메일 다시 받기”를 누르고, 새로 온 메일의 링크를 1시간 안에 눌러 주세요.'
         : '이메일 또는 비밀번호가 올바르지 않습니다.')
       setLoading(false)
       return
     }
     router.push('/newsroom')
     router.refresh()
+  }
+
+  async function resend() {
+    if (!email.trim()) { setError('인증 메일을 받을 이메일을 위 칸에 적어 주세요.'); return }
+    setLoading(true)
+    const { error: err } = await createClient().auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/newsroom` } })
+    setLoading(false)
+    if (err) {
+      setResent('')
+      setError(/rate limit|seconds|security purposes/i.test(err.message) ? '조금 전에 보냈습니다. 1분쯤 뒤 다시 눌러 주세요.' : '인증 메일을 보내지 못했습니다. 잠시 뒤 다시 시도해 주세요.')
+      return
+    }
+    setError('')
+    setResent(`${email.trim()} 으로 인증 메일을 다시 보냈습니다. 메일함(안 보이면 스팸함)에서 가장 최근 메일의 링크를 1시간 안에 눌러 주세요. 예전 메일의 링크는 쓸 수 없습니다.`)
   }
 
   return (
@@ -57,6 +79,12 @@ export default function LoginPage() {
           <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="field-input" placeholder="••••••••" autoComplete="current-password" />
         </div>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+        {resent && <p role="status" className="text-sm text-ink">{resent}</p>}
+        {unconfirmed && (
+          <button type="button" onClick={resend} disabled={loading} className="w-full rounded-md border border-line py-2.5 text-[14px] font-semibold text-ink hover:bg-black/5 disabled:opacity-60">
+            인증 메일 다시 받기
+          </button>
+        )}
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? '로그인 중...' : '로그인'}
         </button>
