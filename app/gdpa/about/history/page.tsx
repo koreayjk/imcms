@@ -10,6 +10,7 @@ const HISTORY: { year: string; items: [string, string][] }[] = [
     ['10월', '글로벌디지털언론협회(GDPA) 설립 추진, 협회 홈페이지 개설'],
     ['10월', '회원사 참여: 더케어타임즈, Shipping Times, Israel Today'],
     ['10월', '회원사 추가: 에듀와이드, 다음세대타임즈, The Statecraft Times (회원사 6곳)'],
+    ['10월', '회원사 추가: 치앙마이미션타임즈 (회원사 7곳)'],
   ] },
 ]
 

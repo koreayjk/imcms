@@ -16,6 +16,7 @@ const DEMO_OUTLETS: MemberOutlet[] = [
   { id: 'demo-4', name: '에듀와이드', domain: null, logo: null, intro: '한국 교육 뉴스와 미국·해외 유학 정보를 전하는 교육 전문 미디어', joinedOn: '2026-10-14', url: null },
   { id: 'demo-5', name: '다음세대타임즈', domain: 'nextgentimes.vercel.app', logo: null, intro: '개혁주의 신앙에 서서 교회교육·기독교학교·가정 신앙교육을 전하는 기독교 교육 전문 미디어', joinedOn: '2026-10-14', url: 'https://nextgentimes.vercel.app' },
   { id: 'demo-6', name: 'The Statecraft Times', domain: 'statecrafttimes.vercel.app', logo: null, intro: '국제정치·외교·안보·세계경제를 다루는 영문 국제정치 미디어', joinedOn: '2026-10-14', url: 'https://statecrafttimes.vercel.app' },
+  { id: 'demo-7', name: '치앙마이미션타임즈', domain: 'worldmissiontimes.vercel.app', logo: null, intro: '태국 치앙마이에서 시작해 세계선교 동향과 선교 현장, 미전도 종족과 선교사 이야기를 전하는 선교 전문 미디어', joinedOn: '2026-10-14', url: 'https://worldmissiontimes.vercel.app' },
 ]
 
 const siteUrl = (domain: string | null) => (domain ? `https://${domain}` : null)
