@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
-import { foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal, cleanStats } from '@/lib/sites'
 import { connectDomain } from '@/lib/vercel-domains'
 
 export type SitePayload = {
@@ -68,6 +68,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
   if (prevSite.ogImage) site.ogImage = prevSite.ogImage
   if (prevSite.trial) site.trial = prevSite.trial
   site.lang = s.lang === 'en' ? 'en' : s.lang === 'ko' ? 'ko' : prevSite.lang
+  site.statsBoard = s.statsBoard !== undefined ? cleanStats(s.statsBoard) : prevSite.statsBoard
 
   const { error } = await supabase.from('outlets').update({ name, domain: domain || null, site }).eq('id', outletId)
   if (error) {

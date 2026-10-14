@@ -6,6 +6,7 @@ import { siteJsonLd } from '@/lib/news-jsonld'
 import { outletApp } from '@/lib/android'
 import { topSections, siteIcon } from '@/lib/sites'
 import IndexWidget from '@/components/site/IndexWidget'
+import StatsBoard from '@/components/site/StatsBoard'
 import { formatDate, formatShort } from '@/lib/format'
 import SiteFrame from '@/components/site/SiteFrame'
 import SectionHeading from '@/components/site/SectionHeading'
@@ -191,6 +192,8 @@ export default async function HomePage() {
             </div>
             {/* 해운 운임지수 (홈페이지 설정에서 켠 매체만) */}
             {indexSeries && <IndexWidget series={indexSeries} />}
+            {/* 숫자 판 (홈페이지 설정에서 채운 매체만) */}
+            {site.statsBoard && <StatsBoard board={site.statsBoard} />}
             <div id="popular" className="scroll-mt-28">
               <MostViewed items={mostViewed} lang={L} />
             </div>

@@ -14,6 +14,10 @@ export type HomeBand = { slug: string; style: HomeBandStyle; title?: string; tag
 
 export type LogoMode = 'mark' | 'full' | 'text'
 
+// 홈 오른쪽 '숫자 판' (예: 선교 통계). 숫자는 편집국 홈페이지 설정에서 고친다. 출처를 반드시 함께 적는다
+export type StatItem = { label: string; value: string; note?: string; source?: string; url?: string }
+export type StatsBoard = { title: string; items: StatItem[]; footnote?: string }
+
 export type SiteLegal = {
   company: string
   ceo: string
@@ -73,8 +77,9 @@ export type SiteConfig = {
   trial?: boolean
   // 요금제 (DB 매체만). 베이직은 뉴스레터 구독 칸을 보이지 않는다
   plan?: string | null
-  // 홈페이지 언어: ko(기본) / en(영문 매체 — 메뉴·날짜·안내 문구가 영어, lib/site-text.ts)
+  // 홈페이지 언어: ko(기본) / en(영문 매체 — 메뉴·날짜·안내 문구가 영어, lib/site-text.tsx)
   lang?: SiteLang
+  statsBoard?: StatsBoard
 }
 
 export type SiteLang = 'ko' | 'en'
@@ -190,6 +195,7 @@ export type OutletSiteSettings = {
   ogImage?: string
   trial?: boolean
   lang?: SiteLang
+  statsBoard?: StatsBoard
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }
@@ -279,5 +285,17 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
     trial: s.trial === true,
     lang: s.lang === 'en' ? 'en' : 'ko',
+    statsBoard: cleanStats(s.statsBoard),
   }
+}
+
+// 숫자 판: 이름·숫자가 있는 줄만, 최대 8줄
+export function cleanStats(b: StatsBoard | undefined | null): StatsBoard | undefined {
+  if (!b || typeof b !== 'object' || !Array.isArray(b.items)) return undefined
+  const str = (v: unknown, n: number) => (typeof v === 'string' ? v.trim().slice(0, n) : '')
+  const items = b.items
+    .map((x) => ({ label: str(x?.label, 40), value: str(x?.value, 30), note: str(x?.note, 80) || undefined, source: str(x?.source, 80) || undefined, url: /^https?:\/\/\S+$/.test(str(x?.url, 300)) ? str(x?.url, 300) : undefined }))
+    .filter((x) => x.label && x.value)
+    .slice(0, 8)
+  return items.length ? { title: str(b.title, 30) || '숫자로 보는 현황', items, footnote: str(b.footnote, 200) || undefined } : undefined
 }

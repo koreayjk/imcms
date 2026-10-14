@@ -11,10 +11,11 @@ export type PressSource = {
 }
 
 // 해외 언론 묶음: 매체 설정에서 묶음마다 켠다 (출처 key 는 묶음의 앞글자로 시작한다)
-export type ForeignTopic = 'israel' | 'education' | 'reformed'
+export type ForeignTopic = 'israel' | 'education' | 'reformed' | 'mission'
 export const FOREIGN_TOPICS: { key: ForeignTopic; prefix: string; label: string; hint: string }[] = [
   { key: 'israel', prefix: 'il-', label: '이스라엘 언론', hint: '예루살렘포스트·JNS·와이넷 등' },
   { key: 'education', prefix: 'ed-', label: '해외 교육·유학 언론', hint: 'Inside Higher Ed·The PIE News·ICEF Monitor 등' },
+  { key: 'mission', prefix: 'ms-', label: '해외 선교 언론', hint: 'IMB·OMF·위클리프·ICC(박해받는 교회)·크리스채너티투데이' },
   { key: 'reformed', prefix: 'rf-', label: '해외 개혁주의·기독교교육 언론', hint: '가스펠코얼리션·리포메이션21·9Marks·고전기독교학교협회(ACCS) 등' },
 ]
 export const foreignTopicOf = (key: string): ForeignTopic | null => FOREIGN_TOPICS.find((t) => key.startsWith(t.prefix))?.key ?? null
@@ -63,6 +64,12 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'rf-ref21', name: '해외 · 리포메이션21', outlet: '리포메이션21(Reformation21)', url: 'https://www.reformation21.org/rss', kind: 'foreign' },
   { key: 'rf-9marks', name: '해외 · 9Marks(교회)', outlet: '9Marks', url: 'https://www.9marks.org/feed/', kind: 'foreign' },
   { key: 'rf-accs', name: '해외 · ACCS(기독교 고전교육 학교)', outlet: '고전기독교학교협회(ACCS)', url: 'https://classicalchristian.org/feed/', kind: 'foreign' },
+  // 선교 언론 (월드미션타임즈 등 '해외 선교 언론'을 켠 매체): 선교 현장·미전도 종족·성경번역·박해 소식
+  { key: 'ms-imb', name: '해외 · IMB(국제선교이사회)', outlet: 'IMB(미국 남침례교 국제선교이사회)', url: 'https://www.imb.org/feed/', kind: 'foreign' },
+  { key: 'ms-omf', name: '해외 · OMF', outlet: 'OMF 인터내셔널', url: 'https://www.omf.org/us/feed/', kind: 'foreign' },
+  { key: 'ms-wycliffe', name: '해외 · 위클리프(성경번역)', outlet: '위클리프 성경번역선교회(Wycliffe)', url: 'https://www.wycliffe.org/feed', kind: 'foreign' },
+  { key: 'ms-icc', name: '해외 · ICC(박해받는 교회)', outlet: '국제기독연대(ICC)', url: 'https://www.persecution.org/feed/', kind: 'foreign' },
+  { key: 'ms-ct', name: '해외 · 크리스채너티투데이', outlet: '크리스채너티투데이(Christianity Today)', url: 'https://www.christianitytoday.com/feed/', kind: 'foreign' },
   // 이스라엘 언론 (Israel Today 등 '이스라엘 언론'을 켠 매체). 타임스오브이스라엘·이스라엘하욤은 서버 접속을 막을 때가 있다
   { key: 'il-jpost', name: '해외 · 예루살렘포스트', outlet: '예루살렘포스트(The Jerusalem Post)', url: 'https://www.jpost.com/rss/rssfeedsisraelnews.aspx', kind: 'foreign' },
   { key: 'il-jpost-mideast', name: '해외 · 예루살렘포스트 중동', outlet: '예루살렘포스트(The Jerusalem Post)', url: 'https://www.jpost.com/rss/rssfeedsmiddleeastnews.aspx', kind: 'foreign' },

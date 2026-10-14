@@ -142,6 +142,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <input type="checkbox" checked={!!s.indexWidget} onChange={(e) => set({ indexWidget: e.target.checked })} className="mt-1" />
               <span><strong>해운 운임지수 위젯</strong> (SCFI·KCCI 주간 그래프를 홈 오른쪽에 표시) <span className="block text-[12px] text-muted">켜면 편집국 “홈편집”에서 매주 지수 값을 입력할 수 있습니다.</span></span>
             </label>
+            <StatsEditor value={s.statsBoard} onChange={(statsBoard) => set({ statsBoard })} />
             <label className="flex items-start gap-2 text-[13.5px]">
               <input type="checkbox" checked={s.homeLayout === 'bands'} onChange={(e) => set({ homeLayout: e.target.checked ? 'bands' : 'standard' })} className="mt-1" />
               <span><strong>섹션 띠 배치</strong> (톱 기사 아래를 섹션 순서대로 띠처럼 쌓기) <span className="block text-[12px] text-muted">띠 순서·모양은 운영팀이 설정합니다{s.bands?.length ? ` (지금 ${s.bands.length}개 띠)` : ''}.</span></span>
@@ -341,5 +342,32 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </div>
     </div>
+  )
+}
+
+// 홈 오른쪽 '숫자 판' 편집 (예: 선교 통계). 숫자마다 출처를 적는다
+function StatsEditor({ value, onChange }: { value: OutletSiteSettings['statsBoard']; onChange: (v: OutletSiteSettings['statsBoard']) => void }) {
+  const b = value ?? { title: '', items: [] }
+  const items = b.items ?? []
+  const put = (i: number, patch: Partial<(typeof items)[number]>) => onChange({ ...b, items: items.map((x, j) => (j === i ? { ...x, ...patch } : x)) })
+  return (
+    <fieldset className="space-y-2 rounded-lg border border-line p-3 text-[13px]">
+      <legend className="px-1 text-[13.5px] font-bold">숫자 판 <span className="font-normal text-muted">(홈 오른쪽, 비워 두면 안 나옵니다)</span></legend>
+      <input value={b.title ?? ''} onChange={(e) => onChange({ ...b, title: e.target.value })} maxLength={30} placeholder="제목 (예: 숫자로 보는 세계선교)" className="field-input" />
+      {items.map((x, i) => (
+        <div key={i} className="grid gap-1.5 rounded-md bg-paper/50 p-2 sm:grid-cols-[1fr_120px_1fr]">
+          <input value={x.label} onChange={(e) => put(i, { label: e.target.value })} maxLength={40} placeholder="이름 (예: 한국 장기 선교사)" className="field-input" />
+          <input value={x.value} onChange={(e) => put(i, { value: e.target.value })} maxLength={30} placeholder="숫자 (예: 21,621명)" className="field-input" />
+          <input value={x.note ?? ''} onChange={(e) => put(i, { note: e.target.value })} maxLength={80} placeholder="덧붙임 (예: 171개국)" className="field-input" />
+          <input value={x.source ?? ''} onChange={(e) => put(i, { source: e.target.value })} maxLength={80} placeholder="출처 (예: KWMA·KRIM, 2024년 말)" className="field-input sm:col-span-2" />
+          <div className="flex gap-1.5">
+            <input value={x.url ?? ''} onChange={(e) => put(i, { url: e.target.value })} maxLength={300} placeholder="출처 주소 (선택)" className="field-input min-w-0 flex-1" />
+            <button type="button" onClick={() => onChange({ ...b, items: items.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-danger underline">빼기</button>
+          </div>
+        </div>
+      ))}
+      {items.length < 8 && <button type="button" onClick={() => onChange({ ...b, items: [...items, { label: '', value: '' }] })} className="btn-secondary">+ 숫자 추가</button>}
+      <input value={b.footnote ?? ''} onChange={(e) => onChange({ ...b, footnote: e.target.value })} maxLength={200} placeholder="아래 작은 설명 (선택, 예: 집계 기준이 기관마다 다릅니다)" className="field-input" />
+    </fieldset>
   )
 }
