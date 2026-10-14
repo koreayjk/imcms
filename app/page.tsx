@@ -15,6 +15,7 @@ import Thumb from '@/components/site/Thumb'
 import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
 import AdArea from '@/components/site/AdArea'
 import HomeBands from '@/components/site/HomeBands'
+import { siteText } from '@/lib/site-text'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
@@ -25,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // 독자용 앱이 있는 매체만 앱 설치 정보 (lib/android.ts)
     ...(outletApp(site.domains) ? { manifest: '/site.webmanifest' } : {}),
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
-    openGraph: { title: site.name, description: site.description, siteName: site.name, locale: 'ko_KR', type: 'website', images: site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined },
+    openGraph: { title: site.name, description: site.description, siteName: site.name, locale: siteText(site).ogLocale, type: 'website', images: site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined },
     twitter: { card: site.ogImage ? 'summary_large_image' : 'summary' },
     alternates: { types: { 'application/rss+xml': [{ url: '/rss.xml', title: site.name }] } },
     // 네이버 서치어드바이저·구글 서치콘솔 소유 확인 (홈페이지 설정에서 넣는다)
@@ -38,14 +39,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const site = await currentSite()
+  const t = siteText(site)
+  const L = site.lang
   const [{ latest, mostViewed, bySection, pinned }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])
 
   if (!latest.length) {
     return (
       <SiteFrame site={site}>
         <div className="mx-auto max-w-[1200px] px-4 py-28 text-center">
-          <p className="text-[18px] font-semibold text-body">아직 발행된 기사가 없습니다.</p>
-          <p className="mt-2 text-[14px] text-sub">편집국에서 기사를 발행하면 이곳에 표시됩니다.</p>
+          <p className="text-[18px] font-semibold text-body">{t.noArticles}</p>
+          <p className="mt-2 text-[14px] text-sub">{t.noArticlesSub}</p>
         </div>
         {/* 기사가 아직 없어도 첫 화면 팝업 광고는 띄운다 */}
         <AdArea site={site} slot="popup" />
@@ -94,7 +97,7 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
       <div className="mx-auto max-w-[1200px] px-4">
         {/* ── 톱 기사: PC ── */}
-        <section aria-label="톱 기사" className="hidden grid-cols-[250px_1fr_300px] gap-8 border-b border-rule py-7 lg:grid">
+        <section aria-label={t.topStories} className="hidden grid-cols-[250px_1fr_300px] gap-8 border-b border-rule py-7 lg:grid">
           <div className="divide-y divide-rule">
             {subTops.map((a) => (
               <Link key={a.id} href={`/news/${a.id}`} className="headline-link group block py-5 first:pt-0">
@@ -135,13 +138,13 @@ export default async function HomePage() {
           </div>
 
           <aside>
-            <SectionHeading title="실시간 뉴스" as="h3" />
-            <RealtimeList items={realtime} />
+            <SectionHeading title={t.realtime} as="h3" lang={L} />
+            <RealtimeList items={realtime} lang={L} />
           </aside>
         </section>
 
         {/* ── 톱 기사: 모바일 (좌우로 넘기기) ── */}
-        <section aria-label="톱 기사" className="-mx-4 pt-4 lg:hidden">
+        <section aria-label={t.topStories} className="-mx-4 pt-4 lg:hidden">
           <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1">
             {[headline, ...subTops].map((a) => (
               <Link key={a.id} href={`/news/${a.id}`} className="w-[86%] flex-shrink-0 snap-center border border-rule bg-white">
@@ -161,7 +164,7 @@ export default async function HomePage() {
         {/* ── 주요뉴스 + 많이 본 뉴스 ── */}
         <div className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <section id="major" className="scroll-mt-28">
-            <SectionHeading title="주요뉴스" />
+            <SectionHeading title={t.majorShort} lang={L} />
             <ul className="divide-y divide-rule lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-8 lg:divide-y-0">
               {major.map((a) => (
                 <li key={a.id} className="py-4 first:pt-0 lg:py-0">
@@ -172,7 +175,7 @@ export default async function HomePage() {
                       <h3 className="headline-text line-clamp-2 text-[16px] font-bold leading-[1.42] tracking-[-0.02em] lg:mt-1">{a.title}</h3>
                       {a.excerpt && <p className="mt-1 hidden line-clamp-2 text-[13px] leading-[1.55] text-sub lg:block">{a.excerpt}</p>}
                       <time dateTime={a.published_at ?? undefined} className="mt-1.5 block text-[12px] text-[#8A918C] tabular-nums">
-                        {formatDate(a.published_at)}
+                        {formatDate(a.published_at, L)}
                       </time>
                     </div>
                   </Link>
@@ -183,15 +186,15 @@ export default async function HomePage() {
 
           <aside className="space-y-9">
             <div id="realtime" className="scroll-mt-28 lg:hidden">
-              <SectionHeading title="실시간 뉴스" as="h3" />
-              <RealtimeList items={realtime.slice(0, 5)} />
+              <SectionHeading title={t.realtime} as="h3" lang={L} />
+              <RealtimeList items={realtime.slice(0, 5)} lang={L} />
             </div>
             {/* 해운 운임지수 (홈페이지 설정에서 켠 매체만) */}
             {indexSeries && <IndexWidget series={indexSeries} />}
             <div id="popular" className="scroll-mt-28">
-              <MostViewed items={mostViewed} />
+              <MostViewed items={mostViewed} lang={L} />
             </div>
-            {isDemo && <AdSlot label="광고 영역 300×250" className="hidden h-[250px] lg:flex" />}
+            {isDemo && <AdSlot label={L === 'en' ? 'Ad 300×250' : '광고 영역 300×250'} className="hidden h-[250px] lg:flex" />}
             <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
           </aside>
         </div>
@@ -205,7 +208,7 @@ export default async function HomePage() {
       {picks.length > 0 && (
         <section aria-labelledby="pick-title" className="mx-auto mb-9 max-w-[1200px] px-4">
           <div className="border-t-[3px] border-gold pt-4">
-            <h2 id="pick-title" className="mb-4 text-[18px] font-bold tracking-[-0.02em] text-gold-ink">이슈 PICK</h2>
+            <h2 id="pick-title" className="mb-4 text-[18px] font-bold tracking-[-0.02em] text-gold-ink">{t.pick}</h2>
             <ul className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
               {picks.map((a) => (
                 <li key={a.id}>
@@ -240,7 +243,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-[1200px] px-4">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <p className="font-serif text-[11px] tracking-[0.24em] text-gold-ink">{site.nameEn} SPECIAL</p>
+              <p className="font-serif text-[11px] tracking-[0.24em] text-gold-ink">{L === 'en' ? site.name.toUpperCase() : `${site.nameEn} SPECIAL`}</p>
               <h2 id="specialty-title" className="mt-1 text-[24px] font-extrabold tracking-[-0.03em] text-brand">{site.specialtyTitle}</h2>
             </div>
             <p className="hidden text-[13px] text-sub lg:block">{site.description}</p>
@@ -268,10 +271,10 @@ export default async function HomePage() {
                       <TitleList items={rest.slice(0, 3)} className="mt-4 border-t border-rule pt-4" />
                     </>
                   ) : (
-                    <p className="py-10 text-center text-[13px] text-sub">아직 발행된 기사가 없습니다.</p>
+                    <p className="py-10 text-center text-[13px] text-sub">{t.noArticles}</p>
                   )}
                   <Link href={`/section/${s.slug}`} className="mt-auto pt-4 text-[12.5px] text-sub hover:text-brand">
-                    {s.name} 더보기 +
+                    {t.moreOf(s.name)}
                   </Link>
                 </div>
               )
@@ -279,7 +282,7 @@ export default async function HomePage() {
           </div>
 
           <div className="lg:hidden">
-            <SpecialtyTabs
+            <SpecialtyTabs lang={L}
               title={site.specialtyTitle}
               tabs={specialty.map((s) => ({ slug: s.slug, name: s.name, description: s.description, articles: bySection[s.slug] ?? [] }))}
             />
@@ -294,7 +297,7 @@ export default async function HomePage() {
           const [lead, ...rest] = bySection[s.slug] ?? []
           return (
             <section key={s.slug}>
-              <SectionHeading title={s.name} href={`/section/${s.slug}`} />
+              <SectionHeading title={s.name} href={`/section/${s.slug}`} lang={L} />
               {lead ? (
                 <>
                   <Link href={`/news/${lead.id}`} className="headline-link group flex gap-3 lg:block">
@@ -306,7 +309,7 @@ export default async function HomePage() {
                   <TitleList items={rest.slice(0, 4)} className="mt-4" />
                 </>
               ) : (
-                <p className="py-6 text-[13px] text-sub">아직 발행된 기사가 없습니다.</p>
+                <p className="py-6 text-[13px] text-sub">{t.noArticles}</p>
               )}
             </section>
           )
@@ -318,7 +321,7 @@ export default async function HomePage() {
   )
 }
 
-function RealtimeList({ items }: { items: PublicArticle[] }) {
+function RealtimeList({ items, lang: L }: { items: PublicArticle[]; lang?: 'ko' | 'en' }) {
   return (
     <ul className="divide-y divide-rule">
       {items.map((a) => (
@@ -326,7 +329,7 @@ function RealtimeList({ items }: { items: PublicArticle[] }) {
           <Link href={`/news/${a.id}`} className="group flex gap-3 py-3">
             <div className="min-w-0 flex-1">
               <time dateTime={a.published_at ?? undefined} className="text-[12px] font-semibold text-brand tabular-nums">
-                {formatShort(a.published_at)}
+                {formatShort(a.published_at, L)}
               </time>
               <p className="mt-0.5 line-clamp-2 text-[14.5px] leading-[1.45] group-hover:underline underline-offset-2">{a.title}</p>
             </div>

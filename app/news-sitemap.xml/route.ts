@@ -12,7 +12,7 @@ export async function GET() {
   const items = articles.map((a) => `<url>
   <loc>${base}/news/${a.id}</loc>
   <news:news>
-    <news:publication><news:name>${xml(site.name)}</news:name><news:language>ko</news:language></news:publication>
+    <news:publication><news:name>${xml(site.name)}</news:name><news:language>${site.lang === 'en' ? 'en' : 'ko'}</news:language></news:publication>
     <news:publication_date>${new Date(a.published_at ?? Date.now()).toISOString()}</news:publication_date>
     <news:title>${xml(a.title)}</news:title>
   </news:news>

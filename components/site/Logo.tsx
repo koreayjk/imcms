@@ -16,7 +16,7 @@ export default function Logo({ site, size = 'lg' }: Props) {
 
   if (mode === 'full') {
     return (
-      <Link href="/" className="inline-flex items-center" aria-label={`${site.name} 홈`}>
+      <Link href="/" className="inline-flex items-center" aria-label={site.lang === 'en' ? `${site.name} home` : `${site.name} 홈`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={site.logoMark} alt={site.name} className={`${s.full} w-auto object-contain`} />
       </Link>
@@ -24,7 +24,7 @@ export default function Logo({ site, size = 'lg' }: Props) {
   }
 
   return (
-    <Link href="/" className="inline-flex items-center gap-2.5" aria-label={`${site.name} 홈`}>
+    <Link href="/" className="inline-flex items-center gap-2.5" aria-label={site.lang === 'en' ? `${site.name} home` : `${site.name} 홈`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {mode === 'mark' && <img src={site.logoMark} alt="" className={`${s.mark} w-auto`} />}
       <span className="flex flex-col items-center leading-none">

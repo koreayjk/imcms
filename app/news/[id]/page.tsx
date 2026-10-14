@@ -10,6 +10,7 @@ import ViewCounter from './ViewCounter'
 import AdArea from '@/components/site/AdArea'
 import ArticleMain from '@/components/site/ArticleMain'
 import ArticleAside from '@/components/site/ArticleAside'
+import { siteText } from '@/lib/site-text'
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
 
@@ -30,7 +31,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   if (LEGACY_PAGE.test(params.id)) return {}
   const site = await currentSite()
   const data = await getArticleData(site, params.id)
-  if (!data) return { title: `기사를 찾을 수 없습니다 | ${site.name}` }
+  if (!data) return { title: `${siteText(site).notFound} | ${site.name}` }
   const a = data.article
   const title = a.meta_title || a.title
   const description = a.meta_description || a.excerpt || undefined
@@ -46,6 +47,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       description,
       siteName: site.name,
       type: 'article',
+      locale: siteText(site).ogLocale,
       // 기사 사진이 없으면 매체 대표 이미지
       images: a.thumbnail_url ? [a.thumbnail_url] : site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined,
     },
@@ -81,6 +83,7 @@ export default async function ArticlePage(props: Props) {
           bodyHtml={sanitizeBody(a.body)}
           sectionName={section?.name}
           siteName={site.name}
+          lang={site.lang}
           source={source}
           related={related}
           relatedLinks={relatedLinks}

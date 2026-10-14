@@ -5,7 +5,7 @@ import { siteIcon } from '@/lib/sites'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
-  return { title: `청소년보호정책 | ${site.name}`, icons: { icon: siteIcon(site) } }
+  return { title: `${site.lang === 'en' ? 'Youth Protection Policy' : '청소년보호정책'} | ${site.name}`, icons: { icon: siteIcon(site) } }
 }
 
 const EFFECTIVE = '2026년 10월 2일'
@@ -14,6 +14,33 @@ const EFFECTIVE = '2026년 10월 2일'
 export default async function YouthPage() {
   const site = await currentSite()
   const o = officer(site, site.legal.youthOfficer)
+  if (site.lang === 'en') {
+    return (
+      <PolicyPage site={site} slug="youth" effective="Oct. 14, 2026">
+        <p>{site.name} is committed to protecting young readers from harmful content.</p>
+        <section>
+          <h2>1. Protecting young readers</h2>
+          <ul>
+            <li>Our editors review stories, advertisements and images before publication to keep out content that is harmful to minors.</li>
+            <li>We do not publish material classified as harmful to minors. Where graphic material is necessary for news value, we add a clear warning.</li>
+            <li>Advertisements are reviewed before they run, and ads harmful to minors are not accepted.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>2. Staff training</h2>
+          <p>Reporters and editors are trained in the rules and standards for protecting minors.</p>
+        </section>
+        <section>
+          <h2>3. Reports and remedies</h2>
+          <p>If you have been harmed by, or want to report, content that is harmful to minors, please contact the officer below. We will act promptly.</p>
+        </section>
+        <section>
+          <h2>4. Youth protection officer</h2>
+          <p>Name: {o.name}<br />Contact: {o.contact}</p>
+        </section>
+      </PolicyPage>
+    )
+  }
   return (
     <PolicyPage site={site} slug="youth" effective={EFFECTIVE}>
       <p>{site.name}은 청소년이 건전한 인격체로 성장할 수 있도록 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」과 「청소년 보호법」에 따라 청소년보호정책을 두고 시행합니다.</p>

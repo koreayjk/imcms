@@ -8,18 +8,19 @@ export const metadata: Metadata = { title: '뉴스레터 구독 확인', robots:
 export default async function Page(props: { searchParams: Promise<{ t?: string }> }) {
   const searchParams = await props.searchParams
   const site = await currentSite()
+  const en = site.lang === 'en'
   const token = /^[0-9a-f]{20,64}$/.test(searchParams.t ?? '') ? searchParams.t! : ''
   return (
     <SiteFrame site={site}>
       <div className="mx-auto max-w-[560px] px-4 py-20 text-center">
-        <h1 className="text-[24px] font-extrabold tracking-[-0.02em]">{site.name} 뉴스레터 구독 확인</h1>
+        <h1 className="text-[24px] font-extrabold tracking-[-0.02em]">{site.name} {en ? 'Newsletter Subscription' : '뉴스레터 구독 확인'}</h1>
         {token ? (
           <>
-            <p className="mt-3 text-[15px] text-sub">아래 버튼을 누르면 뉴스레터 구독이 시작됩니다.</p>
-            <div className="mt-8"><NewsletterAction token={token} mode="confirm" siteName={site.name} /></div>
+            <p className="mt-3 text-[15px] text-sub">{en ? 'Click the button below to start your subscription.' : '아래 버튼을 누르면 뉴스레터 구독이 시작됩니다.'}</p>
+            <div className="mt-8"><NewsletterAction token={token} mode="confirm" siteName={site.name} lang={site.lang} /></div>
           </>
         ) : (
-          <p className="mt-4 text-[15px] text-sub">링크가 올바르지 않습니다. 메일의 링크를 다시 눌러 주세요.</p>
+          <p className="mt-4 text-[15px] text-sub">{en ? 'This link is not valid. Please click the link in the email again.' : '링크가 올바르지 않습니다. 메일의 링크를 다시 눌러 주세요.'}</p>
         )}
       </div>
     </SiteFrame>

@@ -1,12 +1,15 @@
 import Link from 'next/link'
 import type { PublicArticle } from '@/lib/public-data'
 import SectionHeading from './SectionHeading'
+import type { SiteLang } from '@/lib/sites'
+import { siteText } from '@/lib/site-text'
 
-export default function MostViewed({ items }: { items: PublicArticle[] }) {
+export default function MostViewed({ items, lang }: { items: PublicArticle[]; lang?: SiteLang }) {
   if (!items.length) return null
+  const t = siteText(lang)
   return (
-    <section aria-label="많이 본 뉴스">
-      <SectionHeading title="많이 본 뉴스" as="h3" />
+    <section aria-label={t.popular}>
+      <SectionHeading title={t.popular} as="h3" lang={lang} />
       <ol className="space-y-3">
         {items.map((a, i) => (
           <li key={a.id}>

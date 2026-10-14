@@ -7,12 +7,14 @@ import { childSections, findSection, siteIcon } from '@/lib/sites'
 import SiteFrame from '@/components/site/SiteFrame'
 import MostViewed from '@/components/site/MostViewed'
 import ArticleRow from '@/components/site/ArticleRow'
+import { siteText } from '@/lib/site-text'
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ page?: string }> }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params
   const site = await currentSite()
+  const t = siteText(site)
   const section = findSection(site, params.slug)
   return {
     title: section ? `${section.name} | ${site.name}` : site.name,
@@ -26,6 +28,7 @@ export default async function SectionPage(props: Props) {
   const searchParams = await props.searchParams
   const params = await props.params
   const site = await currentSite()
+  const t = siteText(site)
   const section = findSection(site, params.slug)
   if (!section) notFound()
 
@@ -41,8 +44,8 @@ export default async function SectionPage(props: Props) {
     <SiteFrame site={site} current={section.slug}>
       <div className="border-b border-rule bg-soft">
         <div className="mx-auto max-w-[1200px] px-4 py-6 lg:py-8">
-          <nav className="text-[12px] text-sub" aria-label="현재 위치">
-            <Link href="/" className="hover:text-brand">홈</Link>
+          <nav className="text-[12px] text-sub" aria-label={t.breadcrumb}>
+            <Link href="/" className="hover:text-brand">{t.home}</Link>
             {parent && (
               <>
                 <span className="mx-1.5">›</span>
@@ -55,9 +58,9 @@ export default async function SectionPage(props: Props) {
           <h1 className="mt-1.5 text-[24px] font-extrabold tracking-[-0.03em] text-brand lg:text-[28px]">{section.name}</h1>
           {section.description && <p className="mt-1 text-[14px] text-sub">{section.description}</p>}
           {subs.length > 0 && (
-            <nav aria-label={`${head.name} 하위 메뉴`} className="no-scrollbar -mx-4 mt-4 overflow-x-auto px-4">
+            <nav aria-label={t.subMenu(head.name)} className="no-scrollbar -mx-4 mt-4 overflow-x-auto px-4">
               <ul className="flex gap-2">
-                {[{ slug: head.slug, name: '전체' }, ...subs].map((k) => {
+                {[{ slug: head.slug, name: t.all }, ...subs].map((k) => {
                   const on = k.slug === section.slug
                   return (
                     <li key={k.slug}>
@@ -80,18 +83,18 @@ export default async function SectionPage(props: Props) {
       <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-10 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div>
           <p className="mb-4 border-b-2 border-brand pb-2 text-[13px] text-sub">
-            전체 <strong className="font-semibold text-body tabular-nums">{total.toLocaleString()}</strong>건
+            {t.total(total)}
           </p>
           {articles.length ? (
             <ul className="divide-y divide-rule">
-              {articles.map((a) => <ArticleRow key={a.id} article={a} />)}
+              {articles.map((a) => <ArticleRow key={a.id} article={a} lang={site.lang} />)}
             </ul>
           ) : (
-            <p className="py-20 text-center text-[15px] text-sub">아직 발행된 기사가 없습니다.</p>
+            <p className="py-20 text-center text-[15px] text-sub">{t.noArticles}</p>
           )}
 
           {pages > 1 && (
-            <nav className="mt-8 flex justify-center gap-1" aria-label="페이지">
+            <nav className="mt-8 flex justify-center gap-1" aria-label={t.pages}>
               {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
                 <Link
                   key={p}
@@ -109,7 +112,7 @@ export default async function SectionPage(props: Props) {
         </div>
 
         <aside className="space-y-10">
-          <MostViewed items={mostViewed} />
+          <MostViewed items={mostViewed} lang={site.lang} />
           <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
         </aside>
       </div>

@@ -73,7 +73,11 @@ export type SiteConfig = {
   trial?: boolean
   // 요금제 (DB 매체만). 베이직은 뉴스레터 구독 칸을 보이지 않는다
   plan?: string | null
+  // 홈페이지 언어: ko(기본) / en(영문 매체 — 메뉴·날짜·안내 문구가 영어, lib/site-text.ts)
+  lang?: SiteLang
 }
+
+export type SiteLang = 'ko' | 'en'
 
 // public/sites/<폴더>/og.png 가 있는 매체: 로고가 이 폴더에 있으면 대표 이미지도 자동으로 쓴다
 const OG_DIRS = ['thecaretimes', 'shippingtimes', 'israeltoday']
@@ -185,6 +189,7 @@ export type OutletSiteSettings = {
   pressFields?: PressField[]
   ogImage?: string
   trial?: boolean
+  lang?: SiteLang
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }
@@ -253,8 +258,8 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     nameEn: s.nameEn ?? code?.nameEn ?? '',
     slogan: s.slogan ?? code?.slogan ?? '',
     sloganEn: s.sloganEn ?? code?.sloganEn ?? '',
-    description: s.description ?? code?.description ?? `${o.name} 인터넷신문`,
-    specialtyTitle: s.specialtyTitle || code?.specialtyTitle || '전문뉴스',
+    description: s.description ?? code?.description ?? (s.lang === 'en' ? `${o.name} — news and analysis` : `${o.name} 인터넷신문`),
+    specialtyTitle: s.specialtyTitle || code?.specialtyTitle || (s.lang === 'en' ? 'In Focus' : '전문뉴스'),
     indexWidget: !!s.indexWidget,
     verification: { naver: s.naverVerification || undefined, google: s.googleVerification || undefined },
     logoMark: s.logoUrl ?? code?.logoMark ?? '',
@@ -273,5 +278,6 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     pressFields: pressFields(s, keywords),
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
     trial: s.trial === true,
+    lang: s.lang === 'en' ? 'en' : 'ko',
   }
 }

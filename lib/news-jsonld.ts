@@ -21,7 +21,7 @@ export function newsArticleJsonLd(site: SiteConfig, a: PublicArticle, base: stri
     publisher: { '@type': 'NewsMediaOrganization', name: site.name, url: base, ...(logo ? { logo: { '@type': 'ImageObject', url: logo } } : {}) },
     ...(a.category ? { articleSection: a.category.name } : {}),
     ...(a.tags?.length ? { keywords: a.tags.join(', ') } : {}),
-    inLanguage: 'ko-KR',
+    inLanguage: site.lang === 'en' ? 'en-US' : 'ko-KR',
     isAccessibleForFree: true,
   }
   // </script> 로 끝나는 글자가 기사 안에 있어도 깨지지 않게
@@ -42,7 +42,7 @@ export function siteJsonLd(site: SiteConfig, base: string) {
         url: `${base}/`,
         name: site.name,
         ...(site.nameEn && site.nameEn !== site.name ? { alternateName: site.nameEn } : {}),
-        inLanguage: 'ko-KR',
+        inLanguage: site.lang === 'en' ? 'en-US' : 'ko-KR',
         publisher: { '@id': `${base}/#organization` },
       },
       {

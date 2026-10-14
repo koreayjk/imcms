@@ -25,7 +25,7 @@ export async function GET() {
   <title>${xml(site.name)}</title>
   <link>${base}/</link>
   <description>${xml(site.description)}</description>
-  <language>ko</language>
+  <language>${site.lang === 'en' ? 'en' : 'ko'}</language>
   <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
 ${items.join('\n')}
 </channel>

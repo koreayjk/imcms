@@ -8,10 +8,12 @@ import Thumb from './Thumb'
 import OptImg from './OptImg'
 import { optimizeBodyImages } from '@/lib/image-url'
 import ShareButton from './ShareButton'
+import type { SiteLang } from '@/lib/sites'
+import { siteText } from '@/lib/site-text'
 
 // 홈페이지 기사 본문 (제목·부제·기자·본문·관련기사·태그·기자 정보·섹션 다른 기사). 실제 기사 화면과 기사쓰기 미리보기가 같이 쓴다
 // bodyHtml은 이미 정리(sanitizeBody)한 HTML
-export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd }: {
+export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, lang }: {
   a: PublicArticle
   bodyHtml: string
   sectionName?: string
@@ -21,7 +23,9 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
   // 본문 아래 '관련기사' 글 목록 (태그가 겹치는 기사)
   relatedLinks?: PublicArticle[]
   bottomAd?: ReactNode
+  lang?: SiteLang
 }) {
+  const t = siteText(lang)
   return (
     <article className="min-w-0">
       <header className="border-b border-rule pb-5">
@@ -38,18 +42,18 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
         )}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-[13px] text-sub">
           <p className="tabular-nums">
-            {a.author_name && <span className="font-semibold text-body">{a.author_name} 기자</span>}
+            {a.author_name && <span className="font-semibold text-body">{t.reporter(a.author_name)}</span>}
             {a.author_email && <a href={`mailto:${a.author_email}`} className="ml-1.5 text-sub hover:text-brand">{a.author_email}</a>}
             <span className="mx-2 text-rule" aria-hidden>|</span>
-            <span>입력 {formatDateTime(a.published_at)}</span>
+            <span>{t.published} {formatDateTime(a.published_at, lang)}</span>
             {a.view_count > 0 && (
               <>
                 <span className="mx-2 text-rule" aria-hidden>|</span>
-                <span>조회 {a.view_count.toLocaleString()}</span>
+                <span>{t.views} {a.view_count.toLocaleString(lang === 'en' ? 'en-US' : 'ko-KR')}</span>
               </>
             )}
           </p>
-          <ShareButton title={a.title} />
+          <ShareButton title={a.title} lang={lang} />
         </div>
       </header>
 
@@ -66,7 +70,7 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
 
       {relatedLinks.length > 0 && (
         <section aria-labelledby="related-links" className="mt-10">
-          <h2 id="related-links" className="text-[17px] font-bold text-body">관련기사</h2>
+          <h2 id="related-links" className="text-[17px] font-bold text-body">{t.related}</h2>
           <ul className="mt-3 space-y-2.5">
             {relatedLinks.map((r) => (
               <li key={r.id} className="flex gap-1.5 text-[15px] leading-[1.5]">
@@ -82,10 +86,10 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
 
       {a.tags && a.tags.length > 0 && (
         <ul className="mt-8 flex flex-wrap gap-2">
-          {a.tags.map((t) => (
-            <li key={t}>
-              <Link href={`/search?q=${encodeURIComponent(t)}`} className="block rounded-full bg-soft px-3 py-1 text-[13px] text-sub hover:text-brand">
-                #{t}
+          {a.tags.map((tag) => (
+            <li key={tag}>
+              <Link href={`/search?q=${encodeURIComponent(tag)}`} className="block rounded-full bg-soft px-3 py-1 text-[13px] text-sub hover:text-brand">
+                #{tag}
               </Link>
             </li>
           ))}
@@ -97,13 +101,13 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
           <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand text-[15px] font-bold text-white">
             {a.author_name.trim().charAt(0)}
           </span>
-          <span className="text-[15px] font-bold text-body">{a.author_name} 기자</span>
+          <span className="text-[15px] font-bold text-body">{t.reporter(a.author_name)}</span>
           {a.author_email && <a href={`mailto:${a.author_email}`} className="text-[13px] text-sub hover:text-brand">{a.author_email}</a>}
           <Link
             href={reporterHref(a.author_name)}
             className="bg-[linear-gradient(transparent_60%,color-mix(in_srgb,var(--brand)_22%,transparent)_60%)] text-[13.5px] font-medium text-body hover:text-brand"
           >
-            다른기사 보기
+            {t.moreByReporter}
           </Link>
         </div>
       )}
@@ -111,19 +115,19 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
       <p className={`${a.author_name ? 'mt-5' : 'mt-8'} border-y border-rule py-4 text-[13px] text-sub`}>
         {source ? (
           <>
-            이 기사는 <strong className="text-body">{source.outletName}</strong>에서 제공한 기사입니다.
+            {t.syndicated(source.outletName)}
             {source.url && (
-              <a href={source.url} className="ml-2 text-brand underline underline-offset-2">원문 보기</a>
+              <a href={source.url} className="ml-2 text-brand underline underline-offset-2">{t.original}</a>
             )}
           </>
         ) : (
-          <>저작권자 © {siteName} 무단전재 및 재배포 금지</>
+          <>{t.copyright(siteName)}</>
         )}
       </p>
 
       {related.length > 0 && (
         <section className="mt-10">
-          <SectionHeading title={`${sectionName ?? '관련'} 다른 기사`} href={a.category ? `/section/${a.category.slug}` : undefined} />
+          <SectionHeading lang={lang} title={t.moreInSection(sectionName)} href={a.category ? `/section/${a.category.slug}` : undefined} />
           <ul className="grid grid-cols-2 gap-x-5 gap-y-6 lg:grid-cols-4">
             {related.map((r) => (
               <li key={r.id}>

@@ -7,7 +7,8 @@ import Thumb from './Thumb'
 
 type Tab = { slug: string; name: string; description?: string; articles: PublicArticle[] }
 
-export default function SpecialtyTabs({ tabs, title = '전문뉴스' }: { tabs: Tab[]; title?: string }) {
+export default function SpecialtyTabs({ tabs, title = '전문뉴스', lang }: { tabs: Tab[]; title?: string; lang?: 'ko' | 'en' }) {
+  const en = lang === 'en'
   const [active, setActive] = useState(0)
   const tab = tabs[active] ?? tabs[0]
   if (!tab) return null
@@ -15,7 +16,7 @@ export default function SpecialtyTabs({ tabs, title = '전문뉴스' }: { tabs: 
 
   return (
     <div>
-      <div role="tablist" aria-label={`${title} 분야`} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-4">
+      <div role="tablist" aria-label={en ? title : `${title} 분야`} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-4">
         {tabs.map((t, i) => (
           <button
             key={t.slug}
@@ -53,10 +54,10 @@ export default function SpecialtyTabs({ tabs, title = '전문뉴스' }: { tabs: 
             </ul>
           </>
         ) : (
-          <p className="py-6 text-center text-[14px] text-sub">아직 발행된 기사가 없습니다.</p>
+          <p className="py-6 text-center text-[14px] text-sub">{en ? 'No stories yet.' : '아직 발행된 기사가 없습니다.'}</p>
         )}
         <Link href={`/section/${tab.slug}`} className="mt-2 block border border-rule py-2.5 text-center text-[14px] text-sub">
-          {tab.name} 더보기
+          {en ? `More in ${tab.name}` : `${tab.name} 더보기`}
         </Link>
       </div>
     </div>

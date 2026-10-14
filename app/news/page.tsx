@@ -7,13 +7,15 @@ import MostViewed from '@/components/site/MostViewed'
 import ArticleRow from '@/components/site/ArticleRow'
 import { ALL_NEWS } from '@/components/site/SiteHeader'
 import { siteIcon } from '@/lib/sites'
+import { siteText } from '@/lib/site-text'
 
 type Props = { searchParams: Promise<{ page?: string }> }
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
+  const t = siteText(site)
   return {
-    title: `전체기사 | ${site.name}`,
+    title: `${t.allNews} | ${site.name}`,
     description: site.description,
     icons: { icon: siteIcon(site) },
     ...(site.indexable ? { robots: { index: true, follow: true } } : {}),
@@ -24,6 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AllNewsPage(props: Props) {
   const searchParams = await props.searchParams
   const site = await currentSite()
+  const t = siteText(site)
   const page = Math.max(1, Number(searchParams.page) || 1)
   const { articles, total, mostViewed } = await getSectionData(site, null, page)
   const pages = Math.max(1, Math.ceil(total / SECTION_PAGE_SIZE))
@@ -35,31 +38,31 @@ export default async function AllNewsPage(props: Props) {
     <SiteFrame site={site} current={ALL_NEWS}>
       <div className="border-b border-rule bg-soft">
         <div className="mx-auto max-w-[1200px] px-4 py-6 lg:py-8">
-          <nav className="text-[12px] text-sub" aria-label="현재 위치">
-            <Link href="/" className="hover:text-brand">홈</Link>
+          <nav className="text-[12px] text-sub" aria-label={t.breadcrumb}>
+            <Link href="/" className="hover:text-brand">{t.home}</Link>
             <span className="mx-1.5">›</span>
-            <span>전체기사</span>
+            <span>{t.allNews}</span>
           </nav>
-          <h1 className="mt-1.5 text-[24px] font-extrabold tracking-[-0.03em] text-brand lg:text-[28px]">전체기사</h1>
+          <h1 className="mt-1.5 text-[24px] font-extrabold tracking-[-0.03em] text-brand lg:text-[28px]">{t.allNews}</h1>
         </div>
       </div>
 
       <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-10 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div>
           <p className="mb-4 border-b-2 border-brand pb-2 text-[13px] text-sub">
-            전체 <strong className="font-semibold text-body tabular-nums">{total.toLocaleString()}</strong>건
+            {t.total(total)}
           </p>
           {articles.length ? (
             <ul className="divide-y divide-rule">
-              {articles.map((a) => <ArticleRow key={a.id} article={a} />)}
+              {articles.map((a) => <ArticleRow key={a.id} article={a} lang={site.lang} />)}
             </ul>
           ) : (
-            <p className="py-20 text-center text-[15px] text-sub">아직 발행된 기사가 없습니다.</p>
+            <p className="py-20 text-center text-[15px] text-sub">{t.noArticles}</p>
           )}
 
           {pages > 1 && (
-            <nav className="mt-8 flex flex-wrap justify-center gap-1" aria-label="페이지">
-              {page > 1 && <Link href={`/news${page > 2 ? `?page=${page - 1}` : ''}`} className="grid h-9 place-items-center border border-rule px-3 text-[14px] text-sub hover:border-brand hover:text-brand">이전</Link>}
+            <nav className="mt-8 flex flex-wrap justify-center gap-1" aria-label={t.pages}>
+              {page > 1 && <Link href={`/news${page > 2 ? `?page=${page - 1}` : ''}`} className="grid h-9 place-items-center border border-rule px-3 text-[14px] text-sub hover:border-brand hover:text-brand">{t.prev}</Link>}
               {nums.map((p) => (
                 <Link
                   key={p}
@@ -72,13 +75,13 @@ export default async function AllNewsPage(props: Props) {
                   {p}
                 </Link>
               ))}
-              {page < pages && <Link href={`/news?page=${page + 1}`} className="grid h-9 place-items-center border border-rule px-3 text-[14px] text-sub hover:border-brand hover:text-brand">다음</Link>}
+              {page < pages && <Link href={`/news?page=${page + 1}`} className="grid h-9 place-items-center border border-rule px-3 text-[14px] text-sub hover:border-brand hover:text-brand">{t.next}</Link>}
             </nav>
           )}
         </div>
 
         <aside className="space-y-10">
-          <MostViewed items={mostViewed} />
+          <MostViewed items={mostViewed} lang={site.lang} />
           <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
         </aside>
       </div>

@@ -65,6 +65,9 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
   const { data: prev } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
   const prevSite = ((prev as { site?: OutletSiteSettings | null } | null)?.site ?? {}) as OutletSiteSettings
   if (Array.isArray(prevSite.bands)) site.bands = prevSite.bands
+  if (prevSite.ogImage) site.ogImage = prevSite.ogImage
+  if (prevSite.trial) site.trial = prevSite.trial
+  site.lang = s.lang === 'en' ? 'en' : s.lang === 'ko' ? 'ko' : prevSite.lang
 
   const { error } = await supabase.from('outlets').update({ name, domain: domain || null, site }).eq('id', outletId)
   if (error) {

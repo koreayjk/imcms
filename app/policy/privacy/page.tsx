@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 import { currentSite } from '@/lib/public-data'
 import PolicyPage, { officer } from '@/components/site/PolicyPage'
-import { siteIcon } from '@/lib/sites'
+import { siteIcon, type SiteConfig } from '@/lib/sites'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
-  return { title: `개인정보처리방침 | ${site.name}`, icons: { icon: siteIcon(site) } }
+  return { title: `${site.lang === 'en' ? 'Privacy Policy' : '개인정보처리방침'} | ${site.name}`, icons: { icon: siteIcon(site) } }
 }
 
 const EFFECTIVE = '2026년 10월 13일'
@@ -14,6 +14,7 @@ const EFFECTIVE = '2026년 10월 13일'
 export default async function PrivacyPage() {
   const site = await currentSite()
   const o = officer(site, site.legal.publisher)
+  if (site.lang === 'en') return <PrivacyEn site={site} o={o} />
   return (
     <PolicyPage site={site} slug="privacy" effective={EFFECTIVE}>
       <p>{site.name}(이하 “신문사”)은 「개인정보 보호법」에 따라 이용자의 개인정보를 보호하고 관련 고충을 신속하게 처리하기 위해 다음과 같이 개인정보처리방침을 둡니다.</p>
@@ -88,6 +89,81 @@ export default async function PrivacyPage() {
       <section>
         <h2>8. 방침의 변경</h2>
         <p>이 방침은 {EFFECTIVE}부터 적용됩니다. 내용이 바뀌면 시행 7일 전부터 홈페이지에 알립니다.</p>
+      </section>
+    </PolicyPage>
+  )
+}
+
+// 영문 매체용 (Privacy Policy)
+const EFFECTIVE_EN = 'Oct. 14, 2026'
+function PrivacyEn({ site, o }: { site: SiteConfig; o: { name: string; contact: string } }) {
+  return (
+    <PolicyPage site={site} slug="privacy" effective={EFFECTIVE_EN}>
+      <p>{site.name} (“we,” “us”) respects your privacy. This policy explains what personal information we process when you read our website, contact us or subscribe to our newsletter, and how we protect it.</p>
+
+      <section>
+        <h2>1. Information we process and why</h2>
+        <p>You can read {site.name} without creating an account. We process only the minimum information needed in the following cases.</p>
+        <table>
+          <thead><tr><th>Purpose</th><th>Information</th><th>Use</th><th>Retention</th></tr></thead>
+          <tbody>
+            <tr><td>News tips and advertising inquiries (email)</td><td>Name, email address, phone number, message</td><td>Verifying tips, reporting, replying to inquiries</td><td>One year after the matter is closed</td></tr>
+            <tr><td>Newsroom accounts (reporters and editors)</td><td>Name, email address, outlet, sign-in records</td><td>Writing, editing and publishing stories; identity verification</td><td>Until the account is closed (bylines remain with published stories)</td></tr>
+            <tr><td>Newsletter (subscribers only)</td><td>Email address, optional name, confirmation and unsubscribe dates</td><td>Sending the newsletter, confirming subscriptions</td><td>Until you unsubscribe (every email has an unsubscribe link)</td></tr>
+            <tr><td>Website use (collected automatically)</td><td>IP address, browser type, time of access</td><td>Keeping the service secure and stable, preventing abuse</td><td>Up to one year</td></tr>
+          </tbody>
+        </table>
+        <p>To count story views without duplicates, your browser stores a list of stories you opened for 12 hours. It stays on your device and is not sent to us.</p>
+      </section>
+
+      <section>
+        <h2>2. Sharing with third parties</h2>
+        <p>We do not sell or share your personal information with third parties, except when required by law, such as a valid request from law enforcement.</p>
+      </section>
+
+      <section>
+        <h2>3. Service providers and international transfers</h2>
+        <p>We use the following providers to run our website and newsroom. Some data is stored on servers outside your country.</p>
+        <table>
+          <thead><tr><th>Provider</th><th>Service</th><th>Location</th><th>Contact</th></tr></thead>
+          <tbody>
+            <tr><td>IM America Group Corp (IM Newsroom)</td><td>Operation of the website and newsroom system (through the providers below)</td><td>United States company (storage as below)</td><td>contact@imnewsroom.com</td></tr>
+            <tr><td>Supabase Inc.</td><td>Database and photo storage</td><td>Japan (Tokyo data center)</td><td>supabase.com/privacy</td></tr>
+            <tr><td>Vercel Inc.</td><td>Website hosting and access logs</td><td>United States, Japan and other regions</td><td>vercel.com/legal/privacy-policy</td></tr>
+            <tr><td>Google LLC</td><td>Google sign-in for newsroom accounts</td><td>United States</td><td>policies.google.com/privacy</td></tr>
+            <tr><td>Resend, Inc.</td><td>Newsletter and notification emails</td><td>United States</td><td>resend.com/legal/privacy-policy</td></tr>
+          </tbody>
+        </table>
+        <p>Data is transferred over encrypted connections when you use the service and is kept for the periods listed above.</p>
+      </section>
+
+      <section>
+        <h2>4. Deletion</h2>
+        <p>When a retention period ends or the purpose has been fulfilled, we delete the information without delay so that it cannot be recovered.</p>
+      </section>
+
+      <section>
+        <h2>5. Your rights</h2>
+        <p>You may ask at any time to see, correct or delete your personal information, or to stop its processing. Contact the privacy officer below and we will respond promptly.</p>
+      </section>
+
+      <section>
+        <h2>6. Security</h2>
+        <ul>
+          <li>Access control: only approved newsroom members can sign in, and each role sees only what it needs.</li>
+          <li>Encryption: all connections use HTTPS, and passwords are stored encrypted.</li>
+          <li>Access logs are kept and security updates are applied.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>7. Privacy officer</h2>
+        <p>Name: {o.name}<br />Contact: {o.contact}</p>
+      </section>
+
+      <section>
+        <h2>8. Changes to this policy</h2>
+        <p>This policy takes effect on {EFFECTIVE_EN}. We will post any changes on this page at least seven days before they take effect.</p>
       </section>
     </PolicyPage>
   )

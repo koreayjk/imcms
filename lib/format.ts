@@ -1,3 +1,4 @@
+import { enDate, enDateTime, enShort, enToday } from './site-text'
 const TZ = 'Asia/Seoul'
 
 function parts(iso: string) {
@@ -9,26 +10,33 @@ function parts(iso: string) {
   return { y: p.year, m: p.month, d: p.day, hh: p.hour, mm: p.minute }
 }
 
-export function formatDate(iso: string | null | undefined) {
+// lang: 영문 매체('en')는 미국 동부 시간·AP 표기 (lib/site-text.tsx)
+type Lang = 'ko' | 'en' | undefined
+
+export function formatDate(iso: string | null | undefined, lang?: Lang) {
   if (!iso) return ''
+  if (lang === 'en') return enDate(iso)
   const { y, m, d } = parts(iso)
   return `${y}.${m}.${d}`
 }
 
-export function formatDateTime(iso: string | null | undefined) {
+export function formatDateTime(iso: string | null | undefined, lang?: Lang) {
   if (!iso) return ''
+  if (lang === 'en') return enDateTime(iso)
   const { y, m, d, hh, mm } = parts(iso)
   return `${y}.${m}.${d} ${hh}:${mm}`
 }
 
-export function formatShort(iso: string | null | undefined) {
+export function formatShort(iso: string | null | undefined, lang?: Lang) {
   if (!iso) return ''
+  if (lang === 'en') return enShort(iso)
   const t = parts(iso)
   const now = parts(new Date().toISOString())
   return t.y === now.y && t.m === now.m && t.d === now.d ? `${t.hh}:${t.mm}` : `${t.m}.${t.d}`
 }
 
-export function formatToday() {
+export function formatToday(lang?: Lang) {
+  if (lang === 'en') return enToday()
   return new Date().toLocaleDateString('ko-KR', {
     timeZone: TZ, year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
   })

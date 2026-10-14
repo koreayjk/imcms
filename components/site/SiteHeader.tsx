@@ -4,6 +4,7 @@ import { formatToday } from '@/lib/format'
 import Logo from './Logo'
 import MobileHeader from './MobileHeader'
 import { SearchIcon } from './icons'
+import { siteText } from '@/lib/site-text'
 
 // 전체기사 메뉴의 current 값 (섹션 slug와 겹치지 않게)
 export const ALL_NEWS = '__all'
@@ -13,16 +14,17 @@ type Props = { site: SiteConfig; current?: string }
 export default function SiteHeader({ site, current }: Props) {
   const mail = `mailto:${site.legal.email}`
   const tops = topSections(site)
+  const t = siteText(site)
   return (
     <header>
       {/* PC */}
       <div className="hidden border-b border-rule bg-soft lg:block">
         <div className="mx-auto flex h-9 max-w-[1200px] items-center justify-between px-4 text-[12px] text-sub">
-          <span>{formatToday()}</span>
-          <nav className="flex items-center gap-4" aria-label="이용 안내">
-            <a href={`${mail}?subject=${encodeURIComponent('[기사제보]')}`} className="hover:text-brand">기사제보</a>
-            <a href={`${mail}?subject=${encodeURIComponent('[광고문의]')}`} className="hover:text-brand">광고문의</a>
-            <Link href="/login" className="hover:text-brand">편집국 로그인</Link>
+          <span>{formatToday(site.lang)}</span>
+          <nav className="flex items-center gap-4" aria-label={t.utilNav}>
+            <a href={`${mail}?subject=${encodeURIComponent(t.tipSubject)}`} className="hover:text-brand">{t.tip}</a>
+            <a href={`${mail}?subject=${encodeURIComponent(t.adsSubject)}`} className="hover:text-brand">{t.ads}</a>
+            <Link href="/login" className="hover:text-brand">{t.login}</Link>
           </nav>
         </div>
       </div>
@@ -30,15 +32,15 @@ export default function SiteHeader({ site, current }: Props) {
       <div className="hidden lg:block">
         <div className="mx-auto flex h-[104px] max-w-[1200px] items-center gap-6 px-4">
           <Logo site={site} size="lg" />
-          <nav className="flex flex-1 justify-end" aria-label="주요 섹션">
+          <nav className="flex flex-1 justify-end" aria-label={t.mainNav}>
             <ul className="flex items-center">
               <li>
                 <Link
                   href="/news"
                   aria-current={current === ALL_NEWS ? 'page' : undefined}
-                  className={`relative block px-[12px] py-2 text-[16.5px] font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${current === ALL_NEWS ? 'text-brand' : 'text-body'}`}
+                  className={`relative block whitespace-nowrap px-[12px] py-2 text-[16.5px] font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${current === ALL_NEWS ? 'text-brand' : 'text-body'}`}
                 >
-                  전체기사
+                  {t.allNews}
                   {current === ALL_NEWS && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
                 </Link>
               </li>
@@ -51,7 +53,7 @@ export default function SiteHeader({ site, current }: Props) {
                     <Link
                       href={`/section/${s.slug}`}
                       aria-current={current === s.slug ? 'page' : undefined}
-                      className={`relative block px-[12px] py-2 text-[16.5px] font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${
+                      className={`relative block whitespace-nowrap px-[12px] py-2 text-[16.5px] font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${
                         active ? 'text-brand' : 'text-body'
                       }`}
                     >
@@ -81,7 +83,7 @@ export default function SiteHeader({ site, current }: Props) {
           </nav>
           <Link
             href="/search"
-            aria-label="기사 검색"
+            aria-label={t.searchArticles}
             className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-rule text-body hover:border-brand hover:text-brand"
           >
             <SearchIcon />

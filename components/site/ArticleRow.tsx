@@ -3,8 +3,9 @@ import type { PublicArticle } from '@/lib/public-data'
 import { formatDateTime } from '@/lib/format'
 import Thumb from './Thumb'
 import { CategoryLabel } from './items'
+import type { SiteLang } from '@/lib/sites'
 
-export default function ArticleRow({ article: a, showCategory = false }: { article: PublicArticle; showCategory?: boolean }) {
+export default function ArticleRow({ article: a, showCategory = false, lang }: { article: PublicArticle; showCategory?: boolean; lang?: SiteLang }) {
   return (
     <li className="py-5 first:pt-0">
       <Link href={`/news/${a.id}`} className="headline-link group flex gap-4 lg:gap-6">
@@ -14,7 +15,7 @@ export default function ArticleRow({ article: a, showCategory = false }: { artic
           {a.excerpt && <p className="mt-1.5 line-clamp-2 text-[13.5px] leading-[1.6] text-sub lg:text-[14.5px]">{a.excerpt}</p>}
           <p className="mt-2 text-[12px] text-[#8A918C] tabular-nums">
             {a.author_name && <span className="mr-2">{a.author_name}</span>}
-            {formatDateTime(a.published_at)}
+            {formatDateTime(a.published_at, lang)}
           </p>
         </div>
         {a.thumbnail_url && (

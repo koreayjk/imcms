@@ -7,10 +7,10 @@ import AdPopup from './AdPopup'
 export default async function AdArea({ site, slot, className = '' }: { site: SiteConfig; slot: AdSlotId; className?: string }) {
   const banners = await liveBanners(site.outletId, slot)
   if (!banners.length) return null
-  if (slot === 'popup') return <AdPopup banner={banners[0]} />
+  if (slot === 'popup') return <AdPopup banner={banners[0]} lang={site.lang} />
   return (
     <div className={`space-y-3 ${className}`} data-ad-slot={slot}>
-      {banners.map((b) => <AdBannerView key={b.id} banner={b} />)}
+      {banners.map((b) => <AdBannerView key={b.id} banner={b} lang={site.lang} />)}
     </div>
   )
 }

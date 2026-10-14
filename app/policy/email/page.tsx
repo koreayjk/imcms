@@ -5,11 +5,18 @@ import { siteIcon } from '@/lib/sites'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
-  return { title: `이메일무단수집거부 | ${site.name}`, icons: { icon: siteIcon(site) } }
+  return { title: `${site.lang === 'en' ? 'No Email Harvesting' : '이메일무단수집거부'} | ${site.name}`, icons: { icon: siteIcon(site) } }
 }
 
 export default async function EmailPolicyPage() {
   const site = await currentSite()
+  if (site.lang === 'en') {
+    return (
+      <PolicyPage site={site} slug="email" effective="Oct. 14, 2026">
+        <p>{site.name} does not permit the email addresses published on this website to be collected by email-harvesting software or any other automated means. Violators may face legal action under applicable law.</p>
+      </PolicyPage>
+    )
+  }
   return (
     <PolicyPage site={site} slug="email" effective="2026년 10월 2일">
       <p>
