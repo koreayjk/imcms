@@ -13,6 +13,9 @@ const DEMO_OUTLETS: MemberOutlet[] = [
   { id: 'demo-1', name: '더케어타임즈', domain: 'thecaretimes.net', logo: '/sites/thecaretimes/logo-mark.png', intro: '보건·복지, 병원·의료, 요양·시니어케어, 돌봄산업 전문 인터넷신문', joinedOn: '2026-10-03', url: 'https://thecaretimes.net' },
   { id: 'demo-2', name: 'Shipping Times', domain: 'shippingtimes.vercel.app', logo: '/sites/shippingtimes/logo-full.svg', intro: '해운·항만·항공화물·포워딩·무역 전문 국제물류 미디어', joinedOn: '2026-10-03', url: 'https://shippingtimes.vercel.app' },
   { id: 'demo-3', name: 'Israel Today', domain: 'israeltoday-kr.vercel.app', logo: '/sites/israeltoday/logo-full.svg', intro: '이스라엘 현지 소식과 성경·쉐마 교육을 전하는 기독교 전문 미디어', joinedOn: '2026-10-03', url: 'https://israeltoday-kr.vercel.app' },
+  { id: 'demo-4', name: '에듀와이드', domain: null, logo: null, intro: '한국 교육 뉴스와 미국·해외 유학 정보를 전하는 교육 전문 미디어', joinedOn: '2026-10-14', url: null },
+  { id: 'demo-5', name: '다음세대타임즈', domain: 'nextgentimes.vercel.app', logo: null, intro: '개혁주의 신앙에 서서 교회교육·기독교학교·가정 신앙교육을 전하는 기독교 교육 전문 미디어', joinedOn: '2026-10-14', url: 'https://nextgentimes.vercel.app' },
+  { id: 'demo-6', name: 'The Statecraft Times', domain: 'statecrafttimes.vercel.app', logo: null, intro: '국제정치·외교·안보·세계경제를 다루는 영문 국제정치 미디어', joinedOn: '2026-10-14', url: 'https://statecrafttimes.vercel.app' },
 ]
 
 const siteUrl = (domain: string | null) => (domain ? `https://${domain}` : null)
