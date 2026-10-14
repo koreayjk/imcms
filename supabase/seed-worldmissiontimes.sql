@@ -26,7 +26,7 @@ begin
     insert into publishers (name) values ('총관리자 그룹') returning id into grp;
   end if;
 
-  select id into oid from outlets where name = '월드미션타임즈' limit 1;
+  select id into oid from outlets where name in ('월드미션타임즈', '치앙마이미션타임즈') limit 1;
   if oid is null then
     insert into outlets (name, domain, publisher_id) values ('월드미션타임즈', null, grp) returning id into oid;
   end if;
@@ -102,4 +102,4 @@ begin
 end $$;
 
 -- 미리보기 주소 확인용
-select id as "매체 ID", 'https://imcms.vercel.app/?preview_outlet=' || id as "미리보기 주소" from outlets where name = '월드미션타임즈';
+select id as "매체 ID", 'https://imcms.vercel.app/?preview_outlet=' || id as "미리보기 주소" from outlets where name in ('월드미션타임즈', '치앙마이미션타임즈');

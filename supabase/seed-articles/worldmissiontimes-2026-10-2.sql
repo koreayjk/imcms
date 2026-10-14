@@ -19,7 +19,7 @@ with ctx as (
            (select p.id from profiles p where p.role = 'admin' order by p.created_at limit 1)
          ) as author_id
   from outlets o
-  where o.name = '월드미션타임즈'
+  where o.name in ('월드미션타임즈', '치앙마이미션타임즈')
 )
 insert into articles (outlet_id, category_id, author_id, title, body, excerpt, thumbnail_url, status, published_at, tags, press_release_id)
 select ctx.outlet_id, c.id, ctx.author_id, v.title,
@@ -88,14 +88,14 @@ do $fix$
 begin
   if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'articles' and column_name = 'byline') then
     update articles a set byline = '관리자'
-    from outlets o where a.outlet_id = o.id and o.name = '월드미션타임즈' and a.body like '<p>[%=관리자 기자]%' and a.byline is distinct from '관리자';
+    from outlets o where a.outlet_id = o.id and o.name in ('월드미션타임즈', '치앙마이미션타임즈') and a.body like '<p>[%=관리자 기자]%' and a.byline is distinct from '관리자';
   end if;
   if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'articles' and column_name = 'byline_email') then
     if exists (select 1 from pg_trigger where tgname = 'articles_byline_email') then
       alter table articles disable trigger articles_byline_email;
     end if;
     update articles a set byline_email = null
-    from outlets o where a.outlet_id = o.id and o.name = '월드미션타임즈' and a.body like '<p>[%=관리자 기자]%';
+    from outlets o where a.outlet_id = o.id and o.name in ('월드미션타임즈', '치앙마이미션타임즈') and a.body like '<p>[%=관리자 기자]%';
     if exists (select 1 from pg_trigger where tgname = 'articles_byline_email') then
       alter table articles enable trigger articles_byline_email;
     end if;
@@ -454,9 +454,9 @@ begin
 • 원문(미션네트워크뉴스(MNN)): https://www.mnnonline.org/news/three-years-after-october-7-believers-in-israel-offer-hope/
 • 해외 언론 보도를 바탕으로 새로 쓴 기사입니다. 원문과 사실관계를 확인해 주세요.')
     ) as v(title, notes)
-    where a.outlet_id = o.id and o.name = '월드미션타임즈' and a.title = v.title and a.ai_notes is null;
+    where a.outlet_id = o.id and o.name in ('월드미션타임즈', '치앙마이미션타임즈') and a.title = v.title and a.ai_notes is null;
   end if;
 end
 $fix$;
 
--- 확인: select c.name, count(*) from articles a join outlets o on o.id = a.outlet_id join categories c on c.id = a.category_id where o.name = '월드미션타임즈' group by 1 order by 2 desc;
+-- 확인: select c.name, count(*) from articles a join outlets o on o.id = a.outlet_id join categories c on c.id = a.category_id where o.name in ('월드미션타임즈', '치앙마이미션타임즈') group by 1 order by 2 desc;
