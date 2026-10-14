@@ -8,6 +8,7 @@ import { foreignTopicOf, isForeignSource } from '@/lib/press-sources'
 import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, refreshPress, sourceLabel, textToParagraphs, type PressRelease } from '@/lib/press'
 import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
+import { duplicateNotes } from '@/lib/duplicate-check'
 
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
 
@@ -67,6 +68,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   let excerpt = r.summary ? firstSentences(r.summary) : null
   let body = original
   let aiNotes: string | null = null
+  let keywords: string[] = []
 
   if (mode === 'ai') {
     // 이번 달 AI 사용 한도 확인 (요금제별, 초안·법적 검수 합계). 한도를 다 쓰면 원문 그대로 만들기만 된다
@@ -87,6 +89,9 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       // 원문 사진은 첫 문단 뒤에 그대로 둔다
       body = [paras[0], ...photoBlocks(original), ...paras.slice(1)].join('')
       aiNotes = draft.review_notes.length ? draft.review_notes.map((n) => `• ${n}`).join('\n') : null
+      keywords = draft.keywords ?? []
+      // AI 글을 거의 그대로 내보내면 AI 활용 사실을 밝혀야 한다 (기사 작성 가이드 · 네이버 운영평가 D항)
+      aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• AI 초안입니다. 거의 그대로 내보낸다면 본문에 AI 활용 사실을 밝혀 주세요(네이버 운영평가 D항).`
       // 해외 언론: 확인용 원문 주소를 메모에 남긴다 (본문에는 넣지 않는다)
       if (foreign) aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• 원문(${sourceLabel(r)}): ${r.link}`
     } catch (e) {
@@ -96,6 +101,10 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       throw e
     }
   }
+
+  // 중복 기사 확인: 같은 보도자료로 만든 기사, 최근 1개월 안의 비슷한 제목 (확인할 점 메모에 남긴다)
+  const dup = await duplicateNotes(supabase, outletId, title, r.id).catch(() => [] as string[])
+  if (dup.length) aiNotes = `${dup.map((n) => `• ${n}`).join('\n')}${aiNotes ? `\n${aiNotes}` : ''}`
 
   let thumbnail: string | null = null
   const srcs = Array.from(new Set(Array.from(body.matchAll(/<img[^>]+src="([^"]+)"/g), (m) => m[1]))).slice(0, 6)
@@ -124,6 +133,8 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
     press_release_id: r.id,
   }
   if (aiNotes) row.ai_notes = aiNotes
+  // AI가 뽑은 키워드를 기사 키워드(태그)로 (기사 작성 가이드: 3개 이상)
+  if (keywords.length) row.tags = keywords
 
   let { data: article, error } = await supabase.from('articles').insert(row).select('id').single()
   // ai-draft.sql 실행 전이면 메모 칸이 없으므로 메모 없이 저장한다

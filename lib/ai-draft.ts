@@ -1,11 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { ForeignTopic } from './press-sources'
+import { AI_STYLE_RULES } from './writing-guide'
 
 export type AiDraft = {
   title: string
   subtitle: string
   paragraphs: string[]
   review_notes: string[]
+  // 기사 키워드(태그) 3~5개 (기사 작성 가이드)
+  keywords?: string[]
 }
 
 // ───────── 쓸 수 있는 모델과 가격 (100만 토큰당 달러, 비용 표시용) ─────────
@@ -48,10 +51,13 @@ const SYSTEM = `당신은 한국 인터넷신문의 편집 기자입니다. 기�
 - "이 기사는 ○○에서 배포한 보도자료를 바탕으로 작성됐습니다" 같은 출처·작성 경위 문장은 쓰지 않습니다.
 
 형식
-- title: 기사 제목. 핵심만 담아 40자 안팎. 따옴표 인용은 꼭 필요할 때만.
+- title: 기사 제목. 아래 표기 규칙에 맞춰 30자 안팎. 따옴표 인용은 꼭 필요할 때만.
 - subtitle: 부제목. 제목을 보완하는 한두 문장, 줄바꿈으로 구분 가능.
 - paragraphs: 본문 문단 배열. 4~8개 문단, 문단마다 2~4문장. 바이라인([매체=기자])은 넣지 않습니다.
-- review_notes: 기자가 발행 전에 확인해야 할 점. 원문이 모호하거나 과장이 의심되는 주장, 확인이 필요한 수치, 원문과 제목의 강조점이 달라진 부분 등. 없으면 빈 배열.`
+- keywords: 기사 키워드 3~5개.
+- review_notes: 기자가 발행 전에 확인해야 할 점. 원문이 모호하거나 과장이 의심되는 주장, 확인이 필요한 수치, 원문과 제목의 강조점이 달라진 부분 등. 없으면 빈 배열.
+
+${AI_STYLE_RULES}`
 
 // 해외 언론(영문) 기사 → 한국 독자용 기사 (번역이 아니라 사실만 골라 새로 쓰고, 출처 매체를 본문에 밝힌다)
 //   매체 분야(해외 언론 묶음)마다 독자와 주의할 점이 다르다
@@ -111,10 +117,13 @@ ${a.extra}
 - "이 기사는 ~를 바탕으로 작성됐습니다" 같은 출처 안내 문장은 쓰지 않습니다(출처는 본문 문장 속에서 밝힙니다).
 
 형식
-- title: 한국어 제목, 40자 안팎. 과장 없이.
+- title: 한국어 제목, 아래 표기 규칙에 맞춰 30자 안팎. 과장 없이.
 - subtitle: 부제목 한두 문장.
 - paragraphs: 본문 문단 배열. 5~8개 문단, 문단마다 2~4문장. 바이라인은 넣지 않습니다.
-- review_notes: 기자가 확인해야 할 점. 원문끼리 다른 수치, 요일→날짜로 바꾼 곳, 고유명사 한국어 표기, 번역이 애매한 표현, 원문이 후원·홍보성 기사로 보이는지 등. 없으면 빈 배열.`
+- keywords: 기사 키워드 3~5개(한국어).
+- review_notes: 기자가 확인해야 할 점. 원문끼리 다른 수치, 요일→날짜로 바꾼 곳, 고유명사 한국어 표기, 번역이 애매한 표현, 원문이 후원·홍보성 기사로 보이는지 등. 없으면 빈 배열.
+
+${AI_STYLE_RULES}`
 }
 
 const SCHEMA = {
@@ -124,8 +133,9 @@ const SCHEMA = {
     subtitle: { type: 'string' },
     paragraphs: { type: 'array', items: { type: 'string' } },
     review_notes: { type: 'array', items: { type: 'string' } },
+    keywords: { type: 'array', items: { type: 'string' } },
   },
-  required: ['title', 'subtitle', 'paragraphs', 'review_notes'],
+  required: ['title', 'subtitle', 'paragraphs', 'review_notes', 'keywords'],
   additionalProperties: false,
 } as const
 
@@ -160,7 +170,9 @@ function parseDraft(text: string | undefined): AiDraft {
     // AI가 지시와 달리 출처 안내 문장을 붙여도 뺀다
     const paragraphs = (d.paragraphs ?? []).map((x) => String(x).trim()).filter((x) => x && !(x.length < 120 && SOURCE_NOTE.test(x)))
     if (!d.title || !paragraphs.length) throw new Error('empty')
-    return { title: String(d.title), subtitle: String(d.subtitle ?? ''), paragraphs, review_notes: (d.review_notes ?? []).map(String) }
+    const keywords = Array.from(new Set((d.keywords ?? []).map((k) => String(k).replace(/^#/, '').trim()).filter((k) => k && k.length <= 30))).slice(0, 5)
+    // 제목 끝 마침표는 뺀다 (기사 작성 가이드)
+    return { title: String(d.title).trim().replace(/\.+$/, ''), subtitle: String(d.subtitle ?? ''), paragraphs, review_notes: (d.review_notes ?? []).map(String), keywords }
   } catch {
     throw new AiDraftError('AI 응답을 읽지 못했습니다. 다시 시도해 주세요.')
   }

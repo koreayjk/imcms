@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ISSUER, PRODUCT } from '@/lib/product'
 
 const GUIDES = [
+  { title: '기사 작성 가이드', body: '네이버 뉴스제휴 운영평가 기준에 맞춘 바이라인·보도자료 섹션·중복 기사·제목·사진 출처 원칙과 발행 전 체크리스트입니다. 24개월 누적 10점이면 제휴 해지가 권고되니 꼭 읽어 주세요.', href: '/support/guide', cta: '가이드 보기' },
   { title: '기사 쓰고 발행하기', body: '기사쓰기 → 저장(작성중) → 승인신청 → 편집장이 확인 후 발행. 편집장은 “바로 발행”도 할 수 있습니다.', href: '/articles/new', cta: '기사쓰기' },
   { title: '보도자료로 기사 만들기', body: '보도자료함에서 자료를 열고 “원문 그대로” 또는 “AI 초안”을 누르면 기사 초안이 만들어집니다. 발행 전 원문과 꼭 대조하세요.', href: '/press', cta: '보도자료함' },
   { title: '내 메일로 온 보도자료 받기', body: '지메일 필터로 보도자료만 전용 주소로 전달하면 보도자료함에 자동으로 들어옵니다.', href: '/press/email', cta: '메일로 받기 설정' },

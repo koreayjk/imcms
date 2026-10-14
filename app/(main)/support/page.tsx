@@ -10,6 +10,7 @@ const TILES = [
   { href: '/support/invoices', label: '청구서', color: '#8B5CF6', d: 'M6 3h12v18l-3-2-3 2-3-2-3 2V3Z M9 8h6 M9 12h6', billing: true },
   { href: '/support/billing', label: '결제 정보', color: '#10B981', d: 'M3 6h18v12H3z M3 10h18 M7 15h3', billing: true },
   { href: '/press/email', label: '메일로 받기', color: '#3B82F6', d: 'M3 5h18v14H3z M3.5 6.5l8.5 6 8.5-6' },
+  { href: '/support/guide', label: '작성 가이드', color: '#F97316', d: 'M5 3h10l4 4v14H5z M14 3v5h5 M8 12h8 M8 16h5' },
   { href: '/support/help', label: '이용안내', color: '#06B6D4', d: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.5V14 M12 17h.01' },
   { href: '/account', label: '내 정보', color: '#EC4899', d: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4 21a8 8 0 0 1 16 0' },
   { href: '/support/help#contact', label: '연락처', color: '#6366F1', d: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z' },
@@ -26,7 +27,7 @@ export default async function SupportHome() {
 
   return (
     <div className="mx-auto max-w-[1180px] px-4 py-6 md:px-8 md:py-10">
-      <div className="grid grid-cols-4 gap-4 sm:grid-cols-8">
+      <div className="grid grid-cols-4 gap-4 sm:grid-cols-9">
         {TILES.filter((t) => isEditorPlus || !t.billing).map((t) => (
           <Link key={t.label} href={t.href} className="group flex flex-col items-center gap-2.5">
             <span className="grid h-[72px] w-[72px] place-items-center rounded-2xl bg-white shadow-[0_6px_18px_-10px_rgba(11,16,32,0.35)] ring-1 ring-black/5 transition group-hover:-translate-y-0.5 group-hover:shadow-[0_12px_24px_-12px_rgba(11,16,32,0.4)]">

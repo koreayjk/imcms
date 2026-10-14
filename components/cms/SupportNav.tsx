@@ -9,6 +9,7 @@ const ITEMS = [
   { href: '/support/notices', label: '공지' },
   { href: '/support/invoices', label: '청구서', billing: true },
   { href: '/support/billing', label: '결제 정보', billing: true },
+  { href: '/support/guide', label: '기사 작성 가이드' },
   { href: '/support/help', label: '이용안내' },
 ]
 
