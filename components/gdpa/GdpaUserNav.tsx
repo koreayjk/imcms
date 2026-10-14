@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import type { GdpaLang } from '@/lib/gdpa'
 
 // 위쪽 로그인 영역: 로그인 전 = 로그인·회원가입 / 로그인 후 = 내 정보·로그아웃
-export default function GdpaUserNav({ base, className = '' }: { base: string; className?: string }) {
+export default function GdpaUserNav({ base, lang = 'ko', className = '' }: { base: string; lang?: GdpaLang; className?: string }) {
+  const en = lang === 'en'
   const router = useRouter()
   const [email, setEmail] = useState<string | null | undefined>(undefined)
   useEffect(() => {
@@ -25,13 +27,13 @@ export default function GdpaUserNav({ base, className = '' }: { base: string; cl
     <span className={`flex items-center gap-4 ${className}`}>
       {email ? (
         <>
-          <a href={`${base}/mypage`} className="hover:text-white">내 정보</a>
-          <button type="button" onClick={logout} className="hover:text-white">로그아웃</button>
+          <a href={`${base}/mypage`} className="hover:text-white">{en ? 'My account' : '내 정보'}</a>
+          <button type="button" onClick={logout} className="hover:text-white">{en ? 'Log out' : '로그아웃'}</button>
         </>
       ) : (
         <>
-          <a href={`${base}/login`} className="hover:text-white">로그인</a>
-          <a href={`${base}/signup`} className="hover:text-white">회원가입</a>
+          <a href={`${base}/login`} className="hover:text-white">{en ? 'Log in' : '로그인'}</a>
+          <a href={`${base}/signup`} className="hover:text-white">{en ? 'Sign up' : '회원가입'}</a>
         </>
       )}
     </span>

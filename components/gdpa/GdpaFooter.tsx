@@ -1,8 +1,37 @@
-import Link from 'next/link'
-import { GDPA } from '@/lib/gdpa'
+'use client'
 
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { GDPA, GDPA_EN, gdpaRoute } from '@/lib/gdpa'
+
+// 바닥글 (영문판 주소 /en 이면 영어로)
 export default function GdpaFooter({ base }: { base: string }) {
+  const en = gdpaRoute(usePathname() ?? '', base).lang === 'en'
+  const lb = en ? `${base}/en` : base
   const o = GDPA.office
+  if (en) {
+    const tba = 'To be announced'
+    return (
+      <footer className="mt-20 bg-[var(--g-navy-d)] text-[13px] text-white/65">
+        <div className="border-b border-white/10">
+          <nav aria-label="Policies" className="mx-auto flex max-w-[1200px] flex-wrap gap-x-6 gap-y-2 px-4 py-4 text-white/85">
+            <Link href={`${lb}/terms`} className="hover:text-white">Terms of Use</Link>
+            <Link href={`${lb}/privacy`} className="font-bold text-white hover:underline">Privacy Policy</Link>
+            <Link href={`${lb}/email-policy`} className="hover:text-white">No Email Harvesting</Link>
+            <Link href={`${lb}/about/contact`} className="hover:text-white">Contact</Link>
+          </nav>
+        </div>
+        <div className="mx-auto grid max-w-[1200px] gap-6 px-4 py-8 md:grid-cols-[auto_1fr]">
+          <img src="/gdpa/logo-full-en-white.svg" alt={`${GDPA.short} ${GDPA_EN.name}`} className="h-[46px] w-auto" />
+          <div className="space-y-1 leading-relaxed md:pl-6">
+            <p><strong className="text-white">{GDPA_EN.name}</strong> ({GDPA.name})</p>
+            <p>Address: {o.address || tba} · Phone: {o.phone || tba} · Email: {o.email || tba}</p>
+            <p className="pt-2 text-white/45">© {GDPA.founded} {GDPA.short} {GDPA_EN.name}. Text and photos on this website are protected by copyright. Copyright in member outlets’ articles belongs to each outlet.</p>
+          </div>
+        </div>
+      </footer>
+    )
+  }
   return (
     <footer className="mt-20 bg-[var(--g-navy-d)] text-[13px] text-white/65">
       <div className="border-b border-white/10">

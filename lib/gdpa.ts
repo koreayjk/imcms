@@ -17,6 +17,15 @@ export const GDPA = {
   policyDate: '2026-10-03',
 }
 
+// 영문판 (주소 앞에 /en: imnewsroom.com/gdpa/en, gdpa 도메인/en)
+export type GdpaLang = 'ko' | 'en'
+export const GDPA_EN = {
+  name: 'Global Digital Press Association',
+  slogan: 'Building trusted journalism together in the digital age',
+  description: 'The Global Digital Press Association (GDPA) brings digital news outlets together to uphold responsible journalism, work together as members and train journalists.',
+  hours: 'Weekdays 10:00–17:00 KST (lunch 12:00–13:00)',
+}
+
 export type GdpaMenu = { label: string; href: string; children?: { label: string; href: string }[] }
 
 // 메뉴 (주소는 /gdpa 를 뺀 상대 경로. 화면에서 base 를 붙인다)
@@ -51,6 +60,47 @@ export const GDPA_MENU: GdpaMenu[] = [
   },
 ]
 
+export const GDPA_MENU_EN: GdpaMenu[] = [
+  {
+    label: 'About', href: '/about',
+    children: [
+      { label: 'Greeting', href: '/about' },
+      { label: 'Mission & Vision', href: '/about/vision' },
+      { label: 'History', href: '/about/history' },
+      { label: 'Organization', href: '/about/organization' },
+      { label: 'Contact', href: '/about/contact' },
+    ],
+  },
+  {
+    label: 'Members', href: '/members',
+    children: [
+      { label: 'Member Outlets', href: '/members' },
+      { label: 'How to Join', href: '/members/join' },
+      { label: 'Member Benefits', href: '/members/benefits' },
+    ],
+  },
+  { label: 'Activities', href: '/activity' },
+  { label: 'Member News', href: '/news' },
+  {
+    label: 'Notices', href: '/notice',
+    children: [
+      { label: 'Announcements', href: '/notice' },
+      { label: 'Resources', href: '/data' },
+      { label: 'FAQ', href: '/faq' },
+    ],
+  },
+]
+
+export const gdpaMenu = (lang: GdpaLang = 'ko') => (lang === 'en' ? GDPA_MENU_EN : GDPA_MENU)
+
+// 화면 주소를 언어와 상대 경로로 나눈다: '/gdpa/en/about' → { lang: 'en', rel: '/about' }
+export function gdpaRoute(path: string, base: string): { lang: GdpaLang; rel: string } {
+  let p = base && path.startsWith(base) ? path.slice(base.length) : path
+  if (!p.startsWith('/')) p = `/${p}`
+  if (p === '/en' || p.startsWith('/en/')) return { lang: 'en', rel: p.slice(3) || '/' }
+  return { lang: 'ko', rel: p }
+}
+
 export function isGdpaHost(host: string | null | undefined) {
   const h = (host ?? '').split(':')[0].toLowerCase()
   return GDPA.domains.includes(h) || (!!process.env.GDPA_HOST && h === process.env.GDPA_HOST.toLowerCase())
@@ -62,4 +112,6 @@ export function gdpaBaseFor(host: string | null | undefined) {
 }
 
 export const BOARD_LABEL = { notice: '공지사항', activity: '협회 활동', data: '자료실' } as const
+export const BOARD_LABEL_EN = { notice: 'Announcements', activity: 'Activities', data: 'Resources' } as const
 export type GdpaBoard = keyof typeof BOARD_LABEL
+export const boardLabel = (board: GdpaBoard, lang: GdpaLang = 'ko') => (lang === 'en' ? BOARD_LABEL_EN : BOARD_LABEL)[board]

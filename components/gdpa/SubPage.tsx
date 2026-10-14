@@ -1,20 +1,22 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { GDPA_MENU } from '@/lib/gdpa'
+import { gdpaMenu, type GdpaLang } from '@/lib/gdpa'
 
 // 메뉴별 머리 사진 (public/gdpa/photos)
 const PHOTO: Record<string, string> = { '/about': 'mission', '/members': 'partnership', '/activity': 'seminar', '/news': 'newspaper', '/notice': 'camera' }
 
 // 하위 페이지 틀: 메뉴 이름 띠 + 같은 메뉴의 하위 탭 + 본문
-export default function SubPage({ base, section, title, current, children, wide = false }: {
+//   영문판은 lang="en" 과 /en 까지 붙인 base 를 넘긴다
+export default function SubPage({ base, section, title, current, children, wide = false, lang = 'ko' }: {
   base: string
+  lang?: GdpaLang
   section: string
   title: string
   current: string
   children: ReactNode
   wide?: boolean
 }) {
-  const menu = GDPA_MENU.find((m) => m.href === section)
+  const menu = gdpaMenu(lang).find((m) => m.href === section)
   return (
     <>
       <div className="relative isolate overflow-hidden bg-[var(--g-navy)] text-white">
@@ -26,7 +28,7 @@ export default function SubPage({ base, section, title, current, children, wide 
         </div>
       </div>
       {menu?.children && (
-        <nav aria-label={`${menu.label} 하위 메뉴`} className="border-b border-[var(--g-line)] bg-white">
+        <nav aria-label={lang === 'en' ? `${menu.label} sections` : `${menu.label} 하위 메뉴`} className="border-b border-[var(--g-line)] bg-white">
           <ul className="no-scrollbar mx-auto flex max-w-[1200px] overflow-x-auto px-4">
             {menu.children.map((c) => (
               <li key={c.href}>

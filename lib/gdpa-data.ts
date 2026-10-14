@@ -19,17 +19,35 @@ const DEMO_OUTLETS: MemberOutlet[] = [
   { id: 'demo-7', name: '치앙마이미션타임즈', domain: 'worldmissiontimes.vercel.app', logo: null, intro: '태국 치앙마이에서 시작해 세계선교 동향과 선교 현장, 미전도 종족과 선교사 이야기를 전하는 선교 전문 미디어', joinedOn: '2026-10-14', url: 'https://worldmissiontimes.vercel.app' },
 ]
 
+// 영문판에 쓰는 회원사 영문 이름·소개 (없으면 매체의 영문 이름·소개를 쓴다)
+const MEMBER_EN: Record<string, { name: string; intro: string }> = {
+  '더케어타임즈': { name: 'The Care Times', intro: 'An online newspaper covering health and welfare, hospitals and medicine, senior care and the care industry.' },
+  'Shipping Times': { name: 'Shipping Times', intro: 'International logistics news covering shipping, ports, air cargo, freight forwarding and trade.' },
+  'Israel Today': { name: 'Israel Today', intro: 'Christian news from Israel, with Bible and Shema education.' },
+  '에듀와이드': { name: 'EduWide', intro: 'Education news from Korea, with information on studying in the United States and abroad.' },
+  '다음세대타임즈': { name: 'NextGen Times', intro: 'Christian education news grounded in the Reformed faith: church education, Christian schools and faith at home.' },
+  'The Statecraft Times': { name: 'The Statecraft Times', intro: 'English-language coverage of international politics, diplomacy, security and the world economy.' },
+  '치앙마이미션타임즈': { name: 'Chiang Mai Mission Times', intro: 'Starting from Chiang Mai, Thailand: world mission trends, news from the field, unreached peoples and missionaries’ stories.' },
+  '월드미션타임즈': { name: 'World Mission Times', intro: 'Starting from Chiang Mai, Thailand: world mission trends, news from the field, unreached peoples and missionaries’ stories.' },
+}
+const titleCase = (s: string) => s.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase())
+
+export function memberEn(o: MemberOutlet, nameEn?: string | null): MemberOutlet {
+  const m = MEMBER_EN[o.name]
+  return { ...o, name: m?.name ?? (nameEn ? titleCase(nameEn) : o.name), intro: m?.intro ?? o.intro }
+}
+
 const siteUrl = (domain: string | null) => (domain ? `https://${domain}` : null)
 
-export async function memberOutlets(): Promise<MemberOutlet[]> {
-  if (isDemo) return DEMO_OUTLETS
+export async function memberOutlets(lang: 'ko' | 'en' = 'ko'): Promise<MemberOutlet[]> {
+  if (isDemo) return lang === 'en' ? DEMO_OUTLETS.map((o) => memberEn(o)) : DEMO_OUTLETS
   const { data } = await anon()
     .from('gdpa_member_outlets')
     .select('outlet_id, sort_order, joined_on, intro, outlet:outlets(id, name, domain, site)')
     .order('sort_order')
   return ((data ?? []) as any[]).filter((r) => r.outlet).map((r) => {
-    const site = (r.outlet.site ?? {}) as { logoUrl?: string; description?: string }
-    return {
+    const site = (r.outlet.site ?? {}) as { logoUrl?: string; description?: string; nameEn?: string }
+    const o: MemberOutlet = {
       id: r.outlet.id,
       name: r.outlet.name,
       domain: r.outlet.domain,
@@ -38,15 +56,16 @@ export async function memberOutlets(): Promise<MemberOutlet[]> {
       joinedOn: r.joined_on,
       url: siteUrl(r.outlet.domain),
     }
+    return lang === 'en' ? memberEn(o, site.nameEn) : o
   })
 }
 
 // 회원사 최신 기사 (발행된 기사만, 각 매체 홈페이지로 연결)
-export async function memberNews(limit = 12, page = 1): Promise<{ items: MemberNews[]; total: number }> {
-  const outlets = await memberOutlets()
+export async function memberNews(limit = 12, page = 1, lang: 'ko' | 'en' = 'ko'): Promise<{ items: MemberNews[]; total: number }> {
+  const outlets = await memberOutlets(lang)
   if (isDemo) {
     const items = outlets.flatMap((o, i) => [0, 1, 2, 3].map((n) => ({
-      id: `${o.id}-${n}`, title: `${o.name} 샘플 기사 ${n + 1}`, excerpt: '회원사 홈페이지에 실린 최신 기사가 이곳에 모입니다.',
+      id: `${o.id}-${n}`, title: lang === 'en' ? `${o.name} sample story ${n + 1}` : `${o.name} 샘플 기사 ${n + 1}`, excerpt: lang === 'en' ? 'The latest stories from member outlets appear here.' : '회원사 홈페이지에 실린 최신 기사가 이곳에 모입니다.',
       thumb: null, publishedAt: new Date(Date.now() - (i * 4 + n) * 3600e3).toISOString(), outlet: o.name, url: o.url ?? '#',
     })))
     return { items: items.slice((page - 1) * limit, page * limit), total: items.length }
