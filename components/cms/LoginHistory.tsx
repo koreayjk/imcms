@@ -36,7 +36,7 @@ export default function LoginHistory({ rows, self, name, signOut }: {
     <div className="space-y-3">
       {rows.length ? (
         <div className="overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[480px] text-[13px]">
+          <table className="table-cards w-full text-[13px] md:min-w-[480px]">
             <thead>
               <tr className="border-b border-line text-left text-[12px] text-muted">
                 <th className="px-4 py-2 font-normal">로그인 시각</th>
@@ -49,8 +49,8 @@ export default function LoginHistory({ rows, self, name, signOut }: {
               {rows.map((r, i) => (
                 <tr key={r.session_id ?? i}>
                   <td className="whitespace-nowrap px-4 py-2 tabular-nums">{formatDateTime(r.created_at)}</td>
-                  <td className="px-2 py-2" title={r.user_agent ?? ''}>{deviceLabel(r.user_agent)}</td>
-                  <td className="px-2 py-2 font-mono text-[12px] text-muted">{r.ip || '-'}</td>
+                  <td data-label="기기" className="px-2 py-2" title={r.user_agent ?? ''}>{deviceLabel(r.user_agent)}</td>
+                  <td data-label="IP" className="break-all px-2 py-2 font-mono text-[12px] text-muted">{r.ip || '-'}</td>
                   <td className="whitespace-nowrap px-4 py-2 text-right">
                     {r.current
                       ? <span className="rounded bg-review/10 px-1.5 py-0.5 text-[11.5px] font-bold text-review">지금 이 기기</span>

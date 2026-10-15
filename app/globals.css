@@ -84,6 +84,21 @@ body {
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea { font-size: 16px; }
 }
 
+/* 휴대폰에서 표를 카드로: <table className="table-cards"> + 칸마다 data-label="제목"
+   (옆으로 밀어 보지 않아도 되게 한 행이 한 묶음으로, 칸은 "제목 값"으로 줄 바꿔 놓인다.
+    한 줄을 다 쓸 칸은 tc-full, 휴대폰에서 뺄 칸은 tc-hide) */
+@media (max-width: 767px) {
+  .table-cards, .table-cards > tbody, .table-cards > tbody > tr, .table-cards > tbody > tr > td { display: block; }
+  .table-cards { min-width: 0 !important; }
+  .table-cards > thead { display: none; }
+  .table-cards > tbody > tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; padding: 12px 16px; }
+  .table-cards > tbody > tr > td { padding: 0 !important; text-align: left !important; white-space: normal; }
+  .table-cards > tbody > tr > td.tc-full { flex-basis: 100%; }
+  .table-cards > tbody > tr > td.tc-hide { display: none; }
+  .table-cards > tbody > tr > td:empty { display: none; }
+  .table-cards > tbody > tr > td[data-label]::before { content: attr(data-label); @apply mr-1.5 text-[11.5px] font-normal text-muted; }
+}
+
 /* 버튼 공통 */
 /* 버튼 글자는 한 줄로 (휴대폰에서 “삭/제”처럼 꺾이지 않게. 자리가 모자라면 버튼째 다음 줄로 간다) */
 .btn        { @apply whitespace-nowrap rounded px-4 py-2 text-center text-sm font-medium disabled:opacity-40 transition-opacity; }

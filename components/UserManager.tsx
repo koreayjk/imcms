@@ -115,8 +115,9 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
   }
 
   return (
-    <tr className="border-b border-line/60 align-top">
-      <td className="py-2.5 pr-2">
+    // 휴대폰(md 미만)에서는 표 대신 카드: 이름 줄 오른쪽에 저장·메뉴, 그 아래 직급·매체·가입일이 차례로
+    <tr className="relative flex flex-wrap items-start gap-x-3 gap-y-2 border-b border-line/60 py-3 md:table-row md:py-0 md:align-top">
+      <td className="basis-full pr-24 md:py-2.5 md:pr-2">
         <input value={name} onChange={(e) => setName(e.target.value)} aria-label="이름" maxLength={30} className="w-28 rounded border border-transparent px-1.5 py-1 font-medium hover:border-line focus:border-ink focus:outline-none" />
         {isMe && <span className="ml-1 text-xs text-muted">(나)</span>}
         {u.is_super && <span className="ml-1 rounded bg-[#E5483A] px-1 text-[10.5px] font-bold text-white">총관리자</span>}
@@ -124,9 +125,9 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
         {suspended && <span className="ml-1 rounded bg-danger px-1 text-[10.5px] font-bold text-white">출입 정지</span>}
         {dormant && !suspended && <span title="1년 이상 접속하지 않음" className="ml-1 rounded bg-draft/15 px-1 text-[10.5px] font-bold text-draft">1년 미접속</span>}
         {mfa && <span title="2단계 인증 켬" className="ml-1 rounded bg-published/10 px-1 text-[10.5px] font-bold text-published">2단계</span>}
-        {email && <span className="block pl-1.5 text-xs text-muted">{email}</span>}
+        {email && <span className="block break-all pl-1.5 text-xs text-muted">{email}</span>}
       </td>
-      <td className="py-2.5 pr-2">
+      <td className="md:py-2.5 md:pr-2">
         {multi ? (
           <select value={kind} onChange={(e) => setKind(e.target.value as Kind)} disabled={locked} aria-label="직급 방식" className="rounded border border-line bg-white px-2 py-1.5 text-[13px] disabled:opacity-60">
             <option value="member">매체별 직급</option>
@@ -138,7 +139,7 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
           </select>
         )}
       </td>
-      <td className="py-2.5 pr-2">
+      <td className="min-w-0 md:py-2.5 md:pr-2">
         {multi && kind === 'member' && !u.is_staff ? (
           <div className="space-y-1.5">
             {items.map((it, idx) => (
@@ -148,7 +149,7 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
                   disabled={locked}
                   onChange={(e) => setItems(items.map((x, j) => (j === idx ? { ...x, outletId: e.target.value } : x)))}
                   aria-label="소속 매체"
-                  className="w-40 rounded border border-line bg-white px-2 py-1.5 text-[13px] disabled:opacity-60"
+                  className="w-36 min-w-0 rounded border border-line bg-white px-2 py-1.5 text-[13px] disabled:opacity-60 md:w-40"
                 >
                   {[outlets.find((o) => o.id === it.outletId), ...addable].filter(Boolean).map((o) => <option key={o!.id} value={o!.id}>{o!.name}</option>)}
                 </select>
@@ -182,15 +183,15 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
           </>
         )}
       </td>
-      <td className="py-2.5 text-xs text-muted">
+      <td className="basis-full text-xs text-muted md:py-2.5">
         {new Date(u.created_at).toLocaleDateString('ko-KR')}
         {lastSeen !== undefined && (
-          <span className={`block pt-0.5 ${dormant ? 'font-semibold text-draft' : ''}`} title="최근 접속">
+          <span className={`ml-2 pt-0.5 md:ml-0 md:block ${dormant ? 'font-semibold text-draft' : ''}`} title="최근 접속">
             {lastSeen ? `접속 ${new Date(lastSeen).toLocaleDateString('ko-KR')}` : '접속 기록 없음'}
           </span>
         )}
       </td>
-      <td className="py-2.5 text-right">
+      <td className="absolute right-0 top-2.5 text-right md:static md:py-2.5">
         {dirty && (
           <button type="button" disabled={pending} onClick={save} className="btn-primary mr-1.5 px-3 py-1 text-[12.5px]">
             {pending ? '저장 중…' : '저장'}
@@ -249,9 +250,9 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
   loginsReady?: boolean
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-line bg-white px-5">
-      <table className="w-full min-w-[720px] text-sm">
-        <thead>
+    <div className="rounded-lg border border-line bg-white px-4 md:overflow-x-auto md:px-5">
+      <table className="block w-full text-sm md:table md:min-w-[720px]">
+        <thead className="hidden md:table-header-group">
           <tr className="border-b border-line text-left text-[12.5px] text-muted">
             <th className="py-2.5 font-normal">이름 · 이메일</th>
             <th className="w-36 py-2.5 font-normal">직급</th>
@@ -260,12 +261,12 @@ export default function UserManager({ users, outlets, currentUserId, emails = {}
             <th className="w-24" />
           </tr>
         </thead>
-        <tbody>
+        <tbody className="block md:table-row-group">
           {users.map((u) => (
             <MemberRow key={u.id} u={u} email={emails[u.id]} outlets={outlets} isMe={u.id === currentUserId} groupName={groupOf[u.id] ?? null} memberships={memberships ? memberships[u.id] ?? [] : null} canDelete={canDelete} mfa={mfa ? !!mfa[u.id] : undefined} viewerIsSuper={viewerIsSuper} lastSeen={lastSeen ? lastSeen[u.id] ?? null : undefined} loginsReady={loginsReady} />
           ))}
           {!users.length && (
-            <tr><td colSpan={5} className="py-10 text-center text-sm text-muted">회원이 없습니다.</td></tr>
+            <tr className="block md:table-row"><td colSpan={5} className="block py-10 md:table-cell text-center text-sm text-muted">회원이 없습니다.</td></tr>
           )}
         </tbody>
       </table>

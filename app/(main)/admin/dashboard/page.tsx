@@ -143,7 +143,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
               </div>
               {g.list.length ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-[13px]">
+                  <table className="table-cards w-full text-[13px] md:min-w-[640px]">
                     <thead>
                       <tr className="border-b border-line text-left text-[11.5px] text-muted">
                         <th className="px-5 py-2 font-medium">매체</th>
@@ -166,29 +166,29 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
                         const done = legalDone(o)
                         return (
                           <tr key={o.id} className="border-b border-line/60 last:border-0 hover:bg-[#FAFBFC]">
-                            <td className="px-5 py-3 font-bold">{o.name}</td>
+                            <td className="tc-full px-5 py-3 font-bold">{o.name}</td>
                             <td className="px-2 py-3">
-                              <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${state === 'live' ? 'bg-published/10 text-published' : state === 'hidden' ? 'bg-draft/15 text-[#6B5F22]' : 'bg-line text-muted'}`}>
+                              <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-semibold ${state === 'live' ? 'bg-published/10 text-published' : state === 'hidden' ? 'bg-draft/15 text-[#6B5F22]' : 'bg-line text-muted'}`}>
                                 {state === 'live' ? '운영' : state === 'hidden' ? '비공개' : '준비'}
                               </span>
-                              <span className="ml-1.5 text-[11.5px] text-muted">{o.domain ?? '도메인 없음'}</span>
+                              <span className="ml-1.5 break-all text-[11.5px] text-muted">{o.domain ?? '도메인 없음'}</span>
                             </td>
-                            <td className="px-2 py-3">
-                              <span className="flex items-center gap-1.5" title={`필수 표시 정보 ${done}/${REQUIRED_LEGAL.length}`}>
+                            <td data-label="설정" className="px-2 py-3">
+                              <span className="inline-flex items-center gap-1.5 md:flex" title={`필수 표시 정보 ${done}/${REQUIRED_LEGAL.length}`}>
                                 <span className="h-1.5 w-12 overflow-hidden rounded-full bg-line">
                                   <span className={`block h-full ${done === REQUIRED_LEGAL.length ? 'bg-published' : 'bg-draft'}`} style={{ width: `${(done / REQUIRED_LEGAL.length) * 100}%` }} />
                                 </span>
                                 <span className="text-[11px] text-muted">{done}/{REQUIRED_LEGAL.length}</span>
                               </span>
                             </td>
-                            <td className="px-2 py-3 text-right font-semibold">{s.published_today ?? 0}</td>
-                            <td className={`px-2 py-3 text-right ${o.domain && !s.published_week ? 'text-danger' : ''}`}>{s.published_week ?? 0}</td>
-                            <td className="px-2 py-3 text-right">{s.drafts_in_review || ''}</td>
-                            <td className="px-2 py-3 text-[12px] text-muted">{s.last_published_at ? formatShort(s.last_published_at) : '-'}</td>
-                            <td className="px-2 py-3 text-right">{s.members ?? 0}</td>
-                            <td className={`px-2 py-3 text-right ${s.open_tickets ? 'font-bold text-danger' : ''}`}>{s.open_tickets || ''}</td>
-                            <td className={`px-2 py-3 text-right ${s.unpaid_invoices ? 'font-bold text-danger' : ''}`}>{s.unpaid_invoices ? won(s.unpaid_total) : ''}</td>
-                            <td className="whitespace-nowrap px-5 py-3 text-right text-[12px]">
+                            <td data-label="오늘" className="px-2 py-3 text-right font-semibold">{s.published_today ?? 0}</td>
+                            <td data-label="7일" className={`px-2 py-3 text-right ${o.domain && !s.published_week ? 'text-danger' : ''}`}>{s.published_week ?? 0}</td>
+                            <td data-label="승인대기" className="px-2 py-3 text-right">{s.drafts_in_review || ''}</td>
+                            <td data-label="최근 발행" className="px-2 py-3 text-[12px] text-muted">{s.last_published_at ? formatShort(s.last_published_at) : '-'}</td>
+                            <td data-label="회원" className="px-2 py-3 text-right">{s.members ?? 0}</td>
+                            <td data-label="요청" className={`px-2 py-3 text-right ${s.open_tickets ? 'font-bold text-danger' : ''}`}>{s.open_tickets || ''}</td>
+                            <td data-label="미납" className={`px-2 py-3 text-right ${s.unpaid_invoices ? 'font-bold text-danger' : ''}`}>{s.unpaid_invoices ? won(s.unpaid_total) : ''}</td>
+                            <td className="tc-full whitespace-nowrap px-5 py-3 text-right text-[12px]">
                               <a href={o.domain ? `https://${o.domain}` : `/?preview_outlet=${o.id}`} target="_blank" rel="noopener" className="text-muted underline underline-offset-2 hover:text-ink">홈페이지</a>
                               <Link href={`/admin/outlets/${o.id}/site`} className="ml-2.5 text-muted underline underline-offset-2 hover:text-ink">설정</Link>
                               {isSuper && !s.published && !s.members && !s.drafts_in_review && !o.site?.trial && (
