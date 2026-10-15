@@ -2,6 +2,7 @@ import './globals.css'
 
 import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
+import { IOS_APP_SCRIPT } from '@/lib/ios-app'
 import KeepFormInputs from '@/components/KeepFormInputs'
 
 // 기본은 검색엔진 수집 금지. 오픈한 매체만 sites.ts의 indexable로 허용한다
@@ -31,6 +32,8 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        {/* 아이폰 앱 안이면 구글 로그인·결제 단추를 숨긴다 (lib/ios-app.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: IOS_APP_SCRIPT }} />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"

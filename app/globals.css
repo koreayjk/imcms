@@ -153,3 +153,8 @@ body {
 @media (min-width: 768px) {
   .cms-actionbar { left: 76px; bottom: 0; }
 }
+
+/* 아이폰 앱 안 (lib/ios-app.ts): 구글 로그인·결제 단추를 숨기고 앱 전용 안내를 보인다 */
+.ios-app-only { display: none; }
+.in-ios-app .ios-app-only { display: block; }
+.in-ios-app .ios-app-hide { display: none !important; }

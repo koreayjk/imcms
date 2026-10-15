@@ -93,14 +93,14 @@ export default async function MainLayout({ children }: { children: React.ReactNo
             <strong>이용료가 밀려 편집국 이용이 제한되었습니다.</strong>
             <span className="opacity-90">기사 쓰기·고치기·발행과 AI 기능을 쓸 수 없습니다. 신문 홈페이지는 그대로 열려 있습니다.</span>
             {isEditorPlus
-              ? <a href={billing.overdue ? `/support/invoices/${billing.overdue.id}` : '/support/invoices'} className="ml-auto rounded bg-white px-3 py-1 font-semibold text-danger">결제하면 바로 풀립니다 →</a>
+              ? <a href={billing.overdue ? `/support/invoices/${billing.overdue.id}` : '/support/invoices'} className="ios-app-hide ml-auto rounded bg-white px-3 py-1 font-semibold text-danger">결제하면 바로 풀립니다 →</a>
               : <span className="ml-auto opacity-90">발행인·편집장에게 알려 주세요.</span>}
           </div>
         ) : billing.overdue ? (
           <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[#FFF4D6] px-4 py-2 text-[13px] text-[#7A4B00] print:hidden">
             <strong>{monthText(billing.overdue.month)} 이용료의 납부 기한({formatDate(billing.overdue.due)})이 지났습니다.</strong>
             <span>{GRACE_DAYS}일 안에 결제하지 않으면 {formatDate(holdFrom(billing.overdue.due))}부터 기사 쓰기·발행이 제한됩니다.</span>
-            <a href={`/support/invoices/${billing.overdue.id}`} className="ml-auto rounded bg-[#7A4B00] px-3 py-1 font-semibold text-white">지금 결제하기 →</a>
+            <a href={`/support/invoices/${billing.overdue.id}`} className="ios-app-hide ml-auto rounded bg-[#7A4B00] px-3 py-1 font-semibold text-white">지금 결제하기 →</a>
           </div>
         ) : null}
         <TopBar

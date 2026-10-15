@@ -18,7 +18,9 @@ export default function AutopaySection({ autopay, ready, provider, clientKey, te
   const [agree, setAgree] = useState(false)
 
   return (
-    <section aria-labelledby="autopay-title" className="mt-8 rounded-2xl bg-white p-6 ring-1 ring-black/5">
+    <>
+    <p className="ios-app-only mt-8 rounded-2xl bg-white p-6 text-[14px] text-muted ring-1 ring-black/5">이 앱에서는 결제수단 등록과 자동결제 설정을 제공하지 않습니다.</p>
+    <section aria-labelledby="autopay-title" className="ios-app-hide mt-8 rounded-2xl bg-white p-6 ring-1 ring-black/5">
       <h2 id="autopay-title" className="text-[16px] font-bold">자동결제</h2>
       <p className="mt-1 text-[13px] leading-relaxed text-muted">
         카드나 계좌를 등록해 두면 청구서가 나올 때 납부 기한 오전 10시에 자동으로 결제됩니다. 결제가 실패하면 청구서와 이 화면에 알려 드립니다.
@@ -67,5 +69,6 @@ export default function AutopaySection({ autopay, ready, provider, clientKey, te
       {ready && testMode && <p className="mt-3 text-[12px] font-semibold text-draft">시험 모드입니다. 실제 결제는 일어나지 않습니다.{provider === 'stripe' ? ' (시험 카드 4242 4242 4242 4242)' : ' (등록 화면 인증번호 000000)'}</p>}
       {msg && <p role="status" className="mt-2 text-[13px] text-muted">{msg}</p>}
     </section>
+    </>
   )
 }

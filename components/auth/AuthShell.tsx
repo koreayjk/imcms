@@ -19,7 +19,7 @@ export default function AuthShell({ subtitle, children, footer }: { subtitle: st
 
 export function OrDivider() {
   return (
-    <div className="my-6 flex items-center gap-3 text-xs text-muted" role="separator">
+    <div className="ios-app-hide my-6 flex items-center gap-3 text-xs text-muted" role="separator">
       <span className="h-px flex-1 bg-line" />
       또는
       <span className="h-px flex-1 bg-line" />

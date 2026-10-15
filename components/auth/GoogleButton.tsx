@@ -41,7 +41,7 @@ export default function GoogleButton({ label, requestedOutlet, next, before, con
   }
 
   return (
-    <div>
+    <div className="ios-app-hide">
       <button
         type="button"
         onClick={start}
