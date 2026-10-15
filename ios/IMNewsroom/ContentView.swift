@@ -29,7 +29,9 @@ struct NewsroomWebView: UIViewRepresentable {
         web.navigationDelegate = context.coordinator
         web.uiDelegate = context.coordinator
         web.allowsBackForwardNavigationGestures = true // 오른쪽으로 밀면 뒤로
-        web.scrollView.contentInsetAdjustmentBehavior = .automatic
+        // 아래 홈 막대 자리까지 웹 화면이 덮게 한다. 아래 메뉴는 웹이 그 높이만큼(safe-area) 늘려 칠한다
+        //   (.automatic이면 웹 화면이 홈 막대 위에서 끝나 메뉴 밑에 흰 띠가 보였다)
+        web.scrollView.contentInsetAdjustmentBehavior = .never
 
         // 아래로 당겨 새로고침
         let refresh = UIRefreshControl()
