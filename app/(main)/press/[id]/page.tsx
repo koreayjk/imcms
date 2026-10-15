@@ -92,7 +92,7 @@ export default async function PressDetailPage(
             <ul className="mt-2 flex flex-wrap gap-2">
               {files.map((f) => (
                 <li key={f.id}>
-                  <a href={`/press/attachment/${f.id}`} className="inline-flex items-center gap-1.5 rounded border border-line px-3 py-1.5 text-[13px] hover:border-ink">
+                  <a href={`/press/attachment/${f.id}`} className="inline-flex max-w-full items-center gap-1.5 break-all rounded border border-line px-3 py-1.5 text-[13px] hover:border-ink">
                     📎 {f.name} <span className="text-[11.5px] text-muted">{Math.max(1, Math.round(f.size / 1024))}KB</span>
                   </a>
                 </li>

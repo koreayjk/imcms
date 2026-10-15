@@ -10,7 +10,7 @@ export default function FilePicker({ files, setFiles }: { files: File[]; setFile
         <button type="button" onClick={() => ref.current?.click()} className="btn-secondary bg-white px-3 py-1.5 text-[13px]">📎 파일 선택 <span className="text-muted">(파일당 20MB 이하)</span></button>
         <input ref={ref} type="file" multiple hidden onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = '' }} />
         {files.map((f, i) => (
-          <span key={`${f.name}-${i}`} className="inline-flex items-center gap-1.5 rounded bg-line/60 px-2 py-1 text-[12.5px]">
+          <span key={`${f.name}-${i}`} className="inline-flex max-w-full items-center gap-1.5 break-all rounded bg-line/60 px-2 py-1 text-[12.5px]">
             {f.name}
             <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`${f.name} 빼기`} className="text-muted hover:text-danger">×</button>
           </span>

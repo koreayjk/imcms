@@ -120,7 +120,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
       </div>
 
       {mode === 'auto' && (
-        <section className="rounded-lg border border-line bg-white p-6">
+        <section className="rounded-lg border border-line bg-white p-4 sm:p-6">
           {/* 단계 표시 */}
           <ol className="flex flex-wrap items-center gap-2 text-[13px]">
             {steps.map((t, i) => (
@@ -204,7 +204,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
       )}
 
       {mode === 'manual' && (
-        <section className="space-y-4 rounded-lg border border-line bg-white p-6 text-[14.5px] leading-[1.8]">
+        <section className="space-y-4 rounded-lg border border-line bg-white p-4 text-[14.5px] sm:p-6 leading-[1.8]">
           <p className="text-[17px] font-bold">보도자료 메일을 열고 “전달”만 누르면 됩니다</p>
           <ol className="list-decimal space-y-1.5 pl-5">
             <li>처음 한 번: 메일 주소록에 <strong>“IM 보도자료함”</strong> 이름으로 내 전용 주소를 저장 <CopyButton text={address} label="주소 복사" /></li>
@@ -218,7 +218,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
         </section>
       )}
 
-      <details className="rounded-lg border border-line bg-white px-6 py-4">
+      <details className="rounded-lg border border-line bg-white px-4 py-4 sm:px-6">
         <summary className="cursor-pointer text-[14px] font-bold">알아둘 점</summary>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-[#3B4048]">
           <li>들어온 보도자료는 <strong>편집국 모두가 볼 수 있습니다.</strong> 개인 메일이 섞이지 않게 보도자료만 보내세요.</li>

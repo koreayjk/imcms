@@ -26,10 +26,10 @@ export default async function AccountPage() {
   return (
     <div className="mx-auto max-w-[720px] px-4 py-5 md:px-8 md:py-8">
       <h1 className="mb-6 text-[22px] font-bold tracking-tight">내 정보</h1>
-      <div className="space-y-6 rounded-lg border border-line bg-white p-7">
+      <div className="space-y-6 rounded-lg border border-line bg-white p-4 sm:p-7">
         <NameForm name={profile?.full_name ?? ''} />
         <dl className="grid grid-cols-[80px_1fr] gap-y-2.5 border-t border-line pt-5 text-[13.5px]">
-          <dt className="text-muted">이메일</dt><dd>{user.email}</dd>
+          <dt className="text-muted">이메일</dt><dd className="min-w-0 break-all">{user.email}</dd>
           <dt className="text-muted">역할</dt><dd>{profile?.role ? ROLE_LABEL[profile.role as UserRole] : '-'}</dd>
           <dt className="text-muted">소속</dt><dd>{outlet?.name ?? '미배정'}</dd>
         </dl>

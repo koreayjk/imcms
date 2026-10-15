@@ -74,15 +74,15 @@ export default function ReviewActions({ articleId, presetAt = null, hasSection =
 
   if (showReject) {
     return (
-      <div className="flex items-end gap-2">
-        <div>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="w-full sm:w-auto">
           <label className="field-label">반려 사유 *</label>
           <input
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="기자에게 전달할 반려 사유를 입력하세요"
-            className="w-72 rounded border border-line px-3 py-2 text-sm focus:outline-none focus:border-danger"
+            className="w-full rounded border border-line px-3 py-2 sm:w-72 text-sm focus:outline-none focus:border-danger"
             autoFocus
             onKeyDown={(e) => e.key === 'Enter' && reject()}
           />

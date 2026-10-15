@@ -472,18 +472,20 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
           {restored && (
             <div role="status" className="flex flex-wrap items-center gap-3 rounded border border-[#2F6BF0]/40 bg-[#2F6BF0]/5 px-4 py-3 text-[13px]">
-              <span className="min-w-0 flex-1">
+              <span className="min-w-[12rem] flex-1">
                 <strong className="text-[#2F6BF0]">임시 저장된 내용을 불러왔습니다.</strong>{' '}
                 {new Date(restored.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}에 이 브라우저에 저장된 내용입니다. 이어서 쓰세요.
               </span>
+              <span className="flex items-center gap-3">
               <button type="button" onClick={() => setRestored(null)} className="btn-primary px-3 py-1.5 text-[12.5px]">확인</button>
               <button
                 type="button"
                 onClick={() => { if (window.confirm(article ? '임시 저장된 내용을 버리고 마지막으로 저장한 기사로 되돌릴까요?' : '임시 저장된 내용을 지우고 새로 쓸까요?')) discardRestored() }}
-                className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger"
+                className="whitespace-nowrap text-[12.5px] text-muted underline underline-offset-2 hover:text-danger"
               >
                 {article ? '버리고 저장된 기사로' : '지우고 새로 쓰기'}
               </button>
+              </span>
             </div>
           )}
 
@@ -501,7 +503,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </div>
           )}
 
-          <div className="grid grid-cols-[64px_1fr] items-center gap-x-3 gap-y-3">
+          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
             <label htmlFor="section" className="text-[13px] font-semibold">섹션 <span className="text-danger" aria-hidden>*</span></label>
             <select id="section" required aria-required="true" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); if (e.target.value && /섹션/.test(error)) setError('') }} className={`field-input max-w-xs ${!categoryId && /섹션/.test(error) ? 'border-danger' : ''}`}>
               <option value="">섹션 선택</option>
@@ -625,7 +627,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </div>
           </div>
 
-          <div className="grid grid-cols-[64px_1fr] items-center gap-3 border-t border-line pt-5">
+          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 border-t border-line pt-5">
             <label htmlFor="tags" className="text-[13px] font-semibold">태그</label>
             <input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="쉼표로 구분 (예: 요양병원, 간병비)" className="field-input" />
 
@@ -754,7 +756,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       {preview && (
         <div role="dialog" aria-modal="true" aria-label="기사 미리보기" className="fixed inset-0 z-[80] flex flex-col bg-[#14171C]/85">
           <div className="flex flex-wrap items-center gap-2 border-b border-line bg-white px-4 py-2.5 md:gap-3 md:px-6">
-            <div className="min-w-0 flex-1">
+            {/* 휴대폰: 버튼이 많으면 제목 칸이 0으로 찌그러지지 않게 버튼을 다음 줄로 */}
+            <div className="min-w-[10rem] flex-1">
               <p className="text-[14.5px] font-bold">미리보기</p>
               <p className="truncate text-[12px] text-muted">
                 홈페이지에 이렇게 보입니다{preview.mode ? ' · 고칠 곳이 있으면 “고치러 가기”를 누르세요' : ''}
@@ -793,9 +796,10 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       )}
 
       <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
+        {/* 휴대폰: 오류 문구는 버튼 위 한 줄을 다 쓴다 (버튼 옆에 두면 글자 칸이 0으로 찌그러진다) */}
+        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5 md:flex-nowrap md:gap-3 md:px-8 md:py-3">
           {error ? (
-            <p role="alert" className="line-clamp-2 min-w-0 flex-1 text-[12.5px] text-danger md:truncate md:text-[13px]">{error}</p>
+            <p role="alert" className="line-clamp-2 min-w-0 flex-1 basis-full text-[12.5px] text-danger md:basis-0 md:truncate md:text-[13px]">{error}</p>
           ) : (
             <div className="hidden items-center gap-4 md:flex">
               <button type="button" onClick={() => router.back()} className="whitespace-nowrap text-[13px] text-muted hover:text-ink">← 취소</button>
@@ -813,11 +817,11 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             </div>
           )}
           <div className="ml-auto flex shrink-0 gap-1 md:gap-2">
-            <button type="button" onClick={() => { if (validate()) openPreview(null) }} disabled={!!saving} className="btn-secondary whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm">
+            <button type="button" onClick={() => { if (validate()) openPreview(null) }} disabled={!!saving} className="btn-secondary whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
               미리보기
             </button>
             {/* 저장 = 기사목록에 들어간다 (쓰는 중인 내용은 따로 이 브라우저에 자동 임시 저장) */}
-            <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm">
+            <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
               {saving === 'draft' ? '저장 중…' : '저장'}
             </button>
             <button
@@ -825,17 +829,17 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               onClick={runLegal}
               disabled={!!saving || checking}
               title="명예훼손·저작권(도용)·개인정보 등 법적으로 문제가 될 표현을 AI가 찾아 줍니다 (AI 사용 1회)"
-              className={`btn-secondary whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm ${currentLegal ? 'border-published/50 text-published' : ''}`}
+              className={`btn-secondary whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm ${currentLegal ? 'border-published/50 text-published' : ''}`}
             >
               {checking ? '검수 중…' : currentLegal ? 'AI 검수 ✓' : 'AI 검수'}
             </button>
             {status !== 'published' && status !== 'in_review' && (
-              <button type="button" onClick={() => submit('review')} disabled={!!saving || checking} className="btn-review whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm">
+              <button type="button" onClick={() => submit('review')} disabled={!!saving || checking} className="btn-review whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
                 {saving === 'review' ? '신청 중…' : '승인신청'}
               </button>
             )}
             {isEditorPlus && (
-              <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish whitespace-nowrap !px-2 !text-[13px] md:!px-5 md:!text-sm">
+              <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
                 {saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
               </button>
             )}

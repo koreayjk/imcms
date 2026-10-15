@@ -113,9 +113,9 @@ export default function AiReview({ token, title, blind, modelCount, expiresAt, r
               <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3 sm:px-5">
                 <span className="text-[12px] font-bold tabular-nums text-muted">{idx + 1}/{releases.length}</span>
                 {isDone(r.id) && <span className="rounded bg-published/10 px-1.5 text-[11px] font-semibold text-published">✓ 완료</span>}
-                <h2 className="min-w-0 flex-1 text-[15px] font-bold leading-snug">{r.title}</h2>
+                <h2 className="min-w-[12rem] flex-1 text-[15px] font-bold leading-snug">{r.title}</h2>
                 <span className="text-[11.5px] text-muted">{r.source}</span>
-                <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} className="text-[12.5px] text-review underline underline-offset-2">
+                <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} className="whitespace-nowrap text-[12.5px] text-review underline underline-offset-2">
                   {open === r.id ? '보도자료 원문 접기' : '보도자료 원문 보기'}
                 </button>
               </div>

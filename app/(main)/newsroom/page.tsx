@@ -100,7 +100,7 @@ export default async function NewsroomPage(props: Props) {
 
       {aiAlert && aiUsage && (
         <div role="status" className={`mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border px-5 py-3 text-[13.5px] ${aiAlert === 'near' ? 'border-draft/40 bg-draft/10' : 'border-danger/30 bg-danger/5 text-danger'}`}>
-          <span className="flex-1">{aiAlert === 'near' ? `AI 사용 한도에 가까워졌습니다. ${aiLimitMessage(aiUsage)}` : aiLimitMessage(aiUsage)}</span>
+          <span className="min-w-[12rem] flex-1">{aiAlert === 'near' ? `AI 사용 한도에 가까워졌습니다. ${aiLimitMessage(aiUsage)}` : aiLimitMessage(aiUsage)}</span>
           {isEditorPlus && !aiUsage.overage && <Link href="/support/tickets/new" className="shrink-0 font-semibold underline underline-offset-2">추가 사용·요금제 변경 요청 →</Link>}
         </div>
       )}

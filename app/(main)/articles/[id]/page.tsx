@@ -103,7 +103,7 @@ export default async function ArticleDetailPage(
           )}
           <p className="mt-4 text-[12.5px] tabular-nums text-muted">
             {article.byline?.trim() || (article.author as any)?.full_name} 기자
-            {(article as { byline_email?: string | null }).byline_email && <span className="ml-1.5">{(article as { byline_email: string }).byline_email}</span>}
+            {(article as { byline_email?: string | null }).byline_email && <span className="ml-1.5 break-all">{(article as { byline_email: string }).byline_email}</span>}
             <span className="mx-2 text-line">|</span>작성 {formatDateTime(article.created_at)}
             {article.published_at && <><span className="mx-2 text-line">|</span>발행 {formatDateTime(article.published_at)}</>}
             {(revs?.length ?? 0) > 0 && <><span className="mx-2 text-line">|</span>최종 수정 {formatDateTime(revs![0].changed_at)}</>}

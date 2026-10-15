@@ -8,7 +8,7 @@ import PendingButton from './PendingButton'
 export default function MailServiceSettings({ address, webhook }: { address: string | null; webhook: string | null }) {
   const [state, action] = useActionState<AddressState, FormData>(saveMailAddress, {})
   return (
-    <section className="mt-6 rounded-lg border border-review/30 bg-review/5 p-6">
+    <section className="mt-6 rounded-lg border border-review/30 bg-review/5 p-4 sm:p-6">
       <h2 className="text-[15px] font-bold">관리자 설정 · 메일 수신 서비스 연결 <span className="text-[12px] font-normal text-muted">(관리자에게만 보입니다)</span></h2>
       <p className="mt-1 text-[13px] text-muted">처음 한 번만 하면 됩니다. 기자마다 따로 할 필요 없습니다.</p>
 

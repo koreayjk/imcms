@@ -373,7 +373,8 @@ function AlignIcon({ kind }: { kind: 'left' | 'center' | 'right' | 'justify' }) 
 function Palette({ label, colors, current, onPick, onClear, face }: { label: string; colors: string[]; current?: string; onPick: (c: string) => void; onClear: () => void; face: ReactNode }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="relative" onMouseLeave={() => setOpen(false)}>
+    // 휴대폰: 도구 줄 오른쪽 끝에서 열면 화면 밖으로 잘리므로 도구 줄 왼쪽 끝에 맞춰 연다
+    <div className="md:relative" onMouseLeave={() => setOpen(false)}>
       <button
         type="button"
         title={label}
@@ -414,7 +415,8 @@ function Palette({ label, colors, current, onPick, onClear, face }: { label: str
 function Symbols({ onPick }: { onPick: (s: string) => void }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="relative" onMouseLeave={() => setOpen(false)}>
+    // 휴대폰: 도구 줄 왼쪽 끝에 맞춰 연다 (위 Palette와 같은 이유)
+    <div className="md:relative" onMouseLeave={() => setOpen(false)}>
       <Btn label="특수문자" active={open} onClick={() => setOpen(!open)}>※ 특수문자</Btn>
       {open && (
         <div className="absolute left-0 top-full z-30 grid w-[276px] grid-cols-9 gap-1 rounded-lg border border-line bg-white p-2 shadow-lg" onMouseDown={(e) => e.preventDefault()}>
