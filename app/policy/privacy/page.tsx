@@ -22,13 +22,13 @@ export default async function PrivacyPage() {
       <section>
         <h2>1. 처리하는 개인정보와 목적</h2>
         <p>신문사 홈페이지는 독자 회원가입 없이 이용할 수 있으며, 다음의 경우에만 최소한의 개인정보를 처리합니다.</p>
-        <table>
+        <table className="table-cards">
           <thead><tr><th>구분</th><th>항목</th><th>목적</th><th>보유 기간</th></tr></thead>
           <tbody>
-            <tr><td>기사제보·광고문의 (이메일)</td><td>이름, 이메일 주소, 연락처, 문의 내용</td><td>제보 확인·취재, 문의 답변</td><td>처리 완료 후 1년</td></tr>
-            <tr><td>편집국 회원 (기자·편집인)</td><td>이름, 이메일 주소, 소속 매체, 로그인 기록</td><td>기사 작성·편집·발행, 본인 확인</td><td>탈퇴 시까지 (기사의 기자명은 기사와 함께 보존)</td></tr>
-            <tr><td>뉴스레터 구독 (신청한 분만)</td><td>이메일 주소, (선택) 이름, 구독 확인·수신거부 일시</td><td>뉴스레터 발송, 구독 확인</td><td>수신거부할 때까지 (메일마다 수신거부 링크)</td></tr>
-            <tr><td>홈페이지 이용 (자동 수집)</td><td>접속 IP, 브라우저 종류, 접속 일시</td><td>서비스 안정 운영, 부정 이용 방지</td><td>최대 1년</td></tr>
+            <tr><td className="tc-full">기사제보·광고문의 (이메일)</td><td data-label="항목">이름, 이메일 주소, 연락처, 문의 내용</td><td data-label="목적">제보 확인·취재, 문의 답변</td><td data-label="보유 기간">처리 완료 후 1년</td></tr>
+            <tr><td className="tc-full">편집국 회원 (기자·편집인)</td><td data-label="항목">이름, 이메일 주소, 소속 매체, 로그인 기록</td><td data-label="목적">기사 작성·편집·발행, 본인 확인</td><td data-label="보유 기간">탈퇴 시까지 (기사의 기자명은 기사와 함께 보존)</td></tr>
+            <tr><td className="tc-full">뉴스레터 구독 (신청한 분만)</td><td data-label="항목">이메일 주소, (선택) 이름, 구독 확인·수신거부 일시</td><td data-label="목적">뉴스레터 발송, 구독 확인</td><td data-label="보유 기간">수신거부할 때까지 (메일마다 수신거부 링크)</td></tr>
+            <tr><td className="tc-full">홈페이지 이용 (자동 수집)</td><td data-label="항목">접속 IP, 브라우저 종류, 접속 일시</td><td data-label="목적">서비스 안정 운영, 부정 이용 방지</td><td data-label="보유 기간">최대 1년</td></tr>
           </tbody>
         </table>
         <p>기사 조회수를 중복 없이 세기 위해 이용자 기기의 브라우저 저장소에 “열어 본 기사” 기록을 12시간 동안 남깁니다. 이 기록은 기기에만 저장되며 신문사로 전송되지 않습니다.</p>
@@ -42,14 +42,14 @@ export default async function PrivacyPage() {
       <section>
         <h2>3. 처리 위탁과 국외 이전</h2>
         <p>신문사는 홈페이지·편집국 운영을 위해 다음과 같이 업무를 맡기고 있으며, 일부는 국외 서버에 저장됩니다.</p>
-        <table>
+        <table className="table-cards">
           <thead><tr><th>받는 자</th><th>맡기는 업무</th><th>이전 국가</th><th>연락처</th></tr></thead>
           <tbody>
-            <tr><td>IM America Group Corp (IM 뉴스룸)</td><td>홈페이지·편집국 시스템 운영과 관리 (아래 업체에 다시 맡김)</td><td>미국 법인 (자료 저장은 아래와 같음)</td><td>contact@imnewsroom.com</td></tr>
-            <tr><td>Supabase Inc.</td><td>데이터베이스·사진 저장</td><td>일본 (도쿄 데이터센터)</td><td>supabase.com/privacy</td></tr>
-            <tr><td>Vercel Inc.</td><td>홈페이지 호스팅·접속 기록</td><td>미국·일본 등</td><td>vercel.com/legal/privacy-policy</td></tr>
-            <tr><td>Google LLC</td><td>편집국 회원 구글 계정 로그인</td><td>미국</td><td>policies.google.com/privacy</td></tr>
-            <tr><td>Resend, Inc.</td><td>보도자료 메일 수신, 뉴스레터·알림 메일 발송</td><td>미국</td><td>resend.com/legal/privacy-policy</td></tr>
+            <tr><td className="tc-full">IM America Group Corp (IM 뉴스룸)</td><td data-label="맡기는 업무">홈페이지·편집국 시스템 운영과 관리 (아래 업체에 다시 맡김)</td><td data-label="이전 국가">미국 법인 (자료 저장은 아래와 같음)</td><td data-label="연락처">contact@imnewsroom.com</td></tr>
+            <tr><td className="tc-full">Supabase Inc.</td><td data-label="맡기는 업무">데이터베이스·사진 저장</td><td data-label="이전 국가">일본 (도쿄 데이터센터)</td><td data-label="연락처">supabase.com/privacy</td></tr>
+            <tr><td className="tc-full">Vercel Inc.</td><td data-label="맡기는 업무">홈페이지 호스팅·접속 기록</td><td data-label="이전 국가">미국·일본 등</td><td data-label="연락처">vercel.com/legal/privacy-policy</td></tr>
+            <tr><td className="tc-full">Google LLC</td><td data-label="맡기는 업무">편집국 회원 구글 계정 로그인</td><td data-label="이전 국가">미국</td><td data-label="연락처">policies.google.com/privacy</td></tr>
+            <tr><td className="tc-full">Resend, Inc.</td><td data-label="맡기는 업무">보도자료 메일 수신, 뉴스레터·알림 메일 발송</td><td data-label="이전 국가">미국</td><td data-label="연락처">resend.com/legal/privacy-policy</td></tr>
           </tbody>
         </table>
         <p>이전 시기는 서비스 이용 시점이며, 이전 방법은 암호화된 네트워크 전송입니다. 보유 기간은 위 1항과 같습니다. 국외 이전을 원하지 않으면 기사제보는 전화로 해 주시기 바랍니다.</p>
@@ -104,13 +104,13 @@ function PrivacyEn({ site, o }: { site: SiteConfig; o: { name: string; contact: 
       <section>
         <h2>1. Information we process and why</h2>
         <p>You can read {site.name} without creating an account. We process only the minimum information needed in the following cases.</p>
-        <table>
+        <table className="table-cards">
           <thead><tr><th>Purpose</th><th>Information</th><th>Use</th><th>Retention</th></tr></thead>
           <tbody>
-            <tr><td>News tips and advertising inquiries (email)</td><td>Name, email address, phone number, message</td><td>Verifying tips, reporting, replying to inquiries</td><td>One year after the matter is closed</td></tr>
-            <tr><td>Newsroom accounts (reporters and editors)</td><td>Name, email address, outlet, sign-in records</td><td>Writing, editing and publishing stories; identity verification</td><td>Until the account is closed (bylines remain with published stories)</td></tr>
-            <tr><td>Newsletter (subscribers only)</td><td>Email address, optional name, confirmation and unsubscribe dates</td><td>Sending the newsletter, confirming subscriptions</td><td>Until you unsubscribe (every email has an unsubscribe link)</td></tr>
-            <tr><td>Website use (collected automatically)</td><td>IP address, browser type, time of access</td><td>Keeping the service secure and stable, preventing abuse</td><td>Up to one year</td></tr>
+            <tr><td className="tc-full">News tips and advertising inquiries (email)</td><td data-label="Information">Name, email address, phone number, message</td><td data-label="Use">Verifying tips, reporting, replying to inquiries</td><td data-label="Retention">One year after the matter is closed</td></tr>
+            <tr><td className="tc-full">Newsroom accounts (reporters and editors)</td><td data-label="Information">Name, email address, outlet, sign-in records</td><td data-label="Use">Writing, editing and publishing stories; identity verification</td><td data-label="Retention">Until the account is closed (bylines remain with published stories)</td></tr>
+            <tr><td className="tc-full">Newsletter (subscribers only)</td><td data-label="Information">Email address, optional name, confirmation and unsubscribe dates</td><td data-label="Use">Sending the newsletter, confirming subscriptions</td><td data-label="Retention">Until you unsubscribe (every email has an unsubscribe link)</td></tr>
+            <tr><td className="tc-full">Website use (collected automatically)</td><td data-label="Information">IP address, browser type, time of access</td><td data-label="Use">Keeping the service secure and stable, preventing abuse</td><td data-label="Retention">Up to one year</td></tr>
           </tbody>
         </table>
         <p>To count story views without duplicates, your browser stores a list of stories you opened for 12 hours. It stays on your device and is not sent to us.</p>
@@ -124,14 +124,14 @@ function PrivacyEn({ site, o }: { site: SiteConfig; o: { name: string; contact: 
       <section>
         <h2>3. Service providers and international transfers</h2>
         <p>We use the following providers to run our website and newsroom. Some data is stored on servers outside your country.</p>
-        <table>
+        <table className="table-cards">
           <thead><tr><th>Provider</th><th>Service</th><th>Location</th><th>Contact</th></tr></thead>
           <tbody>
-            <tr><td>IM America Group Corp (IM Newsroom)</td><td>Operation of the website and newsroom system (through the providers below)</td><td>United States company (storage as below)</td><td>contact@imnewsroom.com</td></tr>
-            <tr><td>Supabase Inc.</td><td>Database and photo storage</td><td>Japan (Tokyo data center)</td><td>supabase.com/privacy</td></tr>
-            <tr><td>Vercel Inc.</td><td>Website hosting and access logs</td><td>United States, Japan and other regions</td><td>vercel.com/legal/privacy-policy</td></tr>
-            <tr><td>Google LLC</td><td>Google sign-in for newsroom accounts</td><td>United States</td><td>policies.google.com/privacy</td></tr>
-            <tr><td>Resend, Inc.</td><td>Newsletter and notification emails</td><td>United States</td><td>resend.com/legal/privacy-policy</td></tr>
+            <tr><td className="tc-full">IM America Group Corp (IM Newsroom)</td><td data-label="Service">Operation of the website and newsroom system (through the providers below)</td><td data-label="Location">United States company (storage as below)</td><td data-label="Contact">contact@imnewsroom.com</td></tr>
+            <tr><td className="tc-full">Supabase Inc.</td><td data-label="Service">Database and photo storage</td><td data-label="Location">Japan (Tokyo data center)</td><td data-label="Contact">supabase.com/privacy</td></tr>
+            <tr><td className="tc-full">Vercel Inc.</td><td data-label="Service">Website hosting and access logs</td><td data-label="Location">United States, Japan and other regions</td><td data-label="Contact">vercel.com/legal/privacy-policy</td></tr>
+            <tr><td className="tc-full">Google LLC</td><td data-label="Service">Google sign-in for newsroom accounts</td><td data-label="Location">United States</td><td data-label="Contact">policies.google.com/privacy</td></tr>
+            <tr><td className="tc-full">Resend, Inc.</td><td data-label="Service">Newsletter and notification emails</td><td data-label="Location">United States</td><td data-label="Contact">resend.com/legal/privacy-policy</td></tr>
           </tbody>
         </table>
         <p>Data is transferred over encrypted connections when you use the service and is kept for the periods listed above.</p>

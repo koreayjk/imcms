@@ -97,6 +97,10 @@ body {
   .table-cards > tbody > tr > td.tc-hide { display: none; }
   .table-cards > tbody > tr > td:empty { display: none; }
   .table-cards > tbody > tr > td[data-label]::before { content: attr(data-label); @apply mr-1.5 text-[11.5px] font-normal text-muted; }
+  /* 약관·처리방침 표: 칸마다 한 줄, 행마다 테두리 상자 */
+  .policy .table-cards > tbody > tr { @apply mb-2 rounded border border-rule; gap: 4px; }
+  .policy .table-cards > tbody > tr > td { flex-basis: 100%; border: 0 !important; }
+  .policy .table-cards > tbody > tr > td.tc-full { @apply font-semibold; }
 }
 
 /* 버튼 공통 */
