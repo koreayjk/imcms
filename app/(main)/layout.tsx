@@ -1,6 +1,8 @@
 import type { Viewport } from 'next'
 import { APP_METADATA } from '@/lib/brand'
+import { Suspense } from 'react'
 import AppServiceWorker from '@/components/AppServiceWorker'
+import ScrollKeeper from '@/components/cms/ScrollKeeper'
 import Rail from '@/components/cms/Rail'
 import { outletHomeUrl } from '@/lib/product'
 import TopBar from '@/components/cms/TopBar'
@@ -114,7 +116,8 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           isSuper={isSuper}
           isStaff={isStaff}
         />
-        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0 print:overflow-visible print:pb-0">{children}</main>
+        <main id="app-main" className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0 print:overflow-visible print:pb-0">{children}</main>
+        <Suspense fallback={null}><ScrollKeeper /></Suspense>
       </div>
     </div>
   )
