@@ -45,7 +45,7 @@ const LEGAL: { k: keyof SiteLegal; label: string; required?: boolean; ph?: strin
 
 function Card({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-6">
+    <section className="rounded-lg border border-line bg-white p-4 sm:p-6">
       <h2 className="text-[15.5px] font-bold">{title}</h2>
       {note && <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{note}</p>}
       <div className="mt-4">{children}</div>
@@ -119,7 +119,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     <div className="space-y-5 pb-24">
       {/* 미리보기 */}
       <section className="overflow-hidden rounded-lg border border-line bg-white">
-        <div className="flex items-center justify-between border-b border-line bg-[#F8F9FA] px-4 py-2 text-[12.5px]">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line bg-[#F8F9FA] px-4 py-2 text-[12.5px]">
           <span className="font-semibold">미리보기 <span className="font-normal text-muted">(PC 화면 머리 부분, 저장 전에도 바로 바뀝니다)</span></span>
           <a href={`/?preview_outlet=${outlet.id}`} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">저장한 홈페이지 전체 보기 ↗</a>
         </div>
@@ -349,8 +349,8 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
       </section>
 
       <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[960px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
-          <p role={msg.error ? 'alert' : 'status'} className={`flex-1 text-[13px] ${msg.error ? 'font-semibold text-danger' : msg.ok ? 'text-published' : 'text-muted'}`}>
+        <div className="mx-auto flex max-w-[960px] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 md:px-8 md:py-3">
+          <p role={msg.error ? 'alert' : 'status'} className={`min-w-[12rem] flex-1 text-[13px] ${msg.error ? 'font-semibold text-danger' : msg.ok ? 'text-published' : 'text-muted'}`}>
             {msg.error ?? msg.ok ?? '바꾼 내용은 저장해야 홈페이지에 반영됩니다.'}
           </p>
           <a href={`/?preview_outlet=${outlet.id}`} target="_blank" rel="noopener" className="btn-secondary">홈페이지 미리보기</a>

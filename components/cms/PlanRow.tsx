@@ -31,7 +31,7 @@ export default function PlanRow({ row }: { row: PlanRowData }) {
       </div>
 
       <div>
-        <div className="flex items-baseline justify-between text-[12.5px] tabular-nums">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 text-[12.5px] tabular-nums">
           <span><strong className="text-[15px]">{row.used.toLocaleString()}</strong>{row.limit != null ? ` / ${row.limit.toLocaleString()}건` : '건 · 한도 없음'}</span>
           {row.overCount > 0 && <span className="font-semibold text-danger">추가 {row.overCount.toLocaleString()}건</span>}
         </div>

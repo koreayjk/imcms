@@ -46,7 +46,7 @@ export default function SearchRegisterGuide({ outletId, domain }: { outletId: st
           {checks.map((c) => (
             <li key={c.label} className="flex items-start gap-2.5 px-3 py-2">
               <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white ${c.ok ? 'bg-published' : 'bg-danger'}`} aria-hidden>{c.ok ? '✓' : '!'}</span>
-              <span className="min-w-0"><strong>{c.label}</strong> <span className="text-muted">— {c.detail}</span></span>
+              <span className="min-w-0 break-words"><strong>{c.label}</strong> <span className="text-muted">— {c.detail}</span></span>
             </li>
           ))}
         </ul>

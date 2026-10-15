@@ -68,10 +68,10 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
           <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded-lg border border-line">
             {articles.map((a) => (
               <li key={a.id}>
-                <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5 text-[13.5px] hover:bg-line/30">
+                <label className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2.5 text-[13.5px] hover:bg-line/30">
                   <input type="checkbox" checked={picked.includes(a.id)} onChange={() => toggle(a.id)} className="h-4 w-4" />
                   {picked.includes(a.id) && <span className="w-5 text-center text-[12px] font-bold tabular-nums text-published">{picked.indexOf(a.id) + 1}</span>}
-                  <span className="min-w-0 flex-1 truncate">{a.title}</span>
+                  <span className="min-w-[10rem] flex-1 truncate">{a.title}</span>
                   <span className="shrink-0 text-[12px] tabular-nums text-muted">{a.category ? `${a.category} · ` : ''}{formatDate(a.published_at)}</span>
                 </label>
               </li>
@@ -113,7 +113,7 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
           <ul className="divide-y divide-line text-[13.5px]">
             {campaigns.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-x-3 px-5 py-2.5">
-                <span className="min-w-0 flex-1 truncate font-medium">{c.subject}</span>
+                <span className="min-w-[10rem] flex-1 truncate font-medium">{c.subject}</span>
                 <span className="tabular-nums text-muted">{c.recipient_count.toLocaleString()}명{c.failed_count ? ` · 실패 ${c.failed_count}` : ''} · {formatDateTime(c.sent_at)}</span>
               </li>
             ))}
@@ -139,7 +139,7 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
           <ul className="divide-y divide-line text-[13px]">
             {subscribers.map((s) => (
               <li key={s.id} className="flex flex-wrap items-center gap-x-3 px-5 py-2">
-                <span className="min-w-0 flex-1 truncate">{s.email}</span>
+                <span className="min-w-[10rem] flex-1 truncate">{s.email}</span>
                 <span className="text-muted">{SUB_STATUS[s.status] ?? s.status}{s.source === 'import' ? ' · 직접 추가' : ''} · {formatDate(s.created_at)}</span>
                 <button type="button" disabled={pending} onClick={() => { if (window.confirm(`${s.email}을(를) 목록에서 지울까요?`)) run(() => removeSubscriber(s.id), true) }} className="text-[12px] text-danger underline">지우기</button>
               </li>

@@ -36,7 +36,7 @@ export default async function OutletsPage() {
       <header className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-[22px] font-bold tracking-tight">{isStaff ? '그룹·매체 관리' : '우리 그룹 매체'}</h1>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {isSuper && <Link href="/admin/import" className="btn-secondary px-3 py-1.5 text-[13px]">다른 프로그램 자료 가져오기</Link>}
             {isGroupAdmin && <Link href="/admin/export" className="btn-secondary px-3 py-1.5 text-[13px]">자료 내보내기</Link>}
           </div>

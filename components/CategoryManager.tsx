@@ -74,21 +74,22 @@ export default function CategoryManager({
       {/* 추가 폼 */}
       <div className="rounded border border-line p-4">
         <h2 className="text-sm font-medium mb-3">새 카테고리 추가</h2>
-        <div className="flex gap-2">
+        {/* 휴대폰: 이름 칸은 한 줄을 다 쓰고, 슬러그·추가 버튼은 다음 줄로 */}
+        <div className="flex flex-wrap gap-2 sm:flex-nowrap">
           <input
             type="text"
             value={name}
             onChange={(e) => { setName(e.target.value); setSlug(toSlug(e.target.value)) }}
             onKeyDown={(e) => e.key === 'Enter' && add()}
             placeholder="카테고리명 (예: 사회, 경제, 문화)"
-            className="flex-1 field-input"
+            className="min-w-full flex-1 field-input sm:min-w-0"
           />
           <input
             type="text"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="슬러그 (자동생성)"
-            className="w-36 field-input text-muted"
+            className="min-w-0 flex-1 field-input text-muted sm:w-36 sm:flex-none"
           />
           <button onClick={add} disabled={!name.trim() || loading} className="btn-primary whitespace-nowrap">
             추가
@@ -107,7 +108,7 @@ export default function CategoryManager({
               key={cat.id}
               className="flex items-center justify-between rounded border border-line px-4 py-3 bg-paper"
             >
-              <div className="flex items-center gap-3 flex-1">
+              <div className="flex min-w-0 items-center gap-3 flex-1">
                 <button onClick={() => moveUp(i)} disabled={i === 0} className="text-muted hover:text-ink disabled:opacity-20 text-xs px-1">↑</button>
                 {editId === cat.id ? (
                   <input
@@ -125,7 +126,7 @@ export default function CategoryManager({
                       {cat.name}
                       {cat.parent_slug && <span className="ml-1.5 text-xs font-normal text-muted">{items.find((x) => x.slug === cat.parent_slug)?.name ?? ''} 하위</span>}
                     </span>
-                    <span className="ml-2 text-xs text-muted font-mono">{cat.slug}</span>
+                    <span className="ml-2 break-all text-xs text-muted font-mono">{cat.slug}</span>
                   </div>
                 )}
               </div>

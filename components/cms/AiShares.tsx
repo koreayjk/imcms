@@ -39,7 +39,7 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
           return (
             <li key={s.id}>
               <div className="flex flex-wrap items-center gap-3 px-5 py-3">
-                <button type="button" onClick={() => setOpen(open === s.id ? null : s.id)} className="min-w-0 flex-1 text-left">
+                <button type="button" onClick={() => setOpen(open === s.id ? null : s.id)} className="min-w-[12rem] flex-1 text-left">
                   <span className="text-[14px] font-bold">{s.title}</span>
                   <span className="ml-2 text-[12px] text-muted">
                     {new Date(s.created_at).toLocaleDateString('ko-KR')} · {s.blind ? '블라인드' : '이름 공개'} · 검토 {s.reviews.length}명
@@ -51,6 +51,7 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
                     {votes.map((v) => <span key={v.id} className="rounded bg-[#F1F3F5] px-2 py-0.5">{v.label} <strong>{v.n}</strong></span>)}
                   </span>
                 )}
+                <span className="flex items-center gap-3">
                 {!expired && (
                   <button
                     type="button"
@@ -72,6 +73,7 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
                 >
                   삭제
                 </button>
+                </span>
               </div>
 
               {open === s.id && (
@@ -80,7 +82,7 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
                     <div className="space-y-1.5">
                       {votes.sort((a, b) => b.n - a.n).map((v) => (
                         <div key={v.id} className="flex items-center gap-3 text-[13px]">
-                          <span className="w-40 shrink-0 font-semibold">{v.label}</span>
+                          <span className="w-28 shrink-0 font-semibold sm:w-40">{v.label}</span>
                           <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#E9ECEF]">
                             <span className="block h-full rounded-full bg-published" style={{ width: `${(v.n / total) * 100}%` }} />
                           </span>
@@ -99,7 +101,7 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
                       <ul className="mt-2 space-y-1 text-[12.5px]">
                         {releases.filter((x) => r.picks[x.id] || r.notes[x.id]).map((x) => (
                           <li key={x.id} className="flex flex-wrap gap-x-2">
-                            <span className="max-w-[420px] truncate text-muted">{title(x.id)}</span>
+                            <span className="max-w-full truncate text-muted sm:max-w-[420px]">{title(x.id)}</span>
                             {r.picks[x.id] && <strong className="text-published">→ {label(r.picks[x.id])}</strong>}
                             {r.notes[x.id] && <span>· {r.notes[x.id]}</span>}
                           </li>

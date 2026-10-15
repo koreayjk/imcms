@@ -142,7 +142,7 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
             <button key={f.key} type="button" onClick={() => setFilter(f.key)} className={`rounded-full border px-3 py-1 text-[12.5px] ${filter === f.key ? 'border-ink bg-ink text-white' : 'border-line bg-white text-muted hover:border-ink hover:text-ink'}`}>{f.label}</button>
           ))}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {contracts.length > 0 && <button type="button" onClick={downloadCsv} className="btn-secondary bg-white px-3 py-1.5 text-[13px]">엑셀로 내려받기</button>}
           <button type="button" onClick={() => setEditing('new')} className="btn-primary px-3 py-1.5 text-[13px]">+ 광고 계약 등록</button>
         </div>
@@ -485,7 +485,7 @@ function InvoicePanel({ c, today, onClose }: { c: Contract; today: string; onClo
       <dl className="mt-3 divide-y divide-line rounded-md border border-line text-[13px]">
         {rows.map(([k, v]) => (
           <div key={k} className="flex items-center gap-3 px-3 py-2">
-            <dt className="w-40 shrink-0 text-muted">{k}</dt>
+            <dt className="w-28 shrink-0 text-muted sm:w-40">{k}</dt>
             <dd className="min-w-0 flex-1 truncate font-medium tabular-nums">{/^\d+$/.test(v) && k !== '공급받는자 사업자등록번호' ? won(Number(v)) : v || <span className="text-muted">없음</span>}</dd>
             {v && <CopyBtn text={v} />}
           </div>

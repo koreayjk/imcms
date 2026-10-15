@@ -38,7 +38,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
         </ul>
         <div className="mt-6 rounded-lg border border-line bg-white px-5 py-4">
           <p className="font-semibold">{profile?.full_name ?? user.email}</p>
-          <p className="mt-0.5 text-[12.5px] text-muted">{user.email} · 그룹장(체험)</p>
+          <p className="mt-0.5 break-all text-[12.5px] text-muted">{user.email} · 그룹장(체험)</p>
         </div>
       </div>
     )
@@ -128,7 +128,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
           <ul className="divide-y divide-line rounded-lg border border-line bg-white">
             {(invites ?? []).map((i: any) => (
               <li key={i.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-[13.5px]">
-                <span className="font-semibold">{i.email}</span>
+                <span className="min-w-0 break-all font-semibold">{i.email}</span>
                 <span className="text-muted">{i.full_name ?? ''} · {ROLE_LABEL[i.role as UserRole]} · {i.outlet?.name ?? ''} · {formatDateTime(i.created_at)}</span>
                 <form action={cancelInvite.bind(null, i.id)} className="ml-auto">
                   <PendingButton pending="…" confirm="이 초대를 취소할까요?" className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger">취소</PendingButton>
@@ -153,7 +153,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
                   <li key={u.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4">
                     <div className="min-w-[200px] flex-1">
                       <p className="font-semibold">{u.full_name}</p>
-                      <p className="mt-0.5 text-[12.5px] text-muted">{a?.email ?? '이메일 확인 불가'} · {a?.provider === 'google' ? '구글 가입' : '이메일 가입'} · {formatDateTime(u.created_at)}</p>
+                      <p className="mt-0.5 break-words text-[12.5px] text-muted">{a?.email ?? '이메일 확인 불가'} · {a?.provider === 'google' ? '구글 가입' : '이메일 가입'} · {formatDateTime(u.created_at)}</p>
                       <p className="mt-1 text-[12.5px]">
                         신청 매체:{' '}
                         {u.requested_outlet_id
@@ -161,12 +161,12 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
                           : <span className="text-muted">정하지 않음</span>}
                       </p>
                     </div>
-                    <form action={approveUser.bind(null, u.id)} className="flex items-center gap-2">
+                    <form action={approveUser.bind(null, u.id)} className="flex max-w-full flex-wrap items-center gap-2">
                       <select name="role" defaultValue="reporter" aria-label="역할" className="rounded border border-line px-2 py-1.5 text-[13px]">
                         <option value="reporter">기자</option><option value="editor">편집장</option><option value="admin">발행인</option>
                         {isSuper && <option value="staff">IM 뉴스룸 매니저</option>}
                       </select>
-                      <select name="outlet_id" defaultValue={(u.requested_outlet_id && outlets.some((o) => o.id === u.requested_outlet_id) ? u.requested_outlet_id : outletId) ?? ''} aria-label="매체" className="rounded border border-line px-2 py-1.5 text-[13px]">
+                      <select name="outlet_id" defaultValue={(u.requested_outlet_id && outlets.some((o) => o.id === u.requested_outlet_id) ? u.requested_outlet_id : outletId) ?? ''} aria-label="매체" className="min-w-0 max-w-full rounded border border-line px-2 py-1.5 text-[13px]">
                         <option value="">매체 선택</option>
                         {outlets.map((o) => <option key={o.id} value={o.id}>{o.group ? `${o.group} · ` : ''}{o.name}</option>)}
                       </select>
@@ -196,8 +196,8 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
             ))}
             {!members.some((u) => u.is_staff && !u.is_super) && <li className="text-[13px] text-muted">아직 매니저가 없습니다. 매니저가 가입하면 승인 대기에서 “IM 뉴스룸 매니저”로 승인하거나, 아래에서 지정하세요.</li>}
           </ul>
-          <form action={appointStaff} className="mt-3 flex gap-2">
-            <select name="user_id" defaultValue="" aria-label="매니저로 지정할 회원" className="rounded border border-line bg-white px-2 py-1.5 text-[13px]">
+          <form action={appointStaff} className="mt-3 flex flex-wrap gap-2">
+            <select name="user_id" defaultValue="" aria-label="매니저로 지정할 회원" className="min-w-0 max-w-full rounded border border-line bg-white px-2 py-1.5 text-[13px]">
               <option value="">회원 선택</option>
               {members.filter((u) => !u.is_staff && !u.is_super).map((u) => <option key={u.id} value={u.id}>{u.full_name} {info.get(u.id)?.email ? `(${info.get(u.id)?.email})` : ''}</option>)}
             </select>

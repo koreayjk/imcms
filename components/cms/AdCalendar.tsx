@@ -70,7 +70,7 @@ export default function AdCalendar({ slots, bookings, start, end, today, exclude
     <div className="rounded-md border border-line p-3">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[12px]">
         <span className="text-muted">{slots.length ? <><strong className="text-ink">{legendSlots}</strong> 예약 현황 · {picking === 'start' || !start ? '시작일을 누르세요' : '끝나는 날을 누르세요'}</> : '위에서 광고 자리를 먼저 고르세요'}</span>
-        <span className="flex items-center gap-3 text-muted">
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted">
           <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm border border-line bg-white" />빈 날</span>
           <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-[#FCE7C8]" />일부 참</span>
           <span className="flex items-center gap-1"><i className="inline-block h-3 w-3 rounded-sm bg-[#F3C4C0]" />예약 있음</span>

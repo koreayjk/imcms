@@ -22,7 +22,7 @@ export default function MemberAiRow({ m, editable }: { m: MemberAi; editable: bo
     <li className="grid gap-2 px-5 py-3.5 md:grid-cols-[1.2fr_1.6fr_1.4fr] md:items-center">
       <p className="min-w-0 truncate text-[14px] font-semibold">{m.full_name ?? '(이름 없음)'} <span className="text-[12px] font-normal text-muted">{ROLE[m.role] ?? m.role}</span></p>
       <div>
-        <p className="flex justify-between text-[12.5px] tabular-nums">
+        <p className="flex flex-wrap justify-between gap-x-2 text-[12.5px] tabular-nums">
           <span>AI 사용 <strong className="text-[14px]">{used}</strong>{lim != null ? ` / ${lim}회` : '회 · 한도 없음'}</span>
           <span className="text-muted">초안 {m.drafts} · 법적 검수 {m.legal_checks}</span>
         </p>

@@ -33,7 +33,7 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
   const dirty = status !== lead.status || note !== (lead.note ?? '') || assignee !== (lead.assigned_to ?? '')
 
   return (
-    <li className={`rounded-xl border bg-white px-6 py-5 ${lead.status === 'new' ? 'border-danger/40' : 'border-line'}`}>
+    <li className={`rounded-xl border bg-white px-4 py-5 sm:px-6 ${lead.status === 'new' ? 'border-danger/40' : 'border-line'}`}>
       <div className="flex flex-wrap items-center gap-3">
         <span className={`rounded px-2 py-0.5 text-[12px] font-semibold ${STATUS[lead.status]?.cls}`}>{STATUS[lead.status]?.label ?? lead.status}</span>
         <strong className="text-[16px]">{lead.company}</strong>
@@ -47,7 +47,7 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
         {groupName && <span className="rounded bg-published/10 px-1.5 py-0.5 text-[11.5px] font-semibold text-published">개설됨 · {groupName}</span>}
         <time className="ml-auto text-[12.5px] tabular-nums text-muted">{createdLabel}</time>
       </div>
-      <p className="mt-2 text-[14px]">
+      <p className="mt-2 break-words text-[14px]">
         {lead.contact_name} · <a href={`tel:${lead.phone}`} className="underline underline-offset-2">{lead.phone}</a>
         {lead.email && <> · <a href={`mailto:${lead.email}`} className="underline underline-offset-2">{lead.email}</a></>}
         {lead.current_cms && <span className="text-muted"> · 사용 중: {lead.current_cms}</span>}
@@ -97,7 +97,7 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
             <label className="text-[12.5px]"><span className="field-label">발행인 이름</span><input name="full_name" defaultValue={lead.contact_name} className="field-input bg-white py-1.5" /></label>
             <label className="text-[12.5px] sm:col-span-2"><span className="field-label">발행인 이메일 (이 주소로 가입하면 바로 발행인)</span><input name="email" type="email" defaultValue={lead.email ?? ''} required className="field-input bg-white py-1.5" /></label>
           </div>
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <PendingButton pending="개설 중…" className="btn-publish px-5">개설하기</PendingButton>
             {openState.error && <p role="alert" className="text-[12.5px] text-danger">{openState.error}</p>}
             {openState.ok && <p role="status" className="text-[12.5px] text-published">{openState.ok}</p>}

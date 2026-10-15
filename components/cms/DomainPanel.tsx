@@ -27,7 +27,7 @@ export default function DomainPanel({ outletId, domain, status }: { outletId: st
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-[15px] font-bold">도메인 연결</h2>
         <span className={`rounded px-2 py-0.5 text-[11.5px] font-semibold ${badge[1]}`}>{badge[0]}</span>
-        {domain && <a href={`https://${domain}`} target="_blank" rel="noopener" className="text-[13px] text-muted underline underline-offset-2">{domain} ↗</a>}
+        {domain && <a href={`https://${domain}`} target="_blank" rel="noopener" className="break-all text-[13px] text-muted underline underline-offset-2">{domain} ↗</a>}
         {domain && status.state !== 'off' && (
           <span className="ml-auto flex gap-1.5">
             {status.state === 'missing' && <button type="button" disabled={pending} onClick={reconnect} className="btn-primary px-3 py-1.5">Vercel에 등록</button>}

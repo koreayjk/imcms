@@ -221,7 +221,7 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                         </p>
                         <p className="mt-1 text-[12.5px] tabular-nums text-muted">
                           {b.starts_at ? formatDateTime(b.starts_at) : '바로'} ~ {b.ends_at ? formatDateTime(b.ends_at) : '끌 때까지'}
-                          {b.link_url && <> · <a href={b.link_url} target="_blank" rel="noopener" className="underline underline-offset-2">{b.link_url.replace(/^https?:\/\//, '').slice(0, 40)}</a></>}
+                          {b.link_url && <> · <a href={b.link_url} target="_blank" rel="noopener" className="break-all underline underline-offset-2">{b.link_url.replace(/^https?:\/\//, '').slice(0, 40)}</a></>}
                         </p>
                         <p className="mt-1 text-[12.5px] tabular-nums">
                           최근 30일 노출 <strong>{b.views30.toLocaleString()}</strong> · 클릭 <strong>{b.clicks30.toLocaleString()}</strong> · 클릭률 {ctr(b.views30, b.clicks30)}

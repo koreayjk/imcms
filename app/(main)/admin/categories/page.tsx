@@ -17,7 +17,7 @@ export default async function CategoriesPage() {
     .order('sort_order')
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-8">
+    <div className="mx-auto max-w-2xl px-4 py-5 sm:px-6 sm:py-8">
       <header className="mb-6">
         <h1 className="text-lg font-semibold">카테고리 관리</h1>
         <p className="text-sm text-muted mt-0.5">기사 분류에 사용할 카테고리를 관리합니다</p>

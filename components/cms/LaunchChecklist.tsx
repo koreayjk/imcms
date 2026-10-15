@@ -49,13 +49,13 @@ export default function LaunchChecklist({ outlets, missing }: { outlets: LaunchO
                 {outlets.length > 1 ? (
                   <label className="flex items-center gap-2">
                     <span className="text-muted">매체</span>
-                    <select value={outlet.id} onChange={(e) => setPick(e.target.value)} className="field-input py-1">
+                    <select value={outlet.id} onChange={(e) => setPick(e.target.value)} className="field-input max-w-full py-1">
                       {outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                     </select>
                   </label>
                 ) : <strong>{outlet.name}</strong>}
-                {site ? <a href={site} target="_blank" rel="noopener" className="text-review underline underline-offset-2">{outlet.domain} ↗</a> : <span className="text-muted">도메인 미정</span>}
-                {site && <span className="text-[12px] text-muted">사이트맵 {site}/sitemap.xml · 뉴스 사이트맵 /news-sitemap.xml · RSS /rss.xml</span>}
+                {site ? <a href={site} target="_blank" rel="noopener" className="break-all text-review underline underline-offset-2">{outlet.domain} ↗</a> : <span className="text-muted">도메인 미정</span>}
+                {site && <span className="break-all text-[12px] text-muted">사이트맵 {site}/sitemap.xml · 뉴스 사이트맵 /news-sitemap.xml · RSS /rss.xml</span>}
               </div>
               {LAUNCH_GROUPS.map((g) => (
                 <section key={g.title} className="mt-4">

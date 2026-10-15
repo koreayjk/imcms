@@ -104,7 +104,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
           <h1 className="text-[24px] font-extrabold tracking-tight">운영 대시보드</h1>
           <p className="mt-1 text-[13px] text-muted">{today} · 모든 그룹과 매체의 현황</p>
         </div>
-        <div className="flex gap-2"><Link href="/admin/ai-usage" className="btn-secondary bg-white">요금제·AI 사용량</Link><Link href="/admin/ai-compare" className="btn-secondary bg-white">AI 모델 비교</Link><Link href="/admin/outlets" className="btn-primary">그룹·매체 관리</Link></div>
+        <div className="flex flex-wrap gap-2"><Link href="/admin/ai-usage" className="btn-secondary bg-white">요금제·AI 사용량</Link><Link href="/admin/ai-compare" className="btn-secondary bg-white">AI 모델 비교</Link><Link href="/admin/outlets" className="btn-primary">그룹·매체 관리</Link></div>
       </header>
 
       {searchParams.error && <p role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-4 py-3 text-[13.5px] text-danger">{searchParams.error}</p>}
@@ -125,7 +125,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
         <div className="space-y-6">
           {sections.map((g) => (
             <section key={g.id} className="overflow-hidden rounded-xl border border-line bg-white">
-              <div className="flex items-center justify-between border-b border-line bg-[#F8F9FA] px-5 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line bg-[#F8F9FA] px-5 py-3">
                 <h2 className="text-[15.5px] font-extrabold">{g.name}{g.note && <span className="ml-2 text-[12px] font-normal text-muted">{g.note}</span>}</h2>
                 <span className="flex items-center gap-3 text-[12.5px] text-muted">
                   매체 {g.list.length} · 7일 발행 {g.list.reduce((a, o) => a + Number(st(o.id).published_week ?? 0), 0)} · 회원 {g.list.reduce((a, o) => a + Number(st(o.id).members ?? 0), 0)}

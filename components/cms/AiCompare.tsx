@@ -327,7 +327,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
             <h2 className="border-b border-line px-5 py-3 text-[15px] font-bold">
               요약 <span className="text-[12px] font-normal text-muted">{new Date(run.at).toLocaleString('ko-KR')} · 보도자료 {run.releases.length}건</span>
             </h2>
-            <table className="w-full text-[13.5px] tabular-nums">
+            <table className="w-full min-w-[760px] text-[13.5px] tabular-nums">
               <thead>
                 <tr className="border-b border-line text-left text-[12px] text-muted">
                   <th className="px-5 py-2 font-medium">모델</th><th className="px-3 py-2 text-right font-medium">완료</th><th className="px-3 py-2 text-right font-medium">실패</th>
@@ -380,11 +380,13 @@ export default function AiCompare({ models }: { models: Model[] }) {
               <section key={r.id} id={`rel-${idx + 1}`} className="scroll-mt-4 rounded-lg border border-line bg-white">
                 <div className="flex flex-wrap items-center gap-2 border-b border-line px-5 py-3">
                   <span className="text-[12px] font-bold text-muted">{idx + 1}</span>
-                  <h3 className="min-w-0 flex-1 truncate text-[14.5px] font-bold">{r.title}</h3>
+                  <h3 className="min-w-[10rem] flex-1 truncate text-[14.5px] font-bold">{r.title}</h3>
                   <span className="text-[11.5px] text-muted">{r.source}</span>
                   <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} className="text-[12px] text-review underline underline-offset-2">{open === r.id ? '원문 접기' : '원문 보기'}</button>
                 </div>
                 {open === r.id && <p className="max-h-72 overflow-y-auto whitespace-pre-line border-b border-line bg-[#F8F9FA] px-5 py-3 text-[12.5px] leading-relaxed">{r.text}</p>}
+                {/* 휴대폰에서 모델 칸이 잘리지 않게 옆으로 밀어 보기 */}
+                <div className="overflow-x-auto">
                 <div className="grid gap-px bg-line" style={{ gridTemplateColumns: `repeat(${run.models.length}, minmax(260px, 1fr))` }}>
                   {run.models.map((m) => {
                     const res = run.results[key(r.id, m)]
@@ -419,6 +421,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
                       </div>
                     )
                   })}
+                </div>
                 </div>
               </section>
             ))}

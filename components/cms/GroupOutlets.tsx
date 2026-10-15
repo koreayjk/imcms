@@ -51,11 +51,11 @@ function OutletRow({ o, groups, canManage, canMove, current }: { o: Outlet; grou
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[12rem] flex-1">
             <p className="font-bold">
               {o.name} {current && <span className="ml-1 rounded bg-[#F2B544] px-1.5 py-0.5 text-[10.5px] text-[#3B2A00]">지금 작업 중</span>}
             </p>
-            <p className="mt-0.5 text-[12.5px] text-muted">
+            <p className="mt-0.5 break-words text-[12.5px] text-muted">
               {o.domain ?? '도메인 미연결'} · 회원 {o.members}명 · 기사 {o.articles.toLocaleString()}건
             </p>
           </div>
@@ -88,7 +88,7 @@ function GroupName({ g, canRename, canDelete, count }: { g: Group; canRename: bo
   }
   if (!edit) {
     return (
-      <h2 className="flex items-center gap-2 text-[16px] font-extrabold">
+      <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] font-extrabold">
         {g.name}
         {canRename && <button type="button" onClick={() => setEdit(true)} className="text-[12px] font-normal text-muted underline underline-offset-2">이름 바꾸기</button>}
         {canDelete && <button type="button" onClick={remove} disabled={pending} className="text-[12px] font-normal text-danger underline underline-offset-2 disabled:opacity-50">{pending ? '지우는 중…' : '그룹 삭제'}</button>}
@@ -97,7 +97,7 @@ function GroupName({ g, canRename, canDelete, count }: { g: Group; canRename: bo
   }
   return (
     <div className="flex gap-2">
-      <input value={name} onChange={(e) => setName(e.target.value)} aria-label="그룹 이름" className="field-input w-60" />
+      <input value={name} onChange={(e) => setName(e.target.value)} aria-label="그룹 이름" className="field-input min-w-0 flex-1 sm:w-60 sm:flex-none" />
       <button type="button" disabled={pending} onClick={() => start(async () => { const r = await renameGroup(g.id, name); if (!r.error) { setEdit(false); router.refresh() } else window.alert(r.error) })} className="btn-primary px-3 py-1.5">저장</button>
       <button type="button" onClick={() => setEdit(false)} className="btn-secondary px-3 py-1.5">취소</button>
     </div>
@@ -138,7 +138,7 @@ export default function GroupOutlets({ groups, outlets, canManage, isSuper = fal
         const list = outlets.filter((o) => o.publisher_id === g.id)
         return (
           <section key={g.id} className="rounded-lg border border-line bg-white">
-            <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line px-5 py-3.5">
               <GroupName g={g} canRename={canManage} canDelete={isSuper} count={list.length} />
               <span className="text-[12.5px] text-muted">매체 {list.length}개</span>
             </div>
@@ -153,7 +153,7 @@ export default function GroupOutlets({ groups, outlets, canManage, isSuper = fal
       {/* 개별 매체: 그룹 없이 혼자 운영하는 매체들 (각자 숨은 그룹이 있어 서로 자료가 섞이지 않는다) */}
       {soloOutlets.length > 0 && (
         <section className="rounded-lg border border-line bg-white">
-          <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line px-5 py-3.5">
             <h2 className="text-[16px] font-extrabold">개별 매체 <span className="ml-1 text-[12px] font-normal text-muted">그룹 없이 혼자 운영하는 매체</span></h2>
             <span className="text-[12.5px] text-muted">매체 {soloOutlets.length}개</span>
           </div>
@@ -175,8 +175,8 @@ export default function GroupOutlets({ groups, outlets, canManage, isSuper = fal
       {canManage && (
         <form action={groupAction} className="rounded-lg border border-dashed border-line bg-white p-5">
           <h2 className="text-[15px] font-bold">새 그룹 만들기 <span className="text-[12px] font-normal text-muted">(새 고객 언론사·발행인마다 하나)</span></h2>
-          <div className="mt-3 flex gap-2">
-            <input name="name" required placeholder="그룹 이름 (예: ○○미디어)" aria-label="그룹 이름" className="field-input w-72" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input name="name" required placeholder="그룹 이름 (예: ○○미디어)" aria-label="그룹 이름" className="field-input w-full sm:w-72" />
             <PendingButton pending="만드는 중…" className="btn-secondary">그룹 만들기</PendingButton>
           </div>
           {groupState.error && <p role="alert" className="mt-2 text-[13px] text-danger">{groupState.error}</p>}

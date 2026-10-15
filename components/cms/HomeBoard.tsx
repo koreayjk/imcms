@@ -103,7 +103,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', initialLayout, arti
       <div className="space-y-6">
         {SLOTS.map((s) => (
           <section key={s.key} className="rounded-lg border border-line bg-white p-5">
-            <div className="mb-3 flex items-baseline gap-2">
+            <div className="mb-3 flex flex-wrap items-baseline gap-x-2">
               <h2 className="text-[15px] font-bold">{s.label}</h2>
               <span className="text-[12px] text-muted">{s.note}</span>
             </div>
@@ -127,8 +127,9 @@ export default function HomeBoard({ outletId, siteUrl = '/', initialLayout, arti
                     <span className="absolute left-2 top-1.5 text-[10.5px] font-semibold tabular-nums text-muted">{index + 1}</span>
                     {a ? (
                       <div draggable onDragStart={dragStart({ id: a.id, from: pos })} className={`flex cursor-grab gap-3 p-3 pt-6 active:cursor-grabbing ${large ? 'items-center' : ''}`}>
+                        {/* 휴대폰 두 칸 자리에서는 사진을 빼고 제목에 폭을 준다 (사진이 있으면 제목이 두세 글자 폭으로 찌그러짐) */}
                         {a.thumbnail_url && (
-                          <img src={a.thumbnail_url} alt="" className={`shrink-0 rounded-sm object-cover ${large ? 'h-[84px] w-[140px]' : 'h-[46px] w-[70px]'}`} />
+                          <img src={a.thumbnail_url} alt="" className={`shrink-0 rounded-sm object-cover ${large ? 'h-[84px] w-[140px]' : 'hidden h-[46px] w-[70px] sm:block'}`} />
                         )}
                         <div className="min-w-0 flex-1">
                           {a.category && <p className="text-[11px] text-muted">{a.category}</p>}
@@ -199,7 +200,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', initialLayout, arti
       </aside>
 
       <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 md:px-8 md:py-3">
           {message && <p role="status" className={`text-[13px] ${message.ok ? 'text-muted' : 'text-danger'}`}>{message.text}</p>}
           {dirty && <span className="text-[13px] font-semibold text-draft">저장하지 않은 변경이 있습니다</span>}
           <div className="ml-auto flex gap-2">

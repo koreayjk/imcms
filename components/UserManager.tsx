@@ -15,7 +15,7 @@ export type OutletOption = { id: string; name: string; group: string | null }
 function OutletSelect({ outlets, value, onChange, name, id }: { outlets: OutletOption[]; value?: string; onChange?: (v: string) => void; name?: string; id?: string }) {
   const groups = Array.from(new Set(outlets.map((o) => o.group ?? '그룹 없음')))
   return (
-    <select id={id} name={name} value={value} onChange={onChange ? (e) => onChange(e.target.value) : undefined} defaultValue={onChange ? undefined : ''} className="rounded border border-line bg-white px-2 py-1.5 text-[13px]">
+    <select id={id} name={name} value={value} onChange={onChange ? (e) => onChange(e.target.value) : undefined} defaultValue={onChange ? undefined : ''} className="max-w-full rounded border border-line bg-white px-2 py-1.5 text-[13px]">
       <option value="">매체 선택</option>
       {groups.map((g) => (
         <optgroup key={g} label={g}>
@@ -33,7 +33,7 @@ export function InviteForm({ outlets }: { outlets: OutletOption[] }) {
       <h2 className="text-[15px] font-bold">회원 초대</h2>
       <p className="mt-1 text-[12.5px] text-muted">이메일로 미리 역할과 매체를 정해 두면, 그 이메일로 가입(구글 가입 포함)하는 순간 승인까지 끝난 상태로 들어옵니다.</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <input name="email" type="email" required placeholder="이메일" aria-label="이메일" className="field-input w-56" />
+        <input name="email" type="email" required placeholder="이메일" aria-label="이메일" className="field-input w-full sm:w-56" />
         <input name="full_name" placeholder="이름 (선택)" aria-label="이름" className="field-input w-32" />
         <select name="role" defaultValue="reporter" aria-label="역할" className="rounded border border-line bg-white px-2 py-1.5 text-[13px]">
           <option value="reporter">기자</option>
@@ -308,7 +308,7 @@ export function DormantMembers({ list, canDelete }: {
         {list.map((m) => (
           <li key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2 text-[13px]">
             <span className="font-semibold">{m.name}</span>
-            <span className="text-[12px] text-muted">{[m.email, m.group].filter(Boolean).join(' · ')}</span>
+            <span className="min-w-0 break-all text-[12px] text-muted">{[m.email, m.group].filter(Boolean).join(' · ')}</span>
             <span className="ml-auto text-[12px] tabular-nums text-draft">{m.lastSeen ? `마지막 접속 ${new Date(m.lastSeen).toLocaleDateString('ko-KR')}` : '접속한 적 없음'}</span>
           </li>
         ))}

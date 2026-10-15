@@ -49,13 +49,13 @@ function Members({ members }: { members: Member[] }) {
         <ul className="mt-4 divide-y divide-line rounded-lg border border-line bg-white">
           {shown.map((m) => (
             <li key={m.user_id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
-              <div className="min-w-0 flex-1">
+              <div className="min-w-[12rem] flex-1">
                 <p className="font-bold">
                   {m.name}
                   <span className={`ml-2 rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUS[m.status][1]}`}>{STATUS[m.status][0]}</span>
                   <span className="ml-1.5 rounded bg-paper px-1.5 py-0.5 text-[11px] text-muted">{m.member_type === 'outlet' ? '회원사 신청' : '개인회원'}</span>
                 </p>
-                <p className="mt-0.5 text-[12.5px] text-muted">
+                <p className="mt-0.5 break-words text-[12.5px] text-muted">
                   {m.email}{m.phone ? ` · ${m.phone}` : ''}{m.org ? ` · ${m.org}` : ''}{m.position ? ` ${m.position}` : ''} · 가입 {m.created}{m.marketing ? ' · 소식 수신 동의' : ''}
                 </p>
               </div>
@@ -102,7 +102,7 @@ function PostForm({ post, onDone }: { post: Post | null; onDone: () => void }) {
           <option value="activity">협회 활동</option>
           <option value="data">자료실</option>
         </select>
-        <input name="title" required maxLength={200} defaultValue={post?.title} placeholder="제목" aria-label="제목" className="field-input min-w-0 flex-1" />
+        <input name="title" required maxLength={200} defaultValue={post?.title} placeholder="제목" aria-label="제목" className="field-input min-w-[12rem] flex-1" />
       </div>
       <textarea name="body" rows={8} defaultValue={post?.body} placeholder="본문 (빈 줄로 문단을 나눕니다. 링크는 주소를 그대로 적으면 됩니다)" aria-label="본문" className="field-input w-full leading-[1.7]" />
       <div className="flex flex-wrap items-center gap-4 text-[13.5px]">
@@ -144,7 +144,7 @@ function Posts({ posts }: { posts: Post[] }) {
           {posts.map((p) => (
             <li key={p.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
               <span className="w-20 shrink-0 text-[12.5px] text-muted">{p.boardLabel}</span>
-              <p className="min-w-0 flex-1 truncate font-semibold">
+              <p className="min-w-[10rem] flex-1 truncate font-semibold">
                 {p.pinned && <span className="mr-1.5 rounded bg-ink px-1.5 py-0.5 text-[10.5px] text-white">고정</span>}
                 {!p.published && <span className="mr-1.5 rounded bg-paper px-1.5 py-0.5 text-[10.5px] text-muted">비공개</span>}
                 {p.title}
@@ -186,9 +186,9 @@ function Outlets({ memberOutletIds, outlets }: { memberOutletIds: string[]; outl
         {members.map((o, i) => (
           <li key={o.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
             <span className="w-6 text-[12px] tabular-nums text-muted">{i + 1}</span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-[10rem] flex-1">
               <p className="font-bold">{o.name}</p>
-              <p className="text-[12.5px] text-muted">{o.domain ?? '도메인 미연결 (홈페이지 링크가 걸리지 않습니다)'}</p>
+              <p className="break-all text-[12.5px] text-muted">{o.domain ?? '도메인 미연결 (홈페이지 링크가 걸리지 않습니다)'}</p>
             </div>
             <button type="button" disabled={pending} onClick={() => { if (confirm(`${o.name}을(를) 회원사에서 뺄까요?`)) run(() => removeMemberOutlet(o.id)) }} className="btn-secondary px-3 py-1.5">회원사에서 빼기</button>
           </li>

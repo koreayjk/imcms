@@ -367,7 +367,7 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
               {src.tables && (
                 <label className="mt-2 flex flex-wrap items-center gap-2">
                   기사가 든 표
-                  <select value={src.table.name} onChange={(e) => chooseTable(e.target.value)} className="rounded border border-line bg-white px-2 py-1">
+                  <select value={src.table.name} onChange={(e) => chooseTable(e.target.value)} className="max-w-full rounded border border-line bg-white px-2 py-1">
                     {src.tables.map((t) => <option key={t.name} value={t.name}>{t.name} ({(t.bytes / 1e6).toFixed(1)}MB · 칸 {t.columns.length}개)</option>)}
                   </select>
                 </label>
@@ -411,7 +411,7 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
             <span className="text-muted">이면 (삭제된 기사 등) → 남는 기사 {rows.length.toLocaleString()}건</span>
           </div>
           {!mapping.byline && (
-            <label className="mt-3 flex items-center gap-2 text-[13px]">
+            <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px]">
               기자 이름 칸이 없을 때 쓸 이름 <input value={defaultByline} onChange={(e) => setDefaultByline(e.target.value)} className="w-40 rounded border border-line px-2 py-1" />
             </label>
           )}
@@ -453,7 +453,7 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
                 <li key={v} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-[13px]">
                   <span className="w-40 shrink-0"><span className="font-mono font-semibold">{v || '(비어 있음)'}</span>{nameOf(v) && <span className="ml-1.5 font-semibold text-review">{nameOf(v)}</span>}</span>
                   <span className="w-16 shrink-0 text-muted tabular-nums">{n.toLocaleString()}건</span>
-                  <span className="min-w-0 flex-1 truncate text-[12px] text-muted">예: {sample ? plainText(sample[mapping.title!] ?? '') : ''}</span>
+                  <span className="min-w-[10rem] flex-1 truncate text-[12px] text-muted">예: {sample ? plainText(sample[mapping.title!] ?? '') : ''}</span>
                   <select value={sectionOf(v)} onChange={(e) => setSectionMap({ ...sectionMap, [v]: e.target.value })} className="rounded border border-line bg-white px-2 py-1">
                     <option value="">섹션 없음</option>
                     {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
