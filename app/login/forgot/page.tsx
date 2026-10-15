@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import AuthShell from '@/components/auth/AuthShell'
@@ -13,6 +13,9 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
+  // 메일의 재설정 링크가 만료됐거나 이미 쓰인 경우 (/auth/confirm 에서 돌아옴)
+  const [expired, setExpired] = useState(false)
+  useEffect(() => { setExpired(new URLSearchParams(window.location.search).get('expired') === '1') }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -38,12 +41,13 @@ export default function ForgotPasswordPage() {
         <div className="space-y-3 text-[14.5px] leading-relaxed">
           <p className="font-semibold">메일을 확인해 주세요.</p>
           <p className="text-muted">
-            <b className="text-ink">{email.trim()}</b> 로 가입된 계정이 있으면 비밀번호 재설정 메일을 보냈습니다. 메일의 버튼을 눌러 새 비밀번호를 정하세요. 링크는 1시간 동안만 쓸 수 있습니다.
+            <b className="text-ink">{email.trim()}</b> 로 가입된 계정이 있으면 비밀번호 재설정 메일을 보냈습니다. 메일의 버튼을 눌러 새 비밀번호를 정하세요. 링크는 1시간 동안, 가장 최근에 온 메일 것만 쓸 수 있습니다.
           </p>
           <p className="text-[13px] text-muted">몇 분이 지나도 메일이 없으면 스팸함을 확인해 주세요. 구글 계정으로 가입했다면 비밀번호 없이 로그인 화면의 “구글 계정으로 로그인”을 쓰면 됩니다.</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {expired && <p role="alert" className="rounded-md bg-danger/10 px-3 py-2.5 text-[13.5px] leading-relaxed text-danger">재설정 링크가 만료되었거나 이미 사용되었습니다. 이메일을 넣고 메일을 다시 받아, <b>가장 최근에 온 메일</b>의 버튼을 1시간 안에 눌러 주세요.</p>}
           <p className="text-[14px] leading-relaxed text-muted">가입한 이메일을 넣으면 새 비밀번호를 정하는 링크를 보내 드립니다.</p>
           <div>
             <label htmlFor="email" className="field-label">이메일</label>
