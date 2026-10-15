@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
   if (!tokenHash || !type || !TYPES.includes(type)) return failed(origin, type)
-  const next = safe(searchParams.get('next'))
   const recovery = type === 'recovery'
+  const next = recovery && !safe(searchParams.get('next')).endsWith('/reset') ? '/login/reset' : safe(searchParams.get('next'))
   const title = recovery ? '비밀번호 재설정' : '이메일 인증'
   const button = recovery ? '새 비밀번호 정하기' : '이메일 인증 마치기'
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} | IM 뉴스룸</title>
@@ -47,5 +47,8 @@ export async function POST(request: NextRequest) {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash })
   if (error) return failed(origin, type)
-  return NextResponse.redirect(new URL(safe(String(form.get('next') ?? '')), origin), 303)
+  // 비밀번호 재설정은 메일 템플릿의 next 와 상관없이 늘 새 비밀번호 화면으로 (next 가 빠진 템플릿이면 편집국으로 가 버렸다)
+  const next = safe(String(form.get('next') ?? ''))
+  const dest = type === 'recovery' && !next.endsWith('/reset') ? '/login/reset' : next
+  return NextResponse.redirect(new URL(dest, origin), 303)
 }

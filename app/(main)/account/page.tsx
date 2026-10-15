@@ -33,6 +33,13 @@ export default async function AccountPage() {
           <dt className="text-muted">역할</dt><dd>{profile?.role ? ROLE_LABEL[profile.role as UserRole] : '-'}</dd>
           <dt className="text-muted">소속</dt><dd>{outlet?.name ?? '미배정'}</dd>
         </dl>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
+          <div>
+            <h2 className="text-[15px] font-bold">비밀번호</h2>
+            <p className="mt-0.5 text-[12.5px] text-muted">새 비밀번호를 정하거나 바꿉니다. 구글로 가입했어도 비밀번호를 정하면 아이폰 앱에서 이메일로 로그인할 수 있습니다.</p>
+          </div>
+          <a href="/login/reset" className="whitespace-nowrap rounded-full border border-line px-4 py-2 text-[13px] font-semibold hover:border-ink">비밀번호 정하기·바꾸기</a>
+        </div>
         <EmailNotifyToggle initial={(profile as { email_notify?: boolean } | null)?.email_notify !== false} />
         {!trial && <MfaSettings factors={factors} required={required === true} group={group} />}
         {!historyRes.error && (
