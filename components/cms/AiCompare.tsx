@@ -385,9 +385,9 @@ export default function AiCompare({ models }: { models: Model[] }) {
                   <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} className="text-[12px] text-review underline underline-offset-2">{open === r.id ? '원문 접기' : '원문 보기'}</button>
                 </div>
                 {open === r.id && <p className="max-h-72 overflow-y-auto whitespace-pre-line border-b border-line bg-[#F8F9FA] px-5 py-3 text-[12.5px] leading-relaxed">{r.text}</p>}
-                {/* 휴대폰에서 모델 칸이 잘리지 않게 옆으로 밀어 보기 */}
-                <div className="overflow-x-auto">
-                <div className="grid gap-px bg-line" style={{ gridTemplateColumns: `repeat(${run.models.length}, minmax(260px, 1fr))` }}>
+                {/* 휴대폰에서는 모델 칸을 위아래로 쌓는다 (컴퓨터에서는 나란히, 넓으면 옆으로 밀어 보기) */}
+                <div className="md:overflow-x-auto">
+                <div className="grid grid-cols-1 gap-px bg-line md:[grid-template-columns:var(--cols)]" style={{ '--cols': `repeat(${run.models.length}, minmax(260px, 1fr))` } as React.CSSProperties}>
                   {run.models.map((m) => {
                     const res = run.results[key(r.id, m)]
                     const label = models.find((x) => x.id === m)?.label ?? m
