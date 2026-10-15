@@ -36,7 +36,7 @@ function Files({ files, urls }: { files: FileRow[]; urls: Map<string, string> })
     {others.length > 0 && <ul className="mt-4 flex flex-wrap gap-2">
       {others.map((f) => (
         <li key={f.id}>
-          <a href={urls.get(f.path) ?? '#'} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded border border-line bg-white px-3 py-1.5 text-[12.5px] hover:border-ink">
+          <a href={urls.get(f.path) ?? '#'} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 break-all rounded border border-line bg-white px-3 py-1.5 text-[12.5px] hover:border-ink">
             📎 {f.name} <span className="text-muted">{Math.max(1, Math.round(f.size / 1024))}KB</span>
           </a>
         </li>
@@ -142,33 +142,33 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
         )}
       </header>
 
-      <div className={`whitespace-pre-line text-[15px] leading-[1.85] ${(t as { from_staff?: boolean }).from_staff ? 'mt-8 rounded-2xl bg-[#EEF2F8] px-6 py-6' : 'py-8'}`}>{t.body}</div>
+      <div className={`whitespace-pre-line break-words text-[15px] leading-[1.85] ${(t as { from_staff?: boolean }).from_staff ? 'mt-8 rounded-2xl bg-[#EEF2F8] px-6 py-6' : 'py-8'}`}>{t.body}</div>
       <Files files={fileRows.filter((f) => !f.reply_id)} urls={urls} />
 
       <div className="mt-10 space-y-4">
         {(replies ?? []).map((r: any) => r.is_ai ? (
           <article key={r.id} className="rounded-2xl bg-[#F4F6FB] p-5 ring-1 ring-[#2F6BF0]/15">
-            <header className="flex items-center gap-2 text-[13px]">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-[#2F6BF0] text-[11px] font-bold text-white">AI</span>
+            <header className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#2F6BF0] text-[11px] font-bold text-white">AI</span>
               <strong>AI 안내</strong>
               <span className="rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11px] font-semibold text-[#2F6BF0]">자동 답변 · 운영팀도 함께 확인합니다</span>
               <time className="ml-auto text-[12px] tabular-nums text-muted">{formatDateTime(r.created_at)}</time>
             </header>
-            <div className="mt-3 whitespace-pre-line rounded-xl bg-white px-5 py-4 text-[14.5px] leading-[1.8]"><AiReplyBody body={r.body} /></div>
+            <div className="mt-3 whitespace-pre-line break-words rounded-xl bg-white px-5 py-4 text-[14.5px] leading-[1.8]"><AiReplyBody body={r.body} /></div>
             {mine && !isStaff && aiState && t.status !== 'done' && <AiFeedback ticketId={t.id} state={aiState} />}
             {aiState === 'resolved' && <p className="mt-3 text-[12.5px] font-semibold text-published">요청자가 이 안내로 해결했다고 표시했습니다.</p>}
           </article>
         ) : (
           <article key={r.id} className={`rounded-2xl p-5 ${r.is_staff ? 'bg-[#EEF2F8]' : 'bg-white ring-1 ring-black/5'}`}>
-            <header className="flex items-center gap-2 text-[13px]">
+            <header className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
               {r.is_staff ? <BrandMark size={32} rounded="full" /> : (
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-[12px] font-bold text-white">{(r.author?.full_name ?? '?').slice(0, 1)}</span>
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-[12px] font-bold text-white">{(r.author?.full_name ?? '?').slice(0, 1)}</span>
               )}
               <strong>{r.author?.full_name}</strong>
               {r.is_staff && <span className="rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11px] font-semibold text-[#2F6BF0]">{STAFF_NAME}</span>}
               <time className="ml-auto text-[12px] tabular-nums text-muted">{formatDateTime(r.created_at)}</time>
             </header>
-            <div className={`mt-3 whitespace-pre-line rounded-xl px-5 py-4 text-[14.5px] leading-[1.8] ${r.is_staff ? 'bg-white' : 'bg-[#F8F9FA]'}`}>{r.body}</div>
+            <div className={`mt-3 whitespace-pre-line break-words rounded-xl px-5 py-4 text-[14.5px] leading-[1.8] ${r.is_staff ? 'bg-white' : 'bg-[#F8F9FA]'}`}>{r.body}</div>
             <Files files={fileRows.filter((f) => f.reply_id === r.id)} urls={urls} />
           </article>
         ))}

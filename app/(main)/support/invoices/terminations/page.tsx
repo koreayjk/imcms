@@ -51,7 +51,7 @@ export default async function TerminationsPage(props: { searchParams: Promise<{ 
               <li key={o.id} className="rounded-2xl bg-white p-5 ring-1 ring-black/5">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-[15px] font-bold">{o.name}</h3>
-                  {o.domain && <span className="text-[12.5px] text-muted">{o.domain}</span>}
+                  {o.domain && <span className="break-all text-[12.5px] text-muted">{o.domain}</span>}
                   <span className={`rounded px-2 py-0.5 text-[12px] font-semibold ${due ? 'bg-danger/10 text-danger' : 'bg-draft/15 text-draft'}`}>
                     {due ? '지울 날 지남' : `지울 날까지 D-${left}`}
                   </span>
@@ -83,7 +83,7 @@ export default async function TerminationsPage(props: { searchParams: Promise<{ 
       <ul className="mt-3 divide-y divide-line rounded-2xl bg-white ring-1 ring-black/5">
         {active.map((o) => (
           <li key={o.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
-            <span className="min-w-0 flex-1 text-[14px] font-semibold">{o.name}<span className="ml-2 text-[12.5px] font-normal text-muted">{o.domain ?? ''}</span></span>
+            <span className="min-w-[10rem] flex-1 text-[14px] font-semibold">{o.name}<span className="ml-2 break-all text-[12.5px] font-normal text-muted">{o.domain ?? ''}</span></span>
             <form action={terminateOutlet.bind(null, o.id)} className="flex flex-wrap items-center gap-2">
               <input name="reason" placeholder="해지 사유 (예: 고객 요청)" maxLength={300} className="field-input w-56 py-1.5 text-[13px]" />
               <PendingButton pending="…" confirm={`${o.name}을(를) 해지 처리할까요? 자동 청구·자동결제가 멈추고 30일 뒤 자료를 지울 수 있게 됩니다.`} className="btn-secondary bg-white text-danger">해지 처리</PendingButton>

@@ -30,14 +30,14 @@ export default async function InvoicePage(
   const outletName = (inv.outlet as { name?: string } | null)?.name ?? (inv as { outlet_name?: string | null }).outlet_name ?? null
   const items = (inv.items ?? []) as InvoiceItem[]
   const row = (k: string, v: string | null | undefined) => (
-    <div className="flex gap-3"><dt className="w-32 shrink-0 text-muted">{k}</dt><dd>{v || '-'}</dd></div>
+    <div className="flex gap-3"><dt className="w-24 shrink-0 text-muted sm:w-32">{k}</dt><dd className="min-w-0 break-words">{v || '-'}</dd></div>
   )
 
   return (
     <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
-      <div className="mb-4 flex items-center justify-between print:hidden">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 print:hidden">
         <Link href="/support/invoices" className="text-[13px] text-muted hover:text-ink">← 청구서 목록</Link>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {isSuper && inv.status !== 'paid' && (
             <form action={deleteInvoice.bind(null, inv.id)}>
               <ConfirmSubmit message={`${monthLabel(inv.month)} ${(inv.outlet as { name?: string } | null)?.name ?? ''} 청구서를 지울까요?\n지우면 되돌릴 수 없습니다. (시험 결제 기록도 함께 지워집니다)`} className="btn-secondary bg-white text-danger">청구서 지우기</ConfirmSubmit>
@@ -54,8 +54,8 @@ export default async function InvoicePage(
 
       {searchParams.error && <p role="alert" className="mb-4 rounded-lg bg-danger/10 px-4 py-3 text-[13.5px] text-danger print:hidden">{searchParams.error}</p>}
 
-      <article className="rounded-2xl bg-white p-10 ring-1 ring-black/5 print:rounded-none print:p-0 print:ring-0">
-        <header className="flex items-start justify-between border-b-2 border-ink pb-5">
+      <article className="rounded-2xl bg-white p-5 ring-1 sm:p-10 ring-black/5 print:rounded-none print:p-0 print:ring-0">
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-5">
           <div>
             <p className="text-[13px] font-bold text-muted">{PRODUCT.name}</p>
             <h1 className="mt-1 text-[28px] font-extrabold tracking-tight">{monthLabel(inv.month)} 청구서</h1>
@@ -63,7 +63,7 @@ export default async function InvoicePage(
               {inv.invoice_no && <>청구서 번호 {inv.invoice_no} · </>}발행일 {formatDate(inv.created_at)}
             </p>
           </div>
-          <span className={`rounded px-3 py-1.5 text-[13px] font-bold ${inv.status === 'paid' ? 'bg-published/10 text-published' : 'bg-danger/10 text-danger'}`}>
+          <span className={`whitespace-nowrap rounded px-3 py-1.5 text-[13px] font-bold ${inv.status === 'paid' ? 'bg-published/10 text-published' : 'bg-danger/10 text-danger'}`}>
             {inv.status === 'paid' ? `납부 완료${inv.paid_at ? ` · ${formatDateTime(inv.paid_at)}` : ''}` : '미납'}
           </span>
         </header>

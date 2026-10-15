@@ -115,7 +115,7 @@ export default async function AutoBillingPage(props: Props) {
                   {pv.items.length > 0 && (
                     <ul className="mt-1.5 space-y-0.5 text-muted">
                       {pv.items.map((it, i) => (
-                        <li key={i} className="flex justify-between gap-3"><span>{it.name}{it.qty > 1 ? ` × ${it.qty}` : ''}</span><span className="tabular-nums">{won(it.qty * it.unit_price)}</span></li>
+                        <li key={i} className="flex justify-between gap-3"><span>{it.name}{it.qty > 1 ? ` × ${it.qty}` : ''}</span><span className="shrink-0 whitespace-nowrap tabular-nums">{won(it.qty * it.unit_price)}</span></li>
                       ))}
                     </ul>
                   )}

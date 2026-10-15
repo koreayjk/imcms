@@ -52,7 +52,7 @@ export default function HelpPage() {
         ))}
       </div>
 
-      <section id="contact" className="mt-12 scroll-mt-6 rounded-2xl bg-[#0B1020] p-8 text-white">
+      <section id="contact" className="mt-12 scroll-mt-6 rounded-2xl bg-[#0B1020] p-5 text-white sm:p-8">
         <h2 className="text-[18px] font-extrabold">{PRODUCT.name} 운영팀 연락처</h2>
         <div className="mt-4 grid gap-4 text-[14px] sm:grid-cols-2">
           <div>

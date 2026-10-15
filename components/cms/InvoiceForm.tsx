@@ -29,7 +29,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
   return (
-    <form action={action} className="space-y-5 rounded-2xl bg-white p-7 ring-1 ring-black/5">
+    <form action={action} className="space-y-5 rounded-2xl bg-white p-4 ring-1 sm:p-7 ring-black/5">
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label htmlFor="i-outlet" className="field-label">매체</label>
@@ -51,7 +51,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#F4F6FA] px-4 py-2.5 text-[12.5px] text-muted">
         <span>{filling ? '요금표로 계산하는 중…' : note || (outletId ? '요금표와 이 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·세팅비)으로 채웠습니다. 고쳐서 발행해도 됩니다.' : '매체를 고르면 요금표대로 항목이 채워집니다.')}</span>
-        {outletId && <button type="button" onClick={fill} disabled={filling} className="font-semibold text-[#2F6BF0] disabled:opacity-50">요금표대로 다시 채우기</button>}
+        {outletId && <button type="button" onClick={fill} disabled={filling} className="shrink-0 whitespace-nowrap font-semibold text-[#2F6BF0] disabled:opacity-50">요금표대로 다시 채우기</button>}
       </div>
 
       <div className="overflow-x-auto">

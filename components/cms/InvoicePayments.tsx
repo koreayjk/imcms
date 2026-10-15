@@ -20,8 +20,8 @@ export default function InvoicePayments({ invoiceId, unpaid, provider, clientKey
   const shown = (payments ?? []).filter((p) => p.status !== 'ready' || Date.now() - Date.parse(p.created_at) < 30 * 60_000)
   return (
     <>
-    <p className="ios-app-only mt-6 rounded-2xl bg-white p-6 text-[14px] text-muted ring-1 ring-black/5 print:hidden">이 앱에서는 결제 기능을 제공하지 않습니다.</p>
-    <section aria-labelledby="pay-title" className="ios-app-hide mt-6 rounded-2xl bg-white p-6 ring-1 ring-black/5 print:hidden">
+    <p className="ios-app-only mt-6 rounded-2xl bg-white p-4 text-[14px] sm:p-6 text-muted ring-1 ring-black/5 print:hidden">이 앱에서는 결제 기능을 제공하지 않습니다.</p>
+    <section aria-labelledby="pay-title" className="ios-app-hide mt-6 rounded-2xl bg-white p-4 ring-1 sm:p-6 ring-black/5 print:hidden">
       <h2 id="pay-title" className="text-[16px] font-bold">온라인 결제</h2>
       {unpaid ? (
         provider ? (

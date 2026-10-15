@@ -22,7 +22,7 @@ export default async function NoticesPage() {
                 <span className={`w-16 shrink-0 rounded px-1.5 py-0.5 text-center text-[11.5px] font-semibold ${c.className}`}>{c.label}</span>
                 {n.pinned && <span aria-label="고정">📌</span>}
                 <span className="min-w-0 flex-1 truncate text-[15px]">{n.title}</span>
-                <time className="text-[12.5px] tabular-nums text-muted">{formatShort(n.created_at)}</time>
+                <time className="shrink-0 text-[12.5px] tabular-nums text-muted">{formatShort(n.created_at)}</time>
               </Link>
             </li>
           )

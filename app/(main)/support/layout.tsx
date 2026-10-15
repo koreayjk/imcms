@@ -16,9 +16,9 @@ export default async function SupportLayout({ children }: { children: React.Reac
   return (
     <div>
       {billingMissing && (
-        <div className="flex items-center justify-center gap-3 bg-[#FDECEA] print:hidden px-4 py-2.5 text-[13.5px]">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 bg-[#FDECEA] print:hidden px-4 py-2.5 text-[13.5px]">
           <span>청구서·결제 담당자 <strong>정보가 입력되지 않았습니다.</strong></span>
-          <Link href="/support/billing" className="rounded-full bg-danger px-3 py-1 text-[12px] font-bold text-white hover:opacity-90">지금 입력하기</Link>
+          <Link href="/support/billing" className="shrink-0 whitespace-nowrap rounded-full bg-danger px-3 py-1 text-[12px] font-bold text-white hover:opacity-90">지금 입력하기</Link>
         </div>
       )}
       <div className="border-b border-line bg-white print:hidden">

@@ -27,7 +27,7 @@ export default async function SupportHome() {
 
   return (
     <div className="mx-auto max-w-[1180px] px-4 py-6 md:px-8 md:py-10">
-      <div className="grid grid-cols-4 gap-4 sm:grid-cols-9">
+      <div className="grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-9 sm:gap-4">
         {TILES.filter((t) => isEditorPlus || !t.billing).map((t) => (
           <Link key={t.label} href={t.href} className="group flex flex-col items-center gap-2.5">
             <span className="grid h-[72px] w-[72px] place-items-center rounded-2xl bg-white shadow-[0_6px_18px_-10px_rgba(11,16,32,0.35)] ring-1 ring-black/5 transition group-hover:-translate-y-0.5 group-hover:shadow-[0_12px_24px_-12px_rgba(11,16,32,0.4)]">
@@ -85,10 +85,10 @@ export default async function SupportHome() {
           {(notices ?? []).map((n) => (
             <li key={n.id}>
               <Link href={`/support/notices/${n.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#F8F9FA]">
-                <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${NOTICE_CATEGORIES[n.category as NoticeCategory].className}`}>{NOTICE_CATEGORIES[n.category as NoticeCategory].label}</span>
+                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold ${NOTICE_CATEGORIES[n.category as NoticeCategory].className}`}>{NOTICE_CATEGORIES[n.category as NoticeCategory].label}</span>
                 {n.pinned && <span className="text-[12px]" aria-label="고정">📌</span>}
                 <span className="min-w-0 flex-1 truncate text-[14.5px]">{n.title}</span>
-                <time className="text-[12.5px] tabular-nums text-muted">{formatShort(n.created_at)}</time>
+                <time className="shrink-0 text-[12.5px] tabular-nums text-muted">{formatShort(n.created_at)}</time>
               </Link>
             </li>
           ))}

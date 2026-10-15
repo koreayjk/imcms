@@ -39,7 +39,7 @@ export default function TicketForm({ requesterName, recipient }: { requesterName
   }
 
   return (
-    <form onSubmit={submit} className="space-y-6 rounded-2xl bg-white p-8 ring-1 ring-black/5">
+    <form onSubmit={submit} className="space-y-6 rounded-2xl bg-white p-5 ring-1 sm:p-8 ring-black/5">
       <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center sm:gap-4">
         <span className="text-[14px] font-bold">{recipient ? '받는 사람' : '요청인'}</span>
         <span className="flex flex-wrap items-center gap-2">

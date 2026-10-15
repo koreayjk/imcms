@@ -53,7 +53,7 @@ export function AiWaiting() {
   if (tries >= 15) return null
   return (
     <p className="flex items-center gap-2 rounded-2xl border border-dashed border-[#2F6BF0]/40 bg-[#2F6BF0]/5 px-5 py-4 text-[13.5px] text-[#2F6BF0]" role="status">
-      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#2F6BF0] border-t-transparent" aria-hidden />
+      <span className="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-[#2F6BF0] border-t-transparent" aria-hidden />
       AI가 먼저 안내를 준비하고 있습니다… 운영팀에도 함께 전달되었습니다.
     </p>
   )

@@ -19,8 +19,8 @@ export default function AutopaySection({ autopay, ready, provider, clientKey, te
 
   return (
     <>
-    <p className="ios-app-only mt-8 rounded-2xl bg-white p-6 text-[14px] text-muted ring-1 ring-black/5">이 앱에서는 결제수단 등록과 자동결제 설정을 제공하지 않습니다.</p>
-    <section aria-labelledby="autopay-title" className="ios-app-hide mt-8 rounded-2xl bg-white p-6 ring-1 ring-black/5">
+    <p className="ios-app-only mt-8 rounded-2xl bg-white p-4 text-[14px] sm:p-6 text-muted ring-1 ring-black/5">이 앱에서는 결제수단 등록과 자동결제 설정을 제공하지 않습니다.</p>
+    <section aria-labelledby="autopay-title" className="ios-app-hide mt-8 rounded-2xl bg-white p-4 ring-1 sm:p-6 ring-black/5">
       <h2 id="autopay-title" className="text-[16px] font-bold">자동결제</h2>
       <p className="mt-1 text-[13px] leading-relaxed text-muted">
         카드나 계좌를 등록해 두면 청구서가 나올 때 납부 기한 오전 10시에 자동으로 결제됩니다. 결제가 실패하면 청구서와 이 화면에 알려 드립니다.
@@ -29,7 +29,7 @@ export default function AutopaySection({ autopay, ready, provider, clientKey, te
         <p className="mt-4 rounded-lg bg-[#F8F9FA] px-4 py-3 text-[13.5px] text-muted">자동결제는 준비 중입니다. 청구서에서 카드·계좌이체로 바로 결제할 수 있습니다.</p>
       ) : autopay ? (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-published/30 bg-published/5 px-4 py-3">
-          <div className="min-w-0 flex-1 text-[14px]">
+          <div className="min-w-[12rem] flex-1 text-[14px]">
             <p className="font-semibold">{autopay.card_company} {autopay.card_number}</p>
             <p className="text-[12.5px] text-muted">{formatDateTime(autopay.registered_at)} 등록</p>
             {autopay.last_error && <p className="mt-1 text-[12.5px] font-semibold text-danger">지난 자동결제 실패: {autopay.last_error} — 다른 카드로 다시 등록해 주세요.</p>}

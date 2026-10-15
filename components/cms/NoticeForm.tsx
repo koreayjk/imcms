@@ -10,7 +10,7 @@ type Notice = { id: string; category: string; title: string; body: string; pinne
 export default function NoticeForm({ notice }: { notice?: Notice }) {
   const [state, action] = useActionState<FormState, FormData>(saveNotice.bind(null, notice?.id ?? null), {})
   return (
-    <form action={action} className="space-y-4 rounded-2xl bg-white p-7 ring-1 ring-black/5">
+    <form action={action} className="space-y-4 rounded-2xl bg-white p-4 ring-1 sm:p-7 ring-black/5">
       <div className="flex flex-wrap items-center gap-4">
         <label className="text-[14px] font-bold" htmlFor="n-cat">분류</label>
         <select id="n-cat" name="category" defaultValue={notice?.category ?? 'notice'} className="field-input w-40">
