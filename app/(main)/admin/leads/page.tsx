@@ -110,19 +110,19 @@ export default async function LeadsPage(props: Props) {
       {tab === 'trial' ? (
         trials.length ? (
           <div className="overflow-x-auto rounded-lg border border-line bg-white">
-            <table className="w-full min-w-[760px] text-[13.5px]">
+            <table className="table-cards w-full text-[13.5px] md:min-w-[760px]">
               <thead className="bg-paper text-left text-[12.5px] text-muted">
                 <tr><th className="px-4 py-2.5">신청일</th><th className="px-4 py-2.5">이름</th><th className="px-4 py-2.5">언론사 · 직함</th><th className="px-4 py-2.5">연락처</th><th className="px-4 py-2.5">상태</th><th className="px-4 py-2.5"></th></tr>
               </thead>
               <tbody>
                 {trials.map((t) => (
                   <tr key={t.user_id} className="border-t border-line">
-                    <td className="px-4 py-3 tabular-nums text-muted">{formatDateTime(t.created_at)}</td>
-                    <td className="px-4 py-3 font-semibold">{t.name}</td>
-                    <td className="px-4 py-3">{t.company}{t.position ? ` · ${t.position}` : ''}</td>
-                    <td className="px-4 py-3"><a href={`tel:${t.phone ?? ''}`} className="hover:underline">{t.phone}</a><br /><a href={`mailto:${t.email ?? ''}`} className="text-muted hover:underline">{t.email}</a></td>
-                    <td className="px-4 py-3">{trialState(t.user_id)}{checkedAt.get(t.user_id) && <><br /><span className="text-[12px] text-[#2F6BF0]">5일째 안내 보냄 · {formatDateTime(checkedAt.get(t.user_id)!)}</span></>}</td>
-                    <td className="px-4 py-3 text-right"><a href={`/support/tickets/new?to=${t.user_id}`} className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-[12.5px] font-semibold hover:border-ink">고객센터로 안내 보내기</a></td>
+                    <td data-label="신청일" className="px-4 py-3 tabular-nums text-muted">{formatDateTime(t.created_at)}</td>
+                    <td className="tc-full px-4 py-3 font-semibold">{t.name}</td>
+                    <td data-label="언론사 · 직함" className="px-4 py-3">{t.company}{t.position ? ` · ${t.position}` : ''}</td>
+                    <td data-label="연락처" className="break-all px-4 py-3"><a href={`tel:${t.phone ?? ''}`} className="hover:underline">{t.phone}</a><br /><a href={`mailto:${t.email ?? ''}`} className="text-muted hover:underline">{t.email}</a></td>
+                    <td data-label="상태" className="px-4 py-3">{trialState(t.user_id)}{checkedAt.get(t.user_id) && <><br /><span className="text-[12px] text-[#2F6BF0]">5일째 안내 보냄 · {formatDateTime(checkedAt.get(t.user_id)!)}</span></>}</td>
+                    <td className="tc-full px-4 py-3 text-right"><a href={`/support/tickets/new?to=${t.user_id}`} className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-[12.5px] font-semibold hover:border-ink">고객센터로 안내 보내기</a></td>
                   </tr>
                 ))}
               </tbody>

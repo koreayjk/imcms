@@ -327,7 +327,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
             <h2 className="border-b border-line px-5 py-3 text-[15px] font-bold">
               요약 <span className="text-[12px] font-normal text-muted">{new Date(run.at).toLocaleString('ko-KR')} · 보도자료 {run.releases.length}건</span>
             </h2>
-            <table className="w-full min-w-[760px] text-[13.5px] tabular-nums">
+            <table className="table-cards w-full text-[13.5px] tabular-nums md:min-w-[760px]">
               <thead>
                 <tr className="border-b border-line text-left text-[12px] text-muted">
                   <th className="px-5 py-2 font-medium">모델</th><th className="px-3 py-2 text-right font-medium">완료</th><th className="px-3 py-2 text-right font-medium">실패</th>
@@ -338,14 +338,14 @@ export default function AiCompare({ models }: { models: Model[] }) {
               <tbody>
                 {summary.map((s) => (
                   <tr key={s.id} className="border-b border-line/60 last:border-0">
-                    <td className="px-5 py-2.5 font-bold">{s.label}</td>
-                    <td className="px-3 py-2.5 text-right">{s.done}</td>
-                    <td className={`px-3 py-2.5 text-right ${s.failed ? 'font-bold text-danger' : ''}`}>{s.failed}</td>
-                    <td className="px-3 py-2.5 text-right">{s.done ? `${(s.ms / 1000).toFixed(1)}초` : '-'}</td>
-                    <td className="px-3 py-2.5 text-right">{s.done ? won(s.cost) : '-'}</td>
-                    <td className="px-3 py-2.5 text-right">{s.done ? won(s.cost * 300) : '-'}</td>
-                    <td className={`px-3 py-2.5 text-right ${s.issues ? 'font-bold text-danger' : 'text-published'}`}>{s.done ? `${s.issues}건` : '-'}</td>
-                    <td className="px-5 py-2.5 text-right">{s.done ? `${Math.round(s.chars).toLocaleString()}자` : '-'}</td>
+                    <td className="tc-full px-5 py-2.5 font-bold">{s.label}</td>
+                    <td data-label="완료" className="px-3 py-2.5 text-right">{s.done}</td>
+                    <td data-label="실패" className={`px-3 py-2.5 text-right ${s.failed ? 'font-bold text-danger' : ''}`}>{s.failed}</td>
+                    <td data-label="평균 시간" className="px-3 py-2.5 text-right">{s.done ? `${(s.ms / 1000).toFixed(1)}초` : '-'}</td>
+                    <td data-label="1건 비용" className="px-3 py-2.5 text-right">{s.done ? won(s.cost) : '-'}</td>
+                    <td data-label="하루 10건 한 달" className="px-3 py-2.5 text-right">{s.done ? won(s.cost * 300) : '-'}</td>
+                    <td data-label="원문에 없는 숫자·인용" className={`px-3 py-2.5 text-right ${s.issues ? 'font-bold text-danger' : 'text-published'}`}>{s.done ? `${s.issues}건` : '-'}</td>
+                    <td data-label="평균 본문 길이" className="px-5 py-2.5 text-right">{s.done ? `${Math.round(s.chars).toLocaleString()}자` : '-'}</td>
                   </tr>
                 ))}
               </tbody>

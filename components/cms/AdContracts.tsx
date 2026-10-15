@@ -166,7 +166,7 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
 
       {list.length ? (
         <div className="overflow-x-auto rounded-lg border border-line bg-white">
-          <table className="w-full min-w-[860px] text-[13px]">
+          <table className="table-cards w-full text-[13px] md:min-w-[860px]">
             <thead>
               <tr className="border-b border-line text-left text-[12px] text-muted">
                 <th className="px-4 py-2.5 font-normal">광고주 · 내용</th>
@@ -183,7 +183,7 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
                 const pay = payOf(c, today)
                 return (
                   <tr key={c.id} className="align-top">
-                    <td className="px-4 py-3">
+                    <td className="tc-full px-4 py-3">
                       <p className="font-semibold">{c.advertiser}</p>
                       <p className="text-[12.5px] text-muted">{c.title}</p>
                       {(c.contact_name || c.contact_phone) && <p className="text-[12px] text-muted">{[c.contact_name, c.contact_phone].filter(Boolean).join(' · ')}</p>}
@@ -197,21 +197,21 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
                         </p>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-2 py-3 tabular-nums">
+                    <td data-label="기간" className="whitespace-nowrap px-2 py-3 tabular-nums">
                       {dot(c.starts_on)} ~ {dot(c.ends_on).slice(5)}
                       {c.status === 'quote'
                         ? <span className="mt-1 block w-fit rounded bg-[#EDE9FE] px-1.5 py-0.5 text-[11.5px] font-semibold text-[#6D28D9]">견적 · 자리 아직 안 잡음</span>
                         : <span className={`mt-1 block w-fit rounded px-1.5 py-0.5 text-[11.5px] font-semibold ${st.cls}`}>{st.label}</span>}
                     </td>
-                    <td className="whitespace-nowrap px-2 py-3 text-right tabular-nums">
+                    <td data-label="금액" className="whitespace-nowrap px-2 py-3 text-right tabular-nums">
                       <span className="font-semibold">{won(total(c))}</span>
                       {c.vat_amount > 0 && <span className="block text-[11.5px] text-muted">공급가 {won(c.supply_amount)}</span>}
                     </td>
-                    <td className="px-2 py-3">
+                    <td data-label="입금 · 계산서" className="px-2 py-3">
                       <span className={`block w-fit rounded px-1.5 py-0.5 text-[11.5px] font-semibold ${pay.cls}`}>{pay.label}</span>
                       <span className="mt-1 block text-[11.5px] text-muted">{c.tax_invoice_on ? `계산서 ${dot(c.tax_invoice_on)}` : total(c) > 0 ? '계산서 미발행' : ''}</span>
                     </td>
-                    <td className="whitespace-nowrap px-2 py-3 text-right tabular-nums">
+                    <td data-label="광고 자리" className="whitespace-nowrap px-2 py-3 text-right tabular-nums">
                       {c.creatives.length > 0 && <span className="block text-[12px] font-semibold">{c.creatives.map((x) => slotOf(x.slot)?.label ?? x.slot).join(' · ')}</span>}
                       {c.creatives.length > 0 && c.status === 'quote' ? (
                         <span className="block text-[11.5px] text-muted">계약 확정하면 예약됩니다</span>
@@ -224,7 +224,7 @@ export default function AdContracts({ contracts, bookings, today, outletName, ou
                         </>
                       ) : <span className="text-[12px] text-muted">광고 자리 없음</span>}
                     </td>
-                    <td className="px-3 py-3 text-right">
+                    <td className="tc-full px-3 py-3 text-right">
                       <RowMenu disabled={busy} items={[
                         { label: '고치기', onClick: () => { setMsg({}); setEditing(c) } },
                         c.status === 'quote' && { label: '계약 확정 (자리 예약)', tone: 'strong' as const, onClick: () => confirm(c) },

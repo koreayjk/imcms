@@ -53,14 +53,14 @@ export default function DomainPanel({ outletId, domain, status }: { outletId: st
             도메인을 산 곳(가비아·후이즈·카페24 등)의 DNS 관리 화면에 아래 값을 넣어 달라고 고객에게 알려 주세요. 반영까지 보통 몇 분~몇 시간 걸립니다.
           </p>
           <div className="mt-2 overflow-x-auto">
-            <table className="w-full min-w-[420px] border-collapse text-[13px]">
+            <table className="table-cards w-full border-collapse text-[13px] md:min-w-[420px]">
               <thead><tr className="bg-paper text-left"><th className="px-3 py-2">종류</th><th className="px-3 py-2">호스트</th><th className="px-3 py-2">값</th></tr></thead>
               <tbody>
                 {records.map((r, i) => (
                   <tr key={i} className="border-t border-line">
-                    <td className="px-3 py-2 font-semibold">{r.type}</td>
-                    <td className="px-3 py-2 font-mono">{r.host}</td>
-                    <td className="px-3 py-2 font-mono break-all">{r.value}</td>
+                    <td data-label="종류" className="px-3 py-2 font-semibold">{r.type}</td>
+                    <td data-label="호스트" className="break-all px-3 py-2 font-mono">{r.host}</td>
+                    <td data-label="값" className="px-3 py-2 font-mono break-all">{r.value}</td>
                   </tr>
                 ))}
               </tbody>

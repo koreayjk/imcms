@@ -416,17 +416,17 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
             </label>
           )}
           <div className="mt-4 overflow-x-auto rounded-md border border-line">
-            <table className="w-full min-w-[640px] text-[12.5px]">
+            <table className="table-cards w-full text-[12.5px] md:min-w-[640px]">
               <thead><tr className="border-b border-line text-left text-muted"><th className="px-3 py-1.5 font-normal">옛 번호</th><th className="px-2 py-1.5 font-normal">제목</th><th className="px-2 py-1.5 font-normal">발행일</th><th className="px-2 py-1.5 font-normal">섹션</th><th className="px-2 py-1.5 font-normal">기자</th><th className="px-3 py-1.5 font-normal">본문</th></tr></thead>
               <tbody className="divide-y divide-line">
                 {preview.map((p, i) => (
                   <tr key={i} className={p.ok ? '' : 'bg-danger/5'}>
-                    <td className="px-3 py-1.5 tabular-nums">{p.row.legacy_id}</td>
-                    <td className="max-w-[260px] truncate px-2 py-1.5 font-medium">{p.row.title || <span className="text-danger">제목 없음</span>}</td>
-                    <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">{p.row.published_at ? formatDateTime(p.row.published_at) : <span className="text-danger">날짜 못 읽음</span>}</td>
-                    <td className="px-2 py-1.5">{cats.find((c) => c.id === p.row.category_id)?.name ?? '-'}</td>
-                    <td className="px-2 py-1.5">{p.row.byline ?? '-'}</td>
-                    <td className="px-3 py-1.5 text-muted">{plainText(p.row.body).length.toLocaleString()}자{p.missing ? <span className="text-draft"> · 사진 {p.missing}장 못 찾음</span> : ''}</td>
+                    <td data-label="옛 번호" className="px-3 py-1.5 tabular-nums">{p.row.legacy_id}</td>
+                    <td className="tc-full md:max-w-[260px] md:truncate px-2 py-1.5 font-medium">{p.row.title || <span className="text-danger">제목 없음</span>}</td>
+                    <td data-label="발행일" className="whitespace-nowrap px-2 py-1.5 tabular-nums">{p.row.published_at ? formatDateTime(p.row.published_at) : <span className="text-danger">날짜 못 읽음</span>}</td>
+                    <td data-label="섹션" className="px-2 py-1.5">{cats.find((c) => c.id === p.row.category_id)?.name ?? '-'}</td>
+                    <td data-label="기자" className="px-2 py-1.5">{p.row.byline ?? '-'}</td>
+                    <td data-label="본문" className="px-3 py-1.5 text-muted">{plainText(p.row.body).length.toLocaleString()}자{p.missing ? <span className="text-draft"> · 사진 {p.missing}장 못 찾음</span> : ''}</td>
                   </tr>
                 ))}
               </tbody>
