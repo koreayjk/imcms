@@ -87,7 +87,7 @@ body {
 /* 휴대폰에서 표를 카드로: <table className="table-cards"> + 칸마다 data-label="제목"
    (옆으로 밀어 보지 않아도 되게 한 행이 한 묶음으로, 칸은 "제목 값"으로 줄 바꿔 놓인다.
     한 줄을 다 쓸 칸은 tc-full, 휴대폰에서 뺄 칸은 tc-hide) */
-@media (max-width: 767px) {
+@media screen and (max-width: 767px) {
   .table-cards, .table-cards > tbody, .table-cards > tbody > tr, .table-cards > tbody > tr > td { display: block; }
   .table-cards { min-width: 0 !important; }
   .table-cards > thead { display: none; }

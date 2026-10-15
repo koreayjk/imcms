@@ -55,7 +55,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       </div>
 
       <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] text-[14px]">
+      <table className="table-cards w-full text-[14px] md:min-w-[560px]">
         <thead>
           <tr className="border-b border-line text-left text-[12.5px] text-muted">
             <th className="py-2 font-medium">항목</th><th className="w-20 py-2 font-medium">수량</th><th className="w-36 py-2 font-medium">단가(원)</th><th className="w-32 py-2 text-right font-medium">금액</th><th className="w-8" />
@@ -63,12 +63,12 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         </thead>
         <tbody>
           {items.map((it, i) => (
-            <tr key={i} className="border-b border-line/60">
-              <td className="py-2 pr-2"><input name="item_name" value={it.name} onChange={(e) => set(i, { name: e.target.value })} aria-label="항목" className="field-input py-1.5" /></td>
-              <td className="py-2 pr-2"><input name="item_qty" type="number" min={0} value={it.qty} onChange={(e) => set(i, { qty: Number(e.target.value) })} aria-label="수량" className="field-input py-1.5" /></td>
-              <td className="py-2 pr-2"><input name="item_price" type="number" min={0} step={100} value={it.unit_price} onChange={(e) => set(i, { unit_price: Number(e.target.value) })} aria-label="단가" className="field-input py-1.5" /></td>
-              <td className="py-2 text-right tabular-nums">{won(it.qty * it.unit_price)}</td>
-              <td className="py-2 text-right"><button type="button" onClick={() => { setEdited(true); setItems(items.filter((_, j) => j !== i)) }} aria-label="줄 빼기" className="text-muted hover:text-danger">×</button></td>
+            <tr key={i} className="border-b border-line/60 max-md:!px-0">
+              <td className="tc-full py-2 pr-2"><input name="item_name" value={it.name} onChange={(e) => set(i, { name: e.target.value })} aria-label="항목" className="field-input py-1.5" /></td>
+              <td data-label="수량" className="w-20 py-2 pr-2 md:w-auto"><input name="item_qty" type="number" min={0} value={it.qty} onChange={(e) => set(i, { qty: Number(e.target.value) })} aria-label="수량" className="field-input py-1.5" /></td>
+              <td data-label="단가(원)" className="w-36 py-2 pr-2 md:w-auto"><input name="item_price" type="number" min={0} step={100} value={it.unit_price} onChange={(e) => set(i, { unit_price: Number(e.target.value) })} aria-label="단가" className="field-input py-1.5" /></td>
+              <td data-label="금액" className="py-2 text-right tabular-nums">{won(it.qty * it.unit_price)}</td>
+              <td className="ml-auto py-2 text-right"><button type="button" onClick={() => { setEdited(true); setItems(items.filter((_, j) => j !== i)) }} aria-label="줄 빼기" className="text-muted hover:text-danger">×</button></td>
             </tr>
           ))}
         </tbody>
@@ -76,7 +76,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       </div>
       <button type="button" onClick={() => { setEdited(true); setItems([...items, { name: '', qty: 1, unit_price: 0 }]) }} className="text-[13px] font-semibold text-[#2F6BF0]">+ 항목 추가</button>
 
-      <dl className="ml-auto w-64 space-y-1 text-[14px] tabular-nums">
+      <dl className="ml-auto w-full space-y-1 sm:w-64 text-[14px] tabular-nums">
         <div className="flex justify-between text-[16px] font-bold"><dt>합계</dt><dd>{won(t.total)}</dd></div>
         <p className="text-right text-[12px] text-muted">{TAX_NOTE}</p>
       </dl>

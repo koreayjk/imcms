@@ -92,7 +92,7 @@ export default async function InvoicePage(
         </div>
 
         <div className="overflow-x-auto">
-        <table className="mt-8 w-full min-w-[480px] text-[14px]">
+        <table className="table-cards mt-8 w-full text-[14px] md:min-w-[480px]">
           <thead>
             <tr className="border-y border-ink/80 bg-[#F8F9FA] text-left text-[12.5px]">
               <th className="px-3 py-2.5 font-semibold">항목</th><th className="w-20 px-3 py-2.5 text-right font-semibold">수량</th><th className="w-32 px-3 py-2.5 text-right font-semibold">단가</th><th className="w-36 px-3 py-2.5 text-right font-semibold">금액</th>
@@ -101,14 +101,14 @@ export default async function InvoicePage(
           <tbody className="tabular-nums">
             {items.map((it, i) => (
               <tr key={i} className="border-b border-line">
-                <td className="px-3 py-3">{it.name}</td><td className="px-3 py-3 text-right">{it.qty}</td><td className="px-3 py-3 text-right">{won(it.unit_price)}</td><td className="px-3 py-3 text-right">{won(it.qty * it.unit_price)}</td>
+                <td className="tc-full px-3 py-3 font-medium md:font-normal">{it.name}</td><td data-label="수량" className="px-3 py-3 text-right">{it.qty}</td><td data-label="단가" className="px-3 py-3 text-right">{won(it.unit_price)}</td><td data-label="금액" className="px-3 py-3 text-right font-semibold md:font-normal">{won(it.qty * it.unit_price)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         </div>
 
-        <dl className="ml-auto mt-5 w-72 space-y-1.5 text-[14px] tabular-nums">
+        <dl className="ml-auto mt-5 w-full space-y-1.5 sm:w-72 text-[14px] tabular-nums">
           <div className="flex justify-between border-t-2 border-ink pt-2 text-[20px] font-extrabold"><dt>합계</dt><dd>{won(inv.total)}</dd></div>
           <p className="text-right text-[12px] text-muted">{TAX_NOTE}</p>
         </dl>

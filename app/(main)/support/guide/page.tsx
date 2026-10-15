@@ -61,7 +61,23 @@ export default function WritingGuidePage() {
       <section id="penalty" className="mt-10 scroll-mt-6">
         <h2 className="text-[18px] font-extrabold">네이버 운영평가 항목과 부정 평가 점수</h2>
         <p className="mt-1 text-[13px] text-muted">{NAVER_RULE}. 가이드 안의 "평가 ○" 표시는 아래 항목입니다.</p>
-        <div className="mt-4 overflow-x-auto rounded-2xl bg-white ring-1 ring-black/5">
+        {/* 휴대폰: 칸이 합쳐진 표 대신 분야별 목록 */}
+        <div className="mt-4 space-y-3 md:hidden">
+          {PENALTY_TABLE.map((g) => (
+            <section key={g.area} className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
+              <h3 className="text-[13.5px] font-bold">{g.area}</h3>
+              <ul className="mt-2 divide-y divide-line">
+                {g.rows.map(([item, pt]) => (
+                  <li key={item} className="flex items-baseline justify-between gap-3 py-2 text-[13.5px]">
+                    <span className="min-w-0">{item}</span>
+                    <span className={`shrink-0 whitespace-nowrap tabular-nums ${pt === '10점' ? 'font-bold text-danger' : ''}`}>{pt}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+        <div className="mt-4 hidden overflow-x-auto rounded-2xl bg-white ring-1 ring-black/5 md:block">
           <table className="w-full min-w-[560px] text-[13.5px]">
             <thead>
               <tr className="border-b border-line bg-[#F7F8FA] text-left text-[12.5px] text-muted">
