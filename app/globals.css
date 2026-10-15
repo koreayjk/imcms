@@ -79,6 +79,10 @@ body {
     focus:outline-none focus:border-ink placeholder:text-line transition-colors;
 }
 .field-label { @apply block text-xs font-medium text-muted mb-1.5; }
+/* 휴대폰: 글자가 16px보다 작은 입력칸을 누르면 아이폰이 화면을 확대해 버려 입력칸만 16px로 */
+@media (pointer: coarse) and (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea { font-size: 16px; }
+}
 
 /* 버튼 공통 */
 /* 버튼 글자는 한 줄로 (휴대폰에서 “삭/제”처럼 꺾이지 않게. 자리가 모자라면 버튼째 다음 줄로 간다) */

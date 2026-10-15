@@ -23,11 +23,13 @@ export default function StaffRow({ id, name, email, outlets, assigned, ready }: 
     <li className="rounded-lg bg-white px-4 py-3 ring-1 ring-line">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px]">
         <strong>{name}</strong>
-        {email && <span className="text-muted">{email}</span>}
-        <span className="min-w-0 flex-1 text-[12.5px]">
+        {email && <span className="min-w-0 break-all text-muted">{email}</span>}
+        {/* 좁은 화면에서 글자 하나씩 세로로 찌그러지지 않게: 자리가 모자라면 다음 줄로 내려가 한 줄을 다 쓴다 */}
+        <span className="min-w-[12rem] flex-1 text-[12.5px]">
           담당 매체:{' '}
           {names.length ? <span className="font-semibold">{names.join(', ')}</span> : <span className="text-muted">아직 없음</span>}
         </span>
+        <span className="flex items-center gap-3">
         {ready && (
           <button type="button" onClick={() => { setOpen(!open); setPicked(assigned); setMsg({}) }} className="text-[12.5px] font-semibold text-[#2F6BF0] hover:underline">
             {open ? '닫기' : '담당 매체 정하기'}
@@ -51,6 +53,7 @@ export default function StaffRow({ id, name, email, outlets, assigned, ready }: 
         >
           탈퇴
         </button>
+        </span>
       </div>
 
       {open && (
