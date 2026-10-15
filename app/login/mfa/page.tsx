@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 import AuthShell from '@/components/auth/AuthShell'
 import SignOutButton from '@/components/auth/SignOutButton'
 import { MFA_DAYS, MFA_DAYS_STAFF } from '@/lib/mfa'
+import { syncSessionAndGo } from '@/lib/session-sync'
 
 type Factor = { id: string; friendly_name?: string | null; created_at: string }
 
@@ -62,8 +63,8 @@ export default function MfaPage() {
         ? '코드가 맞지 않습니다. 앱에 지금 보이는 숫자를 넣어 주세요. (숫자는 30초마다 바뀝니다)'
         : /rate|too many/i.test(err.message) ? '시도가 너무 많습니다. 잠시 뒤 다시 해 주세요.' : `확인하지 못했습니다: ${err.message}`)
     }
-    router.replace(next.current)
-    router.refresh()
+    // 아이폰 앱에서도 새 로그인 정보로 넘어가도록 서버 쿠키를 맞추고 화면을 새로 연다
+    await syncSessionAndGo(next.current)
   }
 
   return (

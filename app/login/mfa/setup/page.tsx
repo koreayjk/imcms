@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { syncSessionAndGo } from '@/lib/session-sync'
 import AuthShell from '@/components/auth/AuthShell'
 import SignOutButton from '@/components/auth/SignOutButton'
 import { MFA_DAYS, MFA_DAYS_STAFF } from '@/lib/mfa'
@@ -98,7 +99,7 @@ export default function MfaSetupPage() {
             <p className="mt-3 rounded-md bg-paper px-3 py-2.5 text-left text-[12.5px] leading-relaxed text-muted">
               휴대폰을 잃어버릴 때를 대비해, 내 정보에서 다른 기기(태블릿 등)의 인증 앱을 하나 더 등록해 두면 좋습니다.
             </p>
-            <button type="button" onClick={() => { router.replace(next.current); router.refresh() }} className="btn-primary mt-5 w-full">계속</button>
+            <button type="button" onClick={() => syncSessionAndGo(next.current)} className="btn-primary mt-5 w-full">계속</button>
           </div>
         ) : (
           <>
