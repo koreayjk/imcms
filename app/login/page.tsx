@@ -19,8 +19,11 @@ export default function LoginPage() {
 
   // 구글 로그인·메일 인증이 실패해서 돌아온 경우
   useEffect(() => {
-    const e = new URLSearchParams(window.location.search).get('error')
+    const q = new URLSearchParams(window.location.search)
+    const e = q.get('error')
     if (e) setError(e)
+    // 내 정보에서 계정을 지운 뒤
+    if (q.get('deleted') === '1') setResent('계정을 삭제했습니다. 그동안 IM 뉴스룸을 이용해 주셔서 감사합니다.')
     // 인증 링크가 만료된 경우: 이메일을 적고 인증 메일을 다시 받을 수 있게
     if (e && /인증 링크|만료/.test(e)) setUnconfirmed(true)
   }, [])

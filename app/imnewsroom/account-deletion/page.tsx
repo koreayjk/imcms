@@ -3,19 +3,19 @@ import { ISSUER, PRODUCT } from '@/lib/product'
 import type { PolicySection } from '@/lib/service-terms'
 import PolicyPageShell from '@/components/product/PolicyPageShell'
 
-// 계정 삭제 안내 (구글 플레이 정책: 앱을 지운 뒤에도 웹에서 계정 삭제를 요청할 수 있어야 한다)
-export const metadata: Metadata = { title: `계정 삭제 요청 — ${PRODUCT.name}` }
+// 계정 삭제 안내 (구글 플레이 정책: 앱을 지운 뒤에도 웹에서 계정 삭제를 요청할 수 있어야 한다. 애플: 앱 안에서 바로 삭제)
+export const metadata: Metadata = { title: `계정 삭제 — ${PRODUCT.name}` }
 
 const SECTIONS: PolicySection[] = [
-  { title: '들어가며', body: [`${PRODUCT.name} 편집국(앱 “IM 뉴스룸” 포함) 계정이나 일부 자료를 지우고 싶을 때 아래 방법으로 요청해 주세요. 요청을 받으면 7일 안에 처리하고 가입한 이메일로 알려 드립니다. 운영: ${ISSUER.legalName ?? PRODUCT.name}`] },
+  { title: '들어가며', body: [`${PRODUCT.name} 편집국(앱 “IM 뉴스룸” 포함) 계정을 지우고 싶을 때는 편집국 “내 정보”에서 바로 지울 수 있습니다. 로그인할 수 없거나 일부 자료만 지우고 싶을 때는 아래 방법으로 요청해 주세요. 요청을 받으면 7일 안에 처리하고 가입한 이메일로 알려 드립니다. 운영: ${ISSUER.legalName ?? PRODUCT.name}`] },
   {
-    title: '1. 편집국에서 요청하기',
+    title: '1. 편집국에서 바로 지우기',
     body: [[
-      '아래 순서로 요청합니다. 요청은 고객센터에 남고, 처리 상황도 그곳에서 볼 수 있습니다.',
+      '아래 순서로 지우면 바로 지워지고 로그아웃됩니다. 되돌릴 수 없습니다.',
       '앱 또는 app.imnewsroom.com 에 로그인',
       '“내 정보” 열기 (휴대폰: 아래 “더보기” → 내 이름 / PC: 오른쪽 위 내 이름)',
-      '맨 아래 “계정 삭제 요청” → “계정 삭제 요청 보내기” 누르기',
-    ]],
+      '맨 아래 “계정 삭제” → 확인 칸에 “삭제” 적기 → “지금 계정 삭제” 누르기',
+    ], '편집장·발행인 계정을 지워도 언론사와 매체 홈페이지, 기사는 그대로 남습니다.'],
   },
   {
     title: '2. 로그인할 수 없을 때',
@@ -54,5 +54,5 @@ const SECTIONS: PolicySection[] = [
 ]
 
 export default function AccountDeletionPage() {
-  return <PolicyPageShell title="계정 삭제 요청" sections={SECTIONS} other={{ href: `${PRODUCT.path}/privacy`, label: '개인정보처리방침' }} />
+  return <PolicyPageShell title="계정 삭제" sections={SECTIONS} other={{ href: `${PRODUCT.path}/privacy`, label: '개인정보처리방침' }} />
 }

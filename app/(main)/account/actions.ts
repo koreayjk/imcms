@@ -98,3 +98,16 @@ export async function requestAccountDeletion(reason: string): Promise<{ id?: str
   revalidatePath('/support', 'layout')
   return { id: (data as { id: string }).id }
 }
+
+// 내 계정 바로 삭제 (애플 앱 심사: 앱 안에서 계정을 바로 지울 수 있어야 한다, self-delete.sql)
+//   언론사·그룹·매체와 쓴 기사(기자명 포함)는 남는다. 지우고 나면 로그아웃된다
+export async function deleteMyAccount(confirmText: string): Promise<{ ok?: boolean; error?: string }> {
+  const { supabase, isSuper } = await getCmsContext()
+  if (isSuper) return { error: '총관리자 계정은 여기서 지울 수 없습니다.' }
+  if (confirmText.trim() !== '삭제') return { error: '확인 칸에 “삭제”라고 적어 주세요.' }
+  const { error } = await supabase.rpc('delete_my_account')
+  if (error) return { error: /delete_my_account/.test(error.message) ? '지금은 바로 삭제할 수 없습니다. 고객센터로 계정 삭제를 요청해 주세요. (운영팀: self-delete.sql 실행 필요)' : error.message }
+  await supabase.auth.signOut().catch(() => {})
+  return { ok: true }
+}
+

@@ -59,7 +59,7 @@ export default async function AccountPage() {
           이미 쓴 기사 본문 첫머리의 “[매체=이름 기자]”는 그대로이니, 필요하면 기사 수정에서 기자명을 다시 저장해 주세요.
           역할과 소속은 관리자가 정합니다.
         </p>
-        {!isSuper && <DeleteAccountRequest />}
+        {!isSuper && <DeleteAccountRequest manager={profile?.role === 'editor' || profile?.role === 'admin'} />}
         <PolicyLinks className="border-t border-line pt-5" />
       </div>
     </div>
