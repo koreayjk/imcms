@@ -41,15 +41,15 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
   return (
     <div>
       {BETA && (
-        <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-lg bg-[#EFF2F7] ring-1 ring-[#DADFE8] px-7 py-6 text-center text-[#0F1115] sm:flex-row sm:justify-between sm:text-left">
+        <div className="mx-auto flex max-w-[900px] flex-col items-center gap-4 rounded-[1.75rem] bg-[#EFF2F7] shadow-[inset_0_0_0_1px_rgba(29,52,97,0.08)] px-7 py-6 text-center text-[#0F1115] sm:flex-row sm:justify-between sm:text-left">
           <span>
             <span className="inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.06em] text-[#C2410C]"><span className="rounded bg-[#E8590C] px-1.5 py-0.5 text-[11px] tracking-normal text-white">D-{daysLeft}</span>출시 기념 베타</span>
             <span className="mt-1 block text-[21px] font-extrabold tracking-[-0.02em] sm:text-[24px]">1주일 무료 체험 → {BETA_END_LABEL}까지 가입하면 <span className="text-[#C2410C]">{BETA_PERIOD_LABEL} 반값</span></span>
             <span className="mt-1 block text-[13px] text-[#5B616B]">{REGULAR_AFTER_LABEL} 정상가로 바뀝니다</span>
           </span>
           <span className="flex shrink-0 flex-wrap justify-center gap-2">
-            <a href={appLink('/trial')} className="rounded-md bg-[#1D3461] px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#152748]">1주일 무료 체험 →</a>
-            <a href={applyHref} className="rounded-md border border-[#DADFE8] bg-white px-5 py-3 text-[15px] font-semibold text-[#16294D] transition hover:bg-[#EFF2F7]">바로 신청</a>
+            <a href={appLink('/trial')} className="pn-press rounded-full bg-[#1D3461] px-6 py-3 text-[15px] font-bold text-white hover:bg-[#152748]">1주일 무료 체험 →</a>
+            <a href={applyHref} className="pn-press rounded-full bg-white px-6 py-3 text-[15px] font-semibold text-[#16294D] shadow-[inset_0_0_0_1px_rgba(15,17,21,0.08)] hover:bg-[#F4F6FA]">바로 신청</a>
           </span>
         </div>
       )}
@@ -90,7 +90,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
           return (
             <div
               key={p.name}
-              className={`relative flex flex-col rounded-lg bg-white p-6 ${p.pick ? 'ring-2 ring-[#1D3461] shadow-[0_24px_50px_-28px_rgba(15,17,21,0.45)]' : 'ring-1 ring-black/5 shadow-[0_10px_30px_-18px_rgba(11,16,32,0.3)]'}`}
+              className={`pn-lift relative flex flex-col rounded-[1.5rem] bg-white p-6 ${p.pick ? 'ring-2 ring-[#1D3461] shadow-[0_24px_50px_-28px_rgba(15,17,21,0.45)]' : 'ring-1 ring-black/5 shadow-[0_10px_30px_-18px_rgba(11,16,32,0.3)]'}`}
             >
               {p.pick && <span className="absolute -top-3 left-6 rounded-full bg-[#1D3461] px-3 py-1 text-[12px] font-bold text-white">추천</span>}
               <p className="text-[19px] font-extrabold tracking-[-0.02em]">{p.name}</p>
@@ -117,7 +117,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               <a
                 href={applyHref}
                 onClick={() => pick(p.id)}
-                className={`mt-5 rounded-md px-4 py-3 text-center text-[15px] font-bold transition ${p.pick ? 'bg-[#1D3461] text-white hover:bg-[#152748]' : 'bg-white text-[#16294D] ring-1 ring-[#DADFE8] hover:bg-[#EFF2F7]'}`}
+                className={`pn-press mt-5 rounded-full px-4 py-3 text-center text-[15px] font-bold ${p.pick ? 'bg-[#1D3461] text-white hover:bg-[#152748]' : 'bg-white text-[#16294D] ring-1 ring-[#DADFE8] hover:bg-[#EFF2F7]'}`}
               >
                 {price == null ? '상담 신청' : '신청하기'}
               </a>
@@ -141,7 +141,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
         })}
       </div>
 
-      <div className="mt-6 rounded-lg bg-white p-6 ring-1 ring-black/5 sm:p-8">
+      <div className="mt-6 rounded-[1.5rem] bg-white p-6 ring-1 ring-black/5 sm:p-8">
         <p className="text-[16px] font-extrabold">모든 요금제에 기본으로 들어 있습니다</p>
         <ul className="mt-4 grid gap-x-6 gap-y-2.5 text-[14.5px] text-[#3B4048] sm:grid-cols-2 lg:grid-cols-3">
           {COMMON.map((c) => <li key={c} className="flex gap-2"><span className="font-bold text-[#16294D]" aria-hidden>✓</span>{c}</li>)}
@@ -149,7 +149,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       </div>
 
       {/* ─── 세팅비 ─── */}
-      <section aria-labelledby="setup-title" className="mt-4 rounded-lg bg-white p-6 ring-1 ring-black/5 sm:p-8">
+      <section aria-labelledby="setup-title" className="mt-4 rounded-[1.5rem] bg-white p-6 ring-1 ring-black/5 sm:p-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h3 id="setup-title" className="text-[16px] font-extrabold">세팅비 · 처음 개통할 때 한 번</h3>
@@ -178,7 +178,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
           ['매체 추가', `${won(EXTRA_OUTLET_FEE)}/월`, '프리미엄 전용 · 매체 2개까지 포함, 3번째 매체부터 매체마다 (추가 매체는 베이직 사양)'],
           ['AI 사용 추가', won(EXTRA_AI_FEE), '월 한도(초안·법적 검수)를 넘으면 100회마다'],
         ].map(([k, v, d]) => (
-          <div key={k} className="rounded-lg bg-white p-5 ring-1 ring-black/5">
+          <div key={k} className="rounded-[1.25rem] bg-white p-5 ring-1 ring-black/5">
             <dt className="text-[13px] font-semibold text-[#5B616B]">{k}</dt>
             <dd className="mt-1 text-[20px] font-extrabold tabular-nums">{v}</dd>
             <dd className="mt-1 text-[13px] leading-snug text-[#5B616B]">{d}</dd>

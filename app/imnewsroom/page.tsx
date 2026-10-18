@@ -13,6 +13,8 @@ import { CountUp, Reveal } from '@/components/product/Motion'
 import Pricing from '@/components/product/Pricing'
 import { LoginHistoryMock, MfaMock } from '@/components/product/SecurityMocks'
 import BrandMark from '@/components/BrandMark'
+import IslandNav from '@/components/product/IslandNav'
+import { Pill } from '@/components/product/Pill'
 
 export const dynamic = 'force-dynamic'
 
@@ -207,8 +209,8 @@ function Logo({ dark = false }: { dark?: boolean }) {
 
 function Eyebrow({ icon, color, children }: { icon: Icon; color: string; children: React.ReactNode }) {
   return (
-    <p className="inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-[0.06em]" style={{ color }}>
-      <Glyph name={icon} className="h-[17px] w-[17px]" />
+    <p className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12.5px] font-semibold tracking-[0.04em]" style={{ color, backgroundColor: `${color}0D`, boxShadow: `inset 0 0 0 1px ${color}1F` }}>
+      <Glyph name={icon} className="h-[15px] w-[15px]" />
       {children}
     </p>
   )
@@ -230,24 +232,19 @@ const DEMO_INDEX: IndexSeries = {
   kcci: weeks('2026-07-13', [2350.62, 2331.1, 2290.4, 2302.8, 2260.3, 2231.5, 2205.9, 2188.2, 2150.6, 2131.2, 2110.4, 2096.64]),
 }
 
-const H2 = 'text-[30px] font-extrabold leading-[1.25] tracking-[-0.03em] [text-wrap:balance] sm:text-[40px]'
-
-// 1주일 무료 체험 버튼 (소개 페이지 곳곳에)
-function TrialButton({ className = '', children = '1주일 무료 체험 시작 →' }: { className?: string; children?: React.ReactNode }) {
-  return <Link href={appLink('/trial')} className={className}>{children}</Link>
-}
+const H2 = 'text-[32px] font-extrabold leading-[1.18] tracking-[-0.04em] [text-wrap:balance] sm:text-[44px] lg:text-[48px]'
 
 // 섹션 사이 띠: 지금 바로 1주일 무료로
 function TrialStrip({ beta }: { beta: boolean }) {
   return (
     <div className="px-4 sm:px-6">
-      <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 border-y border-[#E3E7EE] px-2 py-7 text-center sm:flex-row sm:justify-between sm:text-left">
+      <div className="pn-shell mx-auto max-w-[1200px]"><div className="pn-core flex flex-col items-center gap-5 px-6 py-8 text-center sm:flex-row sm:justify-between sm:px-10 sm:text-left">
         <p className="text-[18px] font-extrabold leading-snug tracking-[-0.03em] text-[#0F1115] sm:text-[21px]">
           말로 듣는 것보다 직접 써 보는 게 빠릅니다.
           <span className="block text-[14.5px] font-medium text-[#5B616B]">{beta ? <>첫 1주일은 무료, <b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입하면 {BETA_PERIOD_LABEL} 반값</b></> : '첫 1주일은 무료로 모든 기능을 써 보세요'}</span>
         </p>
-        <TrialButton className="shrink-0 rounded-md bg-[#1D3461] px-6 py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#152748]" />
-      </div>
+        <Pill href={appLink('/trial')} className="shrink-0">1주일 무료 체험 시작</Pill>
+      </div></div>
     </div>
   )
 }
@@ -263,51 +260,35 @@ export default function ProductHome() {
 
       {/* 검색엔진용 사이트 이름·로고 (구글이 검색 결과에 “IM 뉴스룸” 이름과 로고를 이 값으로 띄운다) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: PRODUCT_JSONLD }} />
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-[#DADFE8] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-6 px-4 sm:px-6">
-          <a href="#top" aria-label={`${PRODUCT.name} 처음으로`}><Logo /></a>
-          <nav className="ml-auto hidden items-center gap-6 whitespace-nowrap text-[14.5px] text-[#5B616B] lg:flex xl:gap-8" aria-label="소개 메뉴">
-            {/* 머리 줄은 꼭 필요한 것만 (나머지 기능은 아래로 내려 보면 나온다) */}
-            <a href="#multi" className="hover:text-[#0F1115]">기능</a>
-            <a href="#ai" className="hover:text-[#0F1115]">AI 초안</a>
-            <a href="#search" className="hover:text-[#0F1115]">검색 등록</a>
-            <a href="#security" className="hover:text-[#0F1115]">보안</a>
-            <a href="#pricing" className="hover:text-[#0F1115]">요금</a>
-            <a href="#faq" className="hover:text-[#0F1115]">자주 묻는 질문</a>
-          </nav>
-          <div className="ml-auto flex items-center gap-2 whitespace-nowrap lg:ml-0">
-            <Link href={appLink('/login')} className="hidden rounded-md px-3 py-2 text-[13.5px] text-[#5B616B] hover:text-[#0F1115] sm:block">로그인</Link>
-            <TrialButton className="rounded-md bg-[#1D3461] px-4 py-2 text-[13.5px] font-bold text-white hover:bg-[#152748]">1주일 무료 체험</TrialButton>
-          </div>
-        </div>
-      </header>
+      <IslandNav
+        logo={<Logo />}
+        items={[{ href: '#multi', label: '기능' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: '#faq', label: '자주 묻는 질문' }]}
+        loginHref={appLink('/login')}
+        trialHref={appLink('/trial')}
+      />
 
       <main id="top">
         {/* ─── 첫 화면 ─── */}
-        <section className="relative isolate overflow-hidden bg-white pb-40 pt-32 text-[#0F1115] sm:pt-36">
-          <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,#EFF2F7_0%,#FFFFFF_85%)]" aria-hidden />
+        <section className="relative isolate overflow-hidden bg-white pb-40 pt-32 text-[#0F1115] sm:pt-40 lg:pb-48">
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(55%_45%_at_78%_18%,rgba(29,52,97,0.13),transparent_70%),radial-gradient(40%_35%_at_8%_70%,rgba(232,89,12,0.07),transparent_70%),linear-gradient(180deg,#F1F4F9_0%,#FFFFFF_80%)]" aria-hidden />
 
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 sm:px-6 lg:grid-cols-[1fr_1.15fr]">
             <div>
-              <p className="inline-flex items-center gap-2.5 border-l-2 border-[#E8590C] pl-3 text-[13px] font-medium tracking-[0.02em] text-[#5B616B]">
+              <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3.5 py-1.5 text-[12.5px] font-medium tracking-[0.02em] text-[#5B616B] shadow-[inset_0_0_0_1px_rgba(232,89,12,0.18),0_6px_18px_-10px_rgba(232,89,12,0.35)]"><span className="h-1.5 w-1.5 rounded-full bg-[#E8590C]" aria-hidden />
                 {beta ? <><span className="hidden sm:inline">출시 기념 베타 · </span><b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입 시 {BETA_PERIOD_LABEL} 반값</b><span className="hidden font-semibold text-[#C2410C] sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
               </p>
-              <h1 className="mt-7 text-[42px] font-extrabold leading-[1.14] tracking-[-0.04em] sm:text-[56px] xl:text-[60px]">
+              <h1 className="mt-7 text-[44px] font-extrabold leading-[1.06] tracking-[-0.05em] sm:text-[64px] xl:text-[76px]">
                 더 스마트하게,
                 <br />
                 <span className="text-[#1D3461] sm:whitespace-nowrap">더 저렴하게.</span>
               </h1>
-              <p className="mt-6 max-w-[32em] text-[17.5px] leading-[1.75] text-[#5B616B]">
+              <p className="mt-7 max-w-[31em] text-[17.5px] leading-[1.75] text-[#5B616B]">
                 보도자료 자동 수집, AI 기사 초안과 법적 검수, 기자·편집장 승인, 여러 매체 동시 송고까지 기본으로 들어 있습니다.
                 인터넷신문 편집국을 <b className="font-semibold text-[#0F1115]">월 11만 원부터</b> 쓰세요.
               </p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <TrialButton className="rounded-md bg-[#1D3461] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#152748]">
-                  1주일 무료 체험 시작 →
-                </TrialButton>
-                <a href="#apply" className="rounded-md border border-[#DADFE8] bg-white px-7 py-4 text-[16px] font-semibold text-[#16294D] transition hover:bg-[#EFF2F7]">
-                  서비스 신청
-                </a>
+              <div className="mt-10 flex flex-wrap gap-3">
+                <Pill href={appLink('/trial')}>1주일 무료 체험 시작</Pill>
+                <Pill href="#apply" tone="light">서비스 신청</Pill>
               </div>
               <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] text-[#5B616B]">
                 <li>✓ 카드 등록 없이 1주일 무료</li>
@@ -319,17 +300,17 @@ export default function ProductHome() {
 
             {/* 기기 구성: 실제 신문 사이트 화면 */}
             <div className="relative mx-auto w-full max-w-[640px] pb-10 lg:pb-0">
-              <Browser src={`${IMG}/site-pc.jpg`} alt="IM 뉴스룸으로 만든 신문 사이트 PC 화면 (샘플 기사)" eager className="relative" />
+              <div className="pn-shell relative"><Browser src={`${IMG}/site-pc.jpg`} alt="IM 뉴스룸으로 만든 신문 사이트 PC 화면 (샘플 기사)" eager className="rounded-[calc(1.75rem-0.375rem)] !shadow-[0_40px_90px_-40px_rgba(16,24,40,0.55)]" /></div>
               <Phone src={`${IMG}/site-mobile.jpg`} alt="같은 신문 사이트의 휴대폰 화면" eager className="absolute -bottom-10 -left-4 w-[30%] sm:-left-10 lg:-bottom-16" />
-              <div className="pn-float absolute -right-2 -top-6 rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_18px_40px_-16px_rgba(18,32,64,0.35)] ring-1 ring-[#E5E9F0] sm:-right-8">
+              <div className="pn-float absolute -right-2 -top-6 rounded-2xl bg-white px-4 py-3 text-[#14171C] shadow-[0_24px_50px_-22px_rgba(16,24,40,0.4),inset_0_0_0_1px_rgba(15,17,21,0.05)] sm:-right-8">
                 <p className="flex items-center gap-2 text-[12px] font-bold"><span className="h-2 w-2 rounded-full bg-[#1D3461]" />새 보도자료</p>
                 <p className="mt-0.5 text-[22px] font-extrabold tabular-nums">23<span className="text-[13px] font-semibold text-[#8C929B]">건</span></p>
               </div>
-              <div className="pn-float absolute -right-3 bottom-8 rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_18px_40px_-16px_rgba(18,32,64,0.35)] ring-1 ring-[#E5E9F0] sm:-right-10" style={{ animationDelay: '1.2s' }}>
+              <div className="pn-float absolute -right-3 bottom-8 rounded-2xl bg-white px-4 py-3 text-[#14171C] shadow-[0_24px_50px_-22px_rgba(16,24,40,0.4),inset_0_0_0_1px_rgba(15,17,21,0.05)] sm:-right-10" style={{ animationDelay: '0.45s' }}>
                 <p className="flex items-center gap-2 text-[12.5px] font-bold"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#1D3461] text-[9px] text-white">AI</span>기사 초안 완성</p>
                 <p className="mt-0.5 text-[11.5px] text-[#5B616B]">확인 메모 2건</p>
               </div>
-              <div className="pn-float absolute left-[28%] top-[42%] hidden rounded-xl bg-white px-4 py-3 text-[#14171C] shadow-[0_18px_40px_-16px_rgba(18,32,64,0.35)] ring-1 ring-[#E5E9F0] sm:block" style={{ animationDelay: '2.4s' }}>
+              <div className="pn-float absolute left-[28%] top-[42%] hidden rounded-2xl bg-white px-4 py-3 text-[#14171C] shadow-[0_24px_50px_-22px_rgba(16,24,40,0.4),inset_0_0_0_1px_rgba(15,17,21,0.05)] sm:block" style={{ animationDelay: '0.7s' }}>
                 <p className="flex items-center gap-2 text-[12.5px] font-bold"><span className="grid h-5 w-5 place-items-center rounded-full bg-[#3F7D5C] text-[10px] text-white">✓</span>3개 매체 송고 완료</p>
               </div>
             </div>
@@ -338,7 +319,7 @@ export default function ProductHome() {
 
         {/* ─── 숫자 띠 ─── */}
         <section className="relative z-10 -mt-24 px-4 sm:px-6">
-          <div className="mx-auto grid max-w-[1100px] grid-cols-2 overflow-hidden rounded-lg bg-white shadow-[0_24px_50px_-28px_rgba(15,17,21,0.45)] ring-1 ring-black/5 md:grid-cols-4">
+          <div className="pn-shell mx-auto max-w-[1100px]"><div className="pn-core grid grid-cols-2 overflow-hidden md:grid-cols-4">
             {[
               { n: 15, s: '곳', label: '보도자료 출처 자동 연결', color: '#0F1115' },
               { n: 30, s: '분', label: '마다 새 보도자료 수집', color: '#0F1115' },
@@ -346,11 +327,11 @@ export default function ProductHome() {
               { n: 1, s: '개', label: '계정으로 여러 매체 운영', color: '#0F1115' },
             ].map((x, i) => (
               <div key={x.label} className={`px-6 py-7 text-center ${i % 2 ? '' : 'border-r'} border-[#EEF0F3] md:border-r md:last:border-r-0 ${i < 2 ? 'border-b md:border-b-0' : ''}`}>
-                <p className="text-[38px] font-black tracking-[-0.03em] sm:text-[46px]" style={{ color: x.color }}><CountUp to={x.n} suffix={x.s} /></p>
+                <p className="text-[38px] font-black tracking-[-0.045em] sm:text-[50px]" style={{ color: x.color }}><CountUp to={x.n} suffix={x.s} /></p>
                 <p className="mt-1 text-[13.5px] font-medium text-[#5B616B]">{x.label}</p>
               </div>
             ))}
-          </div>
+          </div></div>
         </section>
 
         {/* ─── 흐르는 기능 띠 ─── */}
@@ -364,7 +345,7 @@ export default function ProductHome() {
 
         {/* ─── 함께 송고 ─── */}
         <section id="multi" className="relative isolate scroll-mt-16 overflow-hidden bg-white text-[#0F1115]">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-2">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-2">
             <Reveal>
               <Eyebrow icon="share" color="#1D3461">여러 매체 함께 송고</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>매체가 몇 개든,<br />로그인은 한 번.</h2>
@@ -381,7 +362,7 @@ export default function ProductHome() {
 
         {/* ─── 그룹·권한 ─── */}
         <section id="team" className="scroll-mt-16 bg-[#F7F8FA]">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[0.95fr_1.05fr]">
             <Reveal>
               <Eyebrow icon="users" color="#16294D">그룹 · 권한</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>발행인·편집장·기자,<br />매체마다 다른 직급까지.</h2>
@@ -399,7 +380,7 @@ export default function ProductHome() {
 
         {/* ─── AI 초안 ─── */}
         <section id="ai" className="relative isolate scroll-mt-16 overflow-hidden bg-white text-[#0F1115]">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[1.05fr_0.95fr]">
             <Reveal className="order-2 lg:order-1"><ProofDemo /></Reveal>
             <Reveal delay={150} className="order-1 lg:order-2">
               <Eyebrow icon="spark" color="#1D3461">AI 기사 초안</Eyebrow>
@@ -422,7 +403,7 @@ export default function ProductHome() {
         <div className="pt-16"><TrialStrip beta={beta} /></div>
 
         <section id="press" className="scroll-mt-16">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[0.9fr_1.1fr]">
             <Reveal>
               <Eyebrow icon="inbox" color="#16294D">보도자료함</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>보도자료를 찾으러 다니지 마세요.<br />메일함까지 알아서 모입니다.</h2>
@@ -441,7 +422,7 @@ export default function ProductHome() {
 
         {/* ─── 홈 편집판 + 승인 ─── */}
         <section className="bg-[#F7F8FA]">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[1.1fr_0.9fr]">
             <Reveal className="order-2 lg:order-1"><HomeBoardMock /></Reveal>
             <Reveal delay={150} className="order-1 lg:order-2">
               <Eyebrow icon="layout" color="#16294D">홈 편집판 · 승인 흐름</Eyebrow>
@@ -458,7 +439,7 @@ export default function ProductHome() {
 
         {/* ─── 고객센터 ─── */}
         <section id="support" className="scroll-mt-16">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[0.9fr_1.1fr]">
             <Reveal>
               <Eyebrow icon="headset" color="#16294D">고객센터 내장</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>요청·공지·청구서까지<br />편집국 화면 안에서.</h2>
@@ -479,7 +460,7 @@ export default function ProductHome() {
 
         {/* ─── 검색 등록 대행 ─── */}
         <section id="search" className="scroll-mt-16 bg-[#F7F8FA]">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[1.1fr_0.9fr]">
             <Reveal className="order-2 lg:order-1"><SearchMock /></Reveal>
             <Reveal delay={150} className="order-1 lg:order-2">
               <Eyebrow icon="search" color="#16294D">검색 등록 대행</Eyebrow>
@@ -502,7 +483,7 @@ export default function ProductHome() {
 
         {/* ─── 뉴스레터 ─── */}
         <section id="newsletter" className="scroll-mt-16">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[0.9fr_1.1fr]">
             <Reveal>
               <Eyebrow icon="mail" color="#16294D">뉴스레터</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>독자를 다시 불러오는<br />뉴스레터, 편집국에서 바로.</h2>
@@ -524,7 +505,7 @@ export default function ProductHome() {
 
         {/* ─── 전문지 맞춤 ─── */}
         <section id="vertical" className="scroll-mt-16">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[1.1fr_0.9fr]">
             <Reveal delay={150} className="order-2 lg:order-1">
               <div className="mx-auto grid max-w-[560px] items-start gap-5 sm:grid-cols-[1fr_260px]">
                 <div className="rounded-2xl bg-[#0B4D3B] p-6 text-white shadow-[0_30px_70px_-30px_rgba(11,77,59,0.8)]">
@@ -560,7 +541,7 @@ export default function ProductHome() {
 
         {/* ─── 완성 화면 ─── */}
         <section id="showcase" className="relative isolate scroll-mt-16 overflow-hidden bg-[#F7F8FA] text-[#0F1115]">
-          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 lg:py-32">
             <Reveal className="text-center">
               <p className="text-[13px] font-semibold tracking-[0.06em] text-[#1D3461]">완성 화면</p>
               <h2 className={`mt-3 ${H2}`}>이런 신문이 만들어집니다</h2>
@@ -592,7 +573,7 @@ export default function ProductHome() {
 
         {/* ─── 작업 순서 ─── */}
         <section>
-          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 lg:py-32">
             <Reveal className="text-center">
               <h2 className={H2}>보도자료 한 건이 기사가 되는 길</h2>
               <p className="mx-auto mt-4 max-w-[36em] text-[17px] leading-[1.8] text-[#3B4048]">옮겨 적기, 홍보 문구 걷어내기, 사진 정리는 {PRODUCT.name}이. 판단과 확인은 사람이.</p>
@@ -613,18 +594,18 @@ export default function ProductHome() {
 
         {/* ─── 기능 모음 ─── */}
         <section className="bg-[#F7F8FA]">
-          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 lg:py-32">
             <Reveal className="text-center"><h2 className={H2}>편집국에 필요한 것은 다 있습니다</h2></Reveal>
-            <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {FEATURES.map((f, i) => (
                 <Reveal key={f.title} delay={(i % 4) * 80}>
-                  <div className="group h-full rounded-lg bg-white p-6 ring-1 ring-[#E3E7EE] transition hover:ring-[#1D3461]/40">
-                    <span className="grid h-11 w-11 place-items-center rounded-md border border-[#E3E7EE] text-[#0F1115] transition group-hover:border-[#1D3461] group-hover:text-[#16294D]">
+                  <div className="pn-shell pn-lift group h-full"><div className="pn-core h-full p-6">
+                    <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#1D3461]/[0.06] text-[#16294D] transition-colors duration-500 group-hover:bg-[#1D3461] group-hover:text-white">
                       <Glyph name={f.icon} className="h-[22px] w-[22px]" />
                     </span>
                     <p className="mt-5 text-[17px] font-bold">{f.title}</p>
                     <p className="mt-1.5 text-[14px] leading-relaxed text-[#5B616B]">{f.body}</p>
-                  </div>
+                  </div></div>
                 </Reveal>
               ))}
             </div>
@@ -633,7 +614,7 @@ export default function ProductHome() {
 
         {/* ─── 저희가 먼저 씁니다 ─── */}
         <section>
-          <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 py-24 sm:px-6 md:grid-cols-[1fr_1.2fr]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 py-24 sm:px-6 lg:py-32 md:grid-cols-[1fr_1.2fr]">
             <Reveal>
               <Eyebrow icon="cloud" color="#16294D">직접 운영하며 만듭니다</Eyebrow>
               <h2 className={`mt-5 ${H2}`}>저희 매체가<br />먼저 씁니다.</h2>
@@ -649,7 +630,7 @@ export default function ProductHome() {
 
         {/* ─── 보안 ─── */}
         <section id="security" className="relative isolate scroll-mt-16 overflow-hidden bg-[#121F3A] text-white">
-          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 lg:py-32">
             <div className="grid items-center gap-14 lg:grid-cols-[1fr_1fr]">
               <Reveal>
                 <Eyebrow icon="lock" color="#A9BDE6">보안</Eyebrow>
@@ -670,7 +651,7 @@ export default function ProductHome() {
               </Reveal>
               <Reveal delay={150}>
                 {/* 접근 규칙이 실제로 하는 일 */}
-                <div className="rounded-xl bg-white/[0.04] p-5 ring-1 ring-white/10 sm:p-6">
+                <div className="pn-shell-dark"><div className="pn-core-dark p-5 sm:p-6">
                   <p className="text-[12.5px] font-semibold tracking-[0.06em] text-[#8FA3C7]">실제로 막히는 모습</p>
                   <ul className="mt-4 divide-y divide-white/10">
                     {[
@@ -694,7 +675,7 @@ export default function ProductHome() {
                     ))}
                   </ul>
                   <p className="mt-3 text-[12.5px] leading-relaxed text-[#8FA3C7]">화면을 거치지 않고 직접 요청해도 같은 결과입니다. 기능을 바꿀 때마다 이런 경우를 하나씩 시험합니다.</p>
-                </div>
+                </div></div>
               </Reveal>
             </div>
 
@@ -769,14 +750,14 @@ export default function ProductHome() {
             <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {SECURITY.map((f, i) => (
                 <Reveal key={f.title} delay={(i % 4) * 80}>
-                  <div className="h-full rounded-lg bg-white/[0.04] p-6 ring-1 ring-white/10">
+                  <div className="pn-shell-dark pn-lift h-full"><div className="pn-core-dark h-full p-6">
                     <p className="flex items-center gap-2.5 text-[14px] text-[#8FA3C7]">
                       <Glyph name={f.icon} className="h-[18px] w-[18px] shrink-0 text-[#A9BDE6]" />
                       “{f.worry}”
                     </p>
                     <p className="mt-4 text-[18px] font-bold leading-snug">{f.title}</p>
                     <p className="mt-2 text-[14.5px] leading-relaxed text-[#C5CFE0]">{f.body}</p>
-                  </div>
+                  </div></div>
                 </Reveal>
               ))}
             </div>
@@ -789,7 +770,7 @@ export default function ProductHome() {
 
         {/* ─── 요금 ─── */}
         <section id="pricing" className="scroll-mt-16 bg-[#F7F8FA]">
-          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 lg:py-32">
             <Reveal className="text-center">
               <h2 className={H2}>필요한 건 기본으로, 요금은 가볍게</h2>
               <p className="mx-auto mt-4 max-w-[36em] text-[17px] leading-[1.8] text-[#3B4048]">기자 수는 제한하지 않습니다. AI 사용 횟수(초안·법적 검수)와 용량에 맞춰 고르세요.</p>
@@ -801,7 +782,7 @@ export default function ProductHome() {
         {/* ─── 베타 기간: 1주일 무료 → 10월 31일까지 신청하면 첫 3개월 반값 → 4개월째부터 정상가 ─── */}
         {beta && (
           <section id="beta" className="scroll-mt-16 px-4 sm:px-6">
-            <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-xl bg-[#EFF2F7] ring-1 ring-[#DADFE8] px-6 py-16 text-[#0F1115] sm:px-14">
+            <Reveal className="relative isolate mx-auto max-w-[1200px] overflow-hidden rounded-[2rem] bg-[#EFF2F7] px-6 py-16 text-[#0F1115] shadow-[inset_0_0_0_1px_rgba(29,52,97,0.08)] sm:px-14 sm:py-20">
               <div className="flex flex-wrap items-end justify-between gap-6">
                 <div>
                   <p className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-[0.06em] text-[#C2410C]"><span className="rounded bg-[#E8590C] px-1.5 py-0.5 text-[11.5px] tracking-normal text-white">D-{daysLeft}</span>출시 기념 베타 · {BETA_END_LABEL} 마감</p>
@@ -809,8 +790,8 @@ export default function ProductHome() {
                   <p className="mt-4 max-w-[34em] text-[16px] leading-[1.75] text-[#5B616B]">정식 출시 전 베타 기간입니다. {BETA_END_LABEL}까지 가입한 신문사는 {BETA_PERIOD_LABEL} 이용료가 반값이고, {REGULAR_AFTER_LABEL} 정상가로 바뀝니다.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <TrialButton className="rounded-md bg-[#1D3461] px-7 py-4 text-[16px] font-bold text-white transition hover:bg-[#152748]" />
-                  <a href="#apply" className="rounded-md border border-[#DADFE8] bg-white px-7 py-4 text-[16px] font-semibold text-[#16294D] transition hover:bg-[#EFF2F7]">서비스 신청</a>
+                  <Pill href={appLink('/trial')}>1주일 무료 체험 시작</Pill>
+                  <Pill href="#apply" tone="light">서비스 신청</Pill>
                 </div>
               </div>
               <ol className="mt-14 grid gap-8 md:grid-cols-3 md:gap-6">
@@ -832,7 +813,7 @@ export default function ProductHome() {
 
         {/* ─── 자주 묻는 질문 ─── */}
         <section id="faq" className="scroll-mt-16">
-          <div className="mx-auto max-w-[860px] px-4 py-24 sm:px-6">
+          <div className="mx-auto max-w-[860px] px-4 py-24 sm:px-6 lg:py-32">
             <Reveal className="text-center"><h2 className={H2}>자주 묻는 질문</h2></Reveal>
             <div className="mt-10 border-t border-[#E3E7EE]">
               {FAQ_ALL.map((f) => (
@@ -850,7 +831,7 @@ export default function ProductHome() {
 
         {/* ─── 신청 ─── */}
         <section id="apply" className="relative isolate scroll-mt-16 overflow-hidden bg-[#F7F8FA] text-[#0F1115]">
-          <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-24 sm:px-6 md:grid-cols-[0.8fr_1.2fr]">
+          <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-24 sm:px-6 lg:py-32 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <h2 className={H2}>서비스 신청</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-[#5B616B]">
@@ -865,7 +846,7 @@ export default function ProductHome() {
               <div className="mt-10 border-t border-[#DADFE8] pt-6">
                 <p className="text-[15px] font-bold">아직 고민 중이라면</p>
                 <p className="mt-1 text-[14px] text-[#5B616B]">카드 등록 없이 1주일 동안 모든 기능을 먼저 써 보세요.</p>
-                <TrialButton className="mt-4 inline-block rounded-md bg-[#1D3461] px-5 py-3 text-[15px] font-bold text-white hover:bg-[#152748]" />
+                <Pill href={appLink('/trial')} size="md" className="mt-4">1주일 무료 체험 시작</Pill>
               </div>
             </div>
             <div className="text-[#14171C]"><ApplyForm /></div>
@@ -874,10 +855,10 @@ export default function ProductHome() {
       </main>
 
       {/* 휴대폰: 화면 아래 고정 버튼 */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#DADFE8] bg-white/95 px-4 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-md sm:hidden">
-        <TrialButton className="block rounded-md bg-[#1D3461] py-3.5 text-center text-[15.5px] font-bold text-white">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(10px+env(safe-area-inset-bottom))] sm:hidden">
+        <Pill href={appLink('/trial')} className="pointer-events-auto w-full !text-[15.5px] shadow-[0_18px_40px_-14px_rgba(29,52,97,0.8)]">
           {beta ? `1주일 무료 체험 · ${BETA_PERIOD_LABEL} 반값` : '1주일 무료 체험 시작'}
-        </TrialButton>
+        </Pill>
       </div>
 
       <footer className="border-t border-[#DADFE8] bg-[#F7F8FA] pb-20 text-[#5B616B] sm:pb-0">
