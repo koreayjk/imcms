@@ -105,6 +105,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
+  // imnewsroom.com/tax: 이용료 비용 처리 안내 (영업 중 "세금계산서 되나요?"에 드리는 링크)
+  if (request.nextUrl.pathname === '/tax' && isProductHost(request.headers.get('host'))) {
+    const url = request.nextUrl.clone()
+    url.pathname = `${PRODUCT.path}/tax`
+    return NextResponse.rewrite(url)
+  }
+
   // GDPA 도메인으로 들어오면 /gdpa 아래 화면을 보여준다 (로그인 확인·결제 콜백 등 /api·/auth 는 그대로)
   let rewriteTo: URL | null = null
   {

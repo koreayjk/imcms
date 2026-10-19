@@ -208,7 +208,7 @@ export default function StartGuidePage() {
               </Reveal>
               <Reveal delay={100}>
                 <div className="pn-shell h-full"><div className="pn-core h-full p-7">
-                  <p className="text-[13px] font-bold tracking-[0.04em] text-[#1D3461]">{PRODUCT.name}가</p>
+                  <p className="text-[13px] font-bold tracking-[0.04em] text-[#1D3461]">{PRODUCT.name}이</p>
                   <ul className="mt-4 space-y-3 text-[15.5px] leading-relaxed text-[#3B4048]">
                     {['홈페이지 개설과 법정 표시 정보, 정책 페이지', '기사 작성·승인·발행 편집국', '보도자료 자동 수집과 AI 기사 초안·법적 검수', '구글·네이버 검색 등록과 사이트맵·RSS', '뉴스레터, 광고 배너, 다른 업체에서 옮기기'].map((x) => <li key={x} className="flex gap-3"><span className="font-bold text-[#16294D]" aria-hidden>✓</span>{x}</li>)}
                   </ul>

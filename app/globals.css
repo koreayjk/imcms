@@ -153,6 +153,8 @@ body {
 @keyframes pn-dash { to { stroke-dashoffset: -28; } }
 .pn-marquee { animation: pn-marquee 40s linear infinite; }
 @keyframes pn-marquee { to { transform: translateX(-50%); } }
+/* 인쇄·PDF: 아직 화면에 안 나온 구역도 보이게 */
+@media print { .pn-reveal { opacity: 1 !important; transform: none !important; filter: none !important; } }
 @media (prefers-reduced-motion: reduce) {
   .pn-reveal { opacity: 1; transform: none; filter: none; transition: none; }
   .pn-press:active, .pn-lift:hover { transform: none; }
