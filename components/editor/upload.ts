@@ -101,11 +101,16 @@ function storageHost() {
   return base.replace(/^(https:\/\/[a-z0-9]+)\.supabase\.co$/, '$1.storage.supabase.co')
 }
 
-function videoError(message: string) {
+function videoError(message: string, size = 0) {
   if (/bucket not found/i.test(message)) return '영상 저장소가 아직 준비되지 않았습니다. 운영팀이 설정을 마쳐야 합니다.'
-  if (/exceeded|too large|413|maximum allowed size/i.test(message)) return '영상이 허용 용량을 넘습니다. 1GB 이하로 줄여 올려 주세요.'
+  if (/exceeded|too large|payload too large|maximum allowed size|response code: 413/i.test(message)) {
+    // 우리 한도(1GB)보다 작은데 막히면 Supabase 프로젝트 전체 한도가 낮은 것이다
+    return size && size < VIDEO_MAX_BYTES
+      ? `저장소의 업로드 한도가 이 영상(${Math.round(size / 1024 / 1024)}MB)보다 작게 설정되어 있습니다. 운영팀이 Supabase Storage 설정의 "Upload file size limit"을 1GB 이상으로 올려야 합니다.`
+      : '영상이 허용 용량을 넘습니다. 1GB 이하로 줄여 올려 주세요.'
+  }
   if (/row-level security|unauthori|403|401/i.test(message)) return '영상을 올릴 권한이 없습니다. 다시 로그인해 보시고, 계속되면 운영팀에 알려 주세요.'
-  return `영상 업로드 실패: ${message}`
+  return `영상 업로드 실패: ${message.slice(0, 200)}`
 }
 
 export type UploadedVideo = { url: string; poster: string | null; bytes: number }
@@ -126,7 +131,7 @@ export async function uploadVideo(file: File, outletId: string | null, onProgres
   if (file.size <= 6 * 1024 * 1024) {
     onProgress(10)
     const { error } = await supabase.storage.from('videos').upload(path, file, { contentType: kind.type, cacheControl: '31536000' })
-    if (error) throw new Error(videoError(error.message))
+    if (error) throw new Error(videoError(error.message, file.size))
   } else {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) throw new Error('로그인이 끝났습니다. 다시 로그인해 주세요.')
@@ -141,7 +146,7 @@ export async function uploadVideo(file: File, outletId: string | null, onProgres
         removeFingerprintOnSuccess: true,
         metadata: { bucketName: 'videos', objectName: path, contentType: kind.type, cacheControl: '31536000' },
         chunkSize: 6 * 1024 * 1024,
-        onError: (err) => reject(new Error(videoError(String(err?.message ?? err)))),
+        onError: (err) => reject(new Error(videoError(String(err?.message ?? err), file.size))),
         onProgress: (sent, total) => onProgress(Math.min(99, Math.round((sent / total) * 100))),
         onSuccess: () => resolve(),
       })
