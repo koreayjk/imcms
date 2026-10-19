@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { formatBytes, storageLimitBytes } from '@/lib/storage-quota'
+import { storagePath } from '@/lib/data-export'
 import { ImageIcon, VideoIcon } from '@/components/cms/icons'
 import { uploadImage, uploadVideo, VIDEO_ACCEPT, VIDEO_MAX_BYTES, type UploadedVideo, type WatermarkPref } from './upload'
 
@@ -18,17 +19,22 @@ type Props = {
   onInsertYoutube: (url: string) => boolean
   // 직접 올린 영상: 올리기가 끝나면 본문 커서 자리에 넣는다
   onInsertVideo: (v: UploadedVideo) => void
+  // 지금 본문에 쓰인 사진 주소 (본문에 있는 사진은 목록에서 지울 수 없다)
+  usedInBody: string[]
   watermark: WatermarkPref
   setWatermark: (v: WatermarkPref) => void
 }
 
-export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, onInsertImage, onSetThumbnail, onInsertYoutube, onInsertVideo, watermark, setWatermark }: Props) {
+export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, onInsertImage, onSetThumbnail, onInsertYoutube, onInsertVideo, usedInBody, watermark, setWatermark }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState(0)
   const [error, setError] = useState('')
   const [youtube, setYoutube] = useState('')
   const videoRef = useRef<HTMLInputElement>(null)
+  // 이 창에서 올린 사진 / 본문에 넣어 본 사진: 올리기만 하고 한 번도 안 쓴 사진은 저장소 파일까지 지운다
+  const uploadedHere = useRef(new Set<string>())
+  const insertedHere = useRef(new Set<string>())
   const [videoPct, setVideoPct] = useState<number | null>(null)
   // 저장 용량(사진+영상) 사용량: 요금제 한도와 비교한다. 집계 SQL이 아직 없으면 숨긴다
   const [usage, setUsage] = useState<{ used: number; videos: number; limit: number | null } | null>(null)
@@ -73,6 +79,7 @@ export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, 
     for (const file of list) {
       try {
         const url = await uploadImage(file, outletId, watermark.on ? watermark.text : null)
+        uploadedHere.current.add(url)
         setImages((prev) => [...prev, { url, caption: '' }])
         if (!thumbnailUrl) onSetThumbnail(url)
       } catch (e) {
@@ -80,6 +87,19 @@ export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, 
       } finally {
         setUploading((n) => n - 1)
       }
+    }
+  }
+
+  async function removePhoto(img: LibraryImage) {
+    setError('')
+    if (usedInBody.includes(img.url)) { setError('본문에 쓰인 사진입니다. 본문에서 사진을 먼저 지워 주세요.'); return }
+    const fileToo = uploadedHere.current.has(img.url) && !insertedHere.current.has(img.url)
+    if (!window.confirm(fileToo ? '이 사진을 지울까요? 올린 파일도 함께 삭제됩니다.' : '이 사진을 목록에서 뺄까요? (이미 저장된 기사나 수정 이력에서 쓰는 사진 파일은 그대로 둡니다)')) return
+    setImages((prev) => prev.filter((p) => p.url !== img.url))
+    if (thumbnailUrl === img.url) onSetThumbnail('')
+    if (fileToo) {
+      const path = storagePath(img.url)
+      if (path) { await createClient().storage.from('media').remove([path]); refreshUsage() }
     }
   }
 
@@ -144,7 +164,7 @@ export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, 
                   className="mt-2 w-full rounded border border-line px-2 py-1.5 text-[12.5px] outline-none focus:border-ink"
                 />
                 <div className="mt-2 flex gap-1.5">
-                  <button type="button" onClick={() => onInsertImage(img)} className="flex-1 rounded bg-ink py-1.5 text-[12px] font-semibold text-white hover:opacity-90">
+                  <button type="button" onClick={() => { insertedHere.current.add(img.url); onInsertImage(img) }} className="flex-1 rounded bg-ink py-1.5 text-[12px] font-semibold text-white hover:opacity-90">
                     본문에 넣기
                   </button>
                   <button
@@ -154,6 +174,9 @@ export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, 
                     className="flex-1 rounded border border-line py-1.5 text-[12px] hover:bg-line/50 disabled:opacity-40"
                   >
                     대표로 지정
+                  </button>
+                  <button type="button" onClick={() => removePhoto(img)} aria-label="이 사진 지우기" className="rounded border border-danger/40 px-3 py-1.5 text-[12px] text-danger hover:bg-danger/5">
+                    삭제
                   </button>
                 </div>
               </li>

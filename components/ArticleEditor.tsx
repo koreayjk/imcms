@@ -715,6 +715,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             onSetThumbnail={setThumbnailUrl}
             onInsertYoutube={insertYoutube}
             onInsertVideo={insertVideo}
+            usedInBody={imagesIn(html)}
             watermark={watermark}
             setWatermark={setWatermark}
           />
