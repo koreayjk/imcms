@@ -154,7 +154,15 @@ body {
 .pn-marquee { animation: pn-marquee 40s linear infinite; }
 @keyframes pn-marquee { to { transform: translateX(-50%); } }
 /* 인쇄·PDF: 아직 화면에 안 나온 구역도 보이게 */
-@media print { .pn-reveal { opacity: 1 !important; transform: none !important; filter: none !important; } }
+@media print {
+  .pn-reveal { opacity: 1 !important; transform: none !important; filter: none !important; }
+  html, body { background: #fff !important; }
+  /* 종이·PDF에서는 번지는 그림자와 옅은 판이 회색 덩어리로 겹쳐 보인다: 가는 선만 남긴다 */
+  .pn-shell, .pn-shell-dark { background: transparent !important; box-shadow: none !important; padding: 0 !important; border: 1px solid #C9D0DB; border-radius: 1rem; }
+  .pn-core { box-shadow: none !important; border-radius: 1rem; }
+  .pn-core-dark { box-shadow: none !important; }
+  .pn-lift { transition: none !important; }
+}
 @media (prefers-reduced-motion: reduce) {
   .pn-reveal { opacity: 1; transform: none; filter: none; transition: none; }
   .pn-press:active, .pn-lift:hover { transform: none; }
