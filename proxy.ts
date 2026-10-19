@@ -17,6 +17,8 @@ function isPublicPath(pathname: string) {
     // 기사 미리보기 링크: 서버가 만든 서명이 맞을 때만 보인다
     pathname.startsWith('/p/') ||
     pathname.startsWith('/news/') ||
+    // 팡고링고에서 옮겨 온 매체의 옛 주소(/ko-kr/articles/번호)를 새 기사로 넘긴다
+    pathname === '/ko-kr' || pathname.startsWith('/ko-kr/') ||
     pathname.startsWith('/section/') ||
     pathname === '/search' ||
     pathname.startsWith('/login') ||
