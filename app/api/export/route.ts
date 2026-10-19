@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { Zip, ZipPassThrough } from 'fflate'
 import { getCmsContext } from '@/lib/cms'
+import { bodyVideos } from '@/lib/storage-quota'
 import { EXPORT_FORMAT, EXPORT_VERSION, bodyImages, csvCell, storagePath, type ExportArticle } from '@/lib/data-export'
 
 // 자료 내보내기: 발행인(우리 그룹 매체)·총관리자가 기사 전체(JSON·CSV)와 사진(ZIP)을 내려받는다
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
           byline: a.byline ?? null, status: a.status, published_at: a.published_at ?? null, updated_at: a.updated_at ?? null,
           tags: a.tags ?? [], thumbnail_url: a.thumbnail_url ?? null, view_count: a.view_count ?? 0,
           images: bodyImages(a.body),
+          videos: bodyVideos(a.body),
         }
       }
       if ((data ?? []).length < PAGE) return
@@ -72,7 +74,7 @@ export async function GET(request: NextRequest) {
           const head = {
             format: EXPORT_FORMAT, version: EXPORT_VERSION, exported_at: new Date().toISOString(),
             outlet: { id: outlet.id, name: outlet.name, domain: outlet.domain },
-            note: '기사 본문(body)은 HTML입니다. 사진은 사진 ZIP 파일에 저장소 경로 그대로 들어 있고, 본문·대표 사진 주소의 /media/ 뒤 경로와 같습니다.',
+            note: '기사 본문(body)은 HTML입니다. 사진은 사진 ZIP 파일에 저장소 경로 그대로 들어 있고, 본문·대표 사진 주소의 /media/ 뒤 경로와 같습니다. 영상은 용량이 커서 ZIP에 넣지 않았고, 기사별 videos 칸의 주소로 내려받을 수 있습니다.',
             sections: ((cats ?? []) as Row[]).map((c) => ({ slug: c.slug, name: c.name, parent_slug: c.parent_slug ?? null, sort_order: c.sort_order })),
           }
           ctrl.enqueue(enc.encode(JSON.stringify(head, null, 1).replace(/\n}$/, ',\n "articles": [\n')))

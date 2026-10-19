@@ -11,7 +11,7 @@ import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@
 import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
 import PhotoSuggest from './editor/PhotoSuggest'
-import { loadWatermark, saveWatermark, uploadImage, type WatermarkPref } from './editor/upload'
+import { loadWatermark, saveWatermark, uploadImage, type UploadedVideo, type WatermarkPref } from './editor/upload'
 import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
 import PendingButton from './cms/PendingButton'
@@ -441,6 +441,15 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     ]).run()
   }
 
+  // 직접 올린 영상: 본문 커서 자리에 넣고, 첫 장면 이미지는 사진 목록에 두어 대표 사진으로 쓸 수 있게 한다
+  function insertVideo(v: UploadedVideo) {
+    editorRef.current?.chain().focus().insertContent([{ type: 'video', attrs: { src: v.url, poster: v.poster } }, { type: 'paragraph' }]).run()
+    if (v.poster) {
+      setImages((prev) => (prev.some((p) => p.url === v.poster) ? prev : [...prev, { url: v.poster!, caption: '' }]))
+      if (!thumbnailUrl) setThumbnailUrl(v.poster)
+    }
+  }
+
   function insertYoutube(url: string) {
     return editorRef.current?.chain().focus().setYoutubeVideo({ src: url }).run() ?? false
   }
@@ -705,6 +714,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             onInsertImage={insertImage}
             onSetThumbnail={setThumbnailUrl}
             onInsertYoutube={insertYoutube}
+            onInsertVideo={insertVideo}
             watermark={watermark}
             setWatermark={setWatermark}
           />

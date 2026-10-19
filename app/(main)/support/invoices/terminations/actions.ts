@@ -51,8 +51,18 @@ export async function purgeOutlet(id: string, form: FormData) {
     if (error) back('error', `사진 파일을 지우다 멈췄습니다 (${removed}개 지움). 다시 눌러 이어서 지워 주세요: ${error.message}`)
     removed += gone?.length ?? 0
   }
+  // 영상: 같은 방식으로 (video-storage.sql 전이면 목록 함수가 없으므로 건너뛴다)
+  const { data: vids, error: vErr } = await supabase.rpc('admin_outlet_videos', { o: id })
+  if (!vErr) {
+    const vnames = ((vids ?? []) as unknown[]).map((f) => (typeof f === 'string' ? f : String(Object.values(f as object)[0] ?? ''))).filter(Boolean)
+    for (let i = 0; i < vnames.length; i += 100) {
+      const { data: gone, error } = await supabase.storage.from('videos').remove(vnames.slice(i, i + 100))
+      if (error) back('error', `영상 파일을 지우다 멈췄습니다 (${removed}개 지움). 다시 눌러 이어서 지워 주세요: ${error.message}`)
+      removed += gone?.length ?? 0
+    }
+  }
   const { error } = await supabase.rpc('admin_purge_outlet', { o: id, p_files: removed })
   if (error) back('error', needSql(error.message))
   revalidatePath('/', 'layout')
-  back('ok', `${o!.name} 자료를 지웠습니다 (사진 ${removed}개). 청구서·결제 기록은 5년 동안 남겨 둡니다.`)
+  back('ok', `${o!.name} 자료를 지웠습니다 (사진·영상 ${removed}개). 청구서·결제 기록은 5년 동안 남겨 둡니다.`)
 }

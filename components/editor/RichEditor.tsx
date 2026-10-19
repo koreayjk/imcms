@@ -19,7 +19,7 @@ import Superscript from '@tiptap/extension-superscript'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Fragment, Slice } from '@tiptap/pm/model'
 import type { EditorView } from '@tiptap/pm/view'
-import { FontSize, ResizableImage } from './extensions'
+import { FontSize, ResizableImage, VideoNode } from './extensions'
 
 // 워드·한글·웹에서 복사한 글을 서식(글꼴·굵기·색·크기 등) 없이 글자만 넣는다. 줄바꿈은 문단으로 살린다
 function pastePlainText(view: EditorView, text: string) {
@@ -103,6 +103,7 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
       Subscript,
       Superscript,
       ResizableImage,
+      VideoNode,
       Link.configure({ openOnClick: false, autolink: true }),
       Youtube.configure({ nocookie: true, width: 640, height: 360 }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),

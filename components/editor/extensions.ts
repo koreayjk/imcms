@@ -1,4 +1,4 @@
-import { Extension } from '@tiptap/core'
+import { Extension, Node, mergeAttributes } from '@tiptap/core'
 import Image from '@tiptap/extension-image'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import ImageView from './ImageView'
@@ -66,3 +66,21 @@ export const ResizableImage = Image.extend({
     return ReactNodeViewRenderer(ImageView)
   },
 }).configure({ inline: false })
+
+// 직접 올린 영상: <video src poster controls>. 본문에서 사진처럼 한 덩어리로 옮기고 지울 수 있다
+export const VideoNode = Node.create({
+  name: 'video',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  selectable: true,
+  addAttributes() {
+    return { src: { default: null }, poster: { default: null } }
+  },
+  parseHTML() {
+    return [{ tag: 'video[src]' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['video', mergeAttributes(HTMLAttributes, { controls: 'true', preload: 'metadata', playsinline: 'true' })]
+  },
+})

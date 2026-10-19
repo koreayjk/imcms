@@ -20,6 +20,8 @@ export type ExportArticle = {
   thumbnail_url: string | null
   view_count: number
   images: string[]
+  // 본문에 올린 영상 주소 (용량이 커서 사진 ZIP에는 넣지 않는다. 주소로 내려받는다)
+  videos?: string[]
 }
 
 // 본문 속 사진 주소 (중복 없이, 나온 순서대로)
