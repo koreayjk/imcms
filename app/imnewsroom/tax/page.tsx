@@ -51,7 +51,7 @@ export default function TaxGuidePage() {
       <div className="print:hidden">
         <IslandNav
           logo={<span className="flex items-center gap-2"><BrandMark size={34} /><span className="text-[18px] font-extrabold tracking-[-0.02em]">IM 뉴스룸</span></span>}
-          items={[{ href: home, label: '소개' }, { href: '#cases', label: '내 경우는' }, { href: '#docs', label: '받는 서류' }, { href: '#questions', label: '세무사에게 물을 것' }, { href: `${home}#pricing`, label: '요금' }]}
+          items={[{ href: home, label: '소개' }, { href: '#same', label: '같은 방식' }, { href: '#cases', label: '내 경우는' }, { href: '#docs', label: '받는 서류' }, { href: '#questions', label: '세무사에게 물을 것' }, { href: `${home}#pricing`, label: '요금' }]}
           loginHref={appLink('/login')}
           trialHref={appLink('/trial')}
         />
@@ -92,6 +92,32 @@ export default function TaxGuidePage() {
               ))}
             </div>
           </Reveal>
+        </section>
+
+        {/* 같은 방식 */}
+        <section id="same" className="scroll-mt-24">
+          <div className="mx-auto max-w-[860px] px-4 pt-20 print:pt-4 sm:px-6">
+            <Reveal>
+              <h2 className={H2}>이미 쓰고 계신 해외 서비스와 같은 방식입니다</h2>
+              <p className="mt-4 max-w-[40em] text-[16px] leading-[1.85] text-[#3B4048] print:mt-1 print:text-[12px] print:leading-[1.6]">
+                ChatGPT·Claude 같은 AI 서비스, 클라우드, 협업 도구처럼 해외 업체가 공급하는 서비스는 한국 세금계산서 없이 업체의 청구서와 카드 영수증으로 비용 처리하는 것이 일반적입니다. {PRODUCT.name}도 같은 방식입니다.
+              </p>
+            </Reveal>
+            <div className="mt-8 grid gap-5 print:mt-3 print:grid-cols-2 md:grid-cols-2">
+              <Reveal>
+                <div className="pn-shell h-full break-inside-avoid"><div className="pn-core h-full p-6 print:p-3 sm:p-7">
+                  <p className="text-[13px] font-bold tracking-[0.04em] text-[#1D3461]">법인카드로 결제하시면 가장 간단합니다</p>
+                  <p className="mt-3 text-[15px] leading-[1.8] text-[#3B4048] print:mt-1 print:text-[12px] print:leading-[1.6]">카드 결제 전표가 그대로 증빙이 됩니다. 청구서는 편집국 고객센터의 ‘청구서’에서 언제든 PDF로 내려받으실 수 있습니다.</p>
+                </div></div>
+              </Reveal>
+              <Reveal delay={100}>
+                <div className="pn-shell h-full break-inside-avoid"><div className="pn-core h-full p-6 print:p-3 sm:p-7">
+                  <p className="text-[13px] font-bold tracking-[0.04em] text-[#1D3461]">부가세를 처음부터 붙이지 않습니다</p>
+                  <p className="mt-3 text-[15px] leading-[1.8] text-[#3B4048] print:mt-1 print:text-[12px] print:leading-[1.6]">해외 서비스 중에는 한국 부가세를 붙이면서 세금계산서는 주지 않아, 그 부가세를 공제받지 못하는 경우가 있습니다. {PRODUCT.name}은 처음부터 한국 부가세가 없어서 이런 일이 없습니다. 자세한 처리는 세무사에게 확인해 주세요.</p>
+                </div></div>
+              </Reveal>
+            </div>
+          </div>
         </section>
 
         {/* 내 경우 */}
@@ -198,10 +224,11 @@ export default function TaxGuidePage() {
                 <ul className="mt-4 space-y-2.5 text-[15px] leading-relaxed text-[#3B4048]">
                   {[
                     '정부·기관의 지원금이나 보조금으로 결제하실 때: 정산에 세금계산서 같은 증빙을 요구하는 경우가 있습니다. 해당 기관의 증빙 기준을 먼저 확인해 주세요.',
-                    '회사 구매 규정상 세금계산서가 꼭 필요한 경우',
+                    '회사 구매 규정상 세금계산서가 꼭 필요한 경우: 방법을 상담해 드립니다. 이런 이유가 있으면 신청하실 때 미리 알려 주세요.',
                     '거래처 등록에 한국 사업자등록증을 요구하는 경우: 해외 법인이라 한국 사업자등록증은 없고 위 공급자 정보를 드립니다.',
                   ].map((x) => <li key={x} className="flex gap-3"><span className="text-[#E8590C]" aria-hidden>●</span>{x}</li>)}
                 </ul>
+                <p className="mt-5 rounded-xl bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.75] text-[#3B4048] print:mt-2 print:bg-white print:p-0 print:text-[12px]">대부분의 회사는 청구서와 카드 영수증으로 문제없이 처리하십니다. 꼭 필요한 사정이 있을 때만 말씀해 주세요.</p>
               </div></div>
             </Reveal>
           </div>
