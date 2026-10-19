@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase'
 import type { UserRole } from '@/lib/types'
-import { BulbIcon, BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, GlobeIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, UsersIcon, WriteIcon } from './icons'
+import { BulbIcon, BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, GlobeIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, ImageIcon, UsersIcon, WriteIcon } from './icons'
 import LinkPending from './LinkPending'
 
 type Item = { href: string; label: string; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
@@ -16,6 +16,7 @@ const ITEMS: Item[] = [
   { href: '/articles/new', label: '기사쓰기', icon: <WriteIcon />, match: (p) => p === '/articles/new' || p.endsWith('/edit') },
   { href: '/articles', label: '기사목록', icon: <ListIcon />, match: (p) => p === '/articles' || (/^\/articles\/[^/]+$/.test(p) && p !== '/articles/new') },
   { href: '/press', label: '보도자료', icon: <InboxIcon />, match: (p) => p.startsWith('/press') },
+  { href: '/media', label: '저장 파일', icon: <ImageIcon />, match: (p) => p.startsWith('/media') },
   { href: '/admin/home', label: '홈편집', icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'site' },
   { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'site' },
   { href: '/admin/ads', label: '광고', icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'site' },

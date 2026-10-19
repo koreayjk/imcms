@@ -99,7 +99,12 @@ export default function MediaPanel({ outletId, images, setImages, thumbnailUrl, 
     if (thumbnailUrl === img.url) onSetThumbnail('')
     if (fileToo) {
       const path = storagePath(img.url)
-      if (path) { await createClient().storage.from('media').remove([path]); refreshUsage() }
+      if (path) {
+        const { data: gone, error: rmErr } = await createClient().storage.from('media').remove([path])
+        // 저장소가 0건으로 답하면 파일이 남은 것이다 (조회 권한이 없을 때 오류 없이 이렇게 끝난다)
+        if (rmErr || !gone?.length) setError('목록에서는 뺐지만 저장소 파일은 지우지 못했습니다. 저장 파일 화면에서 다시 지워 보세요.')
+        refreshUsage()
+      }
     }
   }
 
