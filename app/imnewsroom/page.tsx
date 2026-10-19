@@ -14,13 +14,14 @@ import Pricing from '@/components/product/Pricing'
 import { LoginHistoryMock, MfaMock } from '@/components/product/SecurityMocks'
 import BrandMark from '@/components/BrandMark'
 import IslandNav from '@/components/product/IslandNav'
+import MoreFeatures from '@/components/product/MoreFeatures'
 import { Pill } from '@/components/product/Pill'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const indexable = PRODUCT.indexable && isProductHost((await headers()).get('host'))
-  const title = `${PRODUCT.name} — 더 스마트하게, 더 저렴하게. 인터넷신문 AI 편집국`
+  const title = `${PRODUCT.name} — 기사 작성부터 발행까지, 법적 검수까지. 인터넷신문 AI 편집국`
   const description = '보도자료 자동 수집, AI 기사 초안, 기자·편집장 승인, 여러 매체 동시 송고까지. 인터넷신문을 위한 AI 편집국 클라우드.'
   return {
     title,
@@ -262,7 +263,7 @@ export default function ProductHome() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: PRODUCT_JSONLD }} />
       <IslandNav
         logo={<Logo />}
-        items={[{ href: '#multi', label: '기능' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: '#faq', label: '자주 묻는 질문' }]}
+        items={[{ href: '#multi', label: '기능' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: `${PRODUCT.path}/start`, label: '창간 가이드' }, { href: '#faq', label: '자주 묻는 질문' }]}
         loginHref={appLink('/login')}
         trialHref={appLink('/trial')}
       />
@@ -277,13 +278,13 @@ export default function ProductHome() {
               <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3.5 py-1.5 text-[12.5px] font-medium tracking-[0.02em] text-[#5B616B] shadow-[inset_0_0_0_1px_rgba(232,89,12,0.18),0_6px_18px_-10px_rgba(232,89,12,0.35)]"><span className="h-1.5 w-1.5 rounded-full bg-[#E8590C]" aria-hidden />
                 {beta ? <><span className="hidden sm:inline">출시 기념 베타 · </span><b className="font-semibold text-[#C2410C]">{BETA_END_LABEL}까지 가입 시 {BETA_PERIOD_LABEL} 반값</b><span className="hidden font-semibold text-[#C2410C] sm:inline"> · D-{daysLeft}</span></> : '지금 가입하면 첫 1주일 무료'}
               </p>
-              <h1 className="mt-7 text-[44px] font-extrabold leading-[1.06] tracking-[-0.05em] sm:text-[64px] xl:text-[76px]">
-                더 스마트하게,
+              <h1 className="mt-7 text-[31px] font-extrabold leading-[1.14] tracking-[-0.05em] sm:text-[44px] xl:text-[48px]">
+                <span className="sm:whitespace-nowrap">기사 작성부터 발행까지,</span>
                 <br />
-                <span className="text-[#1D3461] sm:whitespace-nowrap">더 저렴하게.</span>
+                <span className="text-[#1D3461] sm:whitespace-nowrap">법적 검수까지.</span>
               </h1>
               <p className="mt-7 max-w-[31em] text-[17.5px] leading-[1.75] text-[#5B616B]">
-                보도자료 자동 수집, AI 기사 초안과 법적 검수, 기자·편집장 승인, 여러 매체 동시 송고까지 기본으로 들어 있습니다.
+                보도자료 자동 수집, AI 초안, 기자·편집장 승인, 여러 매체 동시 송고가 기본입니다.
                 인터넷신문 편집국을 <b className="font-semibold text-[#0F1115]">월 11만 원부터</b> 쓰세요.
               </p>
               <div className="mt-10 flex flex-wrap gap-3">
@@ -360,26 +361,8 @@ export default function ProductHome() {
           </div>
         </section>
 
-        {/* ─── 그룹·권한 ─── */}
-        <section id="team" className="scroll-mt-16 bg-[#F7F8FA]">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[0.95fr_1.05fr]">
-            <Reveal>
-              <Eyebrow icon="users" color="#16294D">그룹 · 권한</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>발행인·편집장·기자,<br />매체마다 다른 직급까지.</h2>
-              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">여러 매체를 가진 발행인은 그룹 전체를, 편집장은 자기 매체를, 기자는 자기 기사를 봅니다. 한 사람이 여러 매체에서 일하면 매체마다 직급을 따로 줄 수 있습니다.</p>
-              <ul className="mt-7 space-y-3">
-                <Check>A매체 편집장 · B매체 기자처럼 매체별 직급, 상단바에서 바로 전환</Check>
-                <Check>가입할 때 소속 매체를 고르면 그 매체 발행인이 승인</Check>
-                <Check>다른 그룹(다른 언론사)의 회원·기사는 DB에서부터 차단</Check>
-                <Check>휴대폰에서도 같은 화면 — 현장에서 쓰고, 이동 중에 승인</Check>
-              </ul>
-            </Reveal>
-            <Reveal delay={150}><TeamMock /></Reveal>
-          </div>
-        </section>
-
         {/* ─── AI 초안 ─── */}
-        <section id="ai" className="relative isolate scroll-mt-16 overflow-hidden bg-white text-[#0F1115]">
+        <section id="ai" className="relative isolate scroll-mt-16 overflow-hidden bg-[#F7F8FA] text-[#0F1115]">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[1.05fr_0.95fr]">
             <Reveal className="order-2 lg:order-1"><ProofDemo /></Reveal>
             <Reveal delay={150} className="order-1 lg:order-2">
@@ -420,44 +403,6 @@ export default function ProductHome() {
           </div>
         </section>
 
-        {/* ─── 홈 편집판 + 승인 ─── */}
-        <section className="bg-[#F7F8FA]">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[1.1fr_0.9fr]">
-            <Reveal className="order-2 lg:order-1"><HomeBoardMock /></Reveal>
-            <Reveal delay={150} className="order-1 lg:order-2">
-              <Eyebrow icon="layout" color="#16294D">홈 편집판 · 승인 흐름</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>첫 화면은<br />편집장이 정합니다.</h2>
-              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">헤드라인, 톱, 주요 기사, 추천 자리에 어떤 기사를 둘지 고르고 “반영”을 누르면 끝. 비워 둔 자리는 최신 기사로 채워집니다.</p>
-              <div className="mt-7 rounded-xl border border-[#E4E6EA] bg-white p-5">
-                <p className="text-[13px] font-bold text-[#5B616B]">기자가 쓰고, 편집장이 승인하고</p>
-                <div className="mt-3"><ApprovalFlow /></div>
-                <p className="mt-3 text-[13.5px] text-[#5B616B]">반려할 때는 사유가 기자에게 그대로 전달됩니다.</p>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ─── 고객센터 ─── */}
-        <section id="support" className="scroll-mt-16">
-          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[0.9fr_1.1fr]">
-            <Reveal>
-              <Eyebrow icon="headset" color="#16294D">고객센터 내장</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>요청·공지·청구서까지<br />편집국 화면 안에서.</h2>
-              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">
-                따로 된 회원사 사이트에 다시 로그인할 필요가 없습니다. 기사를 쓰던 화면의 “고객센터” 메뉴에서 바로 요청하고, 답변이 오면 메뉴에 숫자로 알려드립니다.
-              </p>
-              <ul className="mt-7 space-y-3">
-                <Check>업무요청: 유형 선택·파일 첨부, 접수 → 진행 → 완료 단계 확인</Check>
-                <Check>운영팀 공지·업데이트 소식을 뉴스룸 첫 화면에서</Check>
-                <Check>월별 청구서를 국내 카드·카카오페이·네이버페이로 바로 결제, 자동결제 등록</Check>
-                <Check>업무요청은 매체를 맡은 담당 매니저에게 자동 배정</Check>
-                <Check>기자는 본인 요청만, 청구서는 편집장 이상만 보도록 권한 분리</Check>
-              </ul>
-            </Reveal>
-            <Reveal delay={150}><SupportMock /></Reveal>
-          </div>
-        </section>
-
         {/* ─── 검색 등록 대행 ─── */}
         <section id="search" className="scroll-mt-16 bg-[#F7F8FA]">
           <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[1.1fr_0.9fr]">
@@ -478,6 +423,84 @@ export default function ProductHome() {
               </ul>
               <p className="mt-5 text-[13px] leading-relaxed text-[#5B616B]">검색 결과 반영에는 보통 며칠~2주가 걸리며, 노출 순위는 보장되지 않습니다. 네이버 “뉴스” 탭 노출은 언론사의 뉴스 검색제휴 심사가 따로 필요합니다.</p>
             </Reveal>
+          </div>
+        </section>
+
+        {/* ─── 기능 모음 ─── */}
+        <section className="bg-white">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 lg:py-32">
+            <Reveal className="text-center"><h2 className={H2}>편집국에 필요한 것은 다 있습니다</h2></Reveal>
+            <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {FEATURES.map((f, i) => (
+                <Reveal key={f.title} delay={(i % 4) * 80}>
+                  <div className="pn-shell pn-lift group h-full"><div className="pn-core h-full p-6">
+                    <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#1D3461]/[0.06] text-[#16294D] transition-colors duration-500 group-hover:bg-[#1D3461] group-hover:text-white">
+                      <Glyph name={f.icon} className="h-[22px] w-[22px]" />
+                    </span>
+                    <p className="mt-5 text-[17px] font-bold">{f.title}</p>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-[#5B616B]">{f.body}</p>
+                  </div></div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── 자세한 기능 (접어 둠) ─── */}
+        <MoreFeatures count={7}>
+        {/* ─── 그룹·권한 ─── */}
+        <section id="team" className="scroll-mt-16 bg-[#F7F8FA]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[0.95fr_1.05fr]">
+            <Reveal>
+              <Eyebrow icon="users" color="#16294D">그룹 · 권한</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>발행인·편집장·기자,<br />매체마다 다른 직급까지.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">여러 매체를 가진 발행인은 그룹 전체를, 편집장은 자기 매체를, 기자는 자기 기사를 봅니다. 한 사람이 여러 매체에서 일하면 매체마다 직급을 따로 줄 수 있습니다.</p>
+              <ul className="mt-7 space-y-3">
+                <Check>A매체 편집장 · B매체 기자처럼 매체별 직급, 상단바에서 바로 전환</Check>
+                <Check>가입할 때 소속 매체를 고르면 그 매체 발행인이 승인</Check>
+                <Check>다른 그룹(다른 언론사)의 회원·기사는 DB에서부터 차단</Check>
+                <Check>휴대폰에서도 같은 화면 — 현장에서 쓰고, 이동 중에 승인</Check>
+              </ul>
+            </Reveal>
+            <Reveal delay={150}><TeamMock /></Reveal>
+          </div>
+        </section>
+
+        {/* ─── 홈 편집판 + 승인 ─── */}
+        <section className="bg-white">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[1.1fr_0.9fr]">
+            <Reveal className="order-2 lg:order-1"><HomeBoardMock /></Reveal>
+            <Reveal delay={150} className="order-1 lg:order-2">
+              <Eyebrow icon="layout" color="#16294D">홈 편집판 · 승인 흐름</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>첫 화면은<br />편집장이 정합니다.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">헤드라인, 톱, 주요 기사, 추천 자리에 어떤 기사를 둘지 고르고 “반영”을 누르면 끝. 비워 둔 자리는 최신 기사로 채워집니다.</p>
+              <div className="mt-7 rounded-xl border border-[#E4E6EA] bg-white p-5">
+                <p className="text-[13px] font-bold text-[#5B616B]">기자가 쓰고, 편집장이 승인하고</p>
+                <div className="mt-3"><ApprovalFlow /></div>
+                <p className="mt-3 text-[13.5px] text-[#5B616B]">반려할 때는 사유가 기자에게 그대로 전달됩니다.</p>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ─── 고객센터 ─── */}
+        <section id="support" className="scroll-mt-16 bg-[#F7F8FA]">
+          <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 sm:px-6 lg:py-32 lg:grid-cols-[0.9fr_1.1fr]">
+            <Reveal>
+              <Eyebrow icon="headset" color="#16294D">고객센터 내장</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>요청·공지·청구서까지<br />편집국 화면 안에서.</h2>
+              <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">
+                따로 된 회원사 사이트에 다시 로그인할 필요가 없습니다. 기사를 쓰던 화면의 “고객센터” 메뉴에서 바로 요청하고, 답변이 오면 메뉴에 숫자로 알려드립니다.
+              </p>
+              <ul className="mt-7 space-y-3">
+                <Check>업무요청: 유형 선택·파일 첨부, 접수 → 진행 → 완료 단계 확인</Check>
+                <Check>운영팀 공지·업데이트 소식을 뉴스룸 첫 화면에서</Check>
+                <Check>월별 청구서를 국내 카드·카카오페이·네이버페이로 바로 결제, 자동결제 등록</Check>
+                <Check>업무요청은 매체를 맡은 담당 매니저에게 자동 배정</Check>
+                <Check>기자는 본인 요청만, 청구서는 편집장 이상만 보도록 권한 분리</Check>
+              </ul>
+            </Reveal>
+            <Reveal delay={150}><SupportMock /></Reveal>
           </div>
         </section>
 
@@ -592,25 +615,7 @@ export default function ProductHome() {
           </div>
         </section>
 
-        {/* ─── 기능 모음 ─── */}
-        <section className="bg-[#F7F8FA]">
-          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 lg:py-32">
-            <Reveal className="text-center"><h2 className={H2}>편집국에 필요한 것은 다 있습니다</h2></Reveal>
-            <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {FEATURES.map((f, i) => (
-                <Reveal key={f.title} delay={(i % 4) * 80}>
-                  <div className="pn-shell pn-lift group h-full"><div className="pn-core h-full p-6">
-                    <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#1D3461]/[0.06] text-[#16294D] transition-colors duration-500 group-hover:bg-[#1D3461] group-hover:text-white">
-                      <Glyph name={f.icon} className="h-[22px] w-[22px]" />
-                    </span>
-                    <p className="mt-5 text-[17px] font-bold">{f.title}</p>
-                    <p className="mt-1.5 text-[14px] leading-relaxed text-[#5B616B]">{f.body}</p>
-                  </div></div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
+        </MoreFeatures>
 
         {/* ─── 저희가 먼저 씁니다 ─── */}
         <section>
@@ -870,6 +875,7 @@ export default function ProductHome() {
           <div className="flex gap-5">
             <Link href={appLink('/login')} className="hover:text-[#0F1115]">편집국 로그인</Link>
             <a href="#apply" className="hover:text-[#0F1115]">서비스 신청</a>
+            <Link href={`${PRODUCT.path}/start`} className="hover:text-[#0F1115]">창간 가이드</Link>
             <Link href={`${PRODUCT.path}/terms`} className="hover:text-[#0F1115]">이용약관</Link>
             <Link href={`${PRODUCT.path}/privacy`} className="font-semibold text-[#5B616B] hover:text-[#0F1115]">개인정보처리방침</Link>
           </div>
