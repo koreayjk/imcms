@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { mentionsAi } from '@/lib/ai-notice'
 import { getCmsContext } from '@/lib/cms'
 import { foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal, cleanStats } from '@/lib/sites'
+import { parseAiBotMode } from '@/lib/ai-crawlers'
 import { connectDomain } from '@/lib/vercel-domains'
 
 export type SitePayload = {
@@ -53,6 +54,8 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
       accent: HEX.test(s.colors?.accent ?? '') ? s.colors!.accent : undefined,
     },
     indexable: !!s.indexable,
+    // 'allow'는 안 막는 기본값이므로 저장하지 않는다
+    aiBots: parseAiBotMode(s.aiBots) === 'allow' ? undefined : parseAiBotMode(s.aiBots),
     pressKeywords: cut(s.pressKeywords, 2000),
     legal: Object.fromEntries(LEGAL_KEYS.map((k) => [k, cut(s.legal?.[k], k === 'address' ? 200 : 80)])) as SiteLegal,
     homeLayout: s.homeLayout === 'bands' ? 'bands' : 'standard',

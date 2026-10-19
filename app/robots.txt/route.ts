@@ -1,5 +1,6 @@
 import { headers } from 'next/headers'
 import { currentSite, siteBaseUrl } from '@/lib/public-data'
+import { aiBotRobotsLines } from '@/lib/ai-crawlers'
 import { PRODUCT, isAppHost, isProductHost } from '@/lib/product'
 
 export const dynamic = 'force-dynamic'
@@ -28,6 +29,7 @@ export async function GET() {
   const ownHost = site.domains.includes(host)
   const body = site.indexable && !site.preview && ownHost
     ? [
+        ...aiBotRobotsLines(site.aiBots),
         'User-agent: *',
         'Allow: /',
         // 편집국·내부 경로는 수집하지 않는다

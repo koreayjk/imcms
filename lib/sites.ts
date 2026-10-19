@@ -14,6 +14,7 @@ export type SectionConfig = {
 export type HomeBandStyle = 'news' | 'brief' | 'feature' | 'grid' | 'video' | 'shop'
 export type HomeBand = { slug: string; style: HomeBandStyle; title?: string; tagline?: string }
 
+import { parseAiBotMode, type AiBotMode } from '@/lib/ai-crawlers'
 export type LogoMode = 'mark' | 'full' | 'text'
 
 // 홈 오른쪽 '숫자 판' (예: 선교 통계). 숫자는 편집국 홈페이지 설정에서 고친다. 출처를 반드시 함께 적는다
@@ -84,6 +85,8 @@ export type SiteConfig = {
   statsBoard?: StatsBoard
   // AI 활용 표시: 켜면 AI 초안 기사 본문 끝에 문구를 붙인다 (lib/ai-notice.ts)
   aiNotice?: { on: boolean; text?: string }
+  // AI 크롤러: allow(기본, 안 막음) / answer(학습용 수집만 막음) / block(AI 봇 모두) — robots.txt (lib/ai-crawlers.ts)
+  aiBots?: AiBotMode
 }
 
 export type SiteLang = 'ko' | 'en'
@@ -208,6 +211,7 @@ export type OutletSiteSettings = {
   statsBoard?: StatsBoard
   // AI 활용 표시: 켜면 AI 초안 기사 본문 끝에 문구를 붙인다 (lib/ai-notice.ts)
   aiNotice?: { on: boolean; text?: string }
+  aiBots?: AiBotMode
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }
@@ -299,6 +303,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     trial: s.trial === true,
     lang: s.lang === 'en' ? 'en' : 'ko',
     statsBoard: cleanStats(s.statsBoard),
+    aiBots: parseAiBotMode(s.aiBots),
   }
 }
 

@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from 'react'
 import { AI_NOTICE_DEFAULT } from '@/lib/ai-notice'
+import { AI_BOT_MODES } from '@/lib/ai-crawlers'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
 import SearchRegisterGuide from './SearchRegisterGuide'
@@ -327,6 +328,17 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             <span className="mt-0.5 block text-[12.5px] text-muted">정식으로 여는 날 켜세요. 테스트 기사가 남아 있을 때 켜면 검색 결과에 그대로 남을 수 있습니다.</span>
           </span>
         </label>
+        <fieldset className="mt-4 space-y-2 rounded-lg border border-line p-3 text-[13.5px]">
+          <legend className="px-1 font-bold">AI 크롤러 (ChatGPT·Claude 등 AI 회사의 수집 봇)</legend>
+          <p className="text-[12px] text-muted">기사가 AI 학습에 쓰이는 것을 매체가 정합니다. 구글·네이버 검색에는 영향이 없습니다. 규칙을 지키는 회사의 봇만 따르며, 이미 수집된 자료는 지워지지 않습니다. 저장 후 10분쯤 뒤부터 적용됩니다.</p>
+          {AI_BOT_MODES.map((m) => (
+            <label key={m.key} className="flex items-start gap-2">
+              <input type="radio" name="aiBots" checked={(s.aiBots ?? 'allow') === m.key} onChange={() => set({ aiBots: m.key })} className="mt-1" />
+              <span><strong>{m.label}</strong><span className="block text-[12px] text-muted">{m.hint}</span></span>
+            </label>
+          ))}
+          <p className="text-[12px] text-muted">확인: 이 매체 주소 뒤에 <code>/robots.txt</code>를 붙여 열면 적용된 규칙이 보입니다. 검색 노출을 켜지 않은 매체는 모든 봇이 이미 막혀 있습니다.</p>
+        </fieldset>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label="네이버 서치어드바이저 확인 코드" hint="“HTML 태그” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다">
             <input value={s.naverVerification ?? ''} onChange={(e) => set({ naverVerification: e.target.value })} maxLength={300} placeholder='<meta name="naver-site-verification" content="…" />' className="field-input" />
