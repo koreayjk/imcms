@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { childSections, topSections, type SiteConfig } from '@/lib/sites'
+import { childSections, dividerBefore, topSections, type SiteConfig } from '@/lib/sites'
 import { formatToday } from '@/lib/format'
 import Logo from './Logo'
 import MobileHeader from './MobileHeader'
@@ -47,7 +47,7 @@ export default function SiteHeader({ site, current }: Props) {
               {tops.map((s, i) => {
                 const kids = childSections(site, s.slug)
                 const active = current === s.slug || kids.some((k) => k.slug === current)
-                const firstSpecialty = s.specialty && !tops[i - 1]?.specialty
+                const firstSpecialty = dividerBefore(tops, i)
                 return (
                   <li key={s.slug} className={`group relative ${firstSpecialty ? 'ml-2 border-l border-rule pl-2' : ''}`}>
                     <Link

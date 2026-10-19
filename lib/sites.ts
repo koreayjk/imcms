@@ -6,6 +6,8 @@ export type SectionConfig = {
   specialty?: boolean
   // 2차 메뉴: 상위 섹션 slug (없으면 1차 메뉴)
   parent?: string
+  // 메뉴에서 이 섹션 앞에 구분선 (카테고리 관리에서 정함. 없으면 전문 섹션 시작 자리)
+  divider?: boolean
 }
 
 // 홈 배치 'bands': 1차 섹션을 차례로 띠처럼 쌓는다 (Israel Today 등). style 로 띠 모양을 고른다
@@ -160,6 +162,12 @@ export function topSections(site: SiteConfig) {
   return site.sections.filter((s) => !s.parent || !slugs.has(s.parent))
 }
 
+// 메뉴 구분선: 카테고리 관리에서 정했으면 그 자리, 아니면 전문 섹션이 시작되는 자리 (category-dividers.sql)
+export function dividerBefore(tops: SectionConfig[], i: number) {
+  if (tops.some((t) => t.divider !== undefined)) return !!tops[i].divider
+  return !!tops[i].specialty && !tops[i - 1]?.specialty
+}
+
 export function childSections(site: SiteConfig, slug: string) {
   return site.sections.filter((s) => s.parent === slug)
 }
@@ -203,7 +211,7 @@ export type OutletSiteSettings = {
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }
-export type CategoryRow = { slug: string; name: string; sort_order?: number | null; specialty?: boolean | null; description?: string | null; parent_slug?: string | null }
+export type CategoryRow = { slug: string; name: string; sort_order?: number | null; specialty?: boolean | null; description?: string | null; parent_slug?: string | null; divider_before?: boolean | null }
 
 const HEX = /^#[0-9a-f]{6}$/i
 export const DEFAULT_COLORS = { brand: '#1F3A5F', accent: '#C9A227' }
@@ -250,6 +258,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
           specialty: c.specialty ?? old?.specialty ?? false,
           description: c.description ?? old?.description ?? undefined,
           parent: c.parent_slug || undefined,
+          divider: typeof c.divider_before === 'boolean' ? c.divider_before : undefined,
         }
       })
     : code?.sections ?? []

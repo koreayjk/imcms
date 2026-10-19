@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { childSections, topSections, type SiteConfig } from '@/lib/sites'
+import { childSections, dividerBefore, topSections, type SiteConfig } from '@/lib/sites'
 import { siteText } from '@/lib/site-text'
 import Logo from './Logo'
 import { ChartTile, ClockTile, CloseIcon, CrownTile, MegaphoneTile, MenuIcon, PenTile, SearchIcon, UserIcon } from './icons'
@@ -89,10 +89,10 @@ export default function MobileHeader({ site, current }: Props) {
               {pathname === '/news' && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-gold" />}
             </Link>
           </li>
-          {tops.map((s) => {
+          {tops.map((s, i) => {
             const active = current === s.slug || childSections(site, s.slug).some((k) => k.slug === current)
             return (
-              <li key={s.slug}>
+              <li key={s.slug} className={dividerBefore(tops, i) ? 'ml-1 border-l border-white/20 pl-1' : undefined}>
                 <Link
                   href={`/section/${s.slug}`}
                   aria-current={active ? 'page' : undefined}
