@@ -106,7 +106,7 @@ function videoError(message: string, size = 0) {
   if (/exceeded|too large|payload too large|maximum allowed size|response code: 413/i.test(message)) {
     // 우리 한도(1GB)보다 작은데 막히면 Supabase 프로젝트 전체 한도가 낮은 것이다
     return size && size < VIDEO_MAX_BYTES
-      ? `저장소의 업로드 한도가 이 영상(${Math.round(size / 1024 / 1024)}MB)보다 작게 설정되어 있습니다. 운영팀이 Supabase Storage 설정의 "Upload file size limit"을 1GB 이상으로 올려야 합니다.`
+      ? `저장소의 업로드 한도가 이 영상(${Math.round(size / 1024 / 1024)}MB)보다 작게 설정되어 있습니다. 운영팀이 Supabase Storage 설정의 "Upload file size limit"을 1GB 이상으로 올려야 합니다. (서버 응답: ${message.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').slice(0, 160)})`
       : '영상이 허용 용량을 넘습니다. 1GB 이하로 줄여 올려 주세요.'
   }
   if (/row-level security|unauthori|403|401/i.test(message)) return '영상을 올릴 권한이 없습니다. 다시 로그인해 보시고, 계속되면 운영팀에 알려 주세요.'
