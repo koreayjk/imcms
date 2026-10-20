@@ -16,6 +16,8 @@ import BrandMark from '@/components/BrandMark'
 import IslandNav from '@/components/product/IslandNav'
 import MoreFeatures from '@/components/product/MoreFeatures'
 import { Pill } from '@/components/product/Pill'
+import HomeLayoutThumb from '@/components/cms/HomeLayoutThumb'
+import { HOME_LAYOUTS } from '@/lib/home-layouts'
 
 export const dynamic = 'force-dynamic'
 
@@ -447,6 +449,36 @@ export default function ProductHome() {
         </section>
 
         {/* ─── 자세한 기능 (접어 둠) ─── */}
+        {/* ─── 홈페이지 모양 5가지 ─── */}
+        <section id="designs" className="scroll-mt-16 bg-[#F7F8FA]">
+          <div className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6 lg:py-32">
+            <Reveal className="text-center">
+              <p className="text-[13px] font-semibold tracking-[0.06em] text-[#1D3461]">홈페이지 모양</p>
+              <h2 className={`mt-3 ${H2}`}>우리 신문에 맞는<br className="sm:hidden" /> 모양을 고르세요</h2>
+              <p className="mx-auto mt-4 max-w-[38em] text-[17px] leading-[1.8] text-[#5B616B]">
+                한국식 3가지와 미국식 2가지, 모두 5가지 홈페이지 모양이 준비되어 있습니다. 기사와 로고·색은 그대로 입히고 첫 화면의 짜임새만 바꿉니다. 같은 기사로 <strong className="text-[#0F1115]">미리 보시고 고를 수 있고</strong>, 나중에 바꾸고 싶으면 요청 한 번으로 운영팀이 바꿔 드립니다.
+              </p>
+            </Reveal>
+            <ul className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {HOME_LAYOUTS.map((l, i) => (
+                <li key={l.key} className="h-full">
+                  <Reveal delay={i * 80} className="h-full">
+                    <div className="pn-shell h-full"><div className="pn-core h-full p-3.5 sm:p-4">
+                      <HomeLayoutThumb layout={l.key} />
+                      <p className="mt-3.5 text-[15.5px] font-extrabold tracking-[-0.02em]">{l.name}</p>
+                      <p className="text-[13.5px] font-semibold text-[#1D3461]">{l.label}</p>
+                      <p className="mt-2 text-[12.5px] leading-[1.6] text-[#5B616B]">{l.fit}에 어울립니다.</p>
+                    </div></div>
+                  </Reveal>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-8 text-center text-[13.5px] leading-[1.8] text-[#5B616B]">
+              신청서의 요청사항에 원하는 모양을 적어 주세요. 처음 개통할 때 맞춰 드리며, 모양 설정은 세팅 작업에 들어 있습니다.
+            </p>
+          </div>
+        </section>
+
         <MoreFeatures count={7}>
         {/* ─── 그룹·권한 ─── */}
         <section id="team" className="scroll-mt-16 bg-[#F7F8FA]">

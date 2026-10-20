@@ -4,7 +4,8 @@ import { headers } from 'next/headers'
 import { currentSite, getHomeData, getIndexSeries, isDemo, siteBaseUrl, type PublicArticle } from '@/lib/public-data'
 import { siteJsonLd } from '@/lib/news-jsonld'
 import { outletApp } from '@/lib/android'
-import { topSections, siteIcon } from '@/lib/sites'
+import { topSections, siteIcon, defaultBands } from '@/lib/sites'
+import { HOME_LAYOUTS } from '@/lib/home-layouts'
 import IndexWidget from '@/components/site/IndexWidget'
 import StatsBoard from '@/components/site/StatsBoard'
 import { formatDate, formatShort } from '@/lib/format'
@@ -41,8 +42,12 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function HomePage() {
-  const site = await currentSite()
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ layout?: string }> }) {
+  let site = await currentSite()
+  // 홈페이지 설정의 "미리보기": 저장하기 전에 다른 배치로 보기. 미리보기 주소(도메인 연결 전)에서만 적용한다
+  const wanted = (await searchParams).layout
+  const picked = site.preview || isDemo ? HOME_LAYOUTS.find((l) => l.ready && l.key === wanted) : undefined
+  if (picked) site = { ...site, homeLayout: picked.key, bands: picked.key === 'bands' && !site.bands?.length ? defaultBands(site.sections) : site.bands }
   const t = siteText(site)
   const L = site.lang
   const [{ latest, mostViewed, bySection, pinned }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])

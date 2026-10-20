@@ -149,7 +149,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             <StatsEditor value={s.statsBoard} onChange={(statsBoard) => set({ statsBoard })} />
             <fieldset className="space-y-2 text-[13.5px]">
               <legend className="font-bold">홈페이지 배치</legend>
-              <p className="text-[12px] text-muted">첫 화면의 모양을 고릅니다. 기사·로고·색은 그대로이고 배치만 바뀝니다. 저장하면 홈페이지에 바로 적용됩니다.</p>
+              <p className="text-[12px] text-muted">첫 화면의 모양을 고릅니다. 기사·로고·색은 그대로이고 배치만 바뀝니다. <strong>미리보기</strong>는 저장하지 않아도 이 매체의 실제 기사로 새 창에 보여 주며, 그 주소를 고객에게 보내 함께 고를 수도 있습니다. 저장하면 홈페이지에 바로 적용됩니다.</p>
               <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                 {HOME_LAYOUTS.map((l) => {
                   const on = (s.homeLayout ?? 'standard') === l.key
@@ -160,6 +160,9 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
                         <input type="radio" name="homeLayout" checked={on} disabled={!l.ready} onChange={() => set({ homeLayout: l.key })} />
                         <strong>{l.name}</strong><span className="text-muted">· {l.label}</span>
                         {!l.ready && <span className="ml-auto rounded bg-line px-1.5 py-0.5 text-[11px] text-muted">준비 중</span>}
+                        {l.ready && (
+                          <a href={`/?preview_outlet=${outlet.id}&layout=${l.key}`} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} className="ml-auto whitespace-nowrap rounded border border-line px-2 py-0.5 text-[12px] font-semibold text-ink hover:border-ink">미리보기 ↗</a>
+                        )}
                       </span>
                       <span className="text-[12px] leading-snug text-muted">{l.features}</span>
                     </label>
