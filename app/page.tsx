@@ -16,6 +16,7 @@ import Thumb from '@/components/site/Thumb'
 import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
 import AdArea from '@/components/site/AdArea'
 import HomeBands from '@/components/site/HomeBands'
+import HomePortal from '@/components/site/HomePortal'
 import { siteText } from '@/lib/site-text'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -91,6 +92,29 @@ export default async function HomePage() {
   const general = topSections(site).filter((s) => !s.specialty)
 
   const base = siteBaseUrl(site, (await headers()).get('host'))
+
+  // 한국 스타일 2 · 포털 목록형 (components/site/HomePortal.tsx)
+  if (site.homeLayout === 'portal') {
+    return (
+      <SiteFrame site={site}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
+        <HomePortal
+          site={site} headline={headline} subTops={subTops} underHeadline={underHeadline} breaking={realtime.slice(0, 5)}
+          major={major} picks={picks} mostViewed={mostViewed} bySection={bySection} sections={topSections(site)}
+          middleAd={<AdArea site={site} slot="home_middle" className="pt-5" />}
+          sideExtras={
+            <>
+              {indexSeries && <IndexWidget series={indexSeries} />}
+              {site.statsBoard && <StatsBoard board={site.statsBoard} />}
+              {isDemo && <AdSlot label={L === 'en' ? 'Ad 300×250' : '광고 영역 300×250'} className="hidden h-[250px] lg:flex" />}
+              <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
+            </>
+          }
+        />
+        <AdArea site={site} slot="popup" />
+      </SiteFrame>
+    )
+  }
 
   return (
     <SiteFrame site={site}>
