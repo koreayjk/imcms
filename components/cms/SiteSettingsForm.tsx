@@ -3,6 +3,8 @@
 import { useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from 'react'
 import { AI_NOTICE_DEFAULT } from '@/lib/ai-notice'
 import { AI_BOT_MODES } from '@/lib/ai-crawlers'
+import { HOME_LAYOUTS } from '@/lib/home-layouts'
+import HomeLayoutThumb from './HomeLayoutThumb'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
 import SearchRegisterGuide from './SearchRegisterGuide'
@@ -145,10 +147,27 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <span><strong>해운 운임지수 위젯</strong> (SCFI·KCCI 주간 그래프를 홈 오른쪽에 표시) <span className="block text-[12px] text-muted">켜면 편집국 “홈편집”에서 매주 지수 값을 입력할 수 있습니다.</span></span>
             </label>
             <StatsEditor value={s.statsBoard} onChange={(statsBoard) => set({ statsBoard })} />
-            <label className="flex items-start gap-2 text-[13.5px]">
-              <input type="checkbox" checked={s.homeLayout === 'bands'} onChange={(e) => set({ homeLayout: e.target.checked ? 'bands' : 'standard' })} className="mt-1" />
-              <span><strong>섹션 띠 배치</strong> (톱 기사 아래를 섹션 순서대로 띠처럼 쌓기) <span className="block text-[12px] text-muted">띠 순서·모양은 운영팀이 설정합니다{s.bands?.length ? ` (지금 ${s.bands.length}개 띠)` : ''}.</span></span>
-            </label>
+            <fieldset className="space-y-2 text-[13.5px]">
+              <legend className="font-bold">홈페이지 배치</legend>
+              <p className="text-[12px] text-muted">첫 화면의 모양을 고릅니다. 기사·로고·색은 그대로이고 배치만 바뀝니다. 저장하면 홈페이지에 바로 적용됩니다.</p>
+              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                {HOME_LAYOUTS.map((l) => {
+                  const on = (s.homeLayout ?? 'standard') === l.key
+                  return (
+                    <label key={l.key} className={`flex flex-col gap-2 rounded-lg border p-3 ${l.ready ? 'cursor-pointer' : 'cursor-not-allowed opacity-55'} ${on ? 'border-ink ring-1 ring-ink' : 'border-line'}`}>
+                      <HomeLayoutThumb layout={l.key} />
+                      <span className="flex items-center gap-2">
+                        <input type="radio" name="homeLayout" checked={on} disabled={!l.ready} onChange={() => set({ homeLayout: l.key })} />
+                        <strong>{l.name}</strong><span className="text-muted">· {l.label}</span>
+                        {!l.ready && <span className="ml-auto rounded bg-line px-1.5 py-0.5 text-[11px] text-muted">준비 중</span>}
+                      </span>
+                      <span className="text-[12px] leading-snug text-muted">{l.features}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              {s.homeLayout === 'bands' && <p className="text-[12px] text-muted">섹션 띠는 섹션 순서대로 자동으로 만들어집니다{s.bands?.length ? ` (지금 ${s.bands.length}개 띠 설정됨)` : ''}. 띠 순서·모양을 따로 정하려면 운영팀에 요청하세요.</p>}
+            </fieldset>
             <label className="flex items-start gap-2 text-[13.5px]">
               <input type="checkbox" checked={s.lang === 'en'} onChange={(e) => set({ lang: e.target.checked ? 'en' : 'ko' })} className="mt-1" />
               <span><strong>영문 홈페이지</strong> (메뉴·날짜·안내 문구·개인정보처리방침을 영어로) <span className="block text-[12px] text-muted">기사는 쓴 언어 그대로 나갑니다. 해외 독자를 위한 영문 매체에 켜세요.</span></span>

@@ -5,6 +5,7 @@ import { mentionsAi } from '@/lib/ai-notice'
 import { getCmsContext } from '@/lib/cms'
 import { foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal, cleanStats } from '@/lib/sites'
 import { parseAiBotMode } from '@/lib/ai-crawlers'
+import { parseHomeLayout } from '@/lib/home-layouts'
 import { connectDomain } from '@/lib/vercel-domains'
 
 export type SitePayload = {
@@ -58,7 +59,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     aiBots: parseAiBotMode(s.aiBots) === 'allow' ? undefined : parseAiBotMode(s.aiBots),
     pressKeywords: cut(s.pressKeywords, 2000),
     legal: Object.fromEntries(LEGAL_KEYS.map((k) => [k, cut(s.legal?.[k], k === 'address' ? 200 : 80)])) as SiteLegal,
-    homeLayout: s.homeLayout === 'bands' ? 'bands' : 'standard',
+    homeLayout: parseHomeLayout(s.homeLayout),
     shopUrl: /^https?:\/\/\S+$/.test(cut(s.shopUrl, 300)) ? cut(s.shopUrl, 300) : undefined,
     pressForeignTopics: foreignTopics({ pressForeignTopics: Array.isArray(s.pressForeignTopics) ? s.pressForeignTopics : [], pressForeign: false }),
     // 고른 적이 없으면 비워 두어 추천 키워드로 계속 짐작한다

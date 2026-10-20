@@ -15,6 +15,7 @@ export type HomeBandStyle = 'news' | 'brief' | 'feature' | 'grid' | 'video' | 's
 export type HomeBand = { slug: string; style: HomeBandStyle; title?: string; tagline?: string }
 
 import { parseAiBotMode, type AiBotMode } from '@/lib/ai-crawlers'
+import { parseHomeLayout, type HomeLayout } from '@/lib/home-layouts'
 export type LogoMode = 'mark' | 'full' | 'text'
 
 // 홈 오른쪽 '숫자 판' (예: 선교 통계). 숫자는 편집국 홈페이지 설정에서 고친다. 출처를 반드시 함께 적는다
@@ -64,8 +65,8 @@ export type SiteConfig = {
   // 보도자료함 "추천" 탭: 제목·요약에 이 단어가 있으면 이 매체와 관련 있는 보도자료로 본다
   pressKeywords: string[]
   legal: SiteLegal
-  // 홈 배치: standard(기본) / bands(섹션 띠)
-  homeLayout?: 'standard' | 'bands'
+  // 홈 배치 (lib/home-layouts.ts): standard(한국 1, 기본) / bands(한국 3, 섹션 띠)
+  homeLayout?: HomeLayout
   bands?: HomeBand[]
   // SHOP 띠·메뉴에서 연결할 쇼핑몰 주소 (없으면 '준비 중')
   shopUrl?: string
@@ -197,7 +198,7 @@ export type OutletSiteSettings = {
   indexable?: boolean
   pressKeywords?: string
   legal?: Partial<SiteLegal>
-  homeLayout?: 'standard' | 'bands'
+  homeLayout?: HomeLayout
   bands?: HomeBand[]
   shopUrl?: string
   pressForeign?: boolean
@@ -291,8 +292,11 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     sections,
     pressKeywords: keywords,
     legal: { ...EMPTY_LEGAL, ...(code?.legal ?? {}), ...(s.legal ?? {}) },
-    homeLayout: s.homeLayout === 'bands' ? 'bands' : 'standard',
-    bands: Array.isArray(s.bands) ? s.bands.filter((b) => b && typeof b.slug === 'string') : undefined,
+    homeLayout: parseHomeLayout(s.homeLayout),
+    // 섹션 띠 배치인데 띠를 따로 정하지 않았으면 섹션 순서대로 자동으로 만든다
+    bands: Array.isArray(s.bands) && s.bands.length
+      ? s.bands.filter((b) => b && typeof b.slug === 'string')
+      : parseHomeLayout(s.homeLayout) === 'bands' ? defaultBands(sections) : undefined,
     shopUrl: typeof s.shopUrl === 'string' && /^https?:\/\//.test(s.shopUrl) ? s.shopUrl : undefined,
     ...(() => {
       const topics = foreignTopics(s)
@@ -305,6 +309,15 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     statsBoard: cleanStats(s.statsBoard),
     aiBots: parseAiBotMode(s.aiBots),
   }
+}
+
+// 섹션 띠 자동 구성: 첫 띠는 속보+많이 본 뉴스, 이어서 큰 기사형·사진 4칸형을 번갈아 (최대 8개)
+export function defaultBands(sections: SectionConfig[]): HomeBand[] {
+  const slugs = new Set(sections.map((s) => s.slug))
+  return sections
+    .filter((s) => !s.parent || !slugs.has(s.parent))
+    .slice(0, 8)
+    .map((s, i) => ({ slug: s.slug, style: i === 0 ? 'brief' : i % 2 === 1 ? 'news' : 'grid' }))
 }
 
 // 숫자 판: 이름·숫자가 있는 줄만, 최대 8줄
