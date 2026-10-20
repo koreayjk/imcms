@@ -29,57 +29,25 @@ export default function SiteHeader({ site, current }: Props) {
         </div>
       </div>
 
+      {site.homeLayout === 'editorial' ? (
+        /* 미국 스타일 1: 가운데 큰 제호 + 두 줄 구분선 + 가로 메뉴 */
+        <div className="hidden lg:block">
+          <div className="mx-auto max-w-[1200px] px-4">
+            <div className="flex justify-end pt-3">
+              <Link href="/search" aria-label={t.searchArticles} className="grid h-8 w-8 place-items-center rounded-full text-body hover:text-brand"><SearchIcon /></Link>
+            </div>
+            <div className="flex justify-center pb-5 pt-1"><Logo site={site} size="lg" /></div>
+            <nav aria-label={t.mainNav} className="border-y-[3px] border-double border-body py-1">
+              <NavList site={site} current={current} centered size="text-[15px]" />
+            </nav>
+          </div>
+        </div>
+      ) : (
       <div className="hidden lg:block">
         <div className="mx-auto flex h-[104px] max-w-[1200px] items-center gap-6 px-4">
           <Logo site={site} size="lg" />
           <nav className="flex flex-1 justify-end" aria-label={t.mainNav}>
-            <ul className="flex items-center">
-              <li>
-                <Link
-                  href="/news"
-                  aria-current={current === ALL_NEWS ? 'page' : undefined}
-                  className={`relative block whitespace-nowrap px-[12px] py-2 text-[16.5px] font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${current === ALL_NEWS ? 'text-brand' : 'text-body'}`}
-                >
-                  {t.allNews}
-                  {current === ALL_NEWS && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
-                </Link>
-              </li>
-              {tops.map((s, i) => {
-                const kids = childSections(site, s.slug)
-                const active = current === s.slug || kids.some((k) => k.slug === current)
-                const firstSpecialty = dividerBefore(tops, i)
-                return (
-                  <li key={s.slug} className={`group relative ${firstSpecialty ? 'ml-2 border-l border-rule pl-2' : ''}`}>
-                    <Link
-                      href={`/section/${s.slug}`}
-                      aria-current={current === s.slug ? 'page' : undefined}
-                      className={`relative block whitespace-nowrap px-[12px] py-2 text-[16.5px] font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${
-                        active ? 'text-brand' : 'text-body'
-                      }`}
-                    >
-                      {s.name}
-                      {active && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
-                    </Link>
-                    {/* 2차 메뉴: 마우스를 올리거나 키보드로 들어가면 펼친다 */}
-                    {kids.length > 0 && (
-                      <ul className="invisible absolute left-1/2 top-full z-30 min-w-[168px] -translate-x-1/2 border border-rule border-t-[3px] border-t-brand bg-white py-1.5 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                        {kids.map((k) => (
-                          <li key={k.slug}>
-                            <Link
-                              href={`/section/${k.slug}`}
-                              aria-current={current === k.slug ? 'page' : undefined}
-                              className={`block whitespace-nowrap px-4 py-2 text-[14.5px] hover:bg-soft hover:text-brand ${current === k.slug ? 'font-semibold text-brand' : 'text-body'}`}
-                            >
-                              {k.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+            <NavList site={site} current={current} />
           </nav>
           <Link
             href="/search"
@@ -91,9 +59,66 @@ export default function SiteHeader({ site, current }: Props) {
         </div>
         <div className="h-1 bg-brand" />
       </div>
+      )}
 
       {/* 모바일 */}
       <MobileHeader site={site} current={current} />
     </header>
+  )
+}
+
+// 1차 메뉴 (PC). 2차 메뉴는 마우스를 올리거나 키보드로 들어가면 펼친다
+function NavList({ site, current, centered = false, size = 'text-[16.5px]' }: { site: SiteConfig; current?: string; centered?: boolean; size?: string }) {
+  const tops = topSections(site)
+  const t = siteText(site)
+  return (
+    <ul className={centered ? 'flex flex-wrap items-center justify-center' : 'flex items-center'}>
+      <li>
+        <Link
+          href="/news"
+          aria-current={current === ALL_NEWS ? 'page' : undefined}
+          className={`relative block whitespace-nowrap px-[12px] py-2 ${size} font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${current === ALL_NEWS ? 'text-brand' : 'text-body'}`}
+        >
+          {t.allNews}
+          {current === ALL_NEWS && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
+        </Link>
+      </li>
+      {tops.map((s, i) => {
+        const kids = childSections(site, s.slug)
+        const active = current === s.slug || kids.some((k) => k.slug === current)
+        const firstSpecialty = dividerBefore(tops, i)
+        return (
+          <li key={s.slug} className={`group relative ${firstSpecialty ? 'ml-2 border-l border-rule pl-2' : ''}`}>
+            <Link
+              href={`/section/${s.slug}`}
+              aria-current={current === s.slug ? 'page' : undefined}
+              className={`relative block whitespace-nowrap px-[12px] py-2 ${size} font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${
+                active ? 'text-brand' : 'text-body'
+              }`}
+            >
+              {s.name}
+              {active && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
+            </Link>
+            {/* 2차 메뉴: 마우스를 올리거나 키보드로 들어가면 펼친다 */}
+            {kids.length > 0 && (
+              <ul className="invisible absolute left-1/2 top-full z-30 min-w-[168px] -translate-x-1/2 border border-rule border-t-[3px] border-t-brand bg-white py-1.5 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                {kids.map((k) => (
+                  <li key={k.slug}>
+                    <Link
+                      href={`/section/${k.slug}`}
+                      aria-current={current === k.slug ? 'page' : undefined}
+                      className={`block whitespace-nowrap px-4 py-2 text-[14.5px] hover:bg-soft hover:text-brand ${current === k.slug ? 'font-semibold text-brand' : 'text-body'}`}
+                    >
+                      {k.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+
   )
 }

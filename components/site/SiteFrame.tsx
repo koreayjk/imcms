@@ -20,13 +20,17 @@ export default function SiteFrame({ site, current, children }: Props) {
   const t = siteText(site)
   const en = site.lang === 'en'
   return (
-    <div className="site min-h-screen" style={en ? { ...vars, fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif" } : vars} lang={t.htmlLang} data-lang={t.htmlLang}>
+    <div className="site min-h-screen" data-layout={site.homeLayout ?? 'standard'} style={en ? { ...vars, fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif" } : vars} lang={t.htmlLang} data-lang={t.htmlLang}>
       {/* 영문 매체: 문서 언어를 영어로 (루트 html 은 편집국과 같이 쓰므로 여기서 바꾼다), 미국 신문 느낌의 세리프 글꼴 */}
       {en && (
         <>
           <script dangerouslySetInnerHTML={{ __html: "document.documentElement.lang='en'" }} />
           <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700;8..60,800&display=swap" />
         </>
+      )}
+      {site.homeLayout === 'editorial' && !en && (
+        // 미국 스타일 1: 제목용 명조(세리프) 글꼴
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&display=swap" />
       )}
       {isDemo && (
         <div className="bg-gold px-4 py-1.5 text-center text-[12px] font-semibold text-brand-dark">

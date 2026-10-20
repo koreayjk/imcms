@@ -17,6 +17,8 @@ import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
 import AdArea from '@/components/site/AdArea'
 import HomeBands from '@/components/site/HomeBands'
 import HomePortal from '@/components/site/HomePortal'
+import HomeEditorial from '@/components/site/HomeEditorial'
+import HomeCards from '@/components/site/HomeCards'
 import { siteText } from '@/lib/site-text'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -93,24 +95,25 @@ export default async function HomePage() {
 
   const base = siteBaseUrl(site, (await headers()).get('host'))
 
-  // 한국 스타일 2 · 포털 목록형 (components/site/HomePortal.tsx)
-  if (site.homeLayout === 'portal') {
+  // 화면 전체를 새로 짠 배치: 한국 스타일 2(portal) · 미국 스타일 1(editorial) · 미국 스타일 2(cards)
+  const layoutKey = site.homeLayout
+  if (layoutKey === 'portal' || layoutKey === 'editorial' || layoutKey === 'cards') {
+    const middleAd = <AdArea site={site} slot="home_middle" className="pt-5" />
+    const sideExtras = (
+      <>
+        {indexSeries && <IndexWidget series={indexSeries} />}
+        {site.statsBoard && <StatsBoard board={site.statsBoard} />}
+        {isDemo && <AdSlot label={L === 'en' ? 'Ad 300×250' : '광고 영역 300×250'} className="hidden h-[250px] lg:flex" />}
+        <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
+      </>
+    )
+    const common = { site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras }
     return (
       <SiteFrame site={site}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
-        <HomePortal
-          site={site} headline={headline} subTops={subTops} underHeadline={underHeadline} breaking={realtime.slice(0, 5)}
-          major={major} picks={picks} mostViewed={mostViewed} bySection={bySection} sections={topSections(site)}
-          middleAd={<AdArea site={site} slot="home_middle" className="pt-5" />}
-          sideExtras={
-            <>
-              {indexSeries && <IndexWidget series={indexSeries} />}
-              {site.statsBoard && <StatsBoard board={site.statsBoard} />}
-              {isDemo && <AdSlot label={L === 'en' ? 'Ad 300×250' : '광고 영역 300×250'} className="hidden h-[250px] lg:flex" />}
-              <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
-            </>
-          }
-        />
+        {layoutKey === 'editorial' ? <HomeEditorial {...common} realtime={realtime} />
+          : layoutKey === 'cards' ? <HomeCards {...common} />
+          : <HomePortal {...common} breaking={realtime.slice(0, 5)} />}
         <AdArea site={site} slot="popup" />
       </SiteFrame>
     )
