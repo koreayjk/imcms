@@ -70,6 +70,8 @@ export type SiteConfig = {
   bands?: HomeBand[]
   // 띠를 따로 정하지 않아 섹션 순서대로 자동 구성했는지 (true면 한국 스타일 3의 전용 첫 화면, 직접 정한 띠가 있으면 예전 모양 그대로)
   autoBands?: boolean
+  // 소개 페이지 샘플 매체: ?layout= 으로 홈 배치를 바꿔 보는 바를 보여 준다 (public-data currentSite 가 주소를 보고 정한다)
+  layoutDemo?: boolean
   // SHOP 띠·메뉴에서 연결할 쇼핑몰 주소 (없으면 '준비 중')
   shopUrl?: string
   // 보도자료함에 해외 언론(영문) 자료도 보여줄지 (묶음: 이스라엘 언론, 해외 교육·유학 언론)

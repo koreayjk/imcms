@@ -46,7 +46,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   let site = await currentSite()
   // 홈페이지 설정의 "미리보기": 저장하기 전에 다른 배치로 보기. 미리보기 주소(도메인 연결 전)에서만 적용한다
   const wanted = (await searchParams).layout
-  if (site.preview || isDemo) site = withLayout(site, wanted)
+  if (site.preview || isDemo || site.layoutDemo) site = withLayout(site, wanted)
   const t = siteText(site)
   const L = site.lang
   const [{ latest, mostViewed, bySection, pinned }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])

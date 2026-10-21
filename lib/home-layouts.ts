@@ -13,6 +13,10 @@ export const HOME_LAYOUTS: HomeLayoutInfo[] = [
   { key: 'cards', name: '미국 스타일 2', label: '카드 매거진', features: '큰 히어로 사진 + 둥근 카드 그리드, 넓은 여백. 지역 언론·영문 매체·모바일 독자가 많은 곳에 맞습니다.', fit: '지역·영문·모바일 독자 중심', ready: true },
 ]
 
+// 소개 페이지의 "실제 화면 보기" 링크용: 이 주소들은 ?layout= 로 홈 배치를 바꿔 볼 수 있다 (읽기만 하고 저장하지 않는다)
+export const LAYOUT_DEMO_HOSTS = ['statecrafttimes.vercel.app']
+export const isLayoutDemoHost = (host: string | null | undefined) => LAYOUT_DEMO_HOSTS.includes((host ?? '').split(':')[0].toLowerCase())
+
 // 저장된 값 → 쓸 수 있는 배치 (모르는 값·아직 안 만든 배치는 한국 스타일 1)
 export function parseHomeLayout(v: unknown): HomeLayout {
   return HOME_LAYOUTS.find((l) => l.key === v && l.ready)?.key ?? 'standard'
