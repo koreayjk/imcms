@@ -98,6 +98,12 @@ export async function proxy(request: NextRequest) {
     url.pathname = PRODUCT.path
     return NextResponse.rewrite(url)
   }
+  // imnewsroom.com/en: 영어 소개 페이지 (해외 고객용)
+  if (/^\/en(\/|$)/.test(request.nextUrl.pathname) && isProductHost(request.headers.get('host'))) {
+    const url = request.nextUrl.clone()
+    url.pathname = `${PRODUCT.path}${request.nextUrl.pathname}`
+    return NextResponse.rewrite(url)
+  }
   // imnewsroom.com/app: 앱 받기 화면 (카톡으로 보내도 미리보기가 뜨는 짧은 주소)
   if (request.nextUrl.pathname === '/app' && isProductHost(request.headers.get('host'))) {
     const url = request.nextUrl.clone()

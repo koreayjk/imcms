@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     openGraph: { type: 'website', siteName: PRODUCT.name, title, description, locale: 'ko_KR', images: [{ url: PRODUCT.ogImage, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', title, description, images: [PRODUCT.ogImage] },
-    ...(indexable ? { robots: { index: true, follow: true }, alternates: { canonical: `${PRODUCT.url}/` } } : {}),
+    ...(indexable ? { robots: { index: true, follow: true }, alternates: { canonical: `${PRODUCT.url}/`, languages: { ko: `${PRODUCT.url}/`, en: `${PRODUCT.url}/en` } } } : {}),
     // 네이버·구글 소유 확인 (lib/product.ts)
     verification: {
       google: PRODUCT.verification.google.length ? PRODUCT.verification.google : undefined,
@@ -922,6 +922,7 @@ export default async function ProductHome() {
             <Link href={`${PRODUCT.path}/start`} className="hover:text-[#0F1115]">창간 가이드</Link>
             <Link href={`${PRODUCT.path}/terms`} className="hover:text-[#0F1115]">이용약관</Link>
             <Link href={`${PRODUCT.path}/privacy`} className="font-semibold text-[#5B616B] hover:text-[#0F1115]">개인정보처리방침</Link>
+            <Link href={`${PRODUCT.path}/en`} hrefLang="en" className="hover:text-[#0F1115]">English</Link>
           </div>
           <p className="w-full text-[12px] leading-relaxed text-[#5B616B]">
             운영: {ISSUER.company ?? PRODUCT.nameEn} · 문의 <a href="mailto:contact@imnewsroom.com" className="underline hover:text-[#0F1115]">contact@imnewsroom.com</a>

@@ -16,7 +16,7 @@ export async function GET() {
   // IM 뉴스룸 제품 홈페이지 도메인: 소개·체험 화면만 수집
   if (isProductHost(host)) {
     const body = PRODUCT.indexable
-      ? ['User-agent: *', 'Allow: /$', 'Allow: /trial$', 'Allow: /app$', 'Allow: /imnewsroom/',
+      ? ['User-agent: *', 'Allow: /$', 'Allow: /en$', 'Allow: /trial$', 'Allow: /app$', 'Allow: /imnewsroom/',
           // 구글이 화면을 제대로 그려 보고 검색 결과에 로고(파비콘)를 띄우려면 화면 파일·아이콘도 열어 줘야 한다
           'Allow: /_next/static/', 'Allow: /_next/image', 'Allow: /brand/', 'Allow: /designs/', 'Allow: /favicon.ico', 'Allow: /sites/',
           'Disallow: /', '', `Sitemap: ${PRODUCT.url}/sitemap.xml`].join('\n')

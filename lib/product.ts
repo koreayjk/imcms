@@ -26,7 +26,7 @@ export const PRODUCT = {
 }
 
 // 검색엔진에 알릴 제품 홈페이지 주소들
-export const PRODUCT_PAGES = ['/', '/trial', '/app', '/start', '/imnewsroom/terms', '/imnewsroom/privacy']
+export const PRODUCT_PAGES = ['/', '/en', '/trial', '/app', '/start', '/imnewsroom/terms', '/imnewsroom/privacy', '/imnewsroom/en/terms', '/imnewsroom/en/privacy']
 
 export function isProductHost(host: string | null | undefined) {
   const h = (host ?? '').split(':')[0].toLowerCase()
