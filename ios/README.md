@@ -35,11 +35,18 @@ IM VOCA처럼 Xcode에서 바로 만듭니다. 이 폴더의 파일은 웹 서�
    |---|---|
    | Privacy - Camera Usage Description | 기사 사진을 찍어 올릴 때 카메라를 사용합니다. |
    | Privacy - Photo Library Usage Description | 기사에 넣을 사진을 고를 때 사진 보관함을 사용합니다. |
+   | Privacy - Microphone Usage Description | 기사에 넣을 영상을 촬영할 때 소리를 녹음하기 위해 마이크를 사용합니다. |
    | App Uses Non-Exempt Encryption | NO |
 
 6. 시뮬레이터나 아이폰을 연결해 ▶ 실행 → 로그인 화면에 **구글 로그인 단추가 없으면** 앱 표시가 제대로 된 것입니다.
 7. **Product → Archive → Distribute App → App Store Connect → Upload**
 8. 10~30분 뒤 App Store Connect → TestFlight에 빌드가 나타나면 아이폰에서 시험 → 버전 화면에서 빌드를 골라 심사 제출
+
+## 심사에서 앱이 꺼진 일 (2.1(a), 2026-10-21 반려) — 마이크 설명 문구가 빠져 있었다
+
+고객센터 → 업무요청 → 파일 선택 → "사진 또는 비디오 촬영" → 비디오를 고르면, 웹 화면이 카메라와 함께 마이크를 쓰려 하는데 Info.plist에 `NSMicrophoneUsageDescription`이 없으면 iOS가 앱을 바로 끈다 (충돌 기록: `TCC … without a usage description … NSMicrophoneUsageDescription`).
+위 5번 표의 **Microphone** 줄을 반드시 넣고, 다시 올릴 때 Build 번호를 올린다 (이번 반려 빌드는 Build 3 → **Build 4**).
+올리기 전에 실제 아이폰이나 아이패드에서 확인: 업무요청 → 파일 선택 → 사진 또는 비디오 촬영 → 비디오 → 마이크 허용 창이 뜨고, 허용하면 촬영되고 앱이 꺼지지 않아야 한다. 기사 쓰기의 영상 올리기(촬영)도 같은 경로다.
 
 ## 알아 둘 점
 
