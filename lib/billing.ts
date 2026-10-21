@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ANNUAL_MONTHS, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, addMonth, annualPrice, betaRateFor, planById } from './pricing'
+import { BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, TERMS, addMonth, betaRateFor, planById, termPrice, type Billing } from './pricing'
 import { invoiceTotals, type InvoiceItem } from './support'
 import { paymentDbSecret } from './toss'
 import { notifyInvoiceDunning, notifyInvoiceIssued } from './invoice-mail'
 
 // 매월 자동 청구서 (supabase/billing-auto.sql). 금액은 모두 최종 금액 (한국 부가세 없음)
-//   매월 1일 발행 · 5일 납부 · 10일까지 유예. 1년 결제는 시작 월부터 12개월마다 한 번(11개월 값)
+//   매월 1일 발행 · 5일 납부 · 10일까지 유예. 1년 결제는 시작 월부터 12개월마다 한 번(11개월 값), 2년 결제는 24개월마다 한 번(21개월 값)
 //   항목: 요금제 이용료(베타 반값) · 추가 매체 · 지난달 AI 추가 사용(100회마다) · 세팅비(처음 한 번)
 
 export type BillingChild = { outlet_id: string; name: string; over_count: number }
@@ -13,7 +13,7 @@ export type BillingTarget = {
   outlet_id: string
   name: string
   plan: string | null
-  cycle: 'monthly' | 'annual'
+  cycle: Billing
   beta: boolean
   start_month: string | null
   setup_fee_pending: boolean
@@ -49,23 +49,25 @@ export function billingItems(t: BillingTarget, month: string) {
   const start = t.start_month ? t.start_month.slice(0, 7) : null
   const rate = betaRateFor(month, beta, start)
   const betaTag = rate < 1 ? ', 베타 반값' : ''
-  // 1년 결제는 12개월 중 첫 3개월분만 반값
+  // 1년·2년 결제는 기간 중 첫 3개월분만 반값
   const annualBeta = beta && start && month < addMonth(start, BETA_MONTHS) ? `, 첫 ${BETA_MONTHS}개월 베타 반값` : ''
 
-  const annual = t.cycle === 'annual'
-  // 1년 결제: 시작 월에서 12개월마다만 이용료를 청구 (시작 월이 없으면 이용료는 넣지 않는다)
-  const billPlan = !annual || (t.start_month != null && (m - ym(t.start_month)) % 12 === 0 && m >= ym(t.start_month))
+  const term = TERMS[t.cycle] ?? TERMS.monthly
+  const annual = term.months > 1
+  const years = term.months / 12
+  // 1년·2년 결제: 시작 월에서 12·24개월마다만 이용료를 청구 (시작 월이 없으면 이용료는 넣지 않는다)
+  const billPlan = !annual || (t.start_month != null && (m - ym(t.start_month)) % term.months === 0 && m >= ym(t.start_month))
   if (billPlan) {
     if (monthly != null && planName) {
       items.push(annual
-        ? { name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${annualBeta})`, qty: 1, unit_price: annualPrice(monthly, month, beta, start) }
+        ? { name: `IM 뉴스룸 ${planName} ${years}년 (${label(m)}~${label(m + term.months - 1)}, ${term.paid}개월 값${annualBeta})`, qty: 1, unit_price: termPrice(monthly, month, beta, start, t.cycle) }
         : { name: `IM 뉴스룸 ${planName} (${label(m)}${betaTag})`, qty: 1, unit_price: Math.round(monthly * rate) })
     }
     // 매체 추가는 프리미엄 전용: 추가 매체 1개 포함, 그다음부터 매체마다 (맞춤 금액이면 포함 없이 모두 청구)
     const included = t.plan === 'premium' && t.custom_monthly == null ? PREMIUM_INCLUDED_EXTRA : 0
     for (const c of t.children.slice(included)) {
       items.push(annual
-        ? { name: `추가 매체 · ${c.name} (1년, ${ANNUAL_MONTHS}개월 값)`, qty: 1, unit_price: EXTRA_OUTLET_FEE * ANNUAL_MONTHS }
+        ? { name: `추가 매체 · ${c.name} (${years}년, ${term.paid}개월 값)`, qty: 1, unit_price: EXTRA_OUTLET_FEE * term.paid }
         : { name: `추가 매체 · ${c.name}`, qty: 1, unit_price: EXTRA_OUTLET_FEE })
     }
   }

@@ -127,7 +127,7 @@ export default function StartGuidePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSONLD }} />
       <IslandNav
         logo={<span className="flex items-center gap-2"><BrandMark size={34} /><span className="text-[18px] font-extrabold tracking-[-0.02em]">IM 뉴스룸</span></span>}
-        items={[{ href: home, label: '소개' }, { href: '#steps', label: '창간 순서' }, { href: '#who', label: '누가 하나요' }, { href: '#faq', label: '자주 묻는 질문' }, { href: `${home}#pricing`, label: '요금' }]}
+        items={[{ href: home, label: '소개' }, { href: '#steps', label: '창간 순서' }, { href: '#who', label: '누가 하나요' }, { href: '#faq', label: '자주 묻는 질문' }, { href: `${home}#designs`, label: '디자인 샘플' }, { href: `${home}#pricing`, label: '요금' }]}
         loginHref={appLink('/login')}
         trialHref={appLink('/trial')}
       />

@@ -280,7 +280,7 @@ export async function invoiceDraft(outletId: string, month: string): Promise<{ i
     if (plan?.bill_to) return { items: [], note: '추가 매체는 청구 받는 매체의 청구서에 함께 들어갑니다. 그 매체를 골라 주세요.' }
     target = {
       outlet_id: o.id, name: o.name, plan: o.plan ?? null,
-      cycle: plan?.cycle === 'annual' ? 'annual' : 'monthly', beta: !!plan?.beta, start_month: plan?.start_month ?? null,
+      cycle: plan?.cycle === 'annual' || plan?.cycle === 'biennial' ? plan.cycle : 'monthly', beta: !!plan?.beta, start_month: plan?.start_month ?? null,
       setup_fee_pending: !!plan?.setup_fee_pending, custom_monthly: plan?.custom_monthly ?? null, has_invoice: false,
       over_count: 0, autopay: null,
       children: ((kids ?? []) as unknown as { outlet_id: string; outlet: { name: string } | null }[]).map((k) => ({ outlet_id: k.outlet_id, name: k.outlet?.name ?? '추가 매체', over_count: 0 })),
@@ -290,7 +290,7 @@ export async function invoiceDraft(outletId: string, month: string): Promise<{ i
   const { items } = billingItems(target, month)
   const notes: string[] = []
   if (!planById(target.plan) && target.custom_monthly == null) notes.push('이 매체는 요금제가 정해지지 않았습니다 (AI 사용량 화면에서 정합니다).')
-  if (target.cycle === 'annual' && !items.some((i) => i.name.includes('1년'))) notes.push('1년 결제 매체라 이번 달은 이용료 청구 월이 아닙니다.')
+  if (target.cycle !== 'monthly' && !items.some((i) => i.name.includes(target.cycle === 'biennial' ? '2년' : '1년'))) notes.push(`${target.cycle === 'biennial' ? '2년' : '1년'} 결제 매체라 이번 달은 이용료 청구 월이 아닙니다.`)
   if (partial) notes.push('자동 청구가 꺼진 매체라 지난달 AI 추가 사용은 넣지 않았습니다.')
   return { items, note: notes.join(' ') }
 }

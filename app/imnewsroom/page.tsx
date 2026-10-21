@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { ISSUER, PRODUCT, appLink, isProductHost } from '@/lib/product'
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, BETA_PERIOD_LABEL, EXTRA_OUTLET_FEE, PLANS, REGULAR_AFTER_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BIENNIAL_FREE, BIENNIAL_MONTHS, BETA_END_LABEL, BETA_PERIOD_LABEL, EXTRA_OUTLET_FEE, PLANS, REGULAR_AFTER_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
@@ -194,7 +194,7 @@ function pricingFaq(beta: boolean) {
     ...(beta ? [{ q: '베타 반값은 언제까지인가요?', a: `IM 뉴스룸 정식 출시 전 베타 기간입니다. ${BETA_END_LABEL}까지 신청한 신문사는 ${BETA_PERIOD_LABEL} 이용료가 반값이고, ${REGULAR_AFTER_LABEL} 정상가입니다. 베타 기간에 신청하시면 세팅비도 무료입니다. 매체 추가·AI 추가 사용 요금은 베타 기간에도 정상가입니다.` }] : []),
     { q: '요금은 얼마인가요?', a: `베이직 월 110,000원, 스탠다드 월 150,000원, 프리미엄 월 230,000원이고 따로 붙는 부가세가 없는 최종 금액입니다(미국 법인 공급). 기자 계정은 모든 요금제에서 무제한이고, AI 사용 횟수(초안·법적 검수)·저장 용량에 따라 나뉩니다.${beta ? ` 지금 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 ${BETA_PERIOD_LABEL} 이용료가 반값입니다.` : ''}` },
     { q: '부가세가 붙나요? 세금계산서를 받을 수 있나요?', a: 'IM 뉴스룸은 미국 법인 IM America Group Corp(DBA IM Genesis)이 공급하는 해외 서비스라 요금에 한국 부가세가 따로 붙지 않습니다. 요금표 금액이 그대로 최종 금액입니다. 한국 세금계산서는 발행하지 않고, 편집국 고객센터에서 청구서와 결제 영수증(카드 결제 시 카드 영수증)을 드립니다. 경비 처리 방법은 거래하시는 세무사와 확인해 주세요.' },
-    { q: '1년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로 씁니다.${beta ? ` 베타 기간에는 12개월 중 ${BETA_PERIOD_LABEL}분을 반값으로 계산한 뒤 ${ANNUAL_FREE}를 적용합니다. 예: 지금 베이직 1년 ${won(planCharge(PLANS[0], 'annual', true)!.price)}.` : ''}` },
+    { q: '1년·2년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로, 2년 요금을 한 번에 내시면 ${BIENNIAL_FREE}라 24개월을 ${BIENNIAL_MONTHS}개월 값으로 씁니다. 따로 계약서를 쓰지 않고 신청서에서 결제 방식만 고르시면 됩니다.${beta ? ` 베타 기간에는 ${BETA_PERIOD_LABEL}분을 반값으로 계산한 뒤 무료 개월을 적용합니다. 예: 지금 베이직 1년 ${won(planCharge(PLANS[0], 'annual', true)!.price)}, 2년 ${won(planCharge(PLANS[0], 'biennial', true)!.price)}.` : ''}` },
     { q: '세팅비는 무엇인가요?', a: `처음 개통할 때 한 번만 내는 150,000원입니다. 편집국·홈페이지 개설, 로고·색 등 맞춤 적용, 법정 표기·정책 페이지, 도메인 연결, 기존 기사·사진 옮기기와 옛 주소 연결, 네이버·구글 검색 등록 대행, 사용법 1:1 안내가 들어 있습니다.${beta ? ` 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 세팅비는 무료입니다.` : ''}` },
     { q: '매체를 여러 개 운영할 수 있나요?', a: `네. 여러 매체 운영은 프리미엄 요금제에서 쓸 수 있습니다. 프리미엄에는 매체 2개가 포함되고, 3번째 매체부터 매체마다 월 ${won(EXTRA_OUTLET_FEE)}입니다. 추가 매체는 베이직 사양(AI 초안·법적 검수 월 300회, 뉴스레터 없음 등)으로 운영되며, 그룹장 화면에서 여러 매체를 한 번에 관리하고 기사를 여러 매체에 동시에 송고할 수 있습니다. 매체가 아주 많으면 엔터프라이즈로 상담해 주세요.` },
   ]
@@ -268,7 +268,7 @@ export default async function ProductHome() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: PRODUCT_JSONLD }} />
       <IslandNav
         logo={<Logo />}
-        items={[{ href: '#multi', label: '기능' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: `${PRODUCT.path}/start`, label: '창간 가이드' }, { href: '#faq', label: '자주 묻는 질문' }]}
+        items={[{ href: '#multi', label: '기능' }, { href: '#designs', label: '디자인 샘플' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: `${PRODUCT.path}/start`, label: '창간 가이드' }, { href: '#faq', label: '자주 묻는 질문' }]}
         loginHref={appLink('/login')}
         trialHref={appLink('/trial')}
       />
@@ -485,7 +485,7 @@ export default async function ProductHome() {
               ))}
             </ul>
             <p className="mt-8 text-center text-[13.5px] leading-[1.8] text-[#5B616B]">
-              신청서의 요청사항에 원하는 모양을 적어 주세요. 처음 개통할 때 맞춰 드리며, 모양 설정은 세팅 작업에 들어 있습니다.
+              신청서에서 원하는 모양을 고르실 수 있습니다. 처음 개통할 때 맞춰 드리며, 모양 설정은 세팅 작업에 들어 있습니다.
             </p>
           </div>
         </section>
@@ -897,7 +897,7 @@ export default async function ProductHome() {
                 <Pill href={appLink('/trial')} size="md" className="mt-4">1주일 무료 체험 시작</Pill>
               </div>
             </div>
-            <div className="text-[#14171C]"><ApplyForm /></div>
+            <div className="text-[#14171C]"><ApplyForm demoUrls={demoUrls} /></div>
           </div>
         </section>
       </main>

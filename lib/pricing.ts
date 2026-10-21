@@ -9,6 +9,15 @@ export const BETA_PERIOD_LABEL = `첫 ${BETA_MONTHS}개월`
 export const REGULAR_AFTER_LABEL = `${BETA_MONTHS + 1}개월째부터`
 export const BETA_RATE = 0.5
 export const ANNUAL_MONTHS = 11
+// 2년 한 번에 결제: 24개월을 21개월 값으로 (3개월 무료). 1년 결제(1개월 무료)보다 더 큰 혜택
+export const BIENNIAL_MONTHS = 21
+export type Billing = 'monthly' | 'annual' | 'biennial'
+// 결제 주기: months = 한 번에 이용하는 기간, paid = 그중 값을 내는 개월 수
+export const TERMS: Record<Billing, { months: number; paid: number }> = {
+  monthly: { months: 1, paid: 1 },
+  annual: { months: 12, paid: ANNUAL_MONTHS },
+  biennial: { months: 24, paid: BIENNIAL_MONTHS },
+}
 
 const kstDate = (d = new Date()) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10)
 export const kstMonth = (d = new Date()) => kstDate(d).slice(0, 7)
@@ -26,15 +35,20 @@ export function addMonth(month: string, n: number) {
 // 그 달 이용료에 곱할 값: 베타 고객이고 첫 청구 월(start, 'YYYY-MM')부터 3개월 안이면 반값
 export const betaRateFor = (month: string, beta: boolean, start: string | null | undefined) =>
   (beta && start && month >= start && month < addMonth(start, BETA_MONTHS) ? BETA_RATE : 1)
-// 1년 결제: 12개월을 달마다(첫 3개월 반값, 그다음 정상가) 더한 뒤 1개월 무료(11/12). 10원 단위
-//   discountStart: 베타 반값을 셀 기준 월(첫 청구 월). 1년 갱신 청구서는 시작 월이 아니라 처음 청구한 월부터 센다
-export function annualPrice(monthly: number, start: string, beta: boolean, discountStart: string | null = start) {
+// 1년·2년 결제: 기간의 모든 달을 달마다(첫 3개월 반값, 그다음 정상가) 더한 뒤 무료 개월만큼 깎는다 (1년 11/12, 2년 21/24). 10원 단위
+//   discountStart: 베타 반값을 셀 기준 월(첫 청구 월). 갱신 청구서는 시작 월이 아니라 처음 청구한 월부터 센다
+export function termPrice(monthly: number, start: string, beta: boolean, discountStart: string | null, billing: Billing) {
+  const t = TERMS[billing]
   let sum = 0
-  for (let i = 0; i < 12; i++) sum += monthly * betaRateFor(addMonth(start, i), beta, discountStart)
-  return Math.round((sum * ANNUAL_MONTHS) / 12 / 10) * 10
+  for (let i = 0; i < t.months; i++) sum += monthly * betaRateFor(addMonth(start, i), beta, discountStart)
+  return Math.round((sum * t.paid) / t.months / 10) * 10
+}
+export function annualPrice(monthly: number, start: string, beta: boolean, discountStart: string | null = start) {
+  return termPrice(monthly, start, beta, discountStart, 'annual')
 }
 // 1년 결제 혜택 표시 ("1개월 무료")
 export const ANNUAL_FREE = `${12 - ANNUAL_MONTHS}개월 무료`
+export const BIENNIAL_FREE = `${24 - BIENNIAL_MONTHS}개월 무료`
 export const SETUP_FEE = 150_000
 
 // 세팅비(처음 한 번)에 들어가는 일 — 소개 페이지 요금표에 그대로 보여준다
@@ -54,7 +68,6 @@ export const PREMIUM_INCLUDED_EXTRA = 1
 export const EXTRA_AI_FEE = 11_000 // 100회마다 (AI 초안·법적 검수 합계)
 
 export type PlanId = 'basic' | 'standard' | 'premium' | 'enterprise'
-export type Billing = 'monthly' | 'annual'
 
 export type Plan = {
   id: PlanId
@@ -115,16 +128,16 @@ export function newsletterQuota(plan: string | null | undefined): NewsletterQuot
   return { perSend: 5_000, perMonth: 30 }
 }
 export const newsletterLabel = (q: NewsletterQuota | null) => (q ? `${q.perWeek ? `주 ${q.perWeek}회` : `월 ${q.perMonth}회`} · 회당 ${q.perSend.toLocaleString('ko-KR')}명` : '없음')
-export const BILLING_LABEL: Record<Billing, string> = { monthly: '월 결제', annual: '1년 결제' }
+export const BILLING_LABEL: Record<Billing, string> = { monthly: '월 결제', annual: '1년 결제', biennial: '2년 결제' }
 
 export const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 
-// 한 번 결제하는 이용료 (월 결제면 한 달, 1년 결제면 11개월 값). 별도 문의 요금제는 null
+// 한 번 결제하는 이용료 (월 결제면 한 달, 1년 결제면 11개월 값, 2년 결제면 21개월 값). 별도 문의 요금제는 null
 //   start: 첫 이용 월('YYYY-MM', 기본은 이번 달)
 export function planCharge(plan: Plan, billing: Billing, beta = isBeta(), start = kstMonth()) {
   if (plan.monthly == null) return null
-  const regular = plan.monthly * (billing === 'annual' ? ANNUAL_MONTHS : 1)
-  const price = billing === 'annual' ? annualPrice(plan.monthly, start, beta) : plan.monthly * betaRateFor(start, beta, start)
+  const regular = plan.monthly * TERMS[billing].paid
+  const price = billing === 'monthly' ? plan.monthly * betaRateFor(start, beta, start) : termPrice(plan.monthly, start, beta, start, billing)
   return { regular, price }
 }
 

@@ -14,12 +14,12 @@ const kstDate = (d: Date) => d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seo
 // IM 뉴스룸 이용료 견적서: ?plan=standard&billing=annual&to=언론사이름  (인쇄 창에서 PDF로 저장)
 export default async function QuotePage(props: { searchParams: Promise<{ plan?: string; billing?: string; to?: string }> }) {
   const sp = await props.searchParams
-  const billing: Billing = sp.billing === 'monthly' ? 'monthly' : 'annual'
+  const billing: Billing = sp.billing === 'monthly' ? 'monthly' : sp.billing === 'biennial' ? 'biennial' : 'annual'
   const q = buildQuote(sp.plan ?? 'standard', billing)
   const to = (sp.to ?? '').trim().slice(0, 80)
   const today = new Date()
   const until = new Date(today.getTime() + QUOTE_VALID_DAYS * 864e5)
-  const no = `Q-${today.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).replace(/-/g, '')}-${(sp.plan ?? 'x').slice(0, 2).toUpperCase()}${billing === 'annual' ? 'Y' : 'M'}`
+  const no = `Q-${today.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).replace(/-/g, '')}-${(sp.plan ?? 'x').slice(0, 2).toUpperCase()}${billing === 'annual' ? 'Y' : billing === 'biennial' ? 'B' : 'M'}`
   const row = (k: string, v: string | null | undefined) => (
     <div className="flex gap-3"><dt className="w-32 shrink-0 text-[#6B7280]">{k}</dt><dd>{v || '-'}</dd></div>
   )
@@ -34,7 +34,7 @@ export default async function QuotePage(props: { searchParams: Promise<{ plan?: 
               {PLANS.filter((p) => p.monthly != null).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select name="billing" defaultValue={billing} className="rounded border border-[#D5D8DD] bg-white px-2 py-1.5">
-              <option value="annual">1년 결제</option><option value="monthly">월 결제</option>
+              <option value="annual">1년 결제</option><option value="biennial">2년 결제</option><option value="monthly">월 결제</option>
             </select>
             <input name="to" defaultValue={to} placeholder="받는 곳 (언론사 이름)" maxLength={80} className="w-44 rounded border border-[#D5D8DD] bg-white px-2 py-1.5" />
             <button className="rounded bg-[#1D3461] px-3 py-1.5 font-semibold text-white">다시 계산</button>

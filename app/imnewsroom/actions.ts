@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { BILLING_LABEL, firstPayment, isBeta, planById, type Billing } from '@/lib/pricing'
+import { HOME_LAYOUTS } from '@/lib/home-layouts'
 import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/service-terms'
 import { ISSUER, PRODUCT } from '@/lib/product'
 import { noticeMail, sendMails } from '@/lib/mail'
@@ -24,9 +25,13 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
   const outletCount = get('outlet_count', 20)
   const currentCms = get('current_cms', 80)
   const domain = get('domain', 120).replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase()
-  const message = String(form.get('message') ?? '').trim().slice(0, 2000)
+  // 희망하는 홈페이지 모양 (신청서에서 고른 것): 따로 저장 칸 없이 요청사항 맨 앞에 적어 운영팀이 바로 본다
+  const design = HOME_LAYOUTS.find((l) => l.ready && l.key === get('design', 20))
+  const typed = String(form.get('message') ?? '').trim().slice(0, 1900)
+  const message = (design ? `[희망 홈페이지 모양] ${design.name} · ${design.label}${typed ? `\n\n${typed}` : ''}` : typed).slice(0, 2000)
   const plan = planById(get('plan', 20))
-  const billing: Billing = get('billing', 10) === 'monthly' ? 'monthly' : 'annual'
+  const billingRaw = get('billing', 10)
+  const billing: Billing = billingRaw === 'monthly' ? 'monthly' : billingRaw === 'biennial' ? 'biennial' : 'annual'
 
   if (!plan) return { error: '요금제를 골라 주세요.' }
   if (!company) return { error: '언론사 이름을 적어주세요. 창간 준비 중이면 예정 이름을 적어주세요.' }
@@ -80,7 +85,9 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
       }))
     }
   } else if (viaServer.error) {
-    return { error: '신청을 저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }
+    // 2년 결제를 고른 신청은 billing-biennial.sql 실행 전이면 결제 방식 칸이 거절한다 → 아래에서 요청사항에 적어 저장
+    if (billing !== 'biennial') return { error: '신청을 저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }
+    error = viaServer.error
   } else if (viaServer.data == null) {
     // 같은 이메일로 짧은 시간에 여러 번: 이미 받은 신청이 있으니 메일은 다시 보내지 않는다
     return { ok: true }
