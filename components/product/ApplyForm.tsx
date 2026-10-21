@@ -102,10 +102,11 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
       {/* ─── 상품 ─── */}
       <fieldset>
         <legend className="mb-2 text-[13px] font-semibold text-[#14171C]">요금제 <span className="text-[#D6402B]">*</span></legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 pt-2 sm:grid-cols-4">
           {PLANS.map((p) => (
-            <label key={p.id} className={`cursor-pointer rounded-md border px-3 py-2.5 text-center transition ${plan === p.id ? 'border-[#1D3461] bg-[#EFF2F7] ring-1 ring-[#1D3461]' : 'border-[#D5D8DD] hover:border-[#14171C]'}`}>
+            <label key={p.id} className={`relative cursor-pointer rounded-md border px-3 py-2.5 text-center transition ${plan === p.id ? 'border-[#1D3461] bg-[#EFF2F7] ring-1 ring-[#1D3461]' : 'border-[#D5D8DD] hover:border-[#14171C]'}`}>
               <input type="radio" name="plan_pick" value={p.id} checked={plan === p.id} onChange={() => setPlan(p.id)} className="sr-only" />
+              {p.pick && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#C2410C] px-2 py-0.5 text-[10.5px] font-bold text-white">추천 · 인기</span>}
               <span className="block text-[14.5px] font-bold">{p.name}</span>
               <span className="block text-[12px] tabular-nums text-[#5B616B]">{p.monthly == null ? '별도 문의' : `월 ${won(p.monthly)}`}</span>
             </label>
