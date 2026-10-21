@@ -2,7 +2,8 @@
 
 import { useState, useTransition, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
-import { openCustomer, saveLead, type LeadState } from '@/app/(main)/admin/leads/actions'
+import { openCustomer, saveLead, sendLeadMail, type LeadState } from '@/app/(main)/admin/leads/actions'
+import { leadMailTemplates } from '@/lib/lead-mail'
 import PendingButton from './PendingButton'
 import LaunchChecklist, { type LaunchOutlet } from './LaunchChecklist'
 import { BILLING_LABEL, planById, won, type Billing } from '@/lib/pricing'
@@ -28,6 +29,13 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
   const [assignee, setAssignee] = useState(lead.assigned_to ?? '')
   const [msg, setMsg] = useState<LeadState>({})
   const [open, setOpen] = useState(false)
+  const [mailOpen, setMailOpen] = useState(false)
+  const [tpl, setTpl] = useState('')
+  const [subject, setSubject] = useState('')
+  const [body, setBody] = useState('')
+  const [mailMsg, setMailMsg] = useState<LeadState>({})
+  const [sending, startSend] = useTransition()
+  const templates = leadMailTemplates(lead)
   const [pending, start] = useTransition()
   const [openState, openAction] = useActionState<LeadState, FormData>(openCustomer.bind(null, lead.id), {})
   const dirty = status !== lead.status || note !== (lead.note ?? '') || assignee !== (lead.assigned_to ?? '')
@@ -79,10 +87,33 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
           <button type="button" disabled={!dirty || pending} onClick={() => start(async () => { const r = await saveLead(lead.id, { status, note, assignedTo: assignee || null }); setMsg(r); if (!r.error) router.refresh() })} className="btn-primary px-4 py-1.5 text-[13px] disabled:opacity-40">
             {pending ? '저장 중…' : '저장'}
           </button>
+          {lead.email && <button type="button" onClick={() => setMailOpen(!mailOpen)} className="btn-secondary px-4 py-1.5 text-[13px]">메일 보내기</button>}
           {!lead.publisher_id && <button type="button" onClick={() => setOpen(!open)} className="btn-publish px-4 py-1.5 text-[13px]">고객사 개설</button>}
         </div>
       </div>
       {(msg.error || msg.ok) && <p role={msg.error ? 'alert' : 'status'} className={`mt-2 text-[12.5px] ${msg.error ? 'text-danger' : 'text-published'}`}>{msg.error ?? msg.ok}</p>}
+
+      {mailOpen && lead.email && (
+        <div className="mt-4 rounded-lg border border-line bg-paper p-4">
+          <p className="text-[13.5px] font-bold">{lead.email} 로 안내 메일 보내기</p>
+          <p className="mt-0.5 text-[12px] text-muted">보내는 이름은 “IM 뉴스룸”, 답장은 문의 주소로 옵니다. 보낸 기록은 상담 기록에 남습니다.</p>
+          <label className="mt-3 block text-[12.5px]">
+            <span className="field-label">문안 불러오기</span>
+            <select value={tpl} onChange={(e) => { const t = templates.find((x) => x.key === e.target.value); setTpl(e.target.value); if (t) { setSubject(t.subject); setBody(t.body) } }} className="field-input bg-white py-1.5">
+              <option value="">직접 쓰기</option>
+              {templates.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+            </select>
+          </label>
+          <label className="mt-3 block text-[12.5px]"><span className="field-label">제목</span><input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} className="field-input bg-white py-1.5" /></label>
+          <label className="mt-3 block text-[12.5px]"><span className="field-label">내용</span><textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} maxLength={8000} className="field-input resize-y bg-white py-1.5 text-[13px] leading-relaxed" /></label>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button type="button" disabled={sending || !subject.trim() || !body.trim()} onClick={() => { if (!confirm(`${lead.email} 로 메일을 보낼까요?`)) return; startSend(async () => { const r = await sendLeadMail(lead.id, { subject, body }); setMailMsg(r); if (!r.error) { if (r.note != null) setNote(r.note); if (r.status) setStatus(r.status); router.refresh() } }) }} className="btn-primary px-5 py-1.5 text-[13px] disabled:opacity-40">
+              {sending ? '보내는 중…' : '보내기'}
+            </button>
+            {(mailMsg.error || mailMsg.ok) && <p role={mailMsg.error ? 'alert' : 'status'} className={`text-[12.5px] ${mailMsg.error ? 'text-danger' : 'text-published'}`}>{mailMsg.error ?? mailMsg.ok}</p>}
+          </div>
+        </div>
+      )}
 
       {/* 개설된 고객사: 매체별 개통 체크리스트 (도메인·법정 표기·검색 등록 등) */}
       {lead.publisher_id && launch && <LaunchChecklist outlets={launch} missing={launchMissing} />}

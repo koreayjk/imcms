@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { LAUNCH_KEYS, type LaunchDone } from '@/lib/launch-checklist'
 import { sendInviteMail } from '@/lib/invite-mail'
+import { mailReady, sendMails } from '@/lib/mail'
+import { ISSUER, PRODUCT } from '@/lib/product'
 
 const STATUSES = ['new', 'contacted', 'done']
 export type LeadState = { error?: string; ok?: string }
@@ -109,4 +111,29 @@ export async function setLaunchItem(outletId: string, key: string, done: boolean
   const { error } = await supabase.from('launch_checklists').upsert({ outlet_id: outletId, done: next, updated_at: new Date().toISOString(), updated_by: user.id })
   if (error) return { error: error.message }
   return { done: next }
+}
+
+const escHtml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+// 신청 고객에게 안내 메일 보내기: 회신은 contact 주소로 오고, 보낸 기록은 상담 기록에 한 줄 남는다
+export async function sendLeadMail(leadId: string, input: { subject: string; body: string }): Promise<LeadState & { note?: string; status?: string }> {
+  const { supabase } = await staffContext()
+  const subject = input.subject.trim().replace(/[\r\n]+/g, ' ').slice(0, 150)
+  const body = input.body.trim().slice(0, 8000)
+  if (!subject || !body) return { error: '제목과 내용을 적어 주세요.' }
+  if (!mailReady()) return { error: '메일 발송이 아직 설정되지 않았습니다 (RESEND_API_KEY·MAIL_FROM).' }
+  const { data: lead } = await supabase.from('beta_requests').select('email, note, status').eq('id', leadId).maybeSingle()
+  const to = (lead?.email ?? '').trim()
+  if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return { error: '이 신청에는 받는 사람 이메일이 없습니다.' }
+
+  const html = `<!doctype html><html lang="ko"><body style="margin:0;padding:20px;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:15px;line-height:1.75;color:#14171C"><div style="max-width:600px;white-space:pre-wrap">${escHtml(body)}</div></body></html>`
+  const r = await sendMails([{ to, subject, html, text: body, replyTo: ISSUER.contact, fromName: PRODUCT.name, tag: 'lead' }]).catch(() => null)
+  if (!r || r.sent < 1) return { error: `메일을 보내지 못했습니다${r?.error ? `: ${r.error}` : ''}` }
+
+  const stamp = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+  const note = [lead?.note?.trim(), `[메일 발송 ${stamp}] ${subject}`].filter(Boolean).join('\n').slice(0, 5000)
+  const status = lead?.status === 'new' ? 'contacted' : lead?.status ?? 'contacted'
+  await supabase.from('beta_requests').update({ note, status, updated_at: new Date().toISOString() }).eq('id', leadId)
+  revalidatePath('/', 'layout')
+  return { ok: `${to} 로 보냈습니다. 답장은 ${ISSUER.contact ?? '문의 주소'} 로 옵니다.`, note, status }
 }
