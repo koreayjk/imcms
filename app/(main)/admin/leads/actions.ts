@@ -127,11 +127,11 @@ export async function sendLeadMail(leadId: string, input: { subject: string; bod
   if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return { error: '이 신청에는 받는 사람 이메일이 없습니다.' }
 
   const html = `<!doctype html><html lang="ko"><body style="margin:0;padding:20px;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:15px;line-height:1.75;color:#14171C"><div style="max-width:600px;white-space:pre-wrap">${escHtml(body)}</div></body></html>`
-  const mails = [{ to, subject, html, text: body, replyTo: ISSUER.contact, fromName: PRODUCT.name, tag: 'lead' }]
+  const mails = [{ to, subject, html, text: body, replyTo: ISSUER.contact, fromName: PRODUCT.name, fromEmail: ISSUER.contact ?? undefined, tag: 'lead' }]
   // 나에게도 보내기: 보낸 사람 본인 메일로 같은 내용을 한 통 더 (회신하면 고객에게 가도록 회신 주소는 고객 주소)
   const me = input.copyMe ? (user?.email ?? '').trim().toLowerCase() : ''
   const copyTo = me && me !== to.toLowerCase() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(me) ? me : ''
-  if (copyTo) mails.push({ to: copyTo, subject: `[사본] ${subject}`, html, text: `(고객 ${to} 에게 보낸 메일의 사본입니다)\n\n${body}`, replyTo: to, fromName: PRODUCT.name, tag: 'lead-copy' })
+  if (copyTo) mails.push({ to: copyTo, subject: `[사본] ${subject}`, html, text: `(고객 ${to} 에게 보낸 메일의 사본입니다)\n\n${body}`, replyTo: to, fromName: PRODUCT.name, fromEmail: ISSUER.contact ?? undefined, tag: 'lead-copy' })
   const r = await sendMails(mails).catch(() => null)
   if (!r || r.sent < 1) return { error: `메일을 보내지 못했습니다${r?.error ? `: ${r.error}` : ''}` }
   const copied = !!copyTo && r.sent >= 2

@@ -13,14 +13,20 @@ export type Mail = {
   replyTo?: string | null
   // 보내는 이름 (예: 매체 이름). 주소는 MAIL_FROM 그대로
   fromName?: string
+  // 보내는 주소만 바꿀 때 (같은 도메인으로 인증된 주소여야 한다. 예: 고객 상담 메일은 contact@ 로)
+  fromEmail?: string
   tag?: string
   headers?: Record<string, string>
 }
 
-function fromWithName(name?: string) {
+function fromWithName(name?: string, email?: string) {
   const from = process.env.MAIL_FROM ?? ''
-  if (!name) return from
-  const addr = from.match(/<([^>]+)>/)?.[1] ?? from
+  if (!name && !email) return from
+  const base = from.match(/<([^>]+)>/)?.[1] ?? from
+  // 보내는 주소를 바꾸는 것은 MAIL_FROM 과 같은 도메인일 때만
+  const sameDomain = email && email.split('@')[1]?.toLowerCase() === base.split('@')[1]?.toLowerCase()
+  const addr = sameDomain ? email : base
+  if (!name) return sameDomain ? addr : from
   return `${name.replace(/["<>\r\n]/g, '').slice(0, 60)} <${addr}>`
 }
 
@@ -42,7 +48,7 @@ const tagValue = (t: string) => t.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 256)
 async function sendResend(mails: Mail[], result: SendResult) {
   for (let i = 0; i < mails.length; i += 100) {
     const chunk = mails.slice(i, i + 100).map((m) => ({
-      from: fromWithName(m.fromName),
+      from: fromWithName(m.fromName, m.fromEmail),
       to: [m.to],
       subject: m.subject.slice(0, 200),
       html: m.html,
@@ -81,7 +87,7 @@ async function sendPostmark(mails: Mail[], stream: 'outbound' | 'broadcast', res
   const streamId = stream === 'broadcast' ? process.env.POSTMARK_BROADCAST_STREAM || 'broadcast' : 'outbound'
   for (let i = 0; i < mails.length; i += 500) {
     const chunk = mails.slice(i, i + 500).map((m) => ({
-      From: fromWithName(m.fromName),
+      From: fromWithName(m.fromName, m.fromEmail),
       To: m.to,
       Subject: m.subject.slice(0, 200),
       HtmlBody: m.html,
@@ -143,7 +149,7 @@ export async function sendMailWithAttachments(m: Omit<Mail, 'to'> & { to: string
         method: 'POST',
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'User-Agent': 'im-newsroom/1.0' },
         body: JSON.stringify({
-          from: fromWithName(m.fromName), to: m.to, ...(m.cc?.length ? { cc: m.cc } : {}),
+          from: fromWithName(m.fromName, m.fromEmail), to: m.to, ...(m.cc?.length ? { cc: m.cc } : {}),
           subject: m.subject.slice(0, 200), html: m.html, text: m.text,
           ...(m.replyTo ? { reply_to: m.replyTo } : {}),
           ...(m.tag ? { tags: [{ name: 'type', value: tagValue(m.tag) }] } : {}),
@@ -158,7 +164,7 @@ export async function sendMailWithAttachments(m: Omit<Mail, 'to'> & { to: string
       method: 'POST',
       headers: { 'X-Postmark-Server-Token': process.env.POSTMARK_SERVER_TOKEN!, 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
-        From: fromWithName(m.fromName), To: m.to.join(','), ...(m.cc?.length ? { Cc: m.cc.join(',') } : {}),
+        From: fromWithName(m.fromName, m.fromEmail), To: m.to.join(','), ...(m.cc?.length ? { Cc: m.cc.join(',') } : {}),
         Subject: m.subject.slice(0, 200), HtmlBody: m.html, TextBody: m.text, ...(m.replyTo ? { ReplyTo: m.replyTo } : {}),
         MessageStream: 'outbound',
         Attachments: m.attachments.map((a) => ({ Name: a.filename, Content: a.content, ContentType: a.contentType ?? 'application/octet-stream' })),
