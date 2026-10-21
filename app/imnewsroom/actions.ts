@@ -30,8 +30,7 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
   const typed = String(form.get('message') ?? '').trim().slice(0, 1900)
   const message = (design ? `[희망 홈페이지 모양] ${design.name} · ${design.label}${typed ? `\n\n${typed}` : ''}` : typed).slice(0, 2000)
   const plan = planById(get('plan', 20))
-  const billingRaw = get('billing', 10)
-  const billing: Billing = billingRaw === 'monthly' ? 'monthly' : billingRaw === 'biennial' ? 'biennial' : 'annual'
+  const billing: Billing = get('billing', 10) === 'monthly' ? 'monthly' : 'annual'
 
   if (!plan) return { error: '요금제를 골라 주세요.' }
   if (!company) return { error: '언론사 이름을 적어주세요. 창간 준비 중이면 예정 이름을 적어주세요.' }
@@ -85,9 +84,7 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
       }))
     }
   } else if (viaServer.error) {
-    // 2년 결제를 고른 신청은 billing-biennial.sql 실행 전이면 결제 방식 칸이 거절한다 → 아래에서 요청사항에 적어 저장
-    if (billing !== 'biennial') return { error: '신청을 저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }
-    error = viaServer.error
+    return { error: '신청을 저장하지 못했습니다. 잠시 뒤 다시 시도해 주세요.' }
   } else if (viaServer.data == null) {
     // 같은 이메일로 짧은 시간에 여러 번: 이미 받은 신청이 있으니 메일은 다시 보내지 않는다
     return { ok: true }

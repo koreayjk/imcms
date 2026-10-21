@@ -3,7 +3,7 @@
 import { useEffect, useState, useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { submitBetaRequest, type ApplyState } from '@/app/imnewsroom/actions'
-import { ANNUAL_FREE, BIENNIAL_FREE, TERMS, BILLING_LABEL, PLANS, BETA_PERIOD_LABEL, REGULAR_AFTER_LABEL, SETUP_FEE, firstPayment, isBeta, planById, won, type Billing, type PlanId } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BILLING_LABEL, PLANS, BETA_PERIOD_LABEL, REGULAR_AFTER_LABEL, SETUP_FEE, firstPayment, isBeta, planById, won, type Billing, type PlanId } from '@/lib/pricing'
 import { applyConsentSections, termsSections } from '@/lib/service-terms'
 import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
@@ -112,17 +112,17 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
           ))}
         </div>
         {chosen.monthly != null && (
-          <div role="group" aria-label="결제 방식" className="mt-2 grid grid-cols-3 gap-2">
-            {(['monthly', 'annual', 'biennial'] as Billing[]).map((b) => (
+          <div role="group" aria-label="결제 방식" className="mt-2 grid grid-cols-2 gap-2">
+            {(['monthly', 'annual'] as Billing[]).map((b) => (
               <button
                 key={b}
                 type="button"
                 aria-pressed={billing === b}
                 onClick={() => setBilling(b)}
-                className={`flex flex-col items-center justify-center gap-0.5 rounded-md border px-2 py-2.5 text-[13.5px] font-semibold transition sm:flex-row sm:gap-1.5 sm:px-3 sm:text-[14px] ${billing === b ? 'border-[#1D3461] bg-[#1D3461] text-white' : 'border-[#D5D8DD] text-[#3B4048] hover:border-[#1D3461]'}`}
+                className={`flex items-center justify-center gap-1.5 rounded-md border px-3 py-2.5 text-[14px] font-semibold transition ${billing === b ? 'border-[#1D3461] bg-[#1D3461] text-white' : 'border-[#D5D8DD] text-[#3B4048] hover:border-[#1D3461]'}`}
               >
                 {BILLING_LABEL[b]}
-                {b !== 'monthly' && <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold ${billing === b ? 'bg-white/90 text-[#16294D]' : 'bg-[#EFF2F7] text-[#16294D]'}`}>{b === 'annual' ? ANNUAL_FREE : BIENNIAL_FREE}</span>}
+                {b === 'annual' && <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold ${billing === b ? 'bg-white/90 text-[#16294D]' : 'bg-[#EFF2F7] text-[#16294D]'}`}>{ANNUAL_FREE}</span>}
               </button>
             ))}
           </div>
@@ -137,7 +137,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
               </p>
               <ul className="mt-1.5 space-y-0.5 text-[12.5px] tabular-nums text-[#5B616B]">
                 <li>
-                  이용료 {won(pay.price)} ({chosen.name} · {billing !== 'monthly' ? `${TERMS[billing].months}개월을 ${TERMS[billing].paid}개월 값으로` : '1개월'}{BETA && <b className="font-semibold text-[#C2410C]">{billing !== 'monthly' ? ` · ${BETA_PERIOD_LABEL}분 반값` : ' · 베타 반값'}</b>})
+                  이용료 {won(pay.price)} ({chosen.name} · {billing === 'annual' ? `12개월을 ${ANNUAL_MONTHS}개월 값으로` : '1개월'}{BETA && <b className="font-semibold text-[#C2410C]">{billing === 'annual' ? ` · ${BETA_PERIOD_LABEL}분 반값` : ' · 베타 반값'}</b>})
                   {BETA && <s className="ml-1 text-[#9AA0A8]">{won(pay.regular)}</s>}
                 </li>
                 <li>세팅비 {pay.setupFree ? <>0원 <s className="text-[#9AA0A8]">{won(SETUP_FEE)}</s> <b className="font-semibold text-[#C2410C]">(베타 기간 신청 무료)</b></> : <>{won(pay.setup)} (처음 한 번)</>}</li>

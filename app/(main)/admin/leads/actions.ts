@@ -70,7 +70,7 @@ export async function openCustomer(leadId: string, _prev: LeadState, form: FormD
   // 청구 설정: 신청서의 결제 방식·베타 반값·세팅비를 그대로 넘긴다 (billing-auto.sql 전이면 조용히 넘어간다)
   //   자동 청구는 꺼 둔다 → 개통 일정이 정해지면 매체 청구 설정에서 첫 청구 월을 넣고 켠다 (모르는 사이 청구서가 나가지 않게)
   const { error: pErr } = await supabase.from('outlet_plans').upsert({
-    outlet_id: outlet.id, auto: false, cycle: lead?.billing === 'monthly' ? 'monthly' : lead?.billing === 'biennial' ? 'biennial' : 'annual',
+    outlet_id: outlet.id, auto: false, cycle: lead?.billing === 'monthly' ? 'monthly' : 'annual',
     beta: !!lead?.beta_discount, setup_fee_pending: !lead?.beta_discount, updated_at: new Date().toISOString(),
   })
   const { error: iErr } = await supabase.from('invitations').insert({ email, full_name: fullName || null, role: 'admin', publisher_id: group.id, outlet_id: outlet.id })

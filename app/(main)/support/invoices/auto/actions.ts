@@ -14,7 +14,7 @@ export async function saveOutletPlan(form: FormData) {
   if (!isStaff) redirect('/support')
   const outlet_id = String(form.get('outlet_id') ?? '')
   const auto = form.get('auto') === 'on'
-  const cycle = form.get('cycle') === 'annual' ? 'annual' : form.get('cycle') === 'biennial' ? 'biennial' : 'monthly'
+  const cycle = form.get('cycle') === 'annual' ? 'annual' : 'monthly'
   const startRaw = String(form.get('start_month') ?? '')
   const start_month = /^\d{4}-\d{2}$/.test(startRaw) ? `${startRaw}-01` : null
   const billToRaw = String(form.get('bill_to') ?? '')
