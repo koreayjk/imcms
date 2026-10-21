@@ -6,8 +6,7 @@ import { submitApplicationEn, type ApplyStateEn } from '@/app/imnewsroom/en/acti
 import { ANNUAL_MONTHS, BETA_END_LABEL_EN, BETA_MONTHS, PLANS_EN, SETUP_FEE_USD, SETUP_WAIVER_MONTHS, firstPaymentUsd, isBeta, planEnById, usd, type BillingEn, type PlanIdEn } from '@/lib/pricing-global'
 import { applyConsentSectionsEn } from '@/lib/service-terms-en'
 import PolicyDoc from './PolicyDoc'
-import HomeLayoutThumb from '@/components/cms/HomeLayoutThumb'
-import { LAYOUTS_EN } from '@/lib/home-layouts-en'
+import { LAYOUTS_EN, demoUrlEn } from '@/lib/home-layouts-en'
 
 export const PICK_PLAN_EVENT_EN = 'pn:pick-plan-en'
 export type PickPlanDetailEn = { plan?: PlanIdEn; billing?: BillingEn }
@@ -136,11 +135,13 @@ export default function ApplyFormEn() {
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {LAYOUTS_EN.map((l) => (
             <label key={l.key} className={`flex cursor-pointer flex-col gap-2 rounded-md border p-2.5 transition ${design === l.key ? 'border-[#1D3461] bg-[#EFF2F7] ring-1 ring-[#1D3461]' : 'border-[#D5D8DD] hover:border-[#14171C]'}`}>
-              <HomeLayoutThumb layout={l.key} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/designs-en/${l.key}.webp`} width={800} height={600} loading="lazy" alt={`${l.name} homepage layout`} className="aspect-[4/3] w-full rounded object-cover object-top ring-1 ring-black/10" />
               <span className="flex items-start gap-2">
                 <input type="radio" name="design_pick" value={l.key} checked={design === l.key} onChange={() => setDesign(l.key)} className="mt-1 accent-[#1D3461]" />
                 <span className="min-w-0 flex-1 leading-tight"><span className="block text-[13.5px] font-bold">{l.name}</span><span className="block text-[12px] text-[#5B616B]">{l.label}</span></span>
               </span>
+              <a href={demoUrlEn(l.key)} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} className="rounded border border-[#CBD1DB] bg-white px-2 py-1 text-center text-[12px] font-semibold text-[#1D3461] hover:border-[#1D3461]">See live ↗</a>
             </label>
           ))}
           <label className={`flex cursor-pointer items-center gap-2 rounded-md border p-2.5 text-[13px] transition ${design === '' ? 'border-[#1D3461] bg-[#EFF2F7] ring-1 ring-[#1D3461]' : 'border-[#D5D8DD] hover:border-[#14171C]'}`}>

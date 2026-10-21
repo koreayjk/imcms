@@ -3,10 +3,9 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import { PRODUCT, isProductHost } from '@/lib/product'
 import { BETA_END_LABEL_EN, BETA_MONTHS, PLANS_EN, SETUP_FEE_USD, SETUP_WAIVER_MONTHS, firstPaymentUsd, isBeta, usd } from '@/lib/pricing-global'
-import { LAYOUTS_EN } from '@/lib/home-layouts-en'
+import { LAYOUTS_EN, demoUrlEn } from '@/lib/home-layouts-en'
 import ApplyFormEn from '@/components/product/ApplyFormEn'
 import PricingEn from '@/components/product/PricingEn'
-import HomeLayoutThumb from '@/components/cms/HomeLayoutThumb'
 import IslandNav from '@/components/product/IslandNav'
 import { Pill } from '@/components/product/Pill'
 import { Reveal } from '@/components/product/Motion'
@@ -171,19 +170,21 @@ export default function ProductHomeEn() {
             <Reveal className="text-center">
               <p className="text-[13px] font-semibold tracking-[0.06em] text-[#1D3461]">HOMEPAGE LAYOUTS</p>
               <h2 className={`mt-3 ${H2}`}>Pick the look that fits your publication</h2>
-              <p className="mx-auto mt-4 max-w-[38em] text-[17px] leading-[1.75] text-[#5B616B]">Five homepage layouts, ready to go. We apply your logo and colors and you can change layout any time. Your editors also curate the lead stories by hand.</p>
+              <p className="mx-auto mt-4 max-w-[38em] text-[17px] leading-[1.75] text-[#5B616B]">Five homepage layouts, ready to go. Click any card to open it on The Statecraft Times, a real English-language publication running on IM Newsroom, and switch between layouts with real stories. We apply your logo and colors, and you can change layout any time.</p>
             </Reveal>
             <ul className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {LAYOUTS_EN.map((l, i) => (
                 <li key={l.key}>
                   <Reveal delay={i * 70} className="h-full">
-                    <div className="h-full rounded-2xl bg-[#F7F8FA] p-3.5 ring-1 ring-black/5 sm:p-4">
-                      <HomeLayoutThumb layout={l.key} />
+                    <a href={demoUrlEn(l.key)} target="_blank" rel="noopener" className="group block h-full rounded-2xl bg-[#F7F8FA] p-3.5 ring-1 ring-black/5 transition-transform duration-500 hover:-translate-y-1 sm:p-4" aria-label={`${l.name} layout: open the live sample`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/designs-en/${l.key}.webp`} width={800} height={600} loading="lazy" alt={`${l.name} homepage layout on The Statecraft Times`} className="aspect-[4/3] w-full rounded-lg object-cover object-top ring-1 ring-black/10" />
                       <p className="mt-3.5 text-[15.5px] font-extrabold tracking-[-0.02em]">{l.name}</p>
                       <p className="text-[13.5px] font-semibold text-[#1D3461]">{l.label}</p>
                       <p className="mt-2 text-[12.5px] leading-[1.6] text-[#5B616B]">{l.features}</p>
                       <p className="mt-2 text-[12px] font-semibold text-[#3B4048]">Good for: {l.fit}</p>
-                    </div>
+                      <p className="mt-3 text-[13px] font-bold text-[#1D3461]">See it live with real stories →</p>
+                    </a>
                   </Reveal>
                 </li>
               ))}
