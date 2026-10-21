@@ -34,6 +34,7 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [mailMsg, setMailMsg] = useState<LeadState>({})
+  const [copyMe, setCopyMe] = useState(true)
   const [sending, startSend] = useTransition()
   const templates = leadMailTemplates(lead)
   const [pending, start] = useTransition()
@@ -106,8 +107,9 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
           </label>
           <label className="mt-3 block text-[12.5px]"><span className="field-label">제목</span><input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} className="field-input bg-white py-1.5" /></label>
           <label className="mt-3 block text-[12.5px]"><span className="field-label">내용</span><textarea value={body} onChange={(e) => setBody(e.target.value)} rows={14} maxLength={8000} className="field-input resize-y bg-white py-1.5 text-[13px] leading-relaxed" /></label>
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-[13px]"><input type="checkbox" checked={copyMe} onChange={(e) => setCopyMe(e.target.checked)} className="h-4 w-4 accent-[#1D3461]" />나에게도 사본 보내기 <span className="text-muted">(내 로그인 이메일로 같은 메일이 한 통 더 갑니다)</span></label>
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button type="button" disabled={sending || !subject.trim() || !body.trim()} onClick={() => { if (!confirm(`${lead.email} 로 메일을 보낼까요?`)) return; startSend(async () => { const r = await sendLeadMail(lead.id, { subject, body }); setMailMsg(r); if (!r.error) { if (r.note != null) setNote(r.note); if (r.status) setStatus(r.status); router.refresh() } }) }} className="btn-primary px-5 py-1.5 text-[13px] disabled:opacity-40">
+            <button type="button" disabled={sending || !subject.trim() || !body.trim()} onClick={() => { if (!confirm(`${lead.email} 로 메일을 보낼까요?`)) return; startSend(async () => { const r = await sendLeadMail(lead.id, { subject, body, copyMe }); setMailMsg(r); if (!r.error) { if (r.note != null) setNote(r.note); if (r.status) setStatus(r.status); router.refresh() } }) }} className="btn-primary px-5 py-1.5 text-[13px] disabled:opacity-40">
               {sending ? '보내는 중…' : '보내기'}
             </button>
             {(mailMsg.error || mailMsg.ok) && <p role={mailMsg.error ? 'alert' : 'status'} className={`text-[12.5px] ${mailMsg.error ? 'text-danger' : 'text-published'}`}>{mailMsg.error ?? mailMsg.ok}</p>}

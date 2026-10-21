@@ -116,8 +116,8 @@ export async function setLaunchItem(outletId: string, key: string, done: boolean
 const escHtml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 // 신청 고객에게 안내 메일 보내기: 회신은 contact 주소로 오고, 보낸 기록은 상담 기록에 한 줄 남는다
-export async function sendLeadMail(leadId: string, input: { subject: string; body: string }): Promise<LeadState & { note?: string; status?: string }> {
-  const { supabase } = await staffContext()
+export async function sendLeadMail(leadId: string, input: { subject: string; body: string; copyMe?: boolean }): Promise<LeadState & { note?: string; status?: string }> {
+  const { supabase, user } = await staffContext()
   const subject = input.subject.trim().replace(/[\r\n]+/g, ' ').slice(0, 150)
   const body = input.body.trim().slice(0, 8000)
   if (!subject || !body) return { error: '제목과 내용을 적어 주세요.' }
@@ -127,13 +127,19 @@ export async function sendLeadMail(leadId: string, input: { subject: string; bod
   if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return { error: '이 신청에는 받는 사람 이메일이 없습니다.' }
 
   const html = `<!doctype html><html lang="ko"><body style="margin:0;padding:20px;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:15px;line-height:1.75;color:#14171C"><div style="max-width:600px;white-space:pre-wrap">${escHtml(body)}</div></body></html>`
-  const r = await sendMails([{ to, subject, html, text: body, replyTo: ISSUER.contact, fromName: PRODUCT.name, tag: 'lead' }]).catch(() => null)
+  const mails = [{ to, subject, html, text: body, replyTo: ISSUER.contact, fromName: PRODUCT.name, tag: 'lead' }]
+  // 나에게도 보내기: 보낸 사람 본인 메일로 같은 내용을 한 통 더 (회신하면 고객에게 가도록 회신 주소는 고객 주소)
+  const me = input.copyMe ? (user?.email ?? '').trim().toLowerCase() : ''
+  const copyTo = me && me !== to.toLowerCase() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(me) ? me : ''
+  if (copyTo) mails.push({ to: copyTo, subject: `[사본] ${subject}`, html, text: `(고객 ${to} 에게 보낸 메일의 사본입니다)\n\n${body}`, replyTo: to, fromName: PRODUCT.name, tag: 'lead-copy' })
+  const r = await sendMails(mails).catch(() => null)
   if (!r || r.sent < 1) return { error: `메일을 보내지 못했습니다${r?.error ? `: ${r.error}` : ''}` }
+  const copied = !!copyTo && r.sent >= 2
 
   const stamp = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
-  const note = [lead?.note?.trim(), `[메일 발송 ${stamp}] ${subject}`].filter(Boolean).join('\n').slice(0, 5000)
+  const note = [lead?.note?.trim(), `[메일 발송 ${stamp}] ${subject}${copied ? ' (사본 발송)' : ''}`].filter(Boolean).join('\n').slice(0, 5000)
   const status = lead?.status === 'new' ? 'contacted' : lead?.status ?? 'contacted'
   await supabase.from('beta_requests').update({ note, status, updated_at: new Date().toISOString() }).eq('id', leadId)
   revalidatePath('/', 'layout')
-  return { ok: `${to} 로 보냈습니다. 답장은 ${ISSUER.contact ?? '문의 주소'} 로 옵니다.`, note, status }
+  return { ok: `${to} 로 보냈습니다.${copied ? ` 사본은 ${copyTo} 로 갔습니다.` : copyTo ? ' 사본은 보내지 못했습니다.' : ''} 고객 답장은 ${ISSUER.contact ?? '문의 주소'} 로 옵니다.`, note, status }
 }
