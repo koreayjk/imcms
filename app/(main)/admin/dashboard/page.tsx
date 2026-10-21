@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { isDormant } from '@/lib/device'
 import { formatShort } from '@/lib/format'
+import { outletHomeUrl } from '@/lib/product'
 import { TICKET_CATEGORIES, TICKET_STATUS, won, type TicketCategory, type TicketStatus } from '@/lib/support'
 import type { OutletSiteSettings } from '@/lib/sites'
 import ConfirmSubmit from '@/components/cms/ConfirmSubmit'
@@ -189,7 +190,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
                             <td data-label="요청" className={`px-2 py-3 text-right ${s.open_tickets ? 'font-bold text-danger' : ''}`}>{s.open_tickets || ''}</td>
                             <td data-label="미납" className={`px-2 py-3 text-right ${s.unpaid_invoices ? 'font-bold text-danger' : ''}`}>{s.unpaid_invoices ? won(s.unpaid_total) : ''}</td>
                             <td className="tc-full whitespace-nowrap px-5 py-3 text-right text-[12px]">
-                              <a href={o.domain ? `https://${o.domain}` : `/?preview_outlet=${o.id}`} target="_blank" rel="noopener" className="text-muted underline underline-offset-2 hover:text-ink">홈페이지</a>
+                              <a href={outletHomeUrl(o)} target="_blank" rel="noopener" className="text-muted underline underline-offset-2 hover:text-ink">홈페이지</a>
                               <Link href={`/admin/outlets/${o.id}/site`} className="ml-2.5 text-muted underline underline-offset-2 hover:text-ink">설정</Link>
                               {isSuper && !s.published && !s.members && !s.drafts_in_review && !o.site?.trial && (
                                 <form action={removeOutlet.bind(null, o.id)} className="ml-2.5 inline">

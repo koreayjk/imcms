@@ -6,6 +6,7 @@ import SiteHeader from './SiteHeader'
 import SiteFooter from './SiteFooter'
 import AdArea from './AdArea'
 import { siteText } from '@/lib/site-text'
+import { HOME_LAYOUTS } from '@/lib/home-layouts'
 
 type Props = { site: SiteConfig; current?: string; children: ReactNode }
 
@@ -48,6 +49,21 @@ export default function SiteFrame({ site, current, children }: Props) {
           <span><strong>{site.name}</strong> {t.previewText}</span>
           <a href="/?preview_outlet=clear" className="rounded bg-white/15 px-2 py-0.5 hover:bg-white/25">{t.previewEnd}</a>
         </div>
+      )}
+      {(site.preview || isDemo) && (
+        // 미리보기: 홈 배치 5가지를 눌러 바꿔 가며 볼 수 있다 (고른 배치는 기사·섹션 화면에서도 유지된다)
+        <nav aria-label="홈페이지 배치 바꿔 보기" className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 border-b border-rule bg-[#F3F5F8] px-3 py-2 text-[12.5px]">
+          <span className="font-semibold text-sub">홈페이지 배치</span>
+          {HOME_LAYOUTS.filter((l) => l.ready).map((l) => {
+            const on = (site.homeLayout ?? 'standard') === l.key
+            const href = site.preview && site.outletId ? `/?preview_outlet=${site.outletId}&layout=${l.key}` : `/?layout=${l.key}`
+            return (
+              <a key={l.key} href={href} aria-current={on ? 'true' : undefined} className={`rounded-full px-3 py-1 ${on ? 'bg-[#1F3A5F] font-bold text-white' : 'border border-[#CBD1DB] bg-white text-body hover:border-[#1F3A5F]'}`}>
+                {l.name}<span className="hidden sm:inline"> · {l.label}</span>
+              </a>
+            )
+          })}
+        </nav>
       )}
       <SiteHeader site={site} current={current} />
       <AdArea site={site} slot="header" className="mx-auto max-w-[1200px] px-4 pt-4" />

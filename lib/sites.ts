@@ -320,6 +320,13 @@ export function defaultBands(sections: SectionConfig[]): HomeBand[] {
     .map((s, i) => ({ slug: s.slug, style: i === 0 ? 'brief' : i % 2 === 1 ? 'news' : 'grid' }))
 }
 
+// 미리보기용: 저장된 설정과 상관없이 다른 홈 배치로 바꿔 본다 (아직 안 만든 배치·모르는 값은 그대로)
+export function withLayout(site: SiteConfig, key: string | null | undefined): SiteConfig {
+  const l = parseHomeLayout(key)
+  if (!key || l !== key) return site
+  return { ...site, homeLayout: l, bands: l === 'bands' && !site.bands?.length ? defaultBands(site.sections) : site.bands }
+}
+
 // 숫자 판: 이름·숫자가 있는 줄만, 최대 8줄
 export function cleanStats(b: StatsBoard | undefined | null): StatsBoard | undefined {
   if (!b || typeof b !== 'object' || !Array.isArray(b.items)) return undefined

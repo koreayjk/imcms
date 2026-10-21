@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies, headers } from 'next/headers'
 import { unstable_cache } from 'next/cache'
 import { demoArticles, demoSite } from './demo-articles'
+import { withLayout } from './sites'
 import { SITES, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
 import { normalizeLayout, type SlotKey } from './home-layout'
 import { INDEX_WEEKS, type IndexKey, type IndexSeries } from './market-index'
@@ -51,12 +52,18 @@ const loadSite = unstable_cache(
   { revalidate: 300, tags: ['sites'] }
 )
 
+export const PREVIEW_LAYOUT_COOKIE = 'im_preview_layout'
+
 export async function currentSite(): Promise<SiteConfig> {
-  if (isDemo) return demoSite()
+  const jar = await cookies()
+  // 미리보기 주소로 보는 중이면 홈 배치를 쿠키로 정한 값으로 바꿔 보여 준다 (홈페이지 설정의 "미리보기"·소개 페이지의 체험 신문)
+  const layout = jar.get(PREVIEW_LAYOUT_COOKIE)?.value
+  if (isDemo) return withLayout(demoSite(), layout)
   const host = ((await headers()).get('host') ?? '').split(':')[0].toLowerCase()
-  const previewId = (await cookies()).get(PREVIEW_COOKIE)?.value ?? null
+  const previewId = jar.get(PREVIEW_COOKIE)?.value ?? null
   try {
-    return (await loadSite(host, /^[0-9a-f-]{36}$/.test(previewId ?? '') ? previewId : null)) ?? resolveSite(host)
+    const site = (await loadSite(host, /^[0-9a-f-]{36}$/.test(previewId ?? '') ? previewId : null)) ?? resolveSite(host)
+    return site.preview ? withLayout(site, layout) : site
   } catch {
     return resolveSite(host)
   }

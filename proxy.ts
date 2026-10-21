@@ -66,9 +66,16 @@ export async function proxy(request: NextRequest) {
   if (previewParam) {
     const url = request.nextUrl.clone()
     url.searchParams.delete('preview_outlet')
+    // 홈 배치를 지정한 미리보기(?layout=): 기사·섹션 화면에서도 같은 배치로 보이게 쿠키에 기억 (지정이 없으면 지운다)
+    const layout = url.searchParams.get('layout')
+    url.searchParams.delete('layout')
     const res = NextResponse.redirect(url)
-    if (previewParam === 'clear' || !/^[0-9a-f-]{36}$/.test(previewParam)) res.cookies.delete('im_site_preview')
-    else res.cookies.set('im_site_preview', previewParam, { path: '/', maxAge: 60 * 60 * 24, sameSite: 'lax' })
+    if (previewParam === 'clear' || !/^[0-9a-f-]{36}$/.test(previewParam)) { res.cookies.delete('im_site_preview'); res.cookies.delete('im_preview_layout') }
+    else {
+      res.cookies.set('im_site_preview', previewParam, { path: '/', maxAge: 60 * 60 * 24, sameSite: 'lax' })
+      if (layout && /^[a-z]{3,12}$/.test(layout)) res.cookies.set('im_preview_layout', layout, { path: '/', maxAge: 60 * 60 * 24, sameSite: 'lax' })
+      else res.cookies.delete('im_preview_layout')
+    }
     return res
   }
 

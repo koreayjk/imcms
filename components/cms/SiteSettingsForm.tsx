@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useTransition, type CSSProperties, type Reac
 import { AI_NOTICE_DEFAULT } from '@/lib/ai-notice'
 import { AI_BOT_MODES } from '@/lib/ai-crawlers'
 import { HOME_LAYOUTS } from '@/lib/home-layouts'
+import { previewUrl } from '@/lib/product'
 import HomeLayoutThumb from './HomeLayoutThumb'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
@@ -161,7 +162,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
                         <strong>{l.name}</strong><span className="text-muted">· {l.label}</span>
                         {!l.ready && <span className="ml-auto rounded bg-line px-1.5 py-0.5 text-[11px] text-muted">준비 중</span>}
                         {l.ready && (
-                          <a href={`/?preview_outlet=${outlet.id}&layout=${l.key}`} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} className="ml-auto whitespace-nowrap rounded border border-line px-2 py-0.5 text-[12px] font-semibold text-ink hover:border-ink">미리보기 ↗</a>
+                          <a href={previewUrl(outlet.id, l.key)} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} className="ml-auto whitespace-nowrap rounded border border-line px-2 py-0.5 text-[12px] font-semibold text-ink hover:border-ink">미리보기 ↗</a>
                         )}
                       </span>
                       <span className="text-[12px] leading-snug text-muted">{l.features}</span>
@@ -387,7 +388,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <p role={msg.error ? 'alert' : 'status'} className={`min-w-[12rem] flex-1 text-[13px] ${msg.error ? 'font-semibold text-danger' : msg.ok ? 'text-published' : 'text-muted'}`}>
             {msg.error ?? msg.ok ?? '바꾼 내용은 저장해야 홈페이지에 반영됩니다.'}
           </p>
-          <a href={`/?preview_outlet=${outlet.id}`} target="_blank" rel="noopener" className="btn-secondary">홈페이지 미리보기</a>
+          <a href={previewUrl(outlet.id)} target="_blank" rel="noopener" className="btn-secondary">홈페이지 미리보기</a>
           <button type="button" onClick={save} disabled={pending || uploading} className="btn-publish px-6">{pending ? '저장 중…' : '저장'}</button>
         </div>
       </div>

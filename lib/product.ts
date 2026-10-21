@@ -50,6 +50,11 @@ export function outletHomeUrl(o: { id: string; domain?: string | null } | null |
   return `${PRODUCT.appLive ? 'https://imcms.vercel.app' : ''}${path}?preview_outlet=${o.id}`
 }
 
+// 매체 홈페이지 미리보기 주소 (layout: 보고 싶은 홈 배치. 저장하지 않아도 볼 수 있다)
+export function previewUrl(outletId: string, layout?: string) {
+  return `${PRODUCT.appLive ? 'https://imcms.vercel.app' : ''}/?preview_outlet=${outletId}${layout ? `&layout=${layout}` : ''}`
+}
+
 // 소개 사이트(imnewsroom.com)에서 편집국 주소로 넘길 경로
 export const APP_PATHS = ['/login', '/signup', '/trial', '/pending', '/newsroom', '/articles', '/press', '/admin', '/support', '/account']
 
