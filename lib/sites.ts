@@ -68,6 +68,8 @@ export type SiteConfig = {
   // 홈 배치 (lib/home-layouts.ts): standard(한국 1, 기본) / bands(한국 3, 섹션 띠)
   homeLayout?: HomeLayout
   bands?: HomeBand[]
+  // 띠를 따로 정하지 않아 섹션 순서대로 자동 구성했는지 (true면 한국 스타일 3의 전용 첫 화면, 직접 정한 띠가 있으면 예전 모양 그대로)
+  autoBands?: boolean
   // SHOP 띠·메뉴에서 연결할 쇼핑몰 주소 (없으면 '준비 중')
   shopUrl?: string
   // 보도자료함에 해외 언론(영문) 자료도 보여줄지 (묶음: 이스라엘 언론, 해외 교육·유학 언론)
@@ -297,6 +299,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     bands: Array.isArray(s.bands) && s.bands.length
       ? s.bands.filter((b) => b && typeof b.slug === 'string')
       : parseHomeLayout(s.homeLayout) === 'bands' ? defaultBands(sections) : undefined,
+    autoBands: !(Array.isArray(s.bands) && s.bands.length) && parseHomeLayout(s.homeLayout) === 'bands',
     shopUrl: typeof s.shopUrl === 'string' && /^https?:\/\//.test(s.shopUrl) ? s.shopUrl : undefined,
     ...(() => {
       const topics = foreignTopics(s)
@@ -324,7 +327,8 @@ export function defaultBands(sections: SectionConfig[]): HomeBand[] {
 export function withLayout(site: SiteConfig, key: string | null | undefined): SiteConfig {
   const l = parseHomeLayout(key)
   if (!key || l !== key) return site
-  return { ...site, homeLayout: l, bands: l === 'bands' && !site.bands?.length ? defaultBands(site.sections) : site.bands }
+  const auto = l === 'bands' && (!site.bands?.length || !!site.autoBands)
+  return { ...site, homeLayout: l, bands: auto ? defaultBands(site.sections) : site.bands, autoBands: auto }
 }
 
 // 숫자 판: 이름·숫자가 있는 줄만, 최대 8줄

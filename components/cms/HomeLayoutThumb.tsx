@@ -30,7 +30,7 @@ export default function HomeLayoutThumb({ layout }: { layout: HomeLayout }) {
       </>)}
       {layout === 'bands' && (<>
         <rect x="4" y="4" width="112" height="5" rx="1" fill={B} />
-        <Img x={4} y={13} w={112} h={20} /><Bar x={10} y={27} w={50} c="#fff" h={3} />
+        <rect x="4" y="13" width="112" height="22" rx="2" fill="#EEF1F6" /><Bar x={9} y={18} w={38} c={D} h={3} /><Bar x={9} y={24} w={30} c={D} h={3} /><Bar x={9} y={30} w={24} /><Img x={52} y={13} w={64} h={22} r={2} />
         <rect x="4" y="37" width="112" height="19" rx="1" fill="#EEF1F6" /><Bar x={7} y={39} w={20} c={B} />
         <Img x={7} y={44} w={24} h={9} /><Img x={34} y={44} w={24} h={9} /><Img x={61} y={44} w={24} h={9} /><Img x={88} y={44} w={24} h={9} />
         <rect x="4" y="59" width="112" height="19" rx="1" fill="#EEF1F6" /><Bar x={7} y={61} w={20} c="#D6402B" />

@@ -16,7 +16,6 @@ import BrandMark from '@/components/BrandMark'
 import IslandNav from '@/components/product/IslandNav'
 import MoreFeatures from '@/components/product/MoreFeatures'
 import { Pill } from '@/components/product/Pill'
-import HomeLayoutThumb from '@/components/cms/HomeLayoutThumb'
 import { HOME_LAYOUTS } from '@/lib/home-layouts'
 import { layoutDemoUrls } from '@/lib/trial-demo'
 
@@ -459,7 +458,7 @@ export default async function ProductHome() {
               <p className="text-[13px] font-semibold tracking-[0.06em] text-[#1D3461]">홈페이지 모양</p>
               <h2 className={`mt-3 ${H2}`}>우리 신문에 맞는<br className="sm:hidden" /> 모양을 고르세요</h2>
               <p className="mx-auto mt-4 max-w-[38em] text-[17px] leading-[1.8] text-[#5B616B]">
-                한국식 3가지와 미국식 2가지, 모두 5가지 홈페이지 모양이 준비되어 있습니다. 기사와 로고·색은 그대로 입히고 첫 화면의 짜임새만 바꿉니다. 아래 카드를 누르면 <strong className="text-[#0F1115]">체험 신문의 실제 기사로 만든 홈페이지</strong>가 열립니다. 기사도 눌러 읽어 보고, 위쪽 띠에서 5가지를 바꿔 가며 비교해 보세요. 나중에 바꾸고 싶으면 요청 한 번으로 운영팀이 바꿔 드립니다.
+                한국식 3가지와 미국식 2가지, 모두 5가지 홈페이지 모양이 준비되어 있습니다. 기사와 로고·색은 그대로 입히고 첫 화면의 짜임새만 바꿉니다. 카드의 화면은 <strong className="text-[#0F1115]">체험 신문의 실제 기사로 만든 홈페이지</strong>입니다. 카드를 누르면 직접 열려서 기사도 눌러 읽어 보고, 위쪽 띠에서 5가지를 바꿔 가며 비교해 보실 수 있습니다. 나중에 바꾸고 싶으면 요청 한 번으로 운영팀이 바꿔 드립니다.
               </p>
             </Reveal>
             <ul className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -469,7 +468,9 @@ export default async function ProductHome() {
                     {(() => {
                       const card = (
                         <div className="pn-shell h-full"><div className="pn-core h-full p-3.5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-y-1 sm:p-4">
-                          <HomeLayoutThumb layout={l.key} />
+                          {/* 체험 신문의 실제 화면 캡처 (public/designs) */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={`/designs/${l.key}.webp`} width={800} height={600} loading="lazy" alt={`${l.name} ${l.label} 홈페이지 화면 예시`} className="aspect-[4/3] w-full rounded-lg object-cover object-top ring-1 ring-black/10" />
                           <p className="mt-3.5 text-[15.5px] font-extrabold tracking-[-0.02em]">{l.name}</p>
                           <p className="text-[13.5px] font-semibold text-[#1D3461]">{l.label}</p>
                           <p className="mt-2 text-[12.5px] leading-[1.6] text-[#5B616B]">{l.fit}에 어울립니다.</p>

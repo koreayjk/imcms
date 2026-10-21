@@ -19,6 +19,7 @@ import HomeBands from '@/components/site/HomeBands'
 import HomePortal from '@/components/site/HomePortal'
 import HomeEditorial from '@/components/site/HomeEditorial'
 import HomeCards from '@/components/site/HomeCards'
+import HomeBandsTop from '@/components/site/HomeBandsTop'
 import { siteText } from '@/lib/site-text'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -93,6 +94,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
   const bandsMode = site.homeLayout === 'bands' && !!site.bands?.length
+  // 띠를 자동 구성한 한국 스타일 3은 첫 화면(PC)도 전용 모양 (직접 정한 띠가 있는 매체는 예전 첫 화면 그대로)
+  const splitTop = bandsMode && !!site.autoBands
   const specialty = topSections(site).filter((s) => s.specialty)
   const general = topSections(site).filter((s) => !s.specialty)
 
@@ -127,6 +130,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       {/* 매체 이름·로고 구조화 데이터 (구글 검색·구글 뉴스용, 화면에는 안 보임) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
       <div className="mx-auto max-w-[1200px] px-4">
+        {splitTop && <HomeBandsTop site={site} headline={headline} items={[...subTops.slice(0, 2), ...underHeadline].slice(0, 4)} />}
+        {!splitTop && (
+          <>
         {/* ── 톱 기사: PC ── */}
         <section aria-label={t.topStories} className="hidden grid-cols-[250px_1fr_300px] gap-8 border-b border-rule py-7 lg:grid">
           <div className="divide-y divide-rule">
@@ -173,9 +179,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             <RealtimeList items={realtime} lang={L} />
           </aside>
         </section>
+          </>
+        )}
 
         {/* ── 톱 기사: 모바일 (좌우로 넘기기) ── */}
-        <section aria-label={t.topStories} className="-mx-4 pt-4 lg:hidden">
+        {!splitTop && <section aria-label={t.topStories} className="-mx-4 pt-4 lg:hidden">
           <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1">
             {[headline, ...subTops].map((a) => (
               <Link key={a.id} href={`/news/${a.id}`} className="w-[86%] flex-shrink-0 snap-center border border-rule bg-white">
@@ -188,7 +196,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               </Link>
             ))}
           </div>
-        </section>
+        </section>}
 
         {!bandsMode && (
           <>

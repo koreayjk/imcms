@@ -8,7 +8,6 @@ import { applyConsentSections, termsSections } from '@/lib/service-terms'
 import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
 import PolicyDoc from './PolicyDoc'
-import HomeLayoutThumb from '@/components/cms/HomeLayoutThumb'
 import { HOME_LAYOUTS } from '@/lib/home-layouts'
 
 const input =
@@ -195,7 +194,8 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {HOME_LAYOUTS.filter((l) => l.ready).map((l) => (
             <label key={l.key} className={`flex cursor-pointer flex-col gap-2 rounded-md border p-2.5 transition ${design === l.key ? 'border-[#1D3461] bg-[#EFF2F7] ring-1 ring-[#1D3461]' : 'border-[#D5D8DD] hover:border-[#14171C]'}`}>
-              <HomeLayoutThumb layout={l.key} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/designs/${l.key}.webp`} width={800} height={600} loading="lazy" alt={`${l.name} ${l.label} 홈페이지 화면 예시`} className="aspect-[4/3] w-full rounded object-cover object-top ring-1 ring-black/10" />
               <span className="flex items-start gap-2">
                 <input type="radio" name="design_pick" value={l.key} checked={design === l.key} onChange={() => setDesign(l.key)} className="mt-1 accent-[#1D3461]" />
                 <span className="min-w-0 flex-1 leading-tight">
