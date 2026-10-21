@@ -25,7 +25,7 @@ async function api(path: string, init: RequestInit = {}) {
 }
 
 // *.vercel.app 같은 하위 주소는 www 를 만들지 않는다
-const isApex = (d: string) => d.split('.').length === 2 || /\.(co|or|ne|go|ac|re|pe)\.kr$/.test(d) && d.split('.').length === 3
+const isApex = (d: string) => d.split('.').length === 2 || /\.(co|or|ne|go|ac|re|pe|ai|es|hs|ms|sc|kg)\.kr$/.test(d) && d.split('.').length === 3
 const isVercelSub = (d: string) => d.endsWith('.vercel.app')
 
 async function addOne(name: string, redirect?: string) {
