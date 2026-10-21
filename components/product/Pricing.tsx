@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { appLink } from '@/lib/product'
 
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, REGULAR_AFTER_LABEL, BETA_PERIOD_LABEL, SETUP_FEE, SETUP_ITEMS, betaDaysLeft, isBeta, planCharge, won, type PlanId } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, REGULAR_AFTER_LABEL, BETA_PERIOD_LABEL, SETUP_FEE, SETUP_ITEMS, SETUP_WAIVER_NOTE, betaDaysLeft, isBeta, planCharge, won, type PlanId } from '@/lib/pricing'
 
 // 소개 페이지 요금표 (금액은 lib/pricing.ts)
 //   요금제의 신청 버튼을 누르면 아래 신청서에 그 요금제·결제 방식이 골라진다 (im-pick-plan 이벤트)
@@ -170,7 +170,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-[12.5px] text-[#8A9099]">{BETA ? `베타 기간이 끝난 뒤 신청하시면 세팅비 ${won(SETUP_FEE)}이 첫 결제에 함께 청구됩니다. ` : ''}개통한 뒤에는 세팅비를 돌려드리지 않습니다.</p>
+        <p className="mt-4 text-[12.5px] text-[#8A9099]">{BETA ? `베타 기간이 끝난 뒤 신청하시면 세팅비 ${won(SETUP_FEE)}이 첫 결제에 함께 청구됩니다. ` : ''}개통한 뒤에는 세팅비를 돌려드리지 않습니다.{BETA ? ` ${SETUP_WAIVER_NOTE}` : ''}</p>
       </section>
 
       <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-2">

@@ -24,7 +24,7 @@ export function buildQuote(planId: string, billing: Billing, beta = isBeta()) {
       price: pay.price,
       note: pay.price < pay.regular ? `베타 기간 신청: ${billing === 'annual' ? `12개월 중 첫 ${BETA_MONTHS}개월분` : `첫 ${BETA_MONTHS}개월`} 반값` : undefined,
     },
-    { name: '세팅비 (처음 개통할 때 한 번)', regular: SETUP_FEE, price: pay.setup, note: pay.setupFree ? '베타 기간 신청: 무료' : undefined },
+    { name: '세팅비 (처음 개통할 때 한 번)', regular: SETUP_FEE, price: pay.setup, note: pay.setupFree ? '베타 기간 신청: 무료 (개통 후 3개월 이상 이용 조건)' : undefined },
   ]
   // 그다음부터 내는 금액 (베타 할인이 끝난 정상가)
   const after = billing === 'annual' ? { label: '다음 해부터 1년마다', amount: plan.monthly * ANNUAL_MONTHS } : { label: '할인 기간이 끝난 뒤 매월', amount: plan.monthly }

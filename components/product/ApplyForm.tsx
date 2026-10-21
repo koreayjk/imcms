@@ -3,7 +3,7 @@
 import { useEffect, useState, useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { submitBetaRequest, type ApplyState } from '@/app/imnewsroom/actions'
-import { ANNUAL_FREE, ANNUAL_MONTHS, BILLING_LABEL, PLANS, BETA_PERIOD_LABEL, REGULAR_AFTER_LABEL, SETUP_FEE, firstPayment, isBeta, planById, won, type Billing, type PlanId } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BILLING_LABEL, PLANS, BETA_PERIOD_LABEL, REGULAR_AFTER_LABEL, SETUP_FEE, SETUP_WAIVER_MONTHS, firstPayment, isBeta, planById, won, type Billing, type PlanId } from '@/lib/pricing'
 import { applyConsentSections, termsSections } from '@/lib/service-terms'
 import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
@@ -141,7 +141,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
                   이용료 {won(pay.price)} ({chosen.name} · {billing === 'annual' ? `12개월을 ${ANNUAL_MONTHS}개월 값으로` : '1개월'}{BETA && <b className="font-semibold text-[#C2410C]">{billing === 'annual' ? ` · ${BETA_PERIOD_LABEL}분 반값` : ' · 베타 반값'}</b>})
                   {BETA && <s className="ml-1 text-[#9AA0A8]">{won(pay.regular)}</s>}
                 </li>
-                <li>세팅비 {pay.setupFree ? <>0원 <s className="text-[#9AA0A8]">{won(SETUP_FEE)}</s> <b className="font-semibold text-[#C2410C]">(베타 기간 신청 무료)</b></> : <>{won(pay.setup)} (처음 한 번)</>}</li>
+                <li>세팅비 {pay.setupFree ? <>0원 <s className="text-[#9AA0A8]">{won(SETUP_FEE)}</s> <b className="font-semibold text-[#C2410C]">(베타 기간 신청 무료 · {SETUP_WAIVER_MONTHS}개월 이상 이용 조건)</b></> : <>{won(pay.setup)} (처음 한 번)</>}</li>
                 {billing === 'monthly' && (BETA
                   ? <li>{BETA_PERIOD_LABEL} 매달 {won(pay.price)}, {REGULAR_AFTER_LABEL} 정상가 매달 {won(pay.regular)}</li>
                   : <li>다음 달부터 매달 {won(pay.price)}</li>)}

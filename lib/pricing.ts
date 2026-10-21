@@ -36,6 +36,9 @@ export function annualPrice(monthly: number, start: string, beta: boolean, disco
 // 1년 결제 혜택 표시 ("1개월 무료")
 export const ANNUAL_FREE = `${12 - ANNUAL_MONTHS}개월 무료`
 export const SETUP_FEE = 150_000
+// 베타 기간 세팅비 무료는 개통일부터 이 개월 수 이상 이용하는 조건 (그 안에 해지하면 면제했던 세팅비를 정산한다)
+export const SETUP_WAIVER_MONTHS = 3
+export const SETUP_WAIVER_NOTE = `세팅비 무료는 개통 후 ${SETUP_WAIVER_MONTHS}개월 이상 이용하는 조건입니다. ${SETUP_WAIVER_MONTHS}개월 안에 해지하시면 면제된 세팅비 ${SETUP_FEE.toLocaleString('ko-KR')}원을 정산합니다.`
 
 // 세팅비(처음 한 번)에 들어가는 일 — 소개 페이지 요금표에 그대로 보여준다
 export const SETUP_ITEMS: [string, string][] = [
