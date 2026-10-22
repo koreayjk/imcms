@@ -8,13 +8,20 @@ import { cmsOrigin } from '@/lib/origin'
 //   실제 기사 상태가 그 일과 맞을 때만, 같은 일은 10분에 한 번만 알린다
 const STATUS = { submitted: 'in_review', rejected: 'rejected', published: 'published' } as const
 
-export async function notifyArticle(id: string, event: keyof typeof STATUS) {
+// bulk: 일괄 승인·반려에서 부른 경우. 일괄 발행은 기사마다 메일을 보내지 않는다 (70건을 한꺼번에 발행하면 70통이 쏟아진다)
+export async function notifyArticle(id: string, event: keyof typeof STATUS, opts: { bulk?: boolean } = {}) {
   const { supabase, user, profile, trial } = await getCmsContext()
   if (trial) return
   const { data: a } = await supabase.from('articles').select('id, title, status, author_id, reject_reason, outlet:outlets(name)').eq('id', id).maybeSingle()
   if (!a || a.status !== STATUS[event]) return
   if (event === 'submitted' && a.author_id !== user.id) return
   if (event !== 'submitted' && a.author_id === user.id) return
+  if (event === 'published') {
+    if (opts.bulk) return
+    // 편집장·발행인·운영팀이 쓴 기사는 본인이 곧 승인하는 사람들이라 "발행됨" 메일을 보내지 않는다
+    const { data: au } = await supabase.from('profiles').select('role, is_staff').eq('id', a.author_id).maybeSingle()
+    if (au && (au.role === 'admin' || au.role === 'editor' || au.is_staff)) return
+  }
   const outlet = (a.outlet as unknown as { name: string } | null)?.name ?? ''
   const who = (profile?.full_name as string | undefined) ?? ''
   const url = `${(await cmsOrigin())}/articles/${id}`
