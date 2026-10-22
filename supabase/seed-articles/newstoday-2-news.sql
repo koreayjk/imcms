@@ -18,7 +18,7 @@ with ctx as (
 insert into articles (outlet_id, category_id, author_id, title, body, excerpt, thumbnail_url, status, published_at, tags, press_release_id)
 select ctx.outlet_id, c.id, ctx.author_id, v.title,
        replace(v.body, '@@BYLINE@@', '[' || ctx.outlet_name || '=편집국]'),
-       v.excerpt, v.thumb, v.status, v.published_at, v.tags,
+       v.excerpt, v.thumb, v.status::article_status, v.published_at, v.tags,
        null
 from ctx
 cross join (values
