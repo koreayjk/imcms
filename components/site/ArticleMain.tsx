@@ -53,7 +53,7 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
               </>
             )}
           </p>
-          <ShareButton title={a.title} lang={lang} />
+          <ShareButton title={a.title} lang={lang} size="sm" />
         </div>
       </header>
 
@@ -67,6 +67,10 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
         className="article-content mt-7 text-[17px] leading-[1.95] text-body lg:text-[17.5px]"
         dangerouslySetInnerHTML={{ __html: optimizeBodyImages(bodyHtml) }}
       />
+
+      <div className="mt-10 flex justify-center border-t border-rule pt-8">
+        <ShareButton title={a.title} lang={lang} />
+      </div>
 
       {relatedLinks.length > 0 && (
         <section aria-labelledby="related-links" className="mt-10">
