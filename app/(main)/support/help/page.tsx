@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { ISSUER, PRODUCT } from '@/lib/product'
+import { readyVideos } from '@/lib/help-videos'
+import HelpVideoCard from '@/components/cms/HelpVideoCard'
 
 const GUIDES = [
   { title: '기사 작성 가이드', body: '네이버 뉴스제휴 운영평가 기준에 맞춘 바이라인·보도자료 섹션·중복 기사·제목·사진 출처 원칙과 발행 전 체크리스트입니다. 24개월 누적 10점이면 제휴 해지가 권고되니 꼭 읽어 주세요.', href: '/support/guide', cta: '가이드 보기' },
@@ -26,10 +28,21 @@ const FAQ = [
 ]
 
 export default function HelpPage() {
+  const videos = readyVideos()
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-6 md:px-8 md:py-10">
       <h1 className="text-[22px] font-extrabold tracking-tight">이용안내</h1>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      {videos.length > 0 && (
+        <section id="videos" className="mt-6 scroll-mt-6">
+          <h2 className="text-[18px] font-extrabold">영상으로 배우기</h2>
+          <p className="mt-1 text-[13.5px] text-muted">처음 쓰시는 분은 위에서부터 차례로 보세요. 영상마다 1~2분입니다.</p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {videos.map((v, i) => <HelpVideoCard key={v.id} n={i + 1} title={v.title} desc={v.desc} videoId={v.videoId} link={v.link} />)}
+          </div>
+        </section>
+      )}
+      <h2 className="mt-12 text-[18px] font-extrabold">글로 보는 안내</h2>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {GUIDES.map((g) => (
           <div key={g.title} className="flex flex-col rounded-2xl bg-white p-6 ring-1 ring-black/5">
             <p className="text-[16px] font-bold">{g.title}</p>
