@@ -8,6 +8,8 @@ import type { SiteLang } from '@/lib/sites'
 //   미리보기(사진·제목)는 기사 페이지의 og 메타가 만든다
 // 카카오 JavaScript 키 (공개 값이다. Vercel 환경변수 NEXT_PUBLIC_KAKAO_JS_KEY). 없거나 불러오지 못하면 폰은 기기 공유창, PC는 링크 복사로 대신한다
 const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? ''
+// 카카오 앱에 도메인을 등록해 둔 매체 주소만 쉼표로 (NEXT_PUBLIC_KAKAO_DOMAINS 예: newstoday.ai.kr,thecaretimes.net). 등록 안 된 주소에서 SDK를 쓰면 4019 오류 창이 뜨므로 거기서는 기존 방식(폰 공유창·링크 복사)을 쓴다
+const KAKAO_DOMAINS = (process.env.NEXT_PUBLIC_KAKAO_DOMAINS ?? '').split(',').map((d) => d.trim().toLowerCase().replace(/^www\./, '')).filter(Boolean)
 const KAKAO_SDK = 'https://t1.kakaocdn.net/kakao_js_sdk/2.8.4/kakao.min.js'
 const KAKAO_SDK_SRI = 'sha384-BGX7Wb16GmRFagri4bLJV2DgipVZaU2AI812GZtHtHzzDQJnfHasDXN5houxv45w'
 
@@ -65,7 +67,7 @@ export default function ShareButton({ title, lang, size = 'md' }: { title: strin
     ? navigator.share({ title, url: url() }).catch(() => {})
     : copy(en ? 'Link copied. Paste it into KakaoTalk.' : '링크를 복사했습니다. 카카오톡에 붙여 넣어 보내세요.'))
   const kakao = async () => {
-    if (!KAKAO_KEY) return kakaoFallback()
+    if (!KAKAO_KEY || !KAKAO_DOMAINS.includes(window.location.hostname.toLowerCase().replace(/^www\./, ''))) return kakaoFallback()
     try {
       const k = await loadKakao()
       const link = { mobileWebUrl: url(), webUrl: url() }
