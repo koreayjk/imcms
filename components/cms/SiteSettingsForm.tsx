@@ -337,8 +337,10 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <ol className="mt-2 list-decimal space-y-1.5 pl-5">
             <li>위 칸에 주소를 적고 저장합니다.</li>
             <li><strong>총관리자</strong>가 Vercel → imcms 프로젝트 → Settings → Domains에서 그 주소와 www 주소를 추가합니다. (업무요청으로 “도메인 연결”을 요청하세요.)</li>
-            <li>도메인을 산 곳(호스팅케이알, 가비아 등)의 DNS 설정에서 Vercel이 알려주는 값을 넣습니다. 보통 <code>@</code> A 레코드 <code>76.76.21.21</code>, <code>www</code> CNAME <code>cname.vercel-dns.com</code>입니다.</li>
-            <li>보통 몇 분~몇 시간 뒤 주소로 들어가면 이 매체 홈페이지가 열립니다.</li>
+            <li>도메인을 산 곳(후이즈, 호스팅케이알, 가비아 등)의 <strong>DNS 레코드(A·CNAME) 설정</strong>에서, Vercel Domains 화면에 표시된 값을 그대로 넣습니다. 지금은 보통 <code>@</code> A 레코드 <code>216.150.1.1</code>, <code>www</code> CNAME <code>…vercel-dns-017.com</code> 형태입니다. (예전 값 <code>76.76.21.21</code>·<code>cname.vercel-dns.com</code>도 당분간 작동하지만, 화면에 나온 값을 쓰는 것이 가장 확실합니다.)</li>
+            <li>이미 <code>@</code>·<code>www</code> 줄이 있으면(예: 도메인 업체 기본 주소) <strong>새로 추가하지 말고 그 줄을 수정</strong>합니다. 같은 호스트에 A와 CNAME이 같이 있으면 안 됩니다.</li>
+            <li>후이즈는 “DNS 호스트 관리”(네임서버 등록 메뉴)가 아니라 <strong>네임서버 고급설정 안의 레코드(A·CNAME) 설정</strong>입니다. “DNS 호스트 관리”에 넣으면 연결되지 않습니다.</li>
+            <li>보통 몇 분~몇 시간 뒤 주소로 들어가면 이 매체 홈페이지가 열립니다. Vercel Domains 화면에서 Refresh를 눌러 연결 상태를 확인합니다.</li>
           </ol>
         </details>
       </Card>
