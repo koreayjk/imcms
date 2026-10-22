@@ -6,6 +6,36 @@ import type { SiteLang } from '@/lib/sites'
 // 기사 공유: 페이스북·X·카카오톡·링크 복사·인쇄 (동그란 아이콘 버튼)
 //   카카오톡은 카카오 앱 키 없이 쓸 수 있는 방법이 없어서, 폰에서는 기기 공유창(카카오톡 포함)을 열고 PC에서는 링크를 복사한다
 //   미리보기(사진·제목)는 기사 페이지의 og 메타가 만든다
+// 카카오 JavaScript 키 (공개 값이다. Vercel 환경변수 NEXT_PUBLIC_KAKAO_JS_KEY). 없거나 불러오지 못하면 폰은 기기 공유창, PC는 링크 복사로 대신한다
+const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? ''
+const KAKAO_SDK = 'https://t1.kakaocdn.net/kakao_js_sdk/2.8.4/kakao.min.js'
+const KAKAO_SDK_SRI = 'sha384-BGX7Wb16GmRFagri4bLJV2DgipVZaU2AI812GZtHtHzzDQJnfHasDXN5houxv45w'
+
+type KakaoSdk = { isInitialized(): boolean; init(key: string): void; Share: { sendDefault(o: unknown): void } }
+declare global { interface Window { Kakao?: KakaoSdk } }
+
+function loadKakao(): Promise<KakaoSdk> {
+  return new Promise((resolve, reject) => {
+    const ready = () => {
+      const k = window.Kakao
+      if (!k) return reject(new Error('kakao'))
+      if (!k.isInitialized()) k.init(KAKAO_KEY)
+      resolve(k)
+    }
+    if (window.Kakao) return ready()
+    const el = document.createElement('script')
+    el.src = KAKAO_SDK
+    el.integrity = KAKAO_SDK_SRI
+    el.crossOrigin = 'anonymous'
+    el.async = true
+    el.onload = ready
+    el.onerror = () => reject(new Error('kakao'))
+    document.head.appendChild(el)
+  })
+}
+
+const meta = (name: string) => document.querySelector<HTMLMetaElement>(`meta[property="${name}"], meta[name="${name}"]`)?.content ?? ''
+
 const ICONS: Record<string, ReactNode> = {
   facebook: <path d="M13.5 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.5 1.6-1.5h1.6V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H8v3h2.5V21h3Z" fill="currentColor" />,
   x: <path d="M17.8 4h2.9l-6.3 7.2L21.8 20h-5.8l-4.5-5.9L6.3 20H3.4l6.7-7.7L2.9 4h5.9l4.1 5.4L17.8 4Zm-1 14.3h1.6L7.9 5.6H6.2l10.6 12.7Z" fill="currentColor" />,
@@ -31,9 +61,24 @@ export default function ShareButton({ title, lang, size = 'md' }: { title: strin
     try { await navigator.clipboard.writeText(url()); say(after ?? (en ? 'Link copied.' : '링크가 복사되었습니다.')) } catch { say(en ? 'Could not copy the link.' : '링크를 복사하지 못했습니다.') }
   }
   const open = (href: string) => window.open(href, '_blank', 'noopener,noreferrer,width=640,height=560')
-  const kakao = () => (mobile && canShare
+  const kakaoFallback = () => (mobile && canShare
     ? navigator.share({ title, url: url() }).catch(() => {})
     : copy(en ? 'Link copied. Paste it into KakaoTalk.' : '링크를 복사했습니다. 카카오톡에 붙여 넣어 보내세요.'))
+  const kakao = async () => {
+    if (!KAKAO_KEY) return kakaoFallback()
+    try {
+      const k = await loadKakao()
+      const link = { mobileWebUrl: url(), webUrl: url() }
+      const image = meta('og:image')
+      k.Share.sendDefault({
+        objectType: 'feed',
+        content: { title, description: (meta('og:description') || '').slice(0, 100), ...(image ? { imageUrl: image } : {}), link },
+        buttons: [{ title: en ? 'Read the story' : '기사 보기', link }],
+      })
+    } catch {
+      kakaoFallback()
+    }
+  }
 
   const dim = size === 'sm' ? 'h-8 w-8' : 'h-11 w-11'
   const icon = size === 'sm' ? 'h-[18px] w-[18px]' : 'h-6 w-6'
