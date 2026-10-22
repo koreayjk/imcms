@@ -57,6 +57,20 @@ export async function rejectUser(id: string) {
   revalidatePath('/', 'layout')
 }
 
+// 체험 계정을 정식 고객사 매체로 옮기면 체험 표시(trial_until)를 지운다. 안 지우면 7일이 지난 뒤 "체험이 끝났습니다" 화면에 막히고 30일 뒤 자동으로 지워진다
+//   체험용 신문에만 남아 있는 경우는 그대로 둔다. 체험 표(trial.sql)가 없거나 권한이 없으면 조용히 넘어간다
+async function endTrialIfMoved(supabase: Awaited<ReturnType<typeof groupContext>>['supabase'], id: string, outletIds: (string | null)[]) {
+  const ids = outletIds.filter((x): x is string => !!x)
+  if (!ids.length) return
+  try {
+    const { data: trialOutlet } = await supabase.rpc('trial_outlet')
+    if (typeof trialOutlet === 'string' && ids.every((x) => x === trialOutlet)) return
+    await supabase.from('profiles').update({ trial_until: null }).eq('id', id).not('trial_until', 'is', null)
+  } catch {
+    /* 체험 기능이 없는 DB */
+  }
+}
+
 export async function setMember(id: string, input: { role: UserRole; outletId: string | null; fullName?: string }): Promise<FormState> {
   const { supabase, user } = await groupContext()
   if (!ROLES.includes(input.role)) return { error: '역할을 확인해 주세요.' }
@@ -73,6 +87,7 @@ export async function setMember(id: string, input: { role: UserRole; outletId: s
   if (input.role === 'admin' && !row.publisher_id) return { error: '발행인은 그룹이 있는 매체를 골라야 합니다.' }
   const { error } = await supabase.from('profiles').update(row).eq('id', id)
   if (error) return { error: error.message }
+  await endTrialIfMoved(supabase, id, [input.outletId])
   revalidatePath('/', 'layout')
   return { ok: '저장했습니다.' }
 }
@@ -91,6 +106,7 @@ export async function setMemberships(id: string, items: Membership[], fullName?:
   if (error) return { error: /admin_set_memberships|outlet_members/.test(error.message) ? '여러 매체 소속을 쓰려면 outlet-members.sql을 실행해 주세요.' : error.message }
   const n = fullName?.trim().replace(/\s+/g, ' ').slice(0, 30)
   if (n) await supabase.from('profiles').update({ full_name: n }).eq('id', id)
+  await endTrialIfMoved(supabase, id, items.map((i) => i.outletId))
   revalidatePath('/', 'layout')
   return { ok: '저장했습니다.' }
 }
