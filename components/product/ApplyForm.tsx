@@ -87,7 +87,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
           <br />
           적어주신 연락처로 영업일 기준 이틀 안에 연락드려 개통 일정과 계약 서류를 안내합니다.
           <br />
-          결제는 계약 내용을 확인한 뒤에 진행되며, 지금은 비용이 생기지 않습니다.
+          첫 청구서는 홈페이지를 여는 개통 시점에 발행되며, 지금은 비용이 생기지 않습니다.
         </p>
       </div>
     )

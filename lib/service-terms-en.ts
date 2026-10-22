@@ -56,7 +56,7 @@ export function termsSectionsEn(): PolicySection[] {
     {
       title: '6. Onboarding and domain',
       body: [
-        'After confirming the first payment or agreed start, we will tell the Customer about the launch schedule and the materials we need (logo, legal/footer information, domain).',
+        'After confirming the application, we tell the Customer about the launch schedule and the materials we need (logo, legal/footer information, domain) and start the launch work, such as opening the newsroom and site and connecting the domain. The launch date is the day the site goes live, and the first invoice is issued on that date. We do not charge fees or the setup fee before launch.',
         'A delay in providing materials may delay the launch.',
         'The Customer owns its domain and is responsible for renewing it. We provide the DNS settings needed to connect it.',
       ],
@@ -72,7 +72,7 @@ export function termsSectionsEn(): PolicySection[] {
       title: '8. Fees and payment',
       body: [
         `Fees are as published on the pricing page, in US dollars. Prices are final prices; we do not add Korean VAT. Where required by law, sales, use, GST or similar taxes in the Customer's jurisdiction are the Customer's responsibility.`,
-        'Fees are paid in advance. We issue an invoice at the start of each billing period and the Customer pays by its due date. Annual billing covers 12 months and is charged as 11 months\' fees.',
+        'Fees are paid in advance. The first invoice is issued on the launch date and is due by the date shown on it (usually two weeks after issue). After that we issue an invoice at the start of each billing period and the Customer pays by its due date. Annual billing covers 12 months and is charged as 11 months\' fees.',
         `The one-time setup fee is ${usd(SETUP_FEE_USD)} and covers opening the newsroom and site, customization, domain connection, content migration support and onboarding. It is waived for customers who apply before ${BETA_END_LABEL_EN}. Waiver is conditional on at least ${SETUP_WAIVER_MONTHS} months of use from launch (see section 10).`,
         `Customers who apply before ${BETA_END_LABEL_EN} receive 50% off the plan fee for the first ${BETA_MONTHS} months. Extra publications (${usd(EXTRA_OUTLET_USD)}/month each beyond those included in Premium) and extra AI usage (${usd(EXTRA_AI_USD)} per 100 uses) are not discounted.`,
         'Payments are processed by Stripe. We do not store card numbers. We give 30 days\' notice before raising prices and apply the new price only with the Customer\'s acceptance or after the notice period if the Customer continues to use the Service.',
@@ -91,7 +91,7 @@ export function termsSectionsEn(): PolicySection[] {
         `The Customer may cancel at any time by contacting ${mail()} or through the in-app support request.`,
         'Monthly billing: the Customer keeps access through the end of the month in which it cancels. Fees for that month are not refunded. Fees prepaid for later months are refunded.',
         'Annual billing: we refund the amount paid minus the months used at the monthly rate (with the same discount). The 1-month-free benefit applies only if the full year is used.',
-        `Setup fee: not refundable after launch. If the setup fee was waived and the Customer cancels within ${SETUP_WAIVER_MONTHS} months of launch, we may charge the waived setup fee (${usd(SETUP_FEE_USD)}) and deduct it from any refund. It is not charged after ${SETUP_WAIVER_MONTHS} months, or if the Customer cancels because of our breach or because we end the Service.`,
+        `If the Customer cancels its application before the launch date, we do not charge fees or the setup fee. Setup fee: not refundable after launch. If the setup fee was waived and the Customer cancels within ${SETUP_WAIVER_MONTHS} months of launch, we may charge the waived setup fee (${usd(SETUP_FEE_USD)}) and deduct it from any refund. It is not charged after ${SETUP_WAIVER_MONTHS} months, or if the Customer cancels because of our breach or because we end the Service.`,
         'If we end the Service or the Customer cancels because of our breach, we refund all prepaid fees for the remaining period.',
       ],
     },
