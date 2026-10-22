@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic'
 // RSS: 최근 기사 50건 (포털·뉴스 앱·구독용)
 export async function GET() {
   const site = await currentSite()
+  // 오픈 준비 중인 매체는 목록을 내보내지 않는다
+  if (site.comingSoon) return new Response('Not found', { status: 404 })
   const base = siteBaseUrl(site, (await headers()).get('host'))
   const articles = await getFeedArticles(site, 50)
   const items = articles.map((a) => `<item>

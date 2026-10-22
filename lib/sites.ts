@@ -43,6 +43,10 @@ export type SiteConfig = {
   outletId?: string
   // 도메인 연결 전 미리보기로 보고 있는지
   preview?: boolean
+  // 오픈 준비 중: 켜져 있으면 방문자에게는 안내 화면만 보인다 (홈페이지 설정의 "오픈 준비 중" 스위치)
+  comingSoon?: boolean
+  // 오픈 준비 중인 매체를 미리보기로 열어 보는 중 (방문자에게는 안내 화면이 보인다)
+  softPreview?: boolean
   domains: string[]
   // 정식 오픈 전(테스트 기사가 있는 동안)에는 false로 두어 검색엔진 수집을 막는다
   indexable: boolean
@@ -202,6 +206,8 @@ export type OutletSiteSettings = {
   logoMode?: LogoMode
   colors?: { brand?: string; accent?: string }
   indexable?: boolean
+  // 오픈 준비 중 (신규 매체는 켜진 채로 만든다. 꺼야 방문자에게 홈페이지가 열린다. 없으면 열린 매체)
+  comingSoon?: boolean
   pressKeywords?: string
   legal?: Partial<SiteLegal>
   homeLayout?: HomeLayout
@@ -284,7 +290,9 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     preview,
     domains: o.domain ? [o.domain, `www.${o.domain}`] : [],
     createdAt: o.created_at ?? undefined,
-    indexable: s.indexable ?? code?.indexable ?? false,
+    comingSoon: s.comingSoon === true,
+    // 오픈 준비 중에는 검색 노출을 켜 두었어도 수집하지 않는다
+    indexable: s.comingSoon === true ? false : (s.indexable ?? code?.indexable ?? false),
     name: o.name,
     nameEn: s.nameEn ?? code?.nameEn ?? '',
     slogan: s.slogan ?? code?.slogan ?? '',

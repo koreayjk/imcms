@@ -57,7 +57,7 @@ export async function createOutlet(_prev: FormState, form: FormData): Promise<Fo
   // 개별 매체: 매체를 만든 뒤 그 매체만 담는 숨은 그룹으로 옮긴다
   const solo = publisher_id === SOLO
   if (solo && !isSuper) return { error: '개별 매체는 총관리자만 만들 수 있습니다.' }
-  const { data, error } = await supabase.from('outlets').insert({ name, domain: domain || null, publisher_id: solo ? null : publisher_id }).select('id').single()
+  const { data, error } = await supabase.from('outlets').insert({ name, domain: domain || null, publisher_id: solo ? null : publisher_id, site: { comingSoon: true } }).select('id').single()
   if (error || !data) return { error: `만들지 못했습니다: ${error?.message ?? ''}` }
   if (solo) {
     const { error: sErr } = await supabase.rpc('outlet_make_solo', { o: data.id })

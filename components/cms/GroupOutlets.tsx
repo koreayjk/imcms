@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createGroup, createOutlet, deleteGroup, renameGroup, updateOutlet, type FormState } from '@/app/(main)/admin/outlets/actions'
 import { SOLO } from '@/lib/groups'
 import { switchOutlet } from '@/app/(main)/account/actions'
+import { previewUrl } from '@/lib/product'
 import PendingButton from './PendingButton'
 
 type Outlet = { id: string; name: string; domain: string | null; publisher_id: string | null; members: number; articles: number }
@@ -59,7 +60,8 @@ function OutletRow({ o, groups, canManage, canMove, current }: { o: Outlet; grou
               {o.domain ?? '도메인 미연결'} · 회원 {o.members}명 · 기사 {o.articles.toLocaleString()}건
             </p>
           </div>
-          <a href={o.domain ? `https://${o.domain}` : `/?preview_outlet=${o.id}`} target="_blank" rel="noopener" className="text-[12.5px] text-muted underline underline-offset-2 hover:text-ink">홈페이지 ↗</a>
+          {o.domain && <a href={`https://${o.domain}`} target="_blank" rel="noopener" className="text-[12.5px] text-muted underline underline-offset-2 hover:text-ink">홈페이지 ↗</a>}
+          <a href={previewUrl(o.id)} target="_blank" rel="noopener" className="text-[12.5px] text-muted underline underline-offset-2 hover:text-ink">미리보기 ↗</a>
           {canManage && <a href={`/admin/outlets/${o.id}/site`} className="btn-primary px-3 py-1.5 text-[12.5px]">홈페이지 설정</a>}
           {!current && <button type="button" onClick={work} disabled={pending} className="btn-secondary px-3 py-1.5 text-[12.5px]">이 매체로 작업</button>}
           {canManage && <button type="button" onClick={() => setEdit(true)} className="text-[12.5px] text-muted underline underline-offset-2 hover:text-ink">수정</button>}

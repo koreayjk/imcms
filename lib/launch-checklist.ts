@@ -8,7 +8,7 @@ export const LAUNCH_GROUPS: LaunchGroup[] = [
     title: '1. 개통 준비',
     items: [
       { key: 'invite', title: '발행인이 초대 메일로 가입하고 로그인했다', detail: '안 되면 회원 메뉴에서 다시 초대' },
-      { key: 'domain', title: '매체 도메인 연결 (DNS) 완료', detail: '홈페이지 설정 → 도메인. 주소창에 매체 주소를 넣어 열리는지 확인' },
+      { key: 'domain', title: '매체 도메인 연결 (DNS) 완료', detail: '홈페이지 설정 → 도메인. 오픈 준비 중이면 주소창에는 안내 화면이 보이고, 실제 홈페이지는 미리보기 링크로 확인' },
       { key: 'brand', title: '로고·색·법정 표기 입력', detail: '제호, 발행인·편집인, 인터넷신문 등록번호·등록일, 청소년보호책임자, 주소·연락처' },
       { key: 'sections', title: '섹션 정리', detail: '기본 섹션을 매체에 맞게 고치고 순서 정하기' },
       { key: 'import', title: '기존 기사·사진 옮기기 + 옛 기사 주소 연결 확인', detail: '이관이 없는 매체는 체크만. 옛 주소(…idxno=123) 하나를 열어 새 기사로 가는지 확인' },
@@ -18,6 +18,7 @@ export const LAUNCH_GROUPS: LaunchGroup[] = [
   {
     title: '2. 검색 등록 (운영 계정으로)',
     items: [
+      { key: 'open_switch', title: '오픈 준비 중 스위치를 끄고 첫 이용료 청구서를 발행했다', detail: '홈페이지 설정 → 오픈 준비 중 끄기 (이날이 개통일). 청구서 → 자동 청구 설정에서 첫 청구 월·베타 반값 확인 후 발행' },
       { key: 'indexable', title: '홈페이지 설정 → 검색 노출 → “구글·네이버 검색에 노출하기” 켜기', detail: '테스트 기사를 지운 뒤, 정식 오픈하는 날 켠다. 꺼져 있으면 아래 등록이 실패한다' },
       { key: 'naver_add', title: '네이버 서치어드바이저에 매체 주소 등록 + HTML 태그 받기', detail: '웹마스터 도구 → 사이트 등록 → https:// 부터 전체 주소', link: { label: '서치어드바이저', href: 'https://searchadvisor.naver.com/console/board' } },
       { key: 'google_add', title: '구글 서치콘솔에 매체 주소 등록 (URL 접두어) + HTML 태그 받기', detail: '속성 추가 → 웹사이트 추가 → URL 접두어', link: { label: '서치콘솔', href: 'https://search.google.com/search-console' } },

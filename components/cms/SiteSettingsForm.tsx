@@ -125,7 +125,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
       <section className="overflow-hidden rounded-lg border border-line bg-white">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line bg-[#F8F9FA] px-4 py-2 text-[12.5px]">
           <span className="font-semibold">미리보기 <span className="font-normal text-muted">(PC 화면 머리 부분, 저장 전에도 바로 바뀝니다)</span></span>
-          <a href={`/?preview_outlet=${outlet.id}`} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">저장한 홈페이지 전체 보기 ↗</a>
+          <a href={previewUrl(outlet.id)} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">저장한 홈페이지 전체 보기 ↗</a>
         </div>
         <div className="pointer-events-none h-[118px] overflow-hidden" aria-hidden>
           <div className="site origin-top-left scale-[0.62]" style={{ ...vars, width: '161%' }}>
@@ -326,6 +326,17 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <p className="mb-1.5 text-[12px] text-muted">제목에 이 단어가 들어간 정부·공공기관 보도자료를 추천에 넣습니다(분야를 고르지 않았다면 모든 출처에서). 쉼표로 구분합니다. 3글자 이하 영문 약어(IB, AI 등)는 다른 단어에 섞여 걸리기 쉬워 쓰지 않습니다.</p>
           <textarea value={s.pressKeywords ?? ''} onChange={(e) => set({ pressKeywords: e.target.value })} rows={3} placeholder="예: 요양, 돌봄, 복지, 병원" className="field-input resize-y" />
         </div>
+      </Card>
+
+      <Card title="오픈 준비 중">
+        <label className="flex items-start gap-3 text-[14px]">
+          <input type="checkbox" checked={!!s.comingSoon} onChange={(e) => set({ comingSoon: e.target.checked })} className="mt-1" />
+          <span>
+            <strong>오픈 준비 중 (방문자에게는 안내 화면만 보이기)</strong>
+            <span className="mt-0.5 block text-[12.5px] text-muted">켜 두면 도메인으로 들어온 방문자에게 “오픈 준비 중입니다” 화면만 보이고, 검색엔진 수집도 막힙니다. 우리와 고객은 아래 “홈페이지 미리보기” 링크로 실제 홈페이지를 볼 수 있습니다. <strong>정식 오픈하는 날 끄세요</strong> (이날이 개통일이고 첫 청구서를 발행하는 날입니다).</span>
+          </span>
+        </label>
+        <p className="mt-3 text-[12.5px]"><a href={previewUrl(outlet.id)} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">홈페이지 미리보기 ↗</a><span className="ml-2 text-muted">고객에게 보여 줄 때 이 링크를 보내세요.</span></p>
       </Card>
 
       <Card title="도메인">

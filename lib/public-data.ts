@@ -47,7 +47,9 @@ const loadSite = unstable_cache(
     if (!outlet) ({ data: outlet } = await supabase.from('outlets').select('*').eq('domain', DEFAULT_DOMAIN).limit(1).maybeSingle())
     if (!outlet) return null
     const { data: cats } = await supabase.from('categories').select('*').eq('outlet_id', outlet.id)
-    return buildSite(outlet as OutletRow, (cats ?? []) as CategoryRow[], preview)
+    const built = buildSite(outlet as OutletRow, (cats ?? []) as CategoryRow[], preview)
+    // 오픈 준비 중인 매체는 미리보기 링크(쿠키)로 들어온 사람에게만 실제 홈페이지를 보여 준다
+    return built.comingSoon && previewId === outlet.id ? { ...built, comingSoon: false, softPreview: true } : built
   },
   ['public-site'],
   { revalidate: 300, tags: ['sites'] }

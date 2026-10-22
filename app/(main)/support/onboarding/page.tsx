@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
 import { ONBOARDING_STEPS, stepStates, type StepState } from '@/lib/onboarding-guide'
-import { ISSUER } from '@/lib/product'
+import { ISSUER, previewUrl } from '@/lib/product'
 
 export const metadata: Metadata = { title: '개통 진행 현황' }
 
@@ -17,6 +17,8 @@ export default async function OnboardingProgressPage() {
   const { supabase, outletId } = await getCmsContext()
   const { data, error } = outletId ? await supabase.rpc('launch_progress', { o: outletId }) : { data: null, error: null }
   const ready = !error
+  const { data: outlet } = outletId ? await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle() : { data: null }
+  const comingSoon = (outlet?.site as { comingSoon?: boolean } | null)?.comingSoon === true
   const doneKeys: string[] = Array.isArray(data) ? data : []
   const states = stepStates(Object.fromEntries(doneKeys.map((k) => [k, true])), !!outletId)
   const finished = states.filter((s) => s === 'done').length
@@ -46,6 +48,14 @@ export default async function OnboardingProgressPage() {
               <div className="h-full rounded-full bg-[#2F6BF0] transition-[width]" style={{ width: `${pct}%` }} />
             </div>
           </div>
+
+          {comingSoon && outletId && (
+            <div className="mt-5 rounded-2xl bg-[#FFF6E5] p-5 text-[14px] leading-relaxed ring-1 ring-[#F5A524]/30">
+              <p className="font-bold">지금은 오픈 준비 중입니다</p>
+              <p className="mt-1 text-[#5B4A1F]">도메인으로 들어온 방문자에게는 “오픈 준비 중” 안내 화면이 보입니다. 정식 오픈 전에 실제 홈페이지가 어떻게 보이는지는 아래 링크에서 미리 확인하실 수 있습니다.</p>
+              <a href={previewUrl(outletId)} target="_blank" rel="noopener" className="mt-3 inline-block rounded-full bg-[#2F6BF0] px-4 py-2 text-[13.5px] font-bold text-white hover:opacity-90">홈페이지 미리보기 ↗</a>
+            </div>
+          )}
 
           <ol className="mt-5 space-y-3">
             {ONBOARDING_STEPS.map((s, i) => {

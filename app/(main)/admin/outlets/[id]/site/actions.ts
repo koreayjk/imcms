@@ -55,6 +55,8 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
       accent: HEX.test(s.colors?.accent ?? '') ? s.colors!.accent : undefined,
     },
     indexable: !!s.indexable,
+    // 오픈 준비 중 스위치 (꺼진 매체는 저장하지 않아 "열린 매체"로 둔다)
+    comingSoon: s.comingSoon === true ? true : undefined,
     // 'allow'는 안 막는 기본값이므로 저장하지 않는다
     aiBots: parseAiBotMode(s.aiBots) === 'allow' ? undefined : parseAiBotMode(s.aiBots),
     pressKeywords: cut(s.pressKeywords, 2000),

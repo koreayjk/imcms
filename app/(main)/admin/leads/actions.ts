@@ -62,7 +62,7 @@ export async function openCustomer(leadId: string, _prev: LeadState, form: FormD
   const { data: group, error: gErr } = await supabase.from('publishers').insert({ name: groupName }).select('id').single()
   if (gErr || !group) return { error: `그룹을 만들지 못했습니다: ${gErr?.message ?? ''}` }
   const { data: outlet, error: oErr } = await supabase
-    .from('outlets').insert({ name: outletName, domain: domain || null, publisher_id: group.id, site: { logoMode: 'text', legal: { company: outletName } } })
+    .from('outlets').insert({ name: outletName, domain: domain || null, publisher_id: group.id, site: { logoMode: 'text', legal: { company: outletName }, comingSoon: true } })
     .select('id').single()
   if (oErr || !outlet) return { error: `매체를 만들지 못했습니다: ${oErr?.message ?? ''} (그룹은 만들어졌으니 그룹·매체 관리에서 이어서 하세요)` }
   await supabase.from('categories').insert(DEFAULT_SECTIONS.map((c, i) => ({ ...c, outlet_id: outlet.id, sort_order: i + 1 })))
