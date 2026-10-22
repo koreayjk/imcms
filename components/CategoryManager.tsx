@@ -16,6 +16,18 @@ const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 let seq = 0
 const newKey = () => `n${Date.now().toString(36)}${seq++}`
 
+// 2차 메뉴를 1차 메뉴 바로 아래로 모아 보여 준다 (저장된 순서가 섞여 있어도 위 메뉴 밑에 붙는다)
+function group(rows: Row[]): Row[] {
+  const tops = new Set(rows.filter((r): r is CatRow => r.kind === 'cat' && !r.parent_slug).map((r) => r.slug))
+  const kids = new Map<string, CatRow[]>()
+  const out: Row[] = []
+  for (const r of rows) {
+    if (r.kind === 'cat' && r.parent_slug && tops.has(r.parent_slug)) { kids.set(r.parent_slug, [...(kids.get(r.parent_slug) ?? []), r]); continue }
+    out.push(r)
+  }
+  return out.flatMap((r) => (r.kind === 'cat' && !r.parent_slug ? [r, ...(kids.get(r.slug) ?? [])] : [r]))
+}
+
 // 처음 목록: 저장된 구분선 자리가 있으면 그대로, 없으면 지금 홈페이지처럼 전문 섹션이 시작되는 자리에
 function initialRows(cats: Cat[]): Row[] {
   const explicit = cats.some((c) => typeof c.divider_before === 'boolean')
@@ -26,7 +38,7 @@ function initialRows(cats: Cat[]): Row[] {
     if (div) rows.push({ kind: 'div', key: `d-${c.id}` })
     rows.push({ kind: 'cat', key: c.id, id: c.id, name: c.name, slug: c.slug ?? '', parent_slug: c.parent_slug ?? null })
   })
-  return rows
+  return group(rows)
 }
 
 const snapshot = (rows: Row[]) => JSON.stringify(rows.map((r) => (r.kind === 'div' ? '|' : [r.id ?? r.key, r.name, r.slug, r.parent_slug])))
@@ -36,6 +48,8 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
   const [rows, setRows] = useState(base)
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
+  const [newParent, setNewParent] = useState('')
+  const lastSlug = useRef<Record<string, string>>({})
   const [editKey, setEditKey] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ ok?: string; error?: string }>({})
   const [saving, setSaving] = useState(false)
@@ -43,6 +57,7 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
   const supabase = createClient()
   const dirty = snapshot(rows) !== snapshot(base)
   const cats = rows.filter((r): r is CatRow => r.kind === 'cat')
+  const topSlugs = new Set(cats.filter((c) => !c.parent_slug).map((c) => c.slug))
 
   // 저장하지 않고 나가려 하면 브라우저가 한 번 묻는다
   useEffect(() => {
@@ -65,18 +80,30 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
     const key = newKey()
     const bad = slugError(s, key)
     if (bad) { setMsg({ error: bad }); return }
-    setRows([...rows, { kind: 'cat', key, name: n, slug: s, parent_slug: null }])
+    setRows(group([...rows, { kind: 'cat', key, name: n, slug: s, parent_slug: newParent || null }]))
     setName(''); setSlug(''); setMsg({})
   }
   const addDivider = () => { setRows([...rows, { kind: 'div', key: newKey() }]); setMsg({}) }
   const removeRow = (key: string) => setRows(rows.filter((r) => r.key !== key))
-  const patch = (key: string, p: Partial<Pick<CatRow, 'name' | 'slug'>>) => setRows(rows.map((r) => (r.key === key && r.kind === 'cat' ? { ...r, ...p } : r)))
+  const patch = (key: string, p: Partial<Pick<CatRow, 'name' | 'slug'>>) => {
+    const me = rows.find((x): x is CatRow => x.kind === 'cat' && x.key === key)
+    // 1차 메뉴의 영문 주소를 고치면 그 아래 2차 메뉴의 위 메뉴 주소도 같이 (지운 채로 두는 동안은 마지막 주소를 기억해 둔다)
+    const prev = lastSlug.current[key] ?? me?.slug ?? ''
+    const follow = !!me && !me.parent_slug && !!p.slug && !!prev
+    if (follow && p.slug) lastSlug.current[key] = p.slug
+    setRows(rows.map((r) => {
+      if (r.kind !== 'cat') return r
+      if (r.key === key) return { ...r, ...p }
+      return follow && r.parent_slug === prev ? { ...r, parent_slug: p.slug ?? r.parent_slug } : r
+    }))
+  }
+  const setParent = (key: string, parent: string | null) => setRows(group(rows.map((r) => (r.kind === 'cat' && r.key === key ? { ...r, parent_slug: parent } : r))))
   const move = (from: number, to: number) => {
     if (to < 0 || to >= rows.length || from === to) return
     const next = [...rows]
     const [it] = next.splice(from, 1)
     next.splice(to, 0, it)
-    setRows(next)
+    setRows(group(next))
   }
 
   // ── 끌어서 순서 바꾸기: 손잡이를 잡으면 줄이 손가락을 그대로 따라오고, 다른 줄은 자리를 비켜 준다 ──
@@ -145,6 +172,7 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
       const gone = baseCats.filter((b) => !cats.some((c) => c.id === b.id)).map((b) => b.id!)
       if (gone.length) { const { error } = await supabase.from('categories').delete().in('id', gone); if (error) throw error }
       let dividerOk = true
+      let parentOk = true
       let order = 0
       const saved: Row[] = []
       for (let i = 0; i < rows.length; i++) {
@@ -152,12 +180,15 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
         if (r.kind === 'div') { saved.push(r); continue }
         const fields: Record<string, unknown> = { name: r.name.trim(), slug: r.slug, sort_order: order++ }
         if (dividerOk) fields.divider_before = !r.parent_slug && rows[i - 1]?.kind === 'div'
+        fields.parent_slug = r.parent_slug ?? null
         const run = () => r.id
           ? supabase.from('categories').update(fields).eq('id', r.id).select('id').single()
           : supabase.from('categories').insert({ ...fields, outlet_id: outletId }).select('id').single()
         let res = await run()
         // category-dividers.sql 전이면 구분선만 빼고 저장
         if (res.error && /divider_before/.test(res.error.message)) { dividerOk = false; delete fields.divider_before; res = await run() }
+        // parent_slug 칸이 아직 없는 오래된 DB면 위 메뉴만 빼고 저장
+        if (res.error && /parent_slug/.test(res.error.message)) { parentOk = false; delete fields.parent_slug; res = await run() }
         if (res.error) throw res.error
         const id = (res.data as { id: string } | null)?.id ?? r.id
         // 주소를 바꾸면 그 아래 2차 메뉴의 위 메뉴 주소도 함께
@@ -183,12 +214,12 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
 
   // 홈페이지 메뉴 미리보기 (1차 메뉴만)
   const preview = useMemo(() => {
-    const out: { key: string; label: string; divider: boolean }[] = []
+    const out: { key: string; label: string; divider: boolean; subs: string[] }[] = []
     let pending = false
     for (const r of rows) {
       if (r.kind === 'div') { pending = true; continue }
       if (r.parent_slug) continue
-      out.push({ key: r.key, label: r.name || '(이름 없음)', divider: pending })
+      out.push({ key: r.key, label: r.name || '(이름 없음)', divider: pending, subs: rows.filter((x): x is CatRow => x.kind === 'cat' && x.parent_slug === r.slug && !!r.slug).map((x) => x.name || '(이름 없음)') })
       pending = false
     }
     return out
@@ -202,6 +233,10 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
         <div className="flex flex-wrap gap-2 sm:flex-nowrap">
           <input type="text" value={name} onChange={(e) => { setName(e.target.value); setSlug(toSlug(e.target.value)) }} onKeyDown={(e) => e.key === 'Enter' && addCat()} placeholder="카테고리명 (예: 사회, 경제, 문화)" aria-label="카테고리 이름" className="field-input min-w-full flex-1 sm:min-w-0" />
           <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} onKeyDown={(e) => e.key === 'Enter' && addCat()} placeholder="영문 주소 (자동)" aria-label="영문 주소" className="field-input min-w-0 flex-1 font-mono text-muted sm:w-40 sm:flex-none" />
+          <select value={newParent} onChange={(e) => setNewParent(e.target.value)} aria-label="상위 메뉴" className="field-input min-w-[9rem] sm:w-auto">
+            <option value="">1차 메뉴로</option>
+            {cats.filter((c) => !c.parent_slug && c.slug).map((c) => <option key={c.key} value={c.slug}>{c.name} 아래 2차 메뉴로</option>)}
+          </select>
           <button type="button" onClick={addCat} disabled={!name.trim()} className="btn-secondary pn-press">목록에 넣기</button>
         </div>
         <p className="mt-2 text-[12px] leading-relaxed text-muted">영문 주소는 홈페이지 메뉴 주소(예: /section/education)가 됩니다. 한글 이름이면 로마자로 자동으로 채워지고, 고쳐 써도 됩니다.</p>
@@ -212,7 +247,12 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
         <p className="text-[12px] font-semibold text-muted">홈페이지 메뉴 미리보기{dirty && <span className="ml-1.5 text-review">· 저장 전</span>}</p>
         <div className="mt-2 flex flex-wrap items-center gap-y-1.5 text-[13.5px] font-semibold">
           <span className="px-2">전체기사</span>
-          {preview.map((p) => <span key={p.key} className={`px-2 ${p.divider ? 'ml-1 border-l border-ink/25 pl-3' : ''}`}>{p.label}</span>)}
+          {preview.map((p) => (
+            <span key={p.key} className={`px-2 ${p.divider ? 'ml-1 border-l border-ink/25 pl-3' : ''}`}>
+              {p.label}
+              {p.subs.length > 0 && <span className="block max-w-[11rem] text-[11px] font-normal leading-snug text-muted">└ {p.subs.join(' · ')}</span>}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -223,8 +263,12 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
           <button type="button" onClick={addDivider} className="pn-press rounded-full border border-dashed border-ink/30 px-3 py-1 text-[12.5px] font-semibold hover:border-ink">+ 구분선 넣기</button>
         </div>
         <ul ref={listRef} className="space-y-1">
-          {rows.map((r, i) => (
-            <li key={r.key} style={rowStyle(i, r.key)} className={`flex items-center gap-2 rounded-lg border bg-white px-2 py-2 ${r.kind === 'div' ? 'border-dashed border-ink/25' : 'border-line'}`}>
+          {rows.map((r, i) => {
+            const child = r.kind === 'cat' && !!r.parent_slug && topSlugs.has(r.parent_slug)
+            const parentName = child ? cats.find((c) => c.slug === (r as CatRow).parent_slug)?.name : null
+            const subCount = r.kind === 'cat' && !r.parent_slug ? cats.filter((c) => c.parent_slug === r.slug).length : 0
+            return (
+            <li key={r.key} style={rowStyle(i, r.key)} className={`flex items-center gap-2 rounded-lg border px-2 py-2 ${r.kind === 'div' ? 'border-dashed border-ink/25 bg-white' : child ? 'ml-5 border-line border-l-[3px] border-l-[#9DB0D4] bg-[#F8FAFD] sm:ml-8' : 'border-line bg-white'}`}>
               <button
                 type="button"
                 aria-label={`${r.kind === 'div' ? '구분선' : r.name} 옮기기 (위·아래 화살표 키로도 옮길 수 있습니다)`}
@@ -247,15 +291,20 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
                   <div className="flex min-w-0 flex-1 flex-wrap gap-2">
                     <input type="text" value={r.name} onChange={(e) => patch(r.key, { name: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && setEditKey(null)} aria-label="카테고리 이름" className="field-input min-w-[8rem] flex-1 py-1" autoFocus />
                     <input type="text" value={r.slug} onChange={(e) => patch(r.key, { slug: e.target.value.toLowerCase() })} onKeyDown={(e) => e.key === 'Enter' && setEditKey(null)} aria-label="영문 주소" placeholder="영문 주소 (예: education)" className="field-input min-w-[8rem] flex-1 py-1 font-mono text-muted sm:w-40 sm:flex-none" />
+                    <select value={r.parent_slug ?? ''} onChange={(e) => setParent(r.key, e.target.value || null)} disabled={cats.some((c) => c.parent_slug === r.slug && !!r.slug)} aria-label="상위 메뉴" title="2차 메뉴를 가진 메뉴는 다른 메뉴 아래로 넣을 수 없습니다" className="field-input w-full sm:w-auto sm:min-w-[9rem]">
+                      <option value="">1차 메뉴</option>
+                      {cats.filter((c) => !c.parent_slug && c.key !== r.key && c.slug).map((c) => <option key={c.key} value={c.slug}>{c.name} 아래 2차 메뉴</option>)}
+                  </select>
                   </div>
                   <button type="button" onClick={() => setEditKey(null)} className="shrink-0 px-2 text-xs font-semibold text-published">완료</button>
                 </>
               ) : (
                 <>
                   <div className="min-w-0 flex-1">
-                    <span className="text-sm font-medium">
-                      {r.parent_slug && <span className="mr-1 text-muted" title="2차 메뉴">↳</span>}
+                    <span className={`text-sm ${child ? 'font-medium' : 'font-bold'}`}>
+                      {child && <span className="mr-1.5 rounded bg-[#E6ECF7] px-1.5 py-0.5 text-[11px] font-semibold text-[#3B5688]" title="2차 메뉴">{parentName} ›</span>}
                       {r.name}
+                      {subCount > 0 && <span className="ml-2 text-[11.5px] font-normal text-muted">2차 메뉴 {subCount}개</span>}
                       {!r.id && <span className="ml-1.5 rounded bg-review/10 px-1.5 py-0.5 text-[11px] font-semibold text-review">새로 추가</span>}
                     </span>
                     {isSlug(r.slug)
@@ -269,7 +318,8 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
                 </>
               )}
             </li>
-          ))}
+            )
+          })}
           {rows.length === 0 && <li className="py-10 text-center text-sm text-muted">카테고리가 없습니다. 위에서 추가하세요.</li>}
         </ul>
       </div>
