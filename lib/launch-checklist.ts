@@ -25,7 +25,7 @@ export const LAUNCH_GROUPS: LaunchGroup[] = [
       { key: 'google_add', title: '구글 서치콘솔에 매체 주소 등록 (URL 접두어) + HTML 태그 받기', detail: '속성 추가 → 웹사이트 추가 → URL 접두어', link: { label: '서치콘솔', href: 'https://search.google.com/search-console' } },
       { key: 'codes', title: '두 태그를 홈페이지 설정 → 검색 노출 칸에 붙여 넣고 저장', detail: '배포는 필요 없다. 매체 주소에서 페이지 소스(Ctrl+U)에 naver-site-verification·google-site-verification 이 보이면 성공' },
       { key: 'verify', title: '네이버·구글에서 소유 확인 누르기' },
-      { key: 'kakao_domain', title: '카카오 개발자 앱(IM 뉴스룸)에 매체 도메인 등록', detail: 'developers.kakao.com → 앱 → 플랫폼 키 → JavaScript 키 → JavaScript SDK 도메인 + 제품 링크 관리의 웹 도메인에 매체 주소(www 포함)를 넣는다. 그다음 Vercel 환경변수 NEXT_PUBLIC_KAKAO_DOMAINS 에도 매체 주소를 쉼표로 더하고 재배포한다(등록하지 않은 주소는 카카오톡 버튼이 링크 복사·폰 공유창으로 동작). 안 하면 카카오톡 공유가 4019 오류' },
+      { key: 'kakao_domain', title: '(요청한 매체만) 카카오 개발자 앱(IM 뉴스룸)에 매체 도메인 등록', detail: 'developers.kakao.com → 앱 → 플랫폼 키 → JavaScript 키 → JavaScript SDK 도메인 + 제품 링크 관리의 웹 도메인에 매체 주소(www 포함)를 넣는다. 그다음 Vercel 환경변수 NEXT_PUBLIC_KAKAO_DOMAINS 에도 매체 주소를 쉼표로 더하고 재배포한다(등록하지 않은 주소는 카카오톡 버튼이 링크 복사·폰 공유창으로 동작). 안 하면 카카오톡 공유가 4019 오류' },
       { key: 'naver_sitemap', title: '네이버: 사이트맵·RSS 제출', detail: '요청 → 사이트맵 제출: 매체주소/sitemap.xml · 요청 → RSS 제출: 매체주소/rss.xml' },
       { key: 'google_sitemap', title: '구글: 사이트맵 제출', detail: 'Sitemaps → sitemap.xml 과 news-sitemap.xml 두 개' },
       { key: 'google_owner', title: '구글 서치콘솔에 대표 구글 계정을 소유자로 추가', detail: '설정 → 사용자 및 권한 → 사용자 추가 → 권한: 소유자. 해지해도 대표가 그대로 가져간다' },
