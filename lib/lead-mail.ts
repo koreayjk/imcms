@@ -1,6 +1,7 @@
 // 신청 고객에게 보내는 안내 메일 문안 (고객 상담 화면 "메일 보내기"에서 불러온다. 보내기 전에 고쳐 쓸 수 있다)
 import { PRODUCT } from './product'
 import { SETUP_FEE, SETUP_WAIVER_MONTHS, won } from './pricing'
+import { ONBOARDING_STEPS, ONBOARDING_URL } from './onboarding-guide'
 
 type LeadInfo = { company: string; contact_name: string; domain?: string | null }
 
@@ -20,6 +21,12 @@ export function leadMailTemplates(l: LeadInfo): LeadMailTemplate[] {
       label: '신청 받았습니다 (첫 연락)',
       subject: `[${PRODUCT.name}] ${l.company} 신청 감사합니다`,
       body: `${name(l)}, 안녕하세요.\n${PRODUCT.name}입니다. ${l.company} 신청 감사합니다.\n\n진행을 위해 두 가지만 확인하고 싶습니다.\n- 지금 쓰시는 기사 관리 프로그램이 있는지 (있으면 기사·사진을 옮겨 드립니다)\n- 홈페이지에 넣을 로고, 대표 색, 메뉴(섹션) 구성\n\n편하신 시간에 통화하셔도 좋고, 이 메일에 회신해 주셔도 됩니다.\n\n감사합니다.\n${PRODUCT.name} 운영팀 드림`,
+    },
+    {
+      key: 'schedule',
+      label: '개통 일정 안내 (며칠 안에 무엇이)',
+      subject: `[${PRODUCT.name}] ${l.company} 개통 일정 안내`,
+      body: `${name(l)}, 안녕하세요.\n${PRODUCT.name}입니다. ${l.company} 개통은 아래 순서로 진행합니다. 일정은 영업일 기준 보통의 목표이고, 자료나 도메인 설정이 늦어지면 함께 늦어질 수 있습니다.\n\n${ONBOARDING_STEPS.map((s, i) => `${i + 1}. ${s.title} (보통 ${s.days})\n- 저희: ${s.we.join(' ')}\n- 부탁드릴 일: ${s.you.join(' ')}\n- 끝나면: ${s.result}`).join('\n\n')}\n\n단계별 설명은 ${ONBOARDING_URL} 에서도 보실 수 있고, 편집국에 들어오시면 고객센터의 "개통 현황"에서 지금 어느 단계인지 확인하실 수 있습니다.\n\n궁금한 점은 이 메일에 회신해 주세요.\n\n감사합니다.\n${PRODUCT.name} 운영팀 드림`,
     },
     {
       key: 'domain',

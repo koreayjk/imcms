@@ -118,6 +118,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
+  // imnewsroom.com/onboarding: 신청 후 개통 일정 안내 (접수 확인 메일·개통 안내 메일의 링크)
+  if (request.nextUrl.pathname === '/onboarding' && isProductHost(request.headers.get('host'))) {
+    const url = request.nextUrl.clone()
+    url.pathname = `${PRODUCT.path}/onboarding`
+    return NextResponse.rewrite(url)
+  }
+
   // imnewsroom.com/tax: 이용료 비용 처리 안내 (영업 중 "세금계산서 되나요?"에 드리는 링크)
   if (request.nextUrl.pathname === '/tax' && isProductHost(request.headers.get('host'))) {
     const url = request.nextUrl.clone()
