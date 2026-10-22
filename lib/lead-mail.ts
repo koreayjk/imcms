@@ -26,7 +26,7 @@ export function leadMailTemplates(l: LeadInfo): LeadMailTemplate[] {
       key: 'schedule',
       label: '개통 일정 안내 (며칠 안에 무엇이)',
       subject: `[${PRODUCT.name}] ${l.company} 개통 일정 안내`,
-      body: `${name(l)}, 안녕하세요.\n${PRODUCT.name}입니다. ${l.company} 개통은 아래 순서로 진행합니다. 일정은 영업일 기준 보통의 목표이고, 자료나 도메인 설정이 늦어지면 함께 늦어질 수 있습니다.\n\n${ONBOARDING_STEPS.map((s, i) => `${i + 1}. ${s.title} (보통 ${s.days})\n- 저희: ${s.we.join(' ')}\n- 부탁드릴 일: ${s.you.join(' ')}\n- 끝나면: ${s.result}`).join('\n\n')}\n\n단계별 설명은 ${ONBOARDING_URL} 에서도 보실 수 있고, 편집국에 들어오시면 고객센터의 "개통 현황"에서 지금 어느 단계인지 확인하실 수 있습니다.\n\n궁금한 점은 이 메일에 회신해 주세요.\n\n감사합니다.\n${PRODUCT.name} 운영팀 드림`,
+      body: `${name(l)}, 안녕하세요.\n${PRODUCT.name}입니다. ${l.company} 개통은 아래 순서로 진행합니다. 일정은 영업일 기준 보통의 목표이고, 자료나 도메인 설정이 늦어지면 함께 늦어질 수 있습니다.\n\n${ONBOARDING_STEPS.map((s, i) => `${i + 1}. ${s.title} (보통 ${s.days})\n- 저희: ${s.we.join(' ')}\n- 부탁드릴 일: ${s.you.join(' ')}\n- 끝나면: ${s.result}${s.alt ? `\n\n   (새로 시작하시는 매체는 이 단계가 “${s.alt.title}”로 바뀝니다)\n   - 저희: ${s.alt.we.join(' ')}\n   - 부탁드릴 일: ${s.alt.you.join(' ')}\n   - 끝나면: ${s.alt.result}` : ''}`).join('\n\n')}\n\n단계별 설명은 ${ONBOARDING_URL} 에서도 보실 수 있고, 편집국에 들어오시면 고객센터의 "개통 현황"에서 지금 어느 단계인지 확인하실 수 있습니다.\n\n궁금한 점은 이 메일에 회신해 주세요.\n\n감사합니다.\n${PRODUCT.name} 운영팀 드림`,
     },
     {
       key: 'domain',

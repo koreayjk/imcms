@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
-import { ONBOARDING_STEPS, stepStates, type StepState } from '@/lib/onboarding-guide'
+import { FRESH_KEY, ONBOARDING_STEPS, stepStates, stepView, type StepState } from '@/lib/onboarding-guide'
 import { ISSUER, previewUrl } from '@/lib/product'
 
 export const metadata: Metadata = { title: '개통 진행 현황' }
@@ -21,6 +21,7 @@ export default async function OnboardingProgressPage() {
   const comingSoon = (outlet?.site as { comingSoon?: boolean } | null)?.comingSoon === true
   const doneKeys: string[] = Array.isArray(data) ? data : []
   const states = stepStates(Object.fromEntries(doneKeys.map((k) => [k, true])), !!outletId)
+  const fresh = doneKeys.includes(FRESH_KEY)
   const finished = states.filter((s) => s === 'done').length
   const pct = Math.round((finished / states.length) * 100)
 
@@ -58,7 +59,8 @@ export default async function OnboardingProgressPage() {
           )}
 
           <ol className="mt-5 space-y-3">
-            {ONBOARDING_STEPS.map((s, i) => {
+            {ONBOARDING_STEPS.map((step, i) => {
+              const s = stepView(step, fresh)
               const st = states[i]
               const b = BADGE[st]
               return (

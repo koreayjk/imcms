@@ -10,6 +10,16 @@ export type OnboardingStep = {
   you: string[]
   result: string
   keys: string[]
+  // 새로 시작하는 매체(옮길 기사가 없는 경우)에 대신 보여 줄 내용. 운영팀이 개통 체크리스트에서 "새로 시작하는 매체"를 체크하면 고객에게는 이쪽이 보인다
+  alt?: { days: string; title: string; we: string[]; you: string[]; result: string }
+}
+
+// 개통 체크리스트(lib/launch-checklist.ts)의 "새로 시작하는 매체" 항목 키
+export const FRESH_KEY = 'fresh_start'
+
+// 고객에게 보여 줄 단계 내용: 새로 시작하는 매체면 alt 로 바꾼다
+export function stepView(s: OnboardingStep, fresh: boolean) {
+  return fresh && s.alt ? { ...s, ...s.alt } : s
 }
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
@@ -57,6 +67,13 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     you: ['기존 기사 자료(내보내기 파일 또는 접속 정보)를 안전한 방법으로 전달해 주세요. 새로 시작하시는 매체는 건너뜁니다.'],
     result: '이전 기사가 새 홈페이지에서 그대로 보이고, 검색으로 들어온 독자도 끊기지 않습니다.',
     keys: ['import'],
+    alt: {
+      days: '3~7일',
+      title: '시작용 기사 준비',
+      we: ['새로 시작하시는 매체라 옮길 기사가 없으므로, 오픈 날 첫 화면이 비지 않도록 섹션마다 시작용 기사를 준비합니다.', '정부·공공기관 보도자료를 바탕으로 기사 초안과 사진을 만들어 “승인 대기”로 넣어 둡니다. AI 활용 사실은 기사에 표시합니다.'],
+      you: ['초안을 읽어 보시고 발행할 기사는 승인하고, 고칠 부분은 고치거나 빼 주세요. 발행 책임은 승인하신 매체에 있습니다.', '사설·칼럼·인터뷰 같은 오피니언·취재 기사는 초안(작성 중)만 드리며, 마무리는 매체에서 해 주셔야 합니다.'],
+      result: '오픈 날 홈페이지가 비어 있지 않고, 승인하신 시작용 기사로 채워집니다.',
+    },
   },
   {
     id: 'training',

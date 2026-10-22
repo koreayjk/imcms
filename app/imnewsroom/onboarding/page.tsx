@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ISSUER, PRODUCT, appLink } from '@/lib/product'
-import { ONBOARDING_STEPS } from '@/lib/onboarding-guide'
+import { ONBOARDING_STEPS, stepView, type OnboardingStep } from '@/lib/onboarding-guide'
 import BrandMark from '@/components/BrandMark'
 import IslandNav from '@/components/product/IslandNav'
 import { Pill } from '@/components/product/Pill'
@@ -19,6 +19,36 @@ export const metadata: Metadata = {
 }
 
 const H2 = 'text-[26px] font-extrabold leading-[1.25] tracking-[-0.04em] [text-wrap:balance] print:text-[18px] sm:text-[32px]'
+
+function StepCard({ s, i, tag }: { s: Pick<OnboardingStep, 'title' | 'days' | 'we' | 'you' | 'result'>; i: number; tag?: string }) {
+  return (
+    <Reveal>
+                  <div className="pn-shell break-inside-avoid"><div className="pn-core p-6 print:p-3 sm:p-8">
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="text-[13px] font-bold tabular-nums text-[#8C929B]">{i + 1}단계</span>
+                      {tag && <span className="rounded-full bg-[#FFF1E6] px-2.5 py-0.5 text-[12px] font-semibold text-[#B54708]">{tag}</span>}
+                      <h2 className="text-[20px] font-extrabold tracking-[-0.03em] text-[#1D3461] print:text-[15px] sm:text-[23px]">{s.title}</h2>
+                      <span className="rounded-full bg-[#EEF2F8] px-3 py-1 text-[12.5px] font-semibold text-[#1D3461] sm:ml-auto">보통 {s.days}</span>
+                    </div>
+                    <div className="mt-5 grid gap-5 print:mt-2 print:grid-cols-2 sm:grid-cols-2">
+                      <div>
+                        <p className="text-[12.5px] font-bold text-[#8C929B]">저희가 합니다</p>
+                        <ul className="mt-2 space-y-1.5 text-[15px] leading-[1.75] text-[#3B4048] print:text-[12px] print:leading-[1.5]">
+                          {s.we.map((x) => <li key={x} className="flex gap-2.5"><span className="text-[#1D3461]" aria-hidden>●</span>{x}</li>)}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="text-[12.5px] font-bold text-[#8C929B]">대표님께 부탁드립니다</p>
+                        <ul className="mt-2 space-y-1.5 text-[15px] leading-[1.75] text-[#3B4048] print:text-[12px] print:leading-[1.5]">
+                          {s.you.map((x) => <li key={x} className="flex gap-2.5"><span className="text-[#E8590C]" aria-hidden>●</span>{x}</li>)}
+                        </ul>
+                      </div>
+                    </div>
+                    <p className="mt-5 rounded-xl bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.75] text-[#3B4048] print:mt-2 print:bg-white print:p-0 print:text-[12px]"><span className="font-bold text-[#0F1115]">끝나면</span> {s.result}</p>
+                  </div></div>
+                </Reveal>
+  )
+}
 
 export default function OnboardingGuidePage() {
   const home = PRODUCT.path
@@ -54,31 +84,9 @@ export default function OnboardingGuidePage() {
         <section id="flow" className="scroll-mt-24 px-4 pb-16 sm:px-6 print:pb-4">
           <ol className="mx-auto max-w-[860px] space-y-5 print:space-y-2">
             {ONBOARDING_STEPS.map((s, i) => (
-              <li key={s.id}>
-                <Reveal>
-                  <div className="pn-shell break-inside-avoid"><div className="pn-core p-6 print:p-3 sm:p-8">
-                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span className="text-[13px] font-bold tabular-nums text-[#8C929B]">{i + 1}단계</span>
-                      <h2 className="text-[20px] font-extrabold tracking-[-0.03em] text-[#1D3461] print:text-[15px] sm:text-[23px]">{s.title}</h2>
-                      <span className="rounded-full bg-[#EEF2F8] px-3 py-1 text-[12.5px] font-semibold text-[#1D3461] sm:ml-auto">보통 {s.days}</span>
-                    </div>
-                    <div className="mt-5 grid gap-5 print:mt-2 print:grid-cols-2 sm:grid-cols-2">
-                      <div>
-                        <p className="text-[12.5px] font-bold text-[#8C929B]">저희가 합니다</p>
-                        <ul className="mt-2 space-y-1.5 text-[15px] leading-[1.75] text-[#3B4048] print:text-[12px] print:leading-[1.5]">
-                          {s.we.map((x) => <li key={x} className="flex gap-2.5"><span className="text-[#1D3461]" aria-hidden>●</span>{x}</li>)}
-                        </ul>
-                      </div>
-                      <div>
-                        <p className="text-[12.5px] font-bold text-[#8C929B]">대표님께 부탁드립니다</p>
-                        <ul className="mt-2 space-y-1.5 text-[15px] leading-[1.75] text-[#3B4048] print:text-[12px] print:leading-[1.5]">
-                          {s.you.map((x) => <li key={x} className="flex gap-2.5"><span className="text-[#E8590C]" aria-hidden>●</span>{x}</li>)}
-                        </ul>
-                      </div>
-                    </div>
-                    <p className="mt-5 rounded-xl bg-[#F7F8FA] px-4 py-3 text-[14px] leading-[1.75] text-[#3B4048] print:mt-2 print:bg-white print:p-0 print:text-[12px]"><span className="font-bold text-[#0F1115]">끝나면</span> {s.result}</p>
-                  </div></div>
-                </Reveal>
+              <li key={s.id} className="space-y-5 print:space-y-2">
+                <StepCard s={s} i={i} tag={s.alt ? '쓰시던 프로그램이 있는 경우' : undefined} />
+                {s.alt && <StepCard s={stepView(s, true)} i={i} tag="새로 시작하시는 경우 (대신)" />}
               </li>
             ))}
           </ol>
