@@ -45,7 +45,6 @@ export default function ReviewActions({ articleId, presetAt = null, hasSection =
     if (error) {
       window.alert(`승인하지 못했습니다: ${error.message}`)
     } else {
-      notifyArticle(articleId, 'published').catch(() => {})
       try {
         const summary = describe(await syndicate(articleId))
         if (summary) window.alert(summary)

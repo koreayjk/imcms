@@ -66,7 +66,6 @@ export function BulkReview({ items, canReview = false, moderated = false, childr
         if (error || !data?.length) { failed.push(`“${a.title}”: ${error?.message ?? '이미 처리된 기사입니다'}`); continue }
       }
       done.push(a.id)
-      notifyArticle(a.id, 'published', { bulk: true }).catch(() => {})
       try {
         const s = describe(await syndicate(a.id))
         if (s) notes.push(`“${a.title}”\n${s}`)

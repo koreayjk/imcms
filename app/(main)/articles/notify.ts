@@ -4,34 +4,26 @@ import { getCmsContext } from '@/lib/cms'
 import { notify } from '@/lib/notify'
 import { cmsOrigin } from '@/lib/origin'
 
-// 기사 상태가 바뀐 뒤 화면에서 부른다: 승인신청 → 편집장들, 반려·승인 → 쓴 기자
+// 기사 상태가 바뀐 뒤 화면에서 부른다: 승인신청 → 편집장들, 반려 → 쓴 기자
 //   실제 기사 상태가 그 일과 맞을 때만, 같은 일은 10분에 한 번만 알린다
-const STATUS = { submitted: 'in_review', rejected: 'rejected', published: 'published' } as const
+//   "발행됨" 메일은 없다: 발행은 건마다 메일을 보내면 한꺼번에 발행할 때 수십 통이 쏟아지고, 기자는 뉴스룸에서 상태를 본다
+const STATUS = { submitted: 'in_review', rejected: 'rejected' } as const
 
-// bulk: 일괄 승인·반려에서 부른 경우. 일괄 발행은 기사마다 메일을 보내지 않는다 (70건을 한꺼번에 발행하면 70통이 쏟아진다)
-export async function notifyArticle(id: string, event: keyof typeof STATUS, opts: { bulk?: boolean } = {}) {
+export async function notifyArticle(id: string, event: keyof typeof STATUS) {
   const { supabase, user, profile, trial } = await getCmsContext()
   if (trial) return
   const { data: a } = await supabase.from('articles').select('id, title, status, author_id, reject_reason, outlet:outlets(name)').eq('id', id).maybeSingle()
   if (!a || a.status !== STATUS[event]) return
   if (event === 'submitted' && a.author_id !== user.id) return
-  if (event !== 'submitted' && a.author_id === user.id) return
-  if (event === 'published') {
-    if (opts.bulk) return
-    // 편집장·발행인·운영팀이 쓴 기사는 본인이 곧 승인하는 사람들이라 "발행됨" 메일을 보내지 않는다
-    const { data: au } = await supabase.from('profiles').select('role, is_staff').eq('id', a.author_id).maybeSingle()
-    if (au && (au.role === 'admin' || au.role === 'editor' || au.is_staff)) return
-  }
+  if (event === 'rejected' && a.author_id === user.id) return
   const outlet = (a.outlet as unknown as { name: string } | null)?.name ?? ''
   const who = (profile?.full_name as string | undefined) ?? ''
   const url = `${(await cmsOrigin())}/articles/${id}`
   const slot = Math.floor(Date.now() / 600_000)
-  const kind = event === 'submitted' ? 'article_submitted' : event === 'rejected' ? 'article_rejected' : 'article_published'
+  const kind = event === 'submitted' ? 'article_submitted' : 'article_rejected'
   await notify(supabase, kind, id, `${kind}:${id}:${slot}`, () =>
     event === 'submitted'
       ? { subject: `[${outlet}] 승인신청: ${a.title}`, title: '승인을 기다리는 기사가 있습니다', lines: [`${who} 기자가 “${a.title}” 기사를 승인신청했습니다.`], button: { label: '기사 확인하기', url } }
-      : event === 'rejected'
-        ? { subject: `[${outlet}] 반려됨: ${a.title}`, title: '기사가 반려되었습니다', lines: [`“${a.title}”`, `반려 사유: ${a.reject_reason ?? '-'}`, '고친 뒤 다시 승인신청해 주세요.'], button: { label: '기사 고치기', url: `${url}/edit` } }
-        : { subject: `[${outlet}] 발행됨: ${a.title}`, title: '기사가 승인되어 발행되었습니다', lines: [`“${a.title}” 기사를 ${who} 님이 승인했습니다.`], button: { label: '기사 보기', url } },
+      : { subject: `[${outlet}] 반려됨: ${a.title}`, title: '기사가 반려되었습니다', lines: [`“${a.title}”`, `반려 사유: ${a.reject_reason ?? '-'}`, '고친 뒤 다시 승인신청해 주세요.'], button: { label: '기사 고치기', url: `${url}/edit` } },
   )
 }
