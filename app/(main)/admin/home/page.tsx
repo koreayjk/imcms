@@ -3,6 +3,7 @@ import { outletHomeUrl } from '@/lib/product'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { normalizeLayout } from '@/lib/home-layout'
+import { parseHomeLayout } from '@/lib/home-layouts'
 import HomeBoard, { type BoardArticle } from '@/components/cms/HomeBoard'
 
 const FIELDS = 'id, title, thumbnail_url, published_at, category:categories(name)'
@@ -59,7 +60,7 @@ export default async function HomeEditPage() {
           편집판 저장 공간이 아직 없습니다. Supabase에서 <code>supabase/home-layout.sql</code>을 실행해 주세요.
         </p>
       ) : (
-        <HomeBoard outletId={outlet.id} siteUrl={outletHomeUrl(outlet as { id: string; domain?: string | null })} initialLayout={layout} articles={articles} savedAt={saved?.updated_at ?? null} />
+        <HomeBoard homeLayout={parseHomeLayout((outlet as { site?: { homeLayout?: unknown } | null }).site?.homeLayout)} outletId={outlet.id} siteUrl={outletHomeUrl(outlet as { id: string; domain?: string | null })} initialLayout={layout} articles={articles} savedAt={saved?.updated_at ?? null} />
       )}
     </div>
   )

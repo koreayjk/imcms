@@ -5,21 +5,20 @@ import { createClient } from '@/lib/supabase'
 import { refreshOutletPages } from '@/app/(main)/articles/refresh'
 import { formatDateTime } from '@/lib/format'
 import { SLOTS, type HomeLayout, type SlotKey } from '@/lib/home-layout'
+import { HOME_LAYOUTS, type HomeLayout as HomeLayoutKey } from '@/lib/home-layouts'
 
 export type BoardArticle = { id: string; title: string; thumbnail_url: string | null; published_at: string | null; category: string | null }
 
 type Pos = { slot: SlotKey; index: number }
 type DragData = { id: string; from?: Pos }
 
-const GRID: Record<SlotKey, string> = {
-  headline: 'grid-cols-1',
-  top: 'grid-cols-2',
-  major: 'grid-cols-2 md:grid-cols-3',
-  pick: 'grid-cols-2 md:grid-cols-4',
-}
+const SLOT = Object.fromEntries(SLOTS.map((s) => [s.key, s])) as Record<SlotKey, (typeof SLOTS)[number]>
+const range = (n: number) => Array.from({ length: n }, (_, i) => i)
 
-export default function HomeBoard({ outletId, siteUrl = '/', initialLayout, articles, savedAt }: {
+// 홈페이지 첫 화면 모양(홈 배치)별로 기사 자리를 그 모양 그대로 놓는다. 회색 칸은 자동으로 채워지는 자리
+export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'standard', initialLayout, articles, savedAt }: {
   siteUrl?: string
+  homeLayout?: HomeLayoutKey
   outletId: string
   initialLayout: HomeLayout
   articles: BoardArticle[]
@@ -98,64 +97,160 @@ export default function HomeBoard({ outletId, siteUrl = '/', initialLayout, arti
     }
   }
 
+  const info = HOME_LAYOUTS.find((l) => l.key === homeLayout) ?? HOME_LAYOUTS[0]
+
+  // 기사 자리 한 칸 (끌어다 놓기·누르기·비우기는 모든 모양에서 같다)
+  function cell(slot: SlotKey, index: number, o: { large?: boolean; compact?: boolean; className?: string } = {}) {
+    const sl = SLOT[slot]
+    const pos = { slot, index }
+    const key = `${slot}-${index}`
+    const id = layout[slot][index]
+    const a = id ? byId.get(id) : undefined
+    const large = !!o.large
+    return (
+      <div
+        key={key}
+        onDragOver={(e) => { e.preventDefault(); setOver(key) }}
+        onDragLeave={() => setOver((x) => (x === key ? null : x))}
+        onDrop={(e) => onDrop(e, pos)}
+        onClick={() => selected && place(selected, pos)}
+        className={`relative min-w-0 rounded border-2 transition-colors ${
+          over === key ? 'border-review bg-review/5' : a ? 'border-line bg-white' : 'border-dashed border-line bg-[#FAFBFC]'
+        } ${selected ? 'cursor-pointer hover:border-review' : ''} ${large ? 'min-h-[150px]' : o.compact ? 'min-h-[88px]' : 'min-h-[92px]'} ${o.className ?? ''}`}
+      >
+        <span className="absolute left-2 top-1.5 text-[10.5px] font-semibold text-muted">{sl.count > 1 ? `${sl.label} ${index + 1}` : sl.label}</span>
+        {a ? (
+          <div draggable onDragStart={dragStart({ id: a.id, from: pos })} className={`flex cursor-grab gap-3 p-3 pt-6 active:cursor-grabbing ${large ? 'items-center' : ''}`}>
+            {a.thumbnail_url && !o.compact && (
+              <img src={a.thumbnail_url} alt="" className={`shrink-0 rounded-sm object-cover ${large ? 'h-[84px] w-[140px]' : 'hidden h-[46px] w-[70px] sm:block'}`} />
+            )}
+            <div className="min-w-0 flex-1">
+              {a.category && <p className="text-[11px] text-muted">{a.category}</p>}
+              <p className={`line-clamp-2 font-semibold leading-snug ${large ? 'text-[16px]' : 'text-[13px]'}`}>{a.title}</p>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); clear(pos) }}
+              aria-label={`${sl.label} ${index + 1}번 자리 비우기`}
+              className="absolute right-1.5 top-1 rounded px-1.5 text-[14px] text-muted hover:bg-danger/10 hover:text-danger"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <p className="flex h-full min-h-[inherit] items-center justify-center px-3 pt-4 text-center text-[12px] text-muted">
+            {id ? '발행 취소된 기사입니다. 다른 기사로 바꿔주세요.' : slot === 'pick' ? '비어 있음' : '비어 있음 · 자동 배치'}
+          </p>
+        )}
+      </div>
+    )
+  }
+  // 자동으로 채워지는 자리 (직접 놓을 수 없다)
+  const auto = (label: string, cls = '') => (
+    <div className={`flex items-center justify-center rounded border-2 border-dashed border-[#DDE1E7] bg-[#F1F3F6] px-3 py-2 text-center text-[11.5px] text-muted ${cls}`}>{label}</div>
+  )
+  const head = (title: string, note?: string) => (
+    <p className="mb-2 mt-5 text-[12.5px] font-bold">{title}{note && <span className="ml-2 font-normal text-muted">{note}</span>}</p>
+  )
+  const unused = (text: string) => <p className="mt-2 rounded bg-[#F6F7F9] px-3 py-2 text-[12px] text-muted">{text}</p>
+  const picks = (
+    <>
+      {head('이슈 PICK', '채운 경우에만 홈페이지에 나옵니다')}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{range(4).map((i) => cell('pick', i))}</div>
+    </>
+  )
+
+  const THREE = 'md:grid-cols-[minmax(0,22%)_minmax(0,1fr)_minmax(0,24%)]'
+  const canvases: Record<HomeLayoutKey, React.ReactNode> = {
+    // 한국 스타일 1: 왼쪽 2 · 가운데 큰 톱 · 오른쪽 실시간 / 주요뉴스 3열
+    standard: (
+      <>
+        <div className={`grid gap-3 ${THREE}`}>
+          <div className="grid gap-3">{cell('top', 0, { compact: true })}{cell('top', 1, { compact: true })}</div>
+          <div className="grid gap-3">{cell('headline', 0, { large: true })}{auto('헤드라인 아래 최신 기사 4건 (자동)', 'min-h-[64px]')}</div>
+          {auto('실시간 뉴스 (자동)', 'min-h-[120px]')}
+        </div>
+        {head('주요뉴스', '비우면 최신 기사로 자동')}
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,24%)]">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{range(6).map((i) => cell('major', i))}</div>
+          {auto('많이 본 뉴스 (자동)', 'min-h-[120px]')}
+        </div>
+        {picks}
+      </>
+    ),
+    // 한국 스타일 2: 속보 띠 · 큰 사진 + 오른쪽 목록 / 이슈 PICK / 주요뉴스 2열
+    portal: (
+      <>
+        {auto('속보 띠 — 최신 기사 5건 (자동)', 'mb-3 min-h-[34px]')}
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+          {cell('headline', 0, { large: true, className: 'md:min-h-[230px]' })}
+          <div className="grid gap-3">{cell('top', 0)}{cell('top', 1)}{auto('최신 제목 목록 4건 (자동)', 'min-h-[64px]')}</div>
+        </div>
+        {picks}
+        {head('주요뉴스', '비우면 최신 기사로 자동')}
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,24%)]">
+          <div className="grid gap-3 sm:grid-cols-2">{range(6).map((i) => cell('major', i))}</div>
+          {auto('많이 본 뉴스 (자동)', 'min-h-[120px]')}
+        </div>
+        {auto('섹션별 박스 (자동)', 'mt-3 min-h-[48px]')}
+      </>
+    ),
+    // 한국 스타일 3: 큰 톱(글+사진) · 아래 카드 4장 / 섹션 띠 (주요뉴스 자리는 쓰지 않는다)
+    bands: (
+      <>
+        {cell('headline', 0, { large: true })}
+        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {cell('top', 0)}{cell('top', 1)}{auto('최신 기사 (자동)', 'min-h-[88px]')}{auto('최신 기사 (자동)', 'min-h-[88px]')}
+        </div>
+        {auto('섹션별 띠 — 메뉴 순서대로 자동', 'mt-3 min-h-[64px]')}
+        {picks}
+        {unused('“주요뉴스” 자리는 이 홈 모양에서 쓰지 않습니다. 다른 모양으로 바꾸면 전에 놓은 기사가 그대로 쓰여요.')}
+      </>
+    ),
+    // 미국 스타일 1: 왼쪽 글 2 · 가운데 큰 톱 · 오른쪽 많이 본 기사 / 이슈 PICK / 주요뉴스 4칸
+    editorial: (
+      <>
+        <div className={`grid gap-3 ${THREE}`}>
+          <div className="grid gap-3">{cell('top', 0, { compact: true })}{cell('top', 1, { compact: true })}{auto('실시간 3건 (자동)', 'min-h-[64px]')}</div>
+          <div className="grid gap-3">{cell('headline', 0, { large: true })}{auto('헤드라인 아래 최신 기사 4건 (자동)', 'min-h-[64px]')}</div>
+          {auto('많이 본 기사 (자동)', 'min-h-[120px]')}
+        </div>
+        {picks}
+        {head('주요뉴스', '앞의 4칸을 씁니다')}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{range(4).map((i) => cell('major', i))}</div>
+        {unused('주요뉴스 5·6번 자리는 이 홈 모양에서 쓰지 않습니다.')}
+        {auto('섹션별 3열 (자동)', 'mt-3 min-h-[48px]')}
+      </>
+    ),
+    // 미국 스타일 2: 넓은 톱 사진 · 아래 카드 6장(앞 2장만 직접) / 이슈 PICK / 주요뉴스 카드 4장
+    cards: (
+      <>
+        {cell('headline', 0, { large: true, className: 'min-h-[170px]' })}
+        {head('톱 아래 카드 6장', '앞의 2장은 직접, 나머지 4장은 최신 기사로 자동')}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {cell('top', 0)}{cell('top', 1)}{range(4).map((i) => <div key={`a${i}`}>{auto('최신 기사 (자동)', 'min-h-[92px]')}</div>)}
+        </div>
+        {picks}
+        {auto('많이 본 뉴스 (자동)', 'mt-3 min-h-[48px]')}
+        {head('주요뉴스', '앞의 4칸을 카드로 씁니다')}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{range(4).map((i) => cell('major', i))}</div>
+        {unused('주요뉴스 5·6번 자리는 이 홈 모양에서 쓰지 않습니다.')}
+        {auto('섹션별 줄 (자동)', 'mt-3 min-h-[48px]')}
+      </>
+    ),
+  }
+  const canvas = canvases[homeLayout] ?? canvases.standard
+
   return (
     <div className="grid grid-cols-1 items-start gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="space-y-6">
-        {SLOTS.map((s) => (
-          <section key={s.key} className="rounded-lg border border-line bg-white p-5">
-            <div className="mb-3 flex flex-wrap items-baseline gap-x-2">
-              <h2 className="text-[15px] font-bold">{s.label}</h2>
-              <span className="text-[12px] text-muted">{s.note}</span>
-            </div>
-            <div className={`grid gap-3 ${GRID[s.key]}`}>
-              {layout[s.key].map((id, index) => {
-                const pos = { slot: s.key, index }
-                const key = `${s.key}-${index}`
-                const a = id ? byId.get(id) : undefined
-                const large = s.key === 'headline'
-                return (
-                  <div
-                    key={key}
-                    onDragOver={(e) => { e.preventDefault(); setOver(key) }}
-                    onDragLeave={() => setOver((o) => (o === key ? null : o))}
-                    onDrop={(e) => onDrop(e, pos)}
-                    onClick={() => selected && place(selected, pos)}
-                    className={`relative rounded border-2 transition-colors ${
-                      over === key ? 'border-review bg-review/5' : a ? 'border-line bg-white' : 'border-dashed border-line bg-[#FAFBFC]'
-                    } ${selected ? 'cursor-pointer hover:border-review' : ''} ${large ? 'min-h-[132px]' : 'min-h-[92px]'}`}
-                  >
-                    <span className="absolute left-2 top-1.5 text-[10.5px] font-semibold tabular-nums text-muted">{index + 1}</span>
-                    {a ? (
-                      <div draggable onDragStart={dragStart({ id: a.id, from: pos })} className={`flex cursor-grab gap-3 p-3 pt-6 active:cursor-grabbing ${large ? 'items-center' : ''}`}>
-                        {/* 휴대폰 두 칸 자리에서는 사진을 빼고 제목에 폭을 준다 (사진이 있으면 제목이 두세 글자 폭으로 찌그러짐) */}
-                        {a.thumbnail_url && (
-                          <img src={a.thumbnail_url} alt="" className={`shrink-0 rounded-sm object-cover ${large ? 'h-[84px] w-[140px]' : 'hidden h-[46px] w-[70px] sm:block'}`} />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          {a.category && <p className="text-[11px] text-muted">{a.category}</p>}
-                          <p className={`line-clamp-2 font-semibold leading-snug ${large ? 'text-[16px]' : 'text-[13px]'}`}>{a.title}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); clear(pos) }}
-                          aria-label={`${s.label} ${index + 1}번 자리 비우기`}
-                          className="absolute right-1.5 top-1 rounded px-1.5 text-[14px] text-muted hover:bg-danger/10 hover:text-danger"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="flex h-full min-h-[inherit] items-center justify-center px-3 text-center text-[12px] text-muted">
-                        {id ? '발행 취소된 기사입니다. 다른 기사로 바꿔주세요.' : s.key === 'pick' ? '비어 있음' : '비어 있음 · 자동 배치'}
-                      </p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        ))}
-      </div>
+      <section className="rounded-lg border border-line bg-white p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <h2 className="text-[15px] font-bold">{info.name} <span className="font-medium text-muted">· {info.label}</span></h2>
+          <span className="text-[12px] text-muted">홈페이지 첫 화면 그대로 놓습니다. 회색 칸은 최신 기사로 자동 채워져요.</span>
+          <a href={`/admin/outlets/${outletId}/site`} className="ml-auto text-[12px] font-semibold text-[#2F6BF0] hover:underline">홈 모양 바꾸기</a>
+        </div>
+        {canvas}
+      </section>
 
       <aside className="flex max-h-[70vh] flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-150px)] rounded-lg border border-line bg-white">
         <div className="border-b border-line p-4">
