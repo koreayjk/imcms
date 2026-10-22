@@ -70,6 +70,8 @@ export type SiteConfig = {
   bands?: HomeBand[]
   // 띠를 따로 정하지 않아 섹션 순서대로 자동 구성했는지 (true면 한국 스타일 3의 전용 첫 화면, 직접 정한 띠가 있으면 예전 모양 그대로)
   autoBands?: boolean
+  // 매체를 연 날 (정책 페이지 시행일이 열기 전 날짜로 나오지 않게)
+  createdAt?: string
   // 소개 페이지 샘플 매체: ?layout= 으로 홈 배치를 바꿔 보는 바를 보여 준다 (public-data currentSite 가 주소를 보고 정한다)
   layoutDemo?: boolean
   // SHOP 띠·메뉴에서 연결할 쇼핑몰 주소 (없으면 '준비 중')
@@ -219,7 +221,7 @@ export type OutletSiteSettings = {
   aiBots?: AiBotMode
 }
 
-export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null }
+export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null; created_at?: string | null }
 export type CategoryRow = { slug: string; name: string; sort_order?: number | null; specialty?: boolean | null; description?: string | null; parent_slug?: string | null; divider_before?: boolean | null }
 
 const HEX = /^#[0-9a-f]{6}$/i
@@ -281,6 +283,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     plan: (o as { plan?: string | null }).plan ?? null,
     preview,
     domains: o.domain ? [o.domain, `www.${o.domain}`] : [],
+    createdAt: o.created_at ?? undefined,
     indexable: s.indexable ?? code?.indexable ?? false,
     name: o.name,
     nameEn: s.nameEn ?? code?.nameEn ?? '',

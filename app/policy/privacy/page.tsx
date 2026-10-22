@@ -2,21 +2,23 @@ import type { Metadata } from 'next'
 import { currentSite } from '@/lib/public-data'
 import PolicyPage, { officer } from '@/components/site/PolicyPage'
 import { siteIcon, type SiteConfig } from '@/lib/sites'
+import { policyEffective } from '@/lib/policy-date'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
   return { title: `${site.lang === 'en' ? 'Privacy Policy' : '개인정보처리방침'} | ${site.name}`, icons: { icon: siteIcon(site) } }
 }
 
-const EFFECTIVE = '2026년 10월 13일'
+const EFFECTIVE = '2026-10-13' // 문안을 정한 날 (새 매체는 연 날과 비교해 늦은 날을 보여 준다)
 
 // 인터넷신문 표준 형태의 개인정보처리방침. 정식 오픈 전 매체 상황에 맞게 법무 검토를 권장한다
 export default async function PrivacyPage() {
   const site = await currentSite()
   const o = officer(site, site.legal.publisher)
+  const eff = policyEffective(site, EFFECTIVE)
   if (site.lang === 'en') return <PrivacyEn site={site} o={o} />
   return (
-    <PolicyPage site={site} slug="privacy" effective={EFFECTIVE}>
+    <PolicyPage site={site} slug="privacy" effective={eff}>
       <p>{site.name}(이하 “신문사”)은 「개인정보 보호법」에 따라 이용자의 개인정보를 보호하고 관련 고충을 신속하게 처리하기 위해 다음과 같이 개인정보처리방침을 둡니다.</p>
 
       <section>
@@ -88,17 +90,18 @@ export default async function PrivacyPage() {
 
       <section>
         <h2>8. 방침의 변경</h2>
-        <p>이 방침은 {EFFECTIVE}부터 적용됩니다. 내용이 바뀌면 시행 7일 전부터 홈페이지에 알립니다.</p>
+        <p>이 방침은 {eff}부터 적용됩니다. 내용이 바뀌면 시행 7일 전부터 홈페이지에 알립니다.</p>
       </section>
     </PolicyPage>
   )
 }
 
 // 영문 매체용 (Privacy Policy)
-const EFFECTIVE_EN = 'Oct. 14, 2026'
+const EFFECTIVE_EN = '2026-10-14'
 function PrivacyEn({ site, o }: { site: SiteConfig; o: { name: string; contact: string } }) {
+  const effEn = policyEffective(site, EFFECTIVE_EN)
   return (
-    <PolicyPage site={site} slug="privacy" effective={EFFECTIVE_EN}>
+    <PolicyPage site={site} slug="privacy" effective={effEn}>
       <p>{site.name} (“we,” “us”) respects your privacy. This policy explains what personal information we process when you read our website, contact us or subscribe to our newsletter, and how we protect it.</p>
 
       <section>
@@ -163,7 +166,7 @@ function PrivacyEn({ site, o }: { site: SiteConfig; o: { name: string; contact: 
 
       <section>
         <h2>8. Changes to this policy</h2>
-        <p>This policy takes effect on {EFFECTIVE_EN}. We will post any changes on this page at least seven days before they take effect.</p>
+        <p>This policy takes effect on {effEn}. We will post any changes on this page at least seven days before they take effect.</p>
       </section>
     </PolicyPage>
   )

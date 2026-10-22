@@ -2,21 +2,24 @@ import type { Metadata } from 'next'
 import { currentSite } from '@/lib/public-data'
 import PolicyPage, { officer } from '@/components/site/PolicyPage'
 import { siteIcon } from '@/lib/sites'
+import { policyEffective } from '@/lib/policy-date'
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
   return { title: `${site.lang === 'en' ? 'Youth Protection Policy' : '청소년보호정책'} | ${site.name}`, icons: { icon: siteIcon(site) } }
 }
 
-const EFFECTIVE = '2026년 10월 2일'
+const EFFECTIVE = '2026-10-02' // 문안을 정한 날 (새 매체는 연 날과 비교해 늦은 날을 보여 준다)
+const EFFECTIVE_EN = '2026-10-14'
 
 // 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」·「청소년 보호법」에 따른 청소년보호정책
 export default async function YouthPage() {
   const site = await currentSite()
   const o = officer(site, site.legal.youthOfficer)
+  const eff = policyEffective(site, EFFECTIVE)
   if (site.lang === 'en') {
     return (
-      <PolicyPage site={site} slug="youth" effective="Oct. 14, 2026">
+      <PolicyPage site={site} slug="youth" effective={policyEffective(site, EFFECTIVE_EN)}>
         <p>{site.name} is committed to protecting young readers from harmful content.</p>
         <section>
           <h2>1. Protecting young readers</h2>
@@ -42,7 +45,7 @@ export default async function YouthPage() {
     )
   }
   return (
-    <PolicyPage site={site} slug="youth" effective={EFFECTIVE}>
+    <PolicyPage site={site} slug="youth" effective={eff}>
       <p>{site.name}은 청소년이 건전한 인격체로 성장할 수 있도록 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」과 「청소년 보호법」에 따라 청소년보호정책을 두고 시행합니다.</p>
 
       <section>
@@ -72,7 +75,7 @@ export default async function YouthPage() {
 
       <section>
         <h2>5. 정책의 변경</h2>
-        <p>이 정책은 {EFFECTIVE}부터 적용됩니다.</p>
+        <p>이 정책은 {eff}부터 적용됩니다.</p>
       </section>
     </PolicyPage>
   )
