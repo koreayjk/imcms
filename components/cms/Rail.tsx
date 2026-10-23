@@ -24,15 +24,22 @@ const ITEMS: Item[] = [
   { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
   { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
   { href: '/admin/settings', label: '설정·AI', icon: <GearIcon />, match: (p) => p.startsWith('/admin/settings') },
-  { href: '/support', label: '고객센터', icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') },
+  { href: '/support', label: '고객센터', icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') && !p.startsWith('/support/onboarding') },
   { href: '/feedback', label: '개선 요청', icon: <BulbIcon />, match: (p) => p.startsWith('/feedback') },
   { href: '/admin/leads', label: '고객상담', icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'staff' },
   { href: '/admin/association', label: '협회', icon: <GlobeIcon />, match: (p) => p.startsWith('/admin/association'), minRole: 'staff' },
 ]
 
-type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number; feedbackCount?: number }
+// 개통 진행 현황 메뉴: 고객은 개통(정식 오픈) 전까지 맨 위에 고정, 운영팀은 고객 응대 메뉴 아래에
+const FlagIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 21V4" /><path d="M5 5h11l-2 4 2 4H5" /></svg>
+)
+const ONB_CUSTOMER: Item = { href: '/support/onboarding', label: '개통 현황', icon: <FlagIcon />, match: (p) => p.startsWith('/support/onboarding') }
+const ONB_STAFF: Item = { href: '/admin/onboarding', label: '개통현황', icon: <FlagIcon />, match: (p) => p.startsWith('/admin/onboarding'), minRole: 'staff' }
 
-export default function Rail({ userName = '', role, isSuper = false, isStaff = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0, leadCount = 0, feedbackCount = 0 }: Props) {
+type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number; feedbackCount?: number; onboarding?: boolean; onboardingCount?: number; staffOnboardingCount?: number }
+
+export default function Rail({ userName = '', role, isSuper = false, isStaff = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0, leadCount = 0, feedbackCount = 0, onboarding = false, onboardingCount = 0, staffOnboardingCount = 0 }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const [more, setMore] = useState(false)
@@ -74,13 +81,14 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
     ? [
         ...visible.filter((i) => i.href === '/admin/dashboard'),
         ...STAFF_TOP.map((h) => visible.find((i) => i.href === h)).filter((i): i is Item => !!i),
+        ...[ONB_STAFF].filter(allowed),
         ...visible.filter((i) => i.href !== '/admin/dashboard' && !STAFF_TOP.includes(i.href)),
       ]
-    : visible
+    : onboarding ? [ONB_CUSTOMER, ...visible] : visible
   const badge = (href: string) =>
-    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/users' ? pendingCount : 0
+    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/users' ? pendingCount : href === '/support/onboarding' ? onboardingCount : href === '/admin/onboarding' ? staffOnboardingCount : 0
   const badgeLabel = (href: string, n: number) =>
-    href === '/support' ? (isStaff ? `새 요청 ${n}건` : `새 답변 ${n}건`) : href === '/admin/leads' ? `새 상담 ${n}건` : href === '/feedback' ? `새 개선 요청 ${n}건` : `승인 대기 ${n}명`
+    href === '/support' ? (isStaff ? `새 요청 ${n}건` : `새 답변 ${n}건`) : href === '/admin/leads' ? `새 상담 ${n}건` : href === '/support/onboarding' ? `새 답글 ${n}건` : href === '/admin/onboarding' ? `새 고객 글 ${n}건` : href === '/feedback' ? `새 개선 요청 ${n}건` : `승인 대기 ${n}명`
 
   // 휴대폰: 아래 탭 4개 + 더보기 (나머지 메뉴·내 정보·로그아웃)
   const TAB_HREFS = ['/newsroom', '/articles/new', '/articles', '/press']

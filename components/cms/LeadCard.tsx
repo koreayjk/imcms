@@ -2,10 +2,9 @@
 
 import { useState, useTransition, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
-import { openCustomer, saveLead, sendLeadMail, type LeadState } from '@/app/(main)/admin/leads/actions'
+import { deleteLead, openCustomer, saveLead, sendLeadMail, type LeadState } from '@/app/(main)/admin/leads/actions'
 import { leadMailTemplates } from '@/lib/lead-mail'
 import PendingButton from './PendingButton'
-import LaunchChecklist, { type LaunchOutlet } from './LaunchChecklist'
 import { BILLING_LABEL, planById, won, type Billing } from '@/lib/pricing'
 
 export type Lead = {
@@ -22,7 +21,10 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   done: { label: '완료', cls: 'bg-line text-muted' },
 }
 
-export default function LeadCard({ lead, staff, createdLabel, groupName, launch, launchMissing }: { lead: Lead; staff: { id: string; name: string }[]; createdLabel: string; groupName: string | null; launch?: LaunchOutlet[]; launchMissing?: boolean }) {
+// 개설된 고객사의 매체: 개통 진행 현황 링크 (진행률 %)
+export type LaunchLink = { id: string; name: string; pct: number }
+
+export default function LeadCard({ lead, staff, createdLabel, groupName, launch, canDelete }: { lead: Lead; staff: { id: string; name: string }[]; createdLabel: string; groupName: string | null; launch?: LaunchLink[]; canDelete?: boolean }) {
   const router = useRouter()
   const [status, setStatus] = useState(lead.status)
   const [note, setNote] = useState(lead.note ?? '')
@@ -88,8 +90,17 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
           <button type="button" disabled={!dirty || pending} onClick={() => start(async () => { const r = await saveLead(lead.id, { status, note, assignedTo: assignee || null }); setMsg(r); if (!r.error) router.refresh() })} className="btn-primary px-4 py-1.5 text-[13px] disabled:opacity-40">
             {pending ? '저장 중…' : '저장'}
           </button>
+          {lead.status !== 'done' && !lead.publisher_id && (
+            <button type="button" disabled={pending} onClick={() => start(async () => { const r = await saveLead(lead.id, { status: 'done', note, assignedTo: assignee || null }); setMsg(r); if (!r.error) { setStatus('done'); router.refresh() } })} className="btn-secondary px-4 py-1.5 text-[13px]" title="확인을 마쳤으면 완료로 넘깁니다. 개설 이후 절차는 개통 현황에서 합니다">확인하고 완료</button>
+          )}
           {lead.email && <button type="button" onClick={() => setMailOpen(!mailOpen)} className="btn-secondary px-4 py-1.5 text-[13px]">메일 보내기</button>}
           {!lead.publisher_id && <button type="button" onClick={() => setOpen(!open)} className="btn-publish px-4 py-1.5 text-[13px]">고객사 개설</button>}
+          {canDelete && (
+            <button type="button" disabled={pending} onClick={() => {
+              if (!window.confirm(`“${lead.company}” 신청 기록을 지울까요?\n\n되돌릴 수 없습니다.${lead.publisher_id ? '\n이미 개설한 그룹·매체와 계정은 지워지지 않습니다.' : ''}`)) return
+              start(async () => { const r = await deleteLead(lead.id); setMsg(r); if (!r.error) router.refresh() })
+            }} className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger">삭제</button>
+          )}
         </div>
       </div>
       {(msg.error || msg.ok) && <p role={msg.error ? 'alert' : 'status'} className={`mt-2 text-[12.5px] ${msg.error ? 'text-danger' : 'text-published'}`}>{msg.error ?? msg.ok}</p>}
@@ -117,8 +128,16 @@ export default function LeadCard({ lead, staff, createdLabel, groupName, launch,
         </div>
       )}
 
-      {/* 개설된 고객사: 매체별 개통 체크리스트 (도메인·법정 표기·검색 등록 등) */}
-      {lead.publisher_id && launch && <LaunchChecklist outlets={launch} missing={launchMissing} />}
+      {/* 개설된 고객사: 이후 절차(도메인·법정 표기·검색 등록·고객 코멘트)는 개통 현황에서 한다 */}
+      {lead.publisher_id && launch && launch.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-line bg-[#F8F9FA] px-4 py-3 text-[13px]">
+          <span className="font-bold">개통 현황</span>
+          {launch.map((o) => (
+            <a key={o.id} href={`/admin/onboarding/${o.id}`} className="rounded-full bg-white px-3 py-1 font-semibold ring-1 ring-black/10 hover:ring-ink">{o.name} · {o.pct}% →</a>
+          ))}
+          <span className="text-[12px] text-muted">체크 항목과 고객 코멘트는 개통 현황에서 다룹니다.</span>
+        </div>
+      )}
 
       {open && (
         <form action={openAction} className="mt-4 rounded-lg border border-published/30 bg-published/5 p-4">

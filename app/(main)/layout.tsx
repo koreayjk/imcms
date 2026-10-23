@@ -1,6 +1,7 @@
 import type { Viewport } from 'next'
 import { APP_METADATA } from '@/lib/brand'
 import { Suspense } from 'react'
+import { cookies } from 'next/headers'
 import AppServiceWorker from '@/components/AppServiceWorker'
 import ScrollKeeper from '@/components/cms/ScrollKeeper'
 import Rail from '@/components/cms/Rail'
@@ -12,6 +13,7 @@ import { getCmsContext } from '@/lib/cms'
 import { hasUnreadReply } from '@/lib/support'
 import { GRACE_DAYS, holdFrom, kstToday } from '@/lib/billing'
 import { formatDate } from '@/lib/format'
+import { ONBOARDING_SEEN_COOKIE } from '@/lib/onboarding-guide'
 
 // 편집국: 아이폰 사파리는 글씨가 16px보다 작은 입력칸(매체 고르기 등)을 누르면 화면을 확대하고 그대로 둬서 좌우가 잘린다 → 자동 확대를 막는다
 //   (아이폰은 두 손가락 확대는 그대로 된다)
@@ -38,14 +40,29 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const feedbackQ = isStaff
     ? supabase.from('feedback_posts').select('id', { count: 'exact', head: true }).eq('status', 'received')
     : Promise.resolve({ count: 0 })
+  // 개통 진행 현황 메뉴 (launch-hub.sql 전이면 숫자 0): 고객은 개통(정식 오픈) 전까지, 운영팀은 새 고객 글 수
+  const onboardQ = !isStaff && !trial && outletId && isEditorPlus
+    ? supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
+    : Promise.resolve({ data: null })
+  const staffCommentQ = isStaff
+    ? supabase.from('launch_comments').select('id', { count: 'exact', head: true }).eq('from_staff', false).eq('staff_seen', false)
+    : Promise.resolve({ count: 0 })
   // 발행인·총관리자는 관리하는 매체 사이를 오간다 (DB 권한이 보이는 매체만 돌려준다)
   const outletQuery = (fields: string) => {
     const q = supabase.from('outlets').select(fields).order('created_at')
     return isGroupAdmin || isStaff ? q : q.eq('id', outletId ?? '00000000-0000-0000-0000-000000000000')
   }
-  const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes] = await Promise.all([
-    pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'),
+  const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes, { data: onboardOutlet }, { count: staffOnboardingCount }] = await Promise.all([
+    pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'), onboardQ, staffCommentQ,
   ])
+  const onboarding = (onboardOutlet?.site as { comingSoon?: boolean } | null | undefined)?.comingSoon === true
+  // 고객: 운영팀이 이 브라우저에서 마지막으로 본 뒤에 쓴 답글 수
+  let onboardingCount = 0
+  if (onboarding && outletId) {
+    const seen = Number((await cookies()).get(ONBOARDING_SEEN_COOKIE)?.value ?? 0) || 0
+    const { count } = await supabase.from('launch_comments').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId).eq('from_staff', true).gt('created_at', new Date(seen).toISOString())
+    onboardingCount = count ?? 0
+  }
   const supportCount = isStaff
     ? (tickets ?? []).length
     : ((tickets ?? []) as { last_staff_reply_at: string | null; requester_read_at: string | null }[]).filter(hasUnreadReply).length
@@ -87,7 +104,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     <div className="flex h-[100dvh] overflow-hidden bg-[#F4F5F7] print:block print:h-auto print:overflow-visible print:bg-white">
       <AppServiceWorker />
       <div className="contents print:hidden">
-        <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} feedbackCount={feedbackCount ?? 0} />
+        <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} feedbackCount={feedbackCount ?? 0} onboarding={onboarding} onboardingCount={onboardingCount} staffOnboardingCount={staffOnboardingCount ?? 0} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         {trial && <TrialBar role={trial.role} daysLeft={trial.daysLeft} />}

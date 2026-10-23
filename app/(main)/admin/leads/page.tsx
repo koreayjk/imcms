@@ -2,16 +2,16 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime } from '@/lib/format'
 import { PRODUCT } from '@/lib/product'
-import LeadCard, { type Lead } from '@/components/cms/LeadCard'
+import LeadCard, { type Lead, type LaunchLink } from '@/components/cms/LeadCard'
 import AutoMessageEditor from '@/components/cms/AutoMessageEditor'
-import type { LaunchOutlet } from '@/components/cms/LaunchChecklist'
 import type { LaunchDone } from '@/lib/launch-checklist'
+import { ONBOARDING_STEPS, stepStates } from '@/lib/onboarding-guide'
 
 type Props = { searchParams: Promise<{ tab?: string }> }
 
 export default async function LeadsPage(props: Props) {
   const searchParams = await props.searchParams
-  const { supabase, user, isStaff } = await getCmsContext()
+  const { supabase, user, isStaff, isSuper } = await getCmsContext()
   if (!isStaff) redirect('/newsroom')
   const tab = ['mine', 'open', 'done', 'trial'].includes(searchParams.tab ?? '') ? searchParams.tab : 'open'
 
@@ -64,10 +64,10 @@ export default async function LeadsPage(props: Props) {
       ])
     : [{ data: [] }, { data: [], error: null }]
   const launchDone = new Map(((launchRes.data ?? []) as { outlet_id: string; done: LaunchDone }[]).map((r) => [r.outlet_id, r.done]))
-  const launchMissing = !!launchRes.error
-  const launchOf = (pid: string): LaunchOutlet[] =>
+  const launchOf = (pid: string): LaunchLink[] =>
     ((pubOutlets ?? []) as { id: string; name: string; domain: string | null; publisher_id: string }[])
-      .filter((o) => o.publisher_id === pid).map((o) => ({ id: o.id, name: o.name, domain: o.domain, done: launchDone.get(o.id) ?? {} }))
+      .filter((o) => o.publisher_id === pid)
+      .map((o) => ({ id: o.id, name: o.name, pct: Math.round((stepStates(launchDone.get(o.id) ?? {}, true).filter((s) => s === 'done').length / ONBOARDING_STEPS.length) * 100) }))
 
   const tabs = [
     { key: 'open', label: '처리할 상담', n: all.filter((l) => l.status !== 'done').length },
@@ -81,7 +81,7 @@ export default async function LeadsPage(props: Props) {
       <header className="mb-5">
         <h1 className="text-[22px] font-bold tracking-tight">고객 상담</h1>
         <p className="mt-1 text-[13px] text-muted">
-          {PRODUCT.name} 소개 페이지에서 들어온 신청입니다. 담당 매니저를 정하고 상담 기록을 남긴 뒤, 계약되면 “고객사 개설”로 그룹·매체·발행인을 한 번에 만듭니다. 신청일로부터 1년이 지나면 자동으로 지워집니다.
+          {PRODUCT.name} 소개 페이지에서 들어온 신청입니다. 담당 매니저를 정하고 상담 기록을 남긴 뒤, 계약되면 “고객사 개설”로 그룹·매체·발행인을 한 번에 만듭니다. 확인을 마치면 “확인하고 완료”로 넘기고, 그 뒤 절차(도메인·법정 표기·검색 등록 등)는 개통 현황에서 합니다. 신청일로부터 1년이 지나면 자동으로 지워집니다.
         </p>
       </header>
       <nav className="-mx-1 mb-4 flex gap-1 overflow-x-auto whitespace-nowrap px-1 text-[14px]">
@@ -136,7 +136,7 @@ export default async function LeadsPage(props: Props) {
       ) : rows.length ? (
         <ul className="space-y-3">
           {rows.map((l) => (
-            <LeadCard key={l.id} lead={l} staff={staff} createdLabel={formatDateTime(l.created_at)} groupName={l.publisher_id ? groupName.get(l.publisher_id) ?? null : null} launch={l.publisher_id ? launchOf(l.publisher_id) : undefined} launchMissing={launchMissing} />
+            <LeadCard key={l.id} lead={l} staff={staff} createdLabel={formatDateTime(l.created_at)} groupName={l.publisher_id ? groupName.get(l.publisher_id) ?? null : null} launch={l.publisher_id ? launchOf(l.publisher_id) : undefined} canDelete={isSuper} />
           ))}
         </ul>
       ) : (

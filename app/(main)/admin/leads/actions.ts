@@ -24,6 +24,17 @@ export async function setLeadStatus(id: string, status: string) {
   revalidatePath('/', 'layout')
 }
 
+// 상담 기록 삭제 (테스트로 넣은 신청서 등): 총관리자만. 개설한 그룹·매체는 지워지지 않는다 (launch-hub.sql)
+export async function deleteLead(id: string): Promise<LeadState> {
+  const { supabase, isSuper } = await staffContext()
+  if (!isSuper) return { error: '총관리자만 지울 수 있습니다.' }
+  const { data, error } = await supabase.from('beta_requests').delete().eq('id', id).select('id')
+  if (error) return { error: error.message }
+  if (!data?.length) return { error: '지우지 못했습니다. Supabase에서 launch-hub.sql을 실행했는지 확인해 주세요.' }
+  revalidatePath('/', 'layout')
+  return { ok: '지웠습니다.' }
+}
+
 // 담당 매니저·상담 기록·상태 저장
 export async function saveLead(id: string, input: { status: string; note: string; assignedTo: string | null }): Promise<LeadState> {
   const { supabase } = await staffContext()

@@ -119,5 +119,8 @@ export function stepStates(done: Record<string, unknown> | null | undefined, ope
   })
 }
 
+// 고객이 개통 진행 현황을 마지막으로 본 시각을 남기는 쿠키 (운영팀 새 답글 표시용)
+export const ONBOARDING_SEEN_COOKIE = 'im_onb_seen'
+
 // 고객에게 보내는 공개 안내 주소 (proxy.ts 가 imnewsroom.com/onboarding 을 안내 페이지로 연결한다)
 export const ONBOARDING_URL = 'https://imnewsroom.com/onboarding'
