@@ -50,6 +50,8 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     googleVerification: verifyCode(s.googleVerification) || undefined,
     logoUrl: logoUrl || undefined,
     logoMode: mode,
+    // 'normal'은 기본값이므로 저장하지 않는다
+    logoSize: s.logoSize === 'large' || s.logoSize === 'xlarge' ? s.logoSize : undefined,
     colors: {
       brand: HEX.test(s.colors?.brand ?? '') ? s.colors!.brand : undefined,
       accent: HEX.test(s.colors?.accent ?? '') ? s.colors!.accent : undefined,

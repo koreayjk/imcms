@@ -9,7 +9,7 @@ import HomeLayoutThumb from './HomeLayoutThumb'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
 import SearchRegisterGuide from './SearchRegisterGuide'
-import { buildSite, DEFAULT_COLORS, foreignTopics, pressFields, type CategoryRow, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { buildSite, DEFAULT_COLORS, foreignTopics, pressFields, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { FOREIGN_TOPICS, PRESS_FIELDS } from '@/lib/press-sources'
 import { uploadImage } from '@/components/editor/upload'
 import SiteHeader from '@/components/site/SiteHeader'
@@ -67,6 +67,36 @@ function Field({ label, children, hint }: { label: ReactNode; children: ReactNod
   )
 }
 
+// 로고 이미지의 빈 여백(투명하거나 거의 흰 가장자리)을 잘라 낸다: 여백이 많으면 머리글에서 작아 보인다
+async function trimLogo(file: File): Promise<File> {
+  try {
+    const bmp = await createImageBitmap(file)
+    const w = bmp.width, h = bmp.height
+    if (w * h > 16_000_000) return file
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h
+    const ctx = cv.getContext('2d', { willReadFrequently: true })!
+    ctx.drawImage(bmp, 0, 0)
+    const d = ctx.getImageData(0, 0, w, h).data
+    let x0 = w, y0 = h, x1 = -1, y1 = -1
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4
+      const blank = d[i + 3] < 24 || (d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244)
+      if (!blank) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y }
+    }
+    if (x1 < 0) return file
+    const pad = Math.round(Math.max(x1 - x0, y1 - y0) * 0.02)
+    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad)
+    const cw = x1 - x0 + 1, ch = y1 - y0 + 1
+    if (cw * ch > w * h * 0.92) return file
+    const out = document.createElement('canvas'); out.width = cw; out.height = ch
+    out.getContext('2d')!.drawImage(cv, x0, y0, cw, ch, 0, 0, cw, ch)
+    const blob = await new Promise<Blob | null>((res) => out.toBlob(res, 'image/png'))
+    return blob ? new File([blob], file.name.replace(/\.\w+$/, '') + '.png', { type: 'image/png' }) : file
+  } catch {
+    return file
+  }
+}
+
 export default function SiteSettingsForm({ outlet, sections: initialSections, defaults }: Props) {
   const router = useRouter()
   const init = { ...defaults, ...(outlet.site ?? {}) }
@@ -100,7 +130,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (!f) return
     setUploading(true)
     try {
-      const url = await uploadImage(f, outlet.id)
+      const url = await uploadImage(await trimLogo(f), outlet.id)
       set({ logoUrl: url, logoMode: s.logoMode === 'text' ? 'mark' : s.logoMode })
     } catch (e) {
       window.alert(e instanceof Error ? e.message : '로고를 올리지 못했습니다.')
@@ -240,7 +270,18 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
                 </label>
               ))}
             </fieldset>
-            <p className="text-[11.5px] text-muted">배경이 투명한 PNG를 추천합니다. 가로로 긴 로고는 “로고 이미지만”을 고르세요.</p>
+            <fieldset className="space-y-1.5 text-[13.5px]">
+              <legend className="field-label">로고 크기</legend>
+              <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+                {([['normal', '보통'], ['large', '크게'], ['xlarge', '아주 크게']] as [LogoSize, string][]).map(([v, label]) => (
+                  <label key={v} className="flex items-center gap-2">
+                    <input type="radio" name="logoSize" checked={(s.logoSize ?? 'normal') === v} onChange={() => set({ logoSize: v })} />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <p className="text-[11.5px] text-muted">배경이 투명한 PNG를 추천합니다. 올린 이미지의 빈 여백은 자동으로 잘라 냅니다. 그래도 작아 보이면 로고 크기를 키우세요(미리보기에 바로 반영됩니다). 가로로 긴 로고는 “로고 이미지만”을 고르세요.</p>
           </div>
         </div>
       </Card>

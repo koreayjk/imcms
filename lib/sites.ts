@@ -17,6 +17,8 @@ export type HomeBand = { slug: string; style: HomeBandStyle; title?: string; tag
 import { parseAiBotMode, type AiBotMode } from '@/lib/ai-crawlers'
 import { parseHomeLayout, type HomeLayout } from '@/lib/home-layouts'
 export type LogoMode = 'mark' | 'full' | 'text'
+// 로고 크기: 이미지에 여백이 많아 작아 보일 때 키운다
+export type LogoSize = 'normal' | 'large' | 'xlarge'
 
 // 홈 오른쪽 '숫자 판' (예: 선교 통계). 숫자는 편집국 홈페이지 설정에서 고친다. 출처를 반드시 함께 적는다
 export type StatItem = { label: string; value: string; note?: string; source?: string; url?: string }
@@ -64,6 +66,7 @@ export type SiteConfig = {
   logoMark: string
   // mark: 심볼 + 매체 이름 글자 / full: 로고 이미지만 / text: 매체 이름 글자만
   logoMode?: LogoMode
+  logoSize?: LogoSize
   colors: { brand: string; brandDark: string; gold: string; goldInk: string }
   sections: SectionConfig[]
   // 보도자료함 "추천" 탭: 제목·요약에 이 단어가 있으면 이 매체와 관련 있는 보도자료로 본다
@@ -204,6 +207,7 @@ export type OutletSiteSettings = {
   googleVerification?: string
   logoUrl?: string
   logoMode?: LogoMode
+  logoSize?: LogoSize
   colors?: { brand?: string; accent?: string }
   indexable?: boolean
   // 오픈 준비 중 (신규 매체는 켜진 채로 만든다. 꺼야 방문자에게 홈페이지가 열린다. 없으면 열린 매체)
@@ -303,6 +307,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     verification: { naver: s.naverVerification || undefined, google: s.googleVerification || undefined },
     logoMark: s.logoUrl ?? code?.logoMark ?? '',
     logoMode: s.logoMode ?? (s.logoUrl || code?.logoMark ? 'mark' : 'text'),
+    logoSize: s.logoSize === 'large' || s.logoSize === 'xlarge' ? s.logoSize : 'normal',
     colors: { brand, brandDark: shade(brand, 0.3), gold: accent, goldInk: shade(accent, 0.35) },
     sections,
     pressKeywords: keywords,
