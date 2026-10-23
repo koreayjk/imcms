@@ -34,10 +34,11 @@ export async function deleteLaunchComment(id: string): Promise<{ error?: string 
   return {}
 }
 
-// 운영팀이 이 매체의 고객 글을 열어 봤다고 표시 (메뉴의 새 글 숫자가 줄어든다)
+// 개통 현황을 열었다고 표시: 운영팀은 이 매체의 고객 글을 봤다고, 고객은 새 소식을 확인했다고 기록한다 (메뉴의 숫자가 지워진다)
 export async function markLaunchSeen(outletId: string): Promise<void> {
   const { supabase, isStaff } = await getCmsContext()
-  if (!isStaff || !/^[0-9a-f-]{36}$/.test(outletId)) return
-  await supabase.from('launch_comments').update({ staff_seen: true }).eq('outlet_id', outletId).eq('from_staff', false).eq('staff_seen', false)
+  if (!/^[0-9a-f-]{36}$/.test(outletId)) return
+  if (isStaff) await supabase.from('launch_comments').update({ staff_seen: true }).eq('outlet_id', outletId).eq('from_staff', false).eq('staff_seen', false)
+  else await supabase.rpc('launch_mark_seen', { o: outletId })
   revalidatePath('/', 'layout')
 }

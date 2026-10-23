@@ -42,7 +42,7 @@ export default async function OnboardingView({ outletId, staff }: { outletId: st
 
   return (
     <div className="mx-auto max-w-[900px] px-4 py-6 md:px-8 md:py-10">
-      <OnboardingSeen outletId={outletId} staff={staff} />
+      <OnboardingSeen outletId={outletId} />
       {staff && <Link href="/admin/onboarding" className="text-[13px] text-muted underline underline-offset-2">← 개통 현황 목록</Link>}
       <h1 className="mt-1 text-[22px] font-extrabold tracking-tight">개통 진행 현황{staff && outlet?.name ? ` · ${outlet.name}` : ''}</h1>
       <p className="mt-1 text-[13.5px] text-muted">
