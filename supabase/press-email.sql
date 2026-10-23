@@ -111,6 +111,8 @@ declare
   owner uuid;
   new_id uuid;
   a jsonb;
+  scope text;
+  g text;
 begin
   if secret is null or secret <> (select value from private.settings where key = 'press_mail_secret') then
     raise exception 'forbidden';
@@ -123,8 +125,17 @@ begin
     return 'verify_saved';
   end if;
 
+  -- 같은 자료가 같은 그룹 기자 여러 명에게 오면 하나로, 다른 고객 그룹에는 각자 따로 들어가게 (guid 는 전체에서 하나뿐이라 그룹을 붙인다)
+  begin
+    if to_regprocedure('public.profile_publisher(uuid)') is not null then
+      execute 'select public.profile_publisher($1)::text' into scope using owner;
+    end if;
+  exception when others then scope := null;
+  end;
+  g := p_guid || ':' || coalesce(scope, owner::text);
+
   insert into press_releases (source_key, source_name, guid, title, link, summary, body_html, published_at, created_by)
-  values ('email', left(p_source_name, 80), p_guid, left(p_title, 300), '', left(p_summary, 400), p_body_html, coalesce(p_published_at, now()), owner)
+  values ('email', left(p_source_name, 80), g, left(p_title, 300), '', left(p_summary, 400), p_body_html, coalesce(p_published_at, now()), owner)
   on conflict (guid) do nothing
   returning id into new_id;
 
