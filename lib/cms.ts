@@ -57,23 +57,43 @@ export const getCmsContext = cache(async function getCmsContext() {
     }
   }
 
+  // 보기 모드: 운영팀·발행인이 편집장·기자 화면이 어떻게 다른지 보는 용도다. 메뉴와 화면 구성만 그 역할로 보이고,
+  //   실제 권한(DB)은 그대로다. 체험 계정은 자체 역할 바꾸기가 있어 쓰지 않는다
+  const real = { isSuper, isStaff, isGroupAdmin }
+  const canViewAs = !trial && (isStaff || isGroupAdmin)
+  const asRaw = canViewAs ? (await cookies()).get(VIEW_AS_COOKIE)?.value : undefined
+  const viewAs: ViewAs | null = asRaw === 'group' && isStaff ? 'group' : asRaw === 'editor' || asRaw === 'reporter' ? asRaw : null
+  const eff = viewAs
+    ? {
+        role: (viewAs === 'group' ? 'admin' : viewAs) as UserRole,
+        isSuper: false, isStaff: false, isGroupAdmin: viewAs === 'group',
+        isEditorPlus: viewAs !== 'reporter', canEditSite: viewAs !== 'reporter',
+      }
+    : { role, isSuper, isStaff, isGroupAdmin, isEditorPlus: role === 'editor' || role === 'admin' || isSuper, canEditSite: role === 'editor' || role === 'admin' || isSuper || isStaff }
+
   return {
     supabase,
     user,
-    profile,
+    profile: viewAs && profile ? { ...profile, role: eff.role, is_super: false, is_staff: false } : profile,
     outletId,
     // 총관리자: 모든 그룹 / 발행인: 자기 그룹 / 편집장: 자기 매체
-    isSuper,
-    isGroupAdmin,
-    isStaff,
+    isSuper: eff.isSuper,
+    isGroupAdmin: eff.isGroupAdmin,
+    isStaff: eff.isStaff,
     publisherId: (profile?.publisher_id as string | null) ?? null,
-    isEditorPlus: role === 'editor' || role === 'admin' || isSuper,
+    isEditorPlus: eff.isEditorPlus,
     // 홈페이지 꾸미기(섹션·홈 편집판·광고): 편집장 이상 + 운영팀(매니저)
-    canEditSite: role === 'editor' || role === 'admin' || isSuper || isStaff,
+    canEditSite: eff.canEditSite,
     // 체험 계정이면 남은 기간·지금 역할 (아니면 null)
     trial,
+    // 보기 모드: 지금 보는 역할(없으면 null)과 이 계정이 쓸 수 있는지, 진짜 권한
+    viewAs, canViewAs, real,
   }
 })
+
+// 보기 모드: 편집장·기자(운영팀은 발행인도) 화면으로 보기 (쿠키)
+export const VIEW_AS_COOKIE = 'im_view_as'
+export type ViewAs = 'group' | 'editor' | 'reporter'
 
 // 매니저가 작업 중인 고객사 매체 (상단 매체 선택)
 export const STAFF_OUTLET_COOKIE = 'im_staff_outlet'

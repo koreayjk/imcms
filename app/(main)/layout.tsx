@@ -7,6 +7,7 @@ import Rail from '@/components/cms/Rail'
 import { outletHomeUrl } from '@/lib/product'
 import TopBar from '@/components/cms/TopBar'
 import TrialBar from '@/components/cms/TrialBar'
+import ViewAsBar from '@/components/cms/ViewAs'
 import { getCmsContext } from '@/lib/cms'
 import { hasUnreadReply } from '@/lib/support'
 import { GRACE_DAYS, holdFrom, kstToday } from '@/lib/billing'
@@ -18,7 +19,7 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, maxi
 export const metadata = APP_METADATA
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin, isEditorPlus, trial } = await getCmsContext()
+  const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin, isEditorPlus, trial, viewAs, canViewAs, real } = await getCmsContext()
 
   // 알림 숫자와 매체 목록은 한꺼번에 가져온다 (하나씩 기다리면 그만큼 느려진다)
   // 승인 대기 가입자: 총관리자는 전체, 발행인은 우리 그룹 매체로 신청한 사람 (DB 권한이 보이는 만큼만 센다)
@@ -90,6 +91,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         {trial && <TrialBar role={trial.role} daysLeft={trial.daysLeft} />}
+        {viewAs && <ViewAsBar viewAs={viewAs} />}
         {billing.hold ? (
           <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-danger px-4 py-2 text-[13px] text-white print:hidden">
             <strong>이용료가 밀려 편집국 이용이 제한되었습니다.</strong>
@@ -115,6 +117,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           role={profile?.role ?? null}
           isSuper={isSuper}
           isStaff={isStaff}
+          viewAsPicker={canViewAs ? { viewAs, staff: real.isStaff } : null}
         />
         <main id="app-main" className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0 print:overflow-visible print:pb-0">{children}</main>
         <Suspense fallback={null}><ScrollKeeper /></Suspense>

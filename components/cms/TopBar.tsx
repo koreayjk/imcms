@@ -8,6 +8,8 @@ import { createClient } from '@/lib/supabase'
 import { ROLE_LABEL, type UserRole } from '@/lib/types'
 import { ExternalIcon, SearchIcon } from './icons'
 import BrandMark from '@/components/BrandMark'
+import { ViewAsPicker } from './ViewAs'
+import type { ViewAs } from '@/lib/cms'
 
 type Props = {
   outletName: string | null
@@ -19,9 +21,11 @@ type Props = {
   role: UserRole | null
   isSuper?: boolean
   isStaff?: boolean
+  // 보기 모드 고르개 (운영팀·발행인만)
+  viewAsPicker?: { viewAs: ViewAs | null; staff: boolean } | null
 }
 
-export default function TopBar({ outletName, groupName, outlets = [], siteUrl = '/', currentOutletId, userName, role, isSuper, isStaff }: Props) {
+export default function TopBar({ outletName, groupName, outlets = [], siteUrl = '/', currentOutletId, userName, role, isSuper, isStaff, viewAsPicker }: Props) {
   const router = useRouter()
   const [switching, setSwitching] = useState(false)
 
@@ -101,6 +105,7 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
       </form>
 
       <div className="flex shrink-0 items-center gap-3 text-[13px]">
+        {viewAsPicker && <ViewAsPicker viewAs={viewAsPicker.viewAs} staff={viewAsPicker.staff} />}
         <Link href="/account" className="hidden font-semibold hover:underline md:inline" title="내 정보·이름 바꾸기">{userName}</Link>
         {isSuper ? <span className="whitespace-nowrap rounded bg-[#E5483A] px-1.5 py-0.5 text-[11px] font-bold text-white">총관리자</span> : isStaff ? <span className="whitespace-nowrap rounded bg-[#2F6BF0] px-1.5 py-0.5 text-[11px] font-bold text-white"><span className="hidden md:inline">IM 뉴스룸 </span>매니저</span> : role && <span className="whitespace-nowrap rounded bg-line/70 px-1.5 py-0.5 text-[11px] text-muted">{ROLE_LABEL[role]}</span>}
         <button type="button" onClick={logout} className="hidden text-[12px] text-muted hover:text-danger md:inline">
