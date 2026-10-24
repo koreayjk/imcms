@@ -277,7 +277,7 @@ export function pressTextForAi(html: string) {
     const name = part.match(/^<p><strong>첨부파일 내용 \(([\s\S]*?)\)<\/strong><\/p>/)?.[1] ?? '첨부 문서'
     return `[첨부 문서: ${decode(name)}]\n${htmlToText(part.replace(/^<p><strong>[\s\S]*?<\/strong><\/p>/, ''))}`
   })
-  return `[메일 본문 — 보낸 사람이 쓴 전달 글]\n${cover || '(없음)'}\n\n${docs.join('\n\n')}`
+  return `[메일 본문]\n${cover || '(없음)'}\n\n${docs.join('\n\n')}`
 }
 
 // 보도자료를 낸 곳 이름 (AI 초안에 출처로 알려 준다)
