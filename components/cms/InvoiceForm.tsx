@@ -9,7 +9,6 @@ import PendingButton from './PendingButton'
 export default function InvoiceForm({ outlets }: { outlets: { id: string; name: string }[] }) {
   const [state, action] = useActionState<FormState, FormData>(saveInvoice, {})
   const [items, setItems] = useState<InvoiceItem[]>([{ name: 'IM 뉴스룸 이용료', qty: 1, unit_price: 0 }])
-  const t = invoiceTotals(items)
   const now = new Date()
   const [outletId, setOutletId] = useState('')
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
@@ -70,6 +69,12 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   })()
   const hasSetupLine = items.some((i) => i.name.startsWith('세팅비'))
   const waive = (waivePick ?? beta) && !hasSetupLine
+  // 자동으로 들어가는 줄 (표에 회색으로 보이고, 발행할 때 함께 저장된다)
+  const autoLines: InvoiceItem[] = [
+    ...(waive ? [{ name: '세팅비 (처음 개통할 때 한 번)', qty: 1, unit_price: SETUP_FEE }, { name: '베타 세팅비 무료 (개통 후 3개월 이상 이용 조건)', qty: 1, unit_price: -SETUP_FEE }] : []),
+    ...(free ? [{ name: free.name, qty: 1, unit_price: 0 }] : []),
+  ]
+  const t = invoiceTotals([...items, ...autoLines])
   const memoAll = [free?.notice, waive ? SETUP_WAIVER_NOTE : '', userMemo.trim()].filter(Boolean).join('\n')
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
@@ -165,6 +170,18 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
               <td className="ml-auto py-2 text-right"><button type="button" onClick={() => { setEdited(true); setItems(items.filter((_, j) => j !== i)) }} aria-label="줄 빼기" className="text-muted hover:text-danger">×</button></td>
             </tr>
           ))}
+          {autoLines.map((it, i) => (
+            <tr key={`auto-${i}`} className="border-b border-line/60 bg-[#F4F6FA] max-md:!px-0">
+              <td className="tc-full py-2.5 pl-3 pr-2 text-[14px]"><span className="mr-2 rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11px] font-bold text-[#2F6BF0]">자동</span>{it.name}</td>
+              <td data-label="수량" className="py-2.5 pr-2">{it.qty}</td>
+              <td data-label="단가(원)" className="py-2.5 pr-2 tabular-nums">{it.unit_price}</td>
+              <td data-label="금액" className="py-2.5 text-right tabular-nums">{it.unit_price === 0 ? '무료' : won(it.qty * it.unit_price)}</td>
+              <td />
+            </tr>
+          ))}
+          {freeOn && !free && (
+            <tr className="border-b border-line/60 bg-[#F4F6FA]"><td colSpan={5} className="px-3 py-2.5 text-[12.5px] text-muted">개통일을 고르면 무료 기간 줄(개통일~전달 말일)이 여기에 자동으로 들어갑니다.</td></tr>
+          )}
         </tbody>
       </table>
       </div>
