@@ -37,7 +37,7 @@ export default async function PayLinkPage(props: { params: Promise<{ token: stri
           </thead>
           <tbody>
             {inv.items.map((it, i) => (
-              <tr key={i} className="border-b border-line/60"><td className="py-2.5 pr-3">{it.name}</td><td className="py-2.5 text-right">{it.qty}</td><td className="py-2.5 text-right">{won(it.qty * it.unit_price)}</td></tr>
+              <tr key={i} className="border-b border-line/60"><td className="py-2.5 pr-3">{it.name}</td><td className="py-2.5 text-right">{it.qty}</td><td className="py-2.5 text-right">{it.qty * it.unit_price === 0 ? '무료' : won(it.qty * it.unit_price)}</td></tr>
             ))}
           </tbody>
         </table>

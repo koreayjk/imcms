@@ -106,7 +106,7 @@ export default async function InvoicePage(
           <tbody className="tabular-nums">
             {items.map((it, i) => (
               <tr key={i} className="border-b border-line">
-                <td className="tc-full px-3 py-3 font-medium md:font-normal">{it.name}</td><td data-label="수량" className="px-3 py-3 text-right">{it.qty}</td><td data-label="단가" className="px-3 py-3 text-right">{won(it.unit_price)}</td><td data-label="금액" className="px-3 py-3 text-right font-semibold md:font-normal">{won(it.qty * it.unit_price)}</td>
+                <td className="tc-full px-3 py-3 font-medium md:font-normal">{it.name}</td><td data-label="수량" className="px-3 py-3 text-right">{it.qty}</td><td data-label="단가" className="px-3 py-3 text-right">{won(it.unit_price)}</td><td data-label="금액" className="px-3 py-3 text-right font-semibold md:font-normal">{it.qty * it.unit_price === 0 ? '무료' : won(it.qty * it.unit_price)}</td>
               </tr>
             ))}
           </tbody>

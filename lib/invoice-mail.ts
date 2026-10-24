@@ -17,6 +17,7 @@ type IssuedInv = {
   origin: string
   payUrl?: string | null // 로그인 없이 결제하는 전용 링크 (supabase/invoice-pay-link.sql)
   items?: { name: string; qty: number; unit_price: number }[] // 메일 본문에 그대로 보여 줄 청구 항목
+  memo?: string | null // 청구서 안내(무료 기간 안내 등)
 }
 
 // 발행 안내 메일 내용 (실제 발송과 "나에게 보내기" 미리보기가 같이 쓴다)
@@ -32,9 +33,10 @@ export function invoiceIssuedMail(inv: IssuedInv) {
     subject: inv.autopay ? `[IM 뉴스룸] ${inv.outletName} ${chargeDay} ${won}원 자동 결제 예정 (${monthText} 청구서)` : `[IM 뉴스룸] ${inv.outletName} ${monthText} 청구서 (${won}원)`,
     title: inv.autopay ? `${chargeDay}에 ${won}원이 자동 결제될 예정입니다` : `${monthText} 청구서가 발행되었습니다`,
     rows: inv.items?.length
-      ? [...inv.items.map((i) => ({ label: `${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''}`, value: `${(i.qty * i.unit_price).toLocaleString('ko-KR')}원` })), { label: '합계', value: `${won}원`, strong: true }]
+      ? [...inv.items.map((i) => ({ label: `${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''}`, value: i.qty * i.unit_price === 0 ? '무료' : `${(i.qty * i.unit_price).toLocaleString('ko-KR')}원` })), { label: '합계', value: `${won}원`, strong: true }]
       : undefined,
     lines: [
+      ...(inv.memo ? inv.memo.split('\n').map((l) => l.trim()).filter(Boolean) : []),
       `${inv.outletName} · ${monthText} 청구 금액 ${won}원${inv.dueDate ? ` · 납부 기한 ${formatDate(inv.dueDate)}` : ''}`,
       inv.autopay
         ? `등록하신 결제수단(${inv.autopay.card_company ?? ''} ${inv.autopay.card_number ?? ''})으로 ${chargeDay} 오전 10시에 자동 결제됩니다. 따로 하실 일은 없습니다. 카드를 바꾸거나 해지하려면 편집국 고객센터 → 결제 정보에서 할 수 있습니다.`

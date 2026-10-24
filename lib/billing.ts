@@ -67,9 +67,18 @@ export function billingItems(t: BillingTarget, month: string) {
   const billPlan = !annual || (t.start_month != null && (m - ym(t.start_month)) % 12 === 0 && m >= ym(t.start_month))
   if (billPlan) {
     if (monthly != null && planName) {
-      items.push(annual
-        ? { name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${annualBeta})`, qty: 1, unit_price: annualPrice(monthly, month, beta, start) }
-        : { name: `IM 뉴스룸 ${planName} (${label(m)}${betaTag})`, qty: 1, unit_price: Math.round(monthly * rate) })
+      // 베타 반값이 걸린 청구서는 정가와 할인 금액을 항목 이름에 함께 적는다 (고객이 얼마를 할인받았는지 보이게)
+      const wonText = (n: number) => `${n.toLocaleString('ko-KR')}원`
+      if (annual) {
+        const price = annualPrice(monthly, month, beta, start)
+        const regular = annualPrice(monthly, month, false, start)
+        const off = regular - price
+        items.push({ name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${annualBeta})${off > 0 ? ` — 정가 ${wonText(regular)}, 베타 반값 할인 -${wonText(off)}` : ''}`, qty: 1, unit_price: price })
+      } else {
+        const price = Math.round(monthly * rate)
+        const off = monthly - price
+        items.push({ name: `IM 뉴스룸 ${planName} (${label(m)}${betaTag})${off > 0 ? ` — 정가 ${wonText(monthly)}, 베타 반값 할인 -${wonText(off)}` : ''}`, qty: 1, unit_price: price })
+      }
     }
     // 매체 추가는 프리미엄 전용: 추가 매체 1개 포함, 그다음부터 매체마다 (맞춤 금액이면 포함 없이 모두 청구)
     const included = t.plan === 'premium' && t.custom_monthly == null ? PREMIUM_INCLUDED_EXTRA : 0

@@ -285,6 +285,7 @@ export async function sendInvoicePreview(form: FormData): Promise<{ ok?: boolean
   const items: InvoiceItem[] = names.map((name, i) => ({ name: name.trim().slice(0, 100), qty: qtys[i] || 0, unit_price: prices[i] || 0 })).filter((i) => i.name && i.qty)
   if (!items.length) return { error: '청구 항목을 한 줄 이상 적어주세요.' }
   const t = invoiceTotals(items)
+  const memo = text(form, 'memo', 1000)
   const [{ data: o }, { data: auto }, { data: billing }] = await Promise.all([
     supabase.from('outlets').select('name').eq('id', outlet_id).maybeSingle(),
     supabase.from('outlet_autopay').select('card_company, card_number').eq('outlet_id', outlet_id).eq('active', true).maybeSingle(),
@@ -292,10 +293,9 @@ export async function sendInvoicePreview(form: FormData): Promise<{ ok?: boolean
   ])
   const mail = invoiceIssuedMail({
     id: '', outletName: (o as { name?: string } | null)?.name ?? '', month: `${month}-01`, total: t.total,
-    dueDate: text(form, 'due_date', 10) || null, createdAt: new Date().toISOString(), autopay: auto ?? null, origin: await cmsOrigin(), items,
+    dueDate: text(form, 'due_date', 10) || null, createdAt: new Date().toISOString(), autopay: auto ?? null, origin: await cmsOrigin(), items, memo: memo || null,
   })
   const target = (billing as { manager_email?: string | null } | null)?.manager_email?.trim()
-  const memo = text(form, 'memo', 1000)
   const lines = [
     '※ 미리보기입니다. 아직 발행되지 않았고 고객에게는 가지 않았습니다.',
     ...mail.lines,
@@ -390,12 +390,12 @@ export async function setTicketAssignee(id: string, form: FormData) {
 
 // 청구서 발행 안내 메일 (lib/invoice-mail.ts)
 async function notifyInvoice(supabase: Awaited<ReturnType<typeof getCmsContext>>['supabase'], id: string) {
-  const { data: inv } = await supabase.from('invoices').select('id, month, total, due_date, created_at, outlet_id, items, outlet:outlets(name)').eq('id', id).maybeSingle()
+  const { data: inv } = await supabase.from('invoices').select('id, month, total, due_date, created_at, outlet_id, items, memo, outlet:outlets(name)').eq('id', id).maybeSingle()
   if (!inv) return
   const { data: auto } = await supabase.from('outlet_autopay').select('card_company, card_number').eq('outlet_id', inv.outlet_id).eq('active', true).maybeSingle()
   await notifyInvoiceIssued(supabase, {
     id, outletName: (inv.outlet as unknown as { name: string } | null)?.name ?? '', month: String(inv.month), total: Number(inv.total),
     dueDate: inv.due_date, createdAt: inv.created_at, autopay: auto ?? null, origin: (await cmsOrigin()),
-    items: (inv.items ?? []) as InvoiceItem[],
+    items: (inv.items ?? []) as InvoiceItem[], memo: inv.memo,
   })
 }

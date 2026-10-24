@@ -21,6 +21,10 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const [start, setStart] = useState('')
   const [picked, setPicked] = useState(false)
   const [auto, setAuto] = useState(true)
+  // 개통 전 무료 기간 안내: 개통일부터 청구 월 전달 말일까지는 무료, 청구 월 1일부터 청구 (줄과 안내 문구를 자동으로 넣는다)
+  const [freeOn, setFreeOn] = useState(true)
+  const [openDate, setOpenDate] = useState('')
+  const [userMemo, setUserMemo] = useState('')
   const [enableAuto, setEnableAuto] = useState(true)
   const fill = (over?: { beta: boolean; start: string }, fresh = false) => {
     if (!outletId || !/^\d{4}-\d{2}$/.test(month)) return
@@ -48,6 +52,20 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       setPreview(r.ok ? { text: `${r.to} 로 미리보기를 보냈습니다. ${r.note ?? ''}` } : { text: r.error ?? '보내지 못했습니다.', error: true })
     })
   }
+  const free = (() => {
+    if (!freeOn || !/^\d{4}-\d{2}-\d{2}$/.test(openDate) || !/^\d{4}-\d{2}$/.test(month)) return null
+    const first = `${month}-01`
+    if (openDate >= first) return null
+    const end = new Date(Date.parse(`${first}T00:00:00Z`) - 864e5).toISOString().slice(0, 10)
+    const days = Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${openDate}T00:00:00Z`)) / 864e5) + 1
+    const md = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`
+    const range = `${md(openDate)}~${md(end)}`
+    return {
+      name: `개통 무료 이용 (${range}, ${days}일) — 서비스로 드립니다`,
+      notice: `${md(end)}까지(${days}일)는 무료로 서비스해 드립니다. 이용료는 ${Number(month.slice(5, 7))}월 1일부터 청구됩니다.`,
+    }
+  })()
+  const memoAll = [free?.notice, userMemo.trim()].filter(Boolean).join('\n')
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
   return (
@@ -97,6 +115,25 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         {outletId && <button type="button" onClick={() => fill()} disabled={filling} className="shrink-0 whitespace-nowrap font-semibold text-[#2F6BF0] disabled:opacity-50">요금표대로 다시 채우기</button>}
       </div>
 
+      <div className="rounded-lg border border-line px-4 py-3 text-[13.5px]">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <label className="flex items-center gap-2 font-semibold">
+            <input type="checkbox" checked={freeOn} onChange={(e) => setFreeOn(e.target.checked)} />
+            개통 전 무료 기간 안내 넣기
+          </label>
+          <label className="flex items-center gap-2">
+            <span className="text-muted">개통일(오픈일)</span>
+            <input type="date" value={openDate} onChange={(e) => setOpenDate(e.target.value)} disabled={!freeOn} className="field-input w-44 py-1" />
+          </label>
+        </div>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
+          {!freeOn ? '꺼 두었습니다. 무료 기간 줄과 안내 문구는 청구서에 들어가지 않습니다.'
+            : free ? <>청구서에 <strong className="text-ink">&ldquo;{free.name}&rdquo; 0원 줄</strong>과 안내 &ldquo;{free.notice}&rdquo;가 자동으로 들어갑니다. 고객에게 보내는 메일에도 보입니다.</>
+            : '개통일을 고르면 개통일부터 청구 월 전달 말일까지 무료인 기간과 안내 문구가 자동으로 만들어집니다. (개통일이 청구 월 1일 이후면 넣지 않습니다.)'}
+        </p>
+      </div>
+      <input type="hidden" name="memo" value={memoAll} />
+
       <div className="overflow-x-auto">
       <table className="table-cards w-full text-[14px] md:min-w-[560px]">
         <thead>
@@ -118,6 +155,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       </table>
       </div>
       <button type="button" onClick={() => { setEdited(true); setItems([...items, { name: '', qty: 1, unit_price: 0 }]) }} className="text-[13px] font-semibold text-[#2F6BF0]">+ 항목 추가</button>
+      {free && <><input type="hidden" name="item_name" value={free.name} /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value="0" /></>}
 
       <dl className="ml-auto w-full space-y-1 sm:w-64 text-[14px] tabular-nums">
         <div className="flex justify-between text-[16px] font-bold"><dt>합계</dt><dd>{won(t.total)}</dd></div>
@@ -126,7 +164,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
 
       <div>
         <label htmlFor="i-memo" className="field-label">안내 (입금 계좌 등)</label>
-        <textarea id="i-memo" name="memo" rows={3} className="field-input" placeholder="예) 입금 계좌: ○○은행 000-0000-0000 (예금주 ○○○)" />
+        <textarea id="i-memo" value={userMemo} onChange={(e) => setUserMemo(e.target.value)} rows={3} className="field-input" placeholder="예) 입금 계좌: ○○은행 000-0000-0000 (예금주 ○○○)" />
       </div>
       <p className="text-[12.5px] text-muted">같은 매체·같은 월 청구서가 이미 있으면 새 내용으로 바뀝니다.</p>
       {state.error && <p role="alert" className="text-[13.5px] text-danger">{state.error}</p>}
