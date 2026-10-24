@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition, useActionState } from 'react'
 import { invoiceDraft, saveInvoice, sendInvoicePreview, type FormState } from '@/app/(main)/support/actions'
 import { TAX_NOTE, invoiceTotals, won, type InvoiceItem } from '@/lib/support'
+import { SETUP_FEE, SETUP_WAIVER_NOTE } from '@/lib/pricing'
 import PendingButton from './PendingButton'
 
 export default function InvoiceForm({ outlets }: { outlets: { id: string; name: string }[] }) {
@@ -25,6 +26,8 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const [freeOn, setFreeOn] = useState(true)
   const [openDate, setOpenDate] = useState('')
   const [userMemo, setUserMemo] = useState('')
+  // 세팅비 면제(베타): 정가 줄과 면제 줄(마이너스)을 함께 넣는다. 베타 반값을 고르면 기본으로 켜진다
+  const [waivePick, setWaivePick] = useState<boolean | null>(null)
   const [enableAuto, setEnableAuto] = useState(true)
   const fill = (over?: { beta: boolean; start: string }, fresh = false) => {
     if (!outletId || !/^\d{4}-\d{2}$/.test(month)) return
@@ -65,7 +68,9 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       notice: `${md(end)}까지(${days}일)는 무료로 서비스해 드립니다. 이용료는 ${Number(month.slice(5, 7))}월 1일부터 청구됩니다.`,
     }
   })()
-  const memoAll = [free?.notice, userMemo.trim()].filter(Boolean).join('\n')
+  const hasSetupLine = items.some((i) => i.name.startsWith('세팅비'))
+  const waive = (waivePick ?? beta) && !hasSetupLine
+  const memoAll = [free?.notice, waive ? SETUP_WAIVER_NOTE : '', userMemo.trim()].filter(Boolean).join('\n')
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
   return (
@@ -116,6 +121,15 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       </div>
 
       <div className="rounded-lg border border-line px-4 py-3 text-[13.5px]">
+        <label className="flex items-center gap-2 font-semibold">
+          <input type="checkbox" checked={waive} disabled={hasSetupLine} onChange={(e) => setWaivePick(e.target.checked)} />
+          세팅비 {SETUP_FEE.toLocaleString('ko-KR')}원 면제 표시 넣기 (정가 줄 + 면제 줄)
+        </label>
+        <p className="mb-3 mt-1 text-[12.5px] leading-relaxed text-muted">
+          {hasSetupLine ? '이 청구서에는 세팅비가 실제로 청구되는 줄이 이미 있어 면제 표시를 넣지 않습니다.'
+            : waive ? <>청구서에 &ldquo;세팅비 {SETUP_FEE.toLocaleString('ko-KR')}원&rdquo; 줄과 &ldquo;베타 세팅비 무료 -{SETUP_FEE.toLocaleString('ko-KR')}원&rdquo; 줄이 들어가고, 안내에 3개월 이상 이용 조건이 적힙니다. 베타 반값을 고르면 기본으로 켜집니다.</>
+            : '꺼 두었습니다. 세팅비 줄이 청구서에 나오지 않습니다.'}
+        </p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <label className="flex items-center gap-2 font-semibold">
             <input type="checkbox" checked={freeOn} onChange={(e) => setFreeOn(e.target.checked)} />
@@ -155,6 +169,10 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       </table>
       </div>
       <button type="button" onClick={() => { setEdited(true); setItems([...items, { name: '', qty: 1, unit_price: 0 }]) }} className="text-[13px] font-semibold text-[#2F6BF0]">+ 항목 추가</button>
+      {waive && <>
+        <input type="hidden" name="item_name" value="세팅비 (처음 개통할 때 한 번)" /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value={SETUP_FEE} />
+        <input type="hidden" name="item_name" value="베타 세팅비 무료 (개통 후 3개월 이상 이용 조건)" /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value={-SETUP_FEE} />
+      </>}
       {free && <><input type="hidden" name="item_name" value={free.name} /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value="0" /></>}
 
       <dl className="ml-auto w-full space-y-1 sm:w-64 text-[14px] tabular-nums">
