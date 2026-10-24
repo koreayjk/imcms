@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
       mail = await resendInboundMail(payload.data.email_id)
     } catch (e) {
       console.error('[inbound-email] 받은 메일 내용을 Resend 에서 읽지 못했습니다:', e instanceof Error ? e.message : e)
-      return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
+      // Resend 웹훅 화면의 Response body 에 이유가 보이도록 (비밀 값은 들어 있지 않다)
+      return NextResponse.json({ error: 'fetch_failed', detail: e instanceof Error ? e.message.slice(0, 300) : String(e).slice(0, 300) }, { status: 500 })
     }
   } else {
     mail = payload as InboundMail

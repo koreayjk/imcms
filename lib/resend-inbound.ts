@@ -32,7 +32,11 @@ const KEEP_EXT = /\.(jpe?g|png|webp|gif|pdf|hwp|hwpx|docx?)$/i
 
 export async function resendInboundMail(emailId: string): Promise<InboundMail> {
   const res = await fetch(`${API}/emails/receiving/${encodeURIComponent(emailId)}`, { headers: headers(), cache: 'no-store' })
-  if (!res.ok) throw new Error(`받은 메일을 읽지 못했습니다 (HTTP ${res.status})`)
+  if (!res.ok) {
+    // Resend 가 알려 주는 이유(예: API 키 권한 부족)를 같이 남긴다 — 비밀 값은 들어 있지 않다
+    const why = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 200)
+    throw new Error(`받은 메일을 읽지 못했습니다 (HTTP ${res.status}) ${why}`)
+  }
   const m = (await res.json()) as Received
   const fromHeader = m.headers?.from ?? m.from
   const name = fromHeader.match(/^\s*"?([^"<]+?)"?\s*</)?.[1]?.trim()
