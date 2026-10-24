@@ -206,7 +206,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
       {mode === 'manual' && (
         <section className="space-y-4 rounded-lg border border-line bg-white p-4 text-[14.5px] sm:p-6 leading-[1.8]">
           <p className="text-[17px] font-bold">보도자료 메일이 올 때마다 “전달”을 한 번 눌러 주세요</p>
-          <p className="text-[13.5px] text-muted">지메일은 보도자료만 골라 자동으로 넘길 수 있지만, 네이버·다음 메일은 그런 설정을 쓰기 어렵습니다. 대신 <strong>처음에 주소록에 한 번 저장</strong>해 두면, 이후에는 보도자료 메일을 열어 <Btn>전달</Btn>만 누르면(메일 한 통에 5초) 보도자료함에 들어옵니다.</p>
+          <p className="text-[13.5px] text-muted">지메일은 보도자료만 골라 자동으로 넘길 수 있지만, <strong>네이버 메일에는 자동 전달 기능이 없습니다</strong>(환경설정의 “메일 자동분류”에는 메일함 이동·읽음·중요·색상·삭제만 있습니다). 대신 <strong>처음에 주소록에 한 번 저장</strong>해 두면, 이후에는 보도자료 메일을 열어 <Btn>전달</Btn>만 누르면(메일 한 통에 5초) 보도자료함에 들어옵니다.</p>
 
           <div className="rounded-lg bg-[#F8F9FA] px-4 py-4">
             <p className="font-bold">① 처음 한 번만 — 내 전용 주소를 주소록에 저장</p>
@@ -230,6 +230,15 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
           </div>
 
           <p className="text-[13px] text-muted">보낸 기관과 제목, 첨부한 사진은 IM 뉴스룸이 알아서 찾아 보도자료함에 “메일” 표시로 넣어 줍니다. 휴대폰 메일 앱에서도 같은 방법으로 됩니다. 다음 메일·회사 메일도 주소록(연락처)에 저장하는 방법만 조금 다를 뿐 똑같습니다.</p>
+          <details className="text-[13px] text-muted">
+            <summary className="cursor-pointer font-semibold text-ink">네이버 메일에서 보도자료를 찾기 쉽게 모아 두려면</summary>
+            <ol className="mt-1.5 list-decimal space-y-1 pl-5">
+              <li>네이버 메일 왼쪽 아래 <Btn>환경설정</Btn> → <Btn>메일 자동분류</Btn> → <Btn>분류추가</Btn></li>
+              <li>“분류 기준”의 <strong>메일 제목</strong> 칸에 <strong>보도자료</strong>를 쓰고, “처리 방법”에서 <strong>메일함으로 이동</strong> → <strong>새 메일함에 저장</strong>에 “보도자료”라고 씁니다 (색상 강조만 해도 됩니다).</li>
+              <li><Btn>저장</Btn> — 이후 제목에 “보도자료”가 들어간 메일이 한 메일함에 모입니다. 거기서 열어 <Btn>전달</Btn>만 누르면 됩니다.</li>
+            </ol>
+            <p className="mt-1.5">보도자료를 주로 네이버로 받는데 매번 전달하기 번거롭다면, 보내는 기관에 <strong>지메일 주소도 수신처로 추가</strong>해 달라고 요청하고 지메일 “자동으로 받기”를 쓰는 방법도 있습니다.</p>
+          </details>
           <details className="text-[13px] text-muted">
             <summary className="cursor-pointer font-semibold text-ink">회사 메일을 자동으로 받고 싶다면</summary>
             <p className="mt-1.5">구글 워크스페이스(주소가 @회사도메인이어도 화면이 지메일)면 “자동으로 받기”와 똑같이 하면 됩니다. 아웃룩·네이버웍스는 “규칙(자동 전달)” 메뉴에서 <strong>제목에 ‘보도자료’ 포함 → 내 전용 주소로 전달</strong>을 만드세요. 저장이 안 되면 회사 전산 담당자에게 “외부 주소 자동 전달 허용”을 요청하세요.</p>
