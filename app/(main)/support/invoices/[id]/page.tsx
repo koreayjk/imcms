@@ -10,6 +10,9 @@ import { deleteInvoice, setInvoicePaid } from '../../actions'
 import ConfirmSubmit from '@/components/cms/ConfirmSubmit'
 import InvoicePayments, { type PaymentRow } from '@/components/cms/InvoicePayments'
 import { payProvider } from '@/lib/pay-provider'
+import { payLinkFor } from '@/lib/pay-link'
+import { cmsOrigin } from '@/lib/origin'
+import CopyPayLink from '@/components/cms/CopyPayLink'
 
 export default async function InvoicePage(
   props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
@@ -29,6 +32,8 @@ export default async function InvoicePage(
   const billing = billingRow ?? ((inv as { bill_to_snapshot?: typeof billingRow }).bill_to_snapshot ?? null)
   const outletName = (inv.outlet as { name?: string } | null)?.name ?? (inv as { outlet_name?: string | null }).outlet_name ?? null
   const items = (inv.items ?? []) as InvoiceItem[]
+  // 운영팀: 로그인 없이 결제하는 전용 링크 (미납일 때)
+  const payUrl = isStaff && inv.status !== 'paid' ? await payLinkFor(supabase, inv.id, await cmsOrigin()) : null
   const row = (k: string, v: string | null | undefined) => (
     <div className="flex gap-3"><dt className="w-24 shrink-0 text-muted sm:w-32">{k}</dt><dd className="min-w-0 break-words">{v || '-'}</dd></div>
   )
@@ -120,6 +125,14 @@ export default async function InvoicePage(
           </div>
         )}
       </article>
+
+      {payUrl && (
+        <section className="mt-5 rounded-xl border border-line bg-white p-4 print:hidden">
+          <h2 className="text-[14px] font-bold">결제 전용 링크 <span className="text-[12px] font-normal text-muted">(운영팀에게만 보입니다)</span></h2>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">로그인 없이 이 청구서를 보고 카드로 결제하는 주소입니다. 청구서 안내 메일에 이미 들어 있고, 카톡·문자로 따로 보낼 때 복사해 쓰세요. 링크를 아는 사람은 누구나 이 청구서를 결제할 수 있으니 고객 담당자에게만 보내세요.</p>
+          <div className="mt-2"><CopyPayLink url={payUrl} /></div>
+        </section>
+      )}
 
       <InvoicePayments
         invoiceId={inv.id}

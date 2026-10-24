@@ -38,6 +38,8 @@ function isPublicPath(pathname: string) {
     // 토스페이먼츠 웹훅: 받은 내용을 믿지 않고 결제를 다시 조회한다
     pathname === '/api/payments/webhook' ||
     pathname === '/api/payments/stripe-webhook' ||
+    // 청구서 결제 전용 링크: 토큰을 아는 사람만 그 청구서 한 건을 보고 결제한다 (DB 함수가 서버 열쇠로 확인)
+    pathname.startsWith('/pay/') ||
     // 기사 조회수 (독자가 부른다)
     pathname === '/api/view' ||
     // 뉴스레터 구독 확인·수신거부 (메일 속 링크)
