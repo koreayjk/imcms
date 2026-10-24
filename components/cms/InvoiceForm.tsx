@@ -20,12 +20,15 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const [beta, setBeta] = useState(false)
   const [start, setStart] = useState('')
   const [picked, setPicked] = useState(false)
+  const [auto, setAuto] = useState(true)
+  const [enableAuto, setEnableAuto] = useState(true)
   const fill = (over?: { beta: boolean; start: string }, fresh = false) => {
     if (!outletId || !/^\d{4}-\d{2}$/.test(month)) return
     startFill(async () => {
       const r = await invoiceDraft(outletId, month, over ?? (picked && !fresh ? { beta, start: start || month } : undefined))
       setNote(r.note)
       if (!over && (!picked || fresh)) { setBeta(r.beta); setStart(r.start ?? '') }
+      setAuto(r.auto)
       if (r.items.length) { setItems(r.items); setEdited(false) }
     })
   }
@@ -79,6 +82,15 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         </label>
         <span className="text-[12px] text-muted">이번 청구서 계산에만 쓰입니다. 다음 달 자동 청구에도 반값을 이어 가려면 자동 청구 설정에 같은 값을 저장해 두세요.</span>
       </div>
+
+      <input type="hidden" name="beta_on" value={beta ? 'on' : ''} />
+      <input type="hidden" name="beta_start" value={start} />
+      {outletId && !auto && (
+        <label className="flex items-start gap-2 rounded-lg border border-[#2F6BF0]/40 bg-[#2F6BF0]/5 px-4 py-3 text-[13.5px] leading-relaxed">
+          <input type="checkbox" name="enable_auto" checked={enableAuto} onChange={(e) => setEnableAuto(e.target.checked)} className="mt-1" />
+          <span><strong>이 매체를 매달 자동 청구로 설정</strong> — 발행하면 다음 달부터 매월 1일에 이용료 청구서가 자동으로 발행되고(지난달 AI 추가 사용분 포함), 카드를 등록해 두면 자동으로 결제됩니다. 위의 베타 반값·첫 청구 월이 그대로 저장됩니다.</span>
+        </label>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#F4F6FA] px-4 py-2.5 text-[12.5px] text-muted">
         <span>{filling ? '요금표로 계산하는 중…' : note || (outletId ? '요금표와 이 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·세팅비)으로 채웠습니다. 고쳐서 발행해도 됩니다.' : '매체를 고르면 요금표대로 항목이 채워집니다.')}</span>

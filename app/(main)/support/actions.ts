@@ -253,6 +253,18 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
     }, { onConflict: 'outlet_id,month' })
     .select('id').single()
   if (error || !data) return { error: /납부된 청구서/.test(error?.message ?? '') ? '이미 납부된 청구서라 고칠 수 없습니다. 환불한 뒤 새로 발행해 주세요.' : `저장하지 못했습니다: ${error?.message ?? ''}` }
+  // 이 매체를 매달 자동 청구로 (다음 달 1일부터 자동 발행). 이미 있는 설정은 그대로 두고 켜기만 한다
+  if (form.get('enable_auto') === 'on') {
+    const { data: cur2 } = await supabase.from('outlet_plans').select('*').eq('outlet_id', outlet_id).maybeSingle()
+    const betaOn = form.get('beta_on') === 'on'
+    const betaStart = text(form, 'beta_start', 7)
+    await supabase.from('outlet_plans').upsert({
+      outlet_id, auto: true, cycle: cur2?.cycle ?? 'monthly', beta: cur2 ? !!cur2.beta || betaOn : betaOn,
+      start_month: cur2?.start_month ?? `${/^\d{4}-\d{2}$/.test(betaStart) ? betaStart : month}-01`,
+      bill_to: cur2?.bill_to ?? null, custom_monthly: cur2?.custom_monthly ?? null, setup_fee_pending: cur2?.setup_fee_pending ?? false,
+      updated_at: new Date().toISOString(),
+    })
+  }
   await notifyInvoice(supabase, data.id)
   revalidatePath('/support', 'layout')
   redirect(`/support/invoices/${data.id}`)
@@ -299,9 +311,9 @@ export async function sendInvoicePreview(form: FormData): Promise<{ ok?: boolean
 
 // 청구서 발행 화면: 요금표와 그 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·AI 추가 사용·세팅비)으로 항목을 채운다
 //   자동 청구를 켠 매체는 자동 청구와 똑같이, 아니면 요금제·청구 설정만으로 계산한다 (AI 추가 사용은 빠진다)
-export async function invoiceDraft(outletId: string, month: string, over?: { beta: boolean; start: string }): Promise<{ items: InvoiceItem[]; note: string; beta: boolean; start: string | null }> {
+export async function invoiceDraft(outletId: string, month: string, over?: { beta: boolean; start: string }): Promise<{ items: InvoiceItem[]; note: string; beta: boolean; start: string | null; auto: boolean }> {
   const { supabase } = await superContext()
-  if (!/^[0-9a-f-]{36}$/.test(outletId) || !/^\d{4}-\d{2}$/.test(month)) return { items: [], note: '', beta: false, start: null }
+  if (!/^[0-9a-f-]{36}$/.test(outletId) || !/^\d{4}-\d{2}$/.test(month)) return { items: [], note: '', beta: false, start: null, auto: false }
   let target: BillingTarget | null = null
   if (process.env.PAYMENT_DB_SECRET) {
     try {
@@ -309,21 +321,23 @@ export async function invoiceDraft(outletId: string, month: string, over?: { bet
     } catch { /* 자동 청구 함수가 없으면 아래에서 직접 계산 */ }
   }
   let partial = false
+  let autoOn = false
   if (!target) {
     const [{ data: o }, { data: p }, { data: kids }] = await Promise.all([
       supabase.from('outlets').select('id, name, plan').eq('id', outletId).maybeSingle(),
       supabase.from('outlet_plans').select('*').eq('outlet_id', outletId).maybeSingle(),
       supabase.from('outlet_plans').select('outlet_id, outlet:outlets!outlet_plans_outlet_id_fkey(name, plan)').eq('bill_to', outletId),
     ])
-    if (!o) return { items: [], note: '매체를 찾지 못했습니다.', beta: false, start: null }
+    if (!o) return { items: [], note: '매체를 찾지 못했습니다.', beta: false, start: null, auto: false }
     // 부가 서비스(보도자료 메일 자동 수신) 켜짐: press-email-addon.sql 실행 전에는 열이 없어 읽지 못하므로 따로 읽는다
     const kidIds = ((kids ?? []) as unknown as { outlet_id: string }[]).map((k) => k.outlet_id)
     const { data: addons } = await supabase.from('outlets').select('*').in('id', [o.id, ...kidIds])
     const addonRow = (id: string) => (addons as { id: string; press_mail_addon?: boolean; press_mail_addon_since?: string | null }[] | null)?.find((a) => a.id === id)
     const addonOf = (id: string) => !!addonRow(id)?.press_mail_addon
     const sinceOf = (id: string) => addonRow(id)?.press_mail_addon_since ?? null
+    autoOn = !!(p as { auto?: boolean } | null)?.auto
     const plan = p as { cycle?: string; beta?: boolean; start_month?: string | null; setup_fee_pending?: boolean; custom_monthly?: number | null; bill_to?: string | null } | null
-    if (plan?.bill_to) return { items: [], note: '추가 매체는 청구 받는 매체의 청구서에 함께 들어갑니다. 그 매체를 골라 주세요.', beta: false, start: null }
+    if (plan?.bill_to) return { items: [], note: '추가 매체는 청구 받는 매체의 청구서에 함께 들어갑니다. 그 매체를 골라 주세요.', beta: false, start: null, auto: false }
     target = {
       outlet_id: o.id, name: o.name, plan: o.plan ?? null, press_addon: addonOf(o.id), press_addon_since: sinceOf(o.id),
       cycle: plan?.cycle === 'annual' ? 'annual' : 'monthly', beta: !!plan?.beta, start_month: plan?.start_month ?? null,
@@ -334,14 +348,14 @@ export async function invoiceDraft(outletId: string, month: string, over?: { bet
     partial = true
   }
   // 청구서 화면에서 직접 고른 베타 반값·첫 청구 월 (자동 청구 설정이 없거나 다를 때 이번 청구서에만 쓴다)
-  const settings = { beta: target.beta, start: target.start_month ? target.start_month.slice(0, 7) : null }
+  const settings = { beta: target.beta, start: target.start_month ? target.start_month.slice(0, 7) : null, auto: !partial || !!autoOn }
   if (over && /^\d{4}-\d{2}$/.test(over.start)) target = { ...target, beta: over.beta, start_month: `${over.start}-01` }
   const { items } = billingItems(target, month)
   const notes: string[] = []
   if (!planById(target.plan) && target.custom_monthly == null) notes.push('이 매체는 요금제가 정해지지 않았습니다 (AI 사용량 화면에서 정합니다).')
   if (target.cycle === 'annual' && !items.some((i) => i.name.includes('1년'))) notes.push('1년 결제 매체라 이번 달은 이용료 청구 월이 아닙니다.')
   if (partial) notes.push('자동 청구가 꺼진 매체라 지난달 AI 추가 사용은 넣지 않았습니다.')
-  return { items, note: notes.join(' '), beta: over ? over.beta : settings.beta, start: over ? over.start : settings.start }
+  return { items, note: notes.join(' '), beta: over ? over.beta : settings.beta, start: over ? over.start : settings.start, auto: settings.auto }
 }
 
 export async function setInvoicePaid(id: string, paid: boolean) {
