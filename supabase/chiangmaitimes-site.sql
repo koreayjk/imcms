@@ -1,9 +1,11 @@
 -- 치앙마이 타임즈 홈페이지 설정·섹션 (Supabase SQL 에디터에서 실행. 여러 번 실행해도 된다)
 --   치앙마이를 중심으로 태국 전반을 다루는 비즈니스 매체 (한국어). 독자: 태국에 관심 있는 한국·태국·미국 사업가
---   · 홈페이지 설정: 영문 이름·슬로건·소개·색·전문뉴스 제목·AI 활용 표시·법정 표기의 회사명과 편집인(Sarah Sorna)
+--   · 홈페이지 설정: 영문 이름·슬로건·소개·색·전문뉴스 제목·숫자 판(숫자로 보는 태국 경제)·AI 활용 표시·법정 표기의 회사명과 편집인(Sarah Sorna)
 --     이미 값이 있는 칸은 덮어쓰지 않는다 ("오픈 준비 중"도 그대로)
 --   · 1차 메뉴 7개: 비즈니스 · 치앙마이 · 경제 · 투자 · 정책·제도 · 관광·라이프 · 글로벌
 --     개설 때 자동으로 생긴 정치·사회·문화는 기사가 없을 때만 지운다 (경제는 그대로 쓴다)
+--   · 숫자 판 값은 2026-10-24 기준 공식 발표. 새 통계가 나오면 홈페이지 설정 → '숫자 판'에서 고친다
+--     (이 파일을 다시 실행해도 이미 있는 숫자 판은 덮어쓰지 않는다)
 --   · 다음 순서: supabase/seed-articles/chiangmaitimes-2026-10.sql (기사 50건)
 
 alter table categories add column if not exists parent_slug text;
@@ -31,7 +33,8 @@ begin
     'colors', jsonb_build_object('brand', '#6B1E2E', 'accent', '#C8962E'),
     'homeLayout', 'standard',
     'lang', 'ko',
-    'aiNotice', jsonb_build_object('on', true, 'text', '이 기사는 공개된 공식 자료를 바탕으로 AI의 도움을 받아 작성했습니다.')
+    'aiNotice', jsonb_build_object('on', true, 'text', '이 기사는 공개된 공식 자료를 바탕으로 AI의 도움을 받아 작성했습니다.'),
+    'statsBoard', '{"title": "숫자로 보는 태국 경제", "items": [{"label": "기준금리", "value": "1.00%", "note": "2026년 8월 26일 동결 · 다음 결정 10월 28일", "source": "태국중앙은행", "url": "https://www.bot.or.th/en/news-and-media/news/mpc/news-20260826-KsecaE98.html"}, {"label": "소비자물가 상승률", "value": "2.82%", "note": "2026년 9월, 1년 전 대비", "source": "태국 상무부 무역정책전략사무국", "url": "https://uploads.tpso.go.th/economic/pdf/Cpig092569_tg.pdf"}, {"label": "수출 증가율", "value": "+24.3%", "note": "2026년 8월, 1년 전 대비(달러 기준)", "source": "태국 상무부 무역정책전략사무국", "url": "https://uploads.tpso.go.th/editor/pdf/1790327282_f950231b17a8ec6485f0.pdf"}, {"label": "외국인 관광객", "value": "2,319만 명", "note": "2026년 1~9월 누적(잠정), 1년 전보다 3.8% 감소", "source": "태국 관광체육부", "url": "https://www.mots.go.th/news/category/817"}, {"label": "가계부채", "value": "GDP 대비 85.2%", "note": "2026년 2분기 말(잠정)", "source": "태국중앙은행", "url": "https://app.bot.or.th/BTWS_STAT/statistics/BOTWEBSTAT.aspx?language=ENG&reportID=1004"}], "footnote": "각 기관 공식 발표 기준(2026년 10월 24일 확인). 잠정치는 바뀔 수 있다."}'::jsonb
   ) || coalesce(site, '{}'::jsonb)
   where id = oid;
 
