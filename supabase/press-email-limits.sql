@@ -1,11 +1,29 @@
--- 메일로 받는 보도자료: 기자 한 명이 받을 수 있는 양에 한도를 둔다 (Supabase SQL 에디터에서 1회 실행. press-email.sql 다음)
---   · 지메일 필터를 넓게 걸어 두면 하루에도 수십~수백 통이 넘어와 메일 수신 서비스(Resend) 한도와 보도자료함이 넘칩니다
---   · 기본값: 기자 한 명당 하루 30건, 한 달 300건. 넘으면 그 메일은 받지 않고, 몇 건을 못 받았는지 설정 화면에 보여 줍니다
---   · 한도는 아래 두 줄의 숫자만 바꿔 다시 실행하면 바뀝니다 (총관리자만 실행 가능)
---   · press-email-fix-dedupe.sql 의 수정(다른 그룹에 같은 자료가 와도 따로 받기)도 이 파일에 들어 있어 따로 실행하지 않아도 됩니다
+-- 메일로 받는 보도자료: 언론사(매체) 1곳마다 하루에 받을 수 있는 양을 정한다 (Supabase SQL 에디터에서 1회 실행. press-email.sql 다음)
+--   · 지메일 필터를 넓게 걸거나 받은 메일 전체를 넘기면 메일 수신 서비스(Resend) 한도와 보도자료함이 넘칩니다
+--   · 기준: 한국 시간 하루(0시~24시). 그날 한도를 넘으면 그날 오는 메일은 받지 않고(나중에 다시 가져오지도 않음),
+--           다음 날 0시부터는 새로 오는 메일을 다시 한도까지 받습니다
+--   · 언론사 안에서 기자가 여러 명이어도 합쳐서 센다
+--   · 기본 한도는 아래 숫자(30건). 언론사마다 따로 정하려면 편집국 보도자료 → 메일로 받기 설정 맨 아래(총관리자 화면)에서 바꿉니다
+--   · 여러 번 실행해도 되고, 이전에 있던 기자별 한도 버전도 이 파일이 대신합니다. press-email-fix-dedupe.sql 의 수정도 들어 있습니다
 
 insert into private.settings (key, value) values ('press_mail_daily_limit', '30') on conflict (key) do update set value = excluded.value;
-insert into private.settings (key, value) values ('press_mail_monthly_limit', '300') on conflict (key) do update set value = excluded.value;
+
+-- 언론사별 하루 한도 (없으면 기본 한도)
+create table if not exists press_mail_limits (
+  outlet_id uuid primary key references outlets(id) on delete cascade,
+  daily_limit int not null check (daily_limit >= 0),
+  updated_at timestamptz not null default now()
+);
+alter table press_mail_limits enable row level security;   -- 직접 읽고 쓰지 못하게(아래 함수로만)
+
+-- 한도를 넘어 받지 못한 건수 (언론사·날짜별)
+create table if not exists press_mail_drops (
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  day date not null,
+  n int not null default 0,
+  primary key (outlet_id, day)
+);
+alter table press_mail_drops enable row level security;
 
 alter table press_inboxes add column if not exists dropped_count int not null default 0;
 alter table press_inboxes add column if not exists last_dropped_at timestamptz;
@@ -18,11 +36,14 @@ create or replace function public.press_ingest_email(
 ) returns text language plpgsql security definer set search_path = public, private as $$
 declare
   owner uuid;
+  oid uuid;
   new_id uuid;
   a jsonb;
   scope text;
   g text;
-  d_lim int; m_lim int; n_day int; n_mon int;
+  lim int;
+  used int;
+  day_start timestamptz := date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul';
 begin
   if secret is null or secret <> (select value from private.settings where key = 'press_mail_secret') then
     raise exception 'forbidden';
@@ -35,14 +56,25 @@ begin
     return 'verify_saved';
   end if;
 
-  -- 한도: 하루(24시간)·한 달(한국 시간 기준)
-  select coalesce((select value::int from private.settings where key = 'press_mail_daily_limit'), 30) into d_lim;
-  select coalesce((select value::int from private.settings where key = 'press_mail_monthly_limit'), 300) into m_lim;
-  select count(*) into n_day from press_releases where created_by = owner and source_key = 'email' and fetched_at > now() - interval '1 day';
-  select count(*) into n_mon from press_releases where created_by = owner and source_key = 'email'
-    and fetched_at >= (date_trunc('month', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul');
-  if n_day >= d_lim or n_mon >= m_lim then
+  -- 이 기자가 속한 언론사의 오늘 한도
+  select outlet_id into oid from profiles where id = owner;
+  select coalesce(
+    (select daily_limit from press_mail_limits where outlet_id = oid),
+    (select value::int from private.settings where key = 'press_mail_daily_limit'),
+    30) into lim;
+  if oid is not null then
+    select count(*) into used from press_releases r
+      where r.source_key = 'email' and r.fetched_at >= day_start
+        and r.created_by in (select id from profiles where outlet_id = oid);
+  else
+    select count(*) into used from press_releases r where r.source_key = 'email' and r.fetched_at >= day_start and r.created_by = owner;
+  end if;
+  if used >= lim then
     update press_inboxes set dropped_count = dropped_count + 1, last_dropped_at = now() where token = lower(p_token);
+    if oid is not null then
+      insert into press_mail_drops (outlet_id, day, n) values (oid, (now() at time zone 'Asia/Seoul')::date, 1)
+      on conflict (outlet_id, day) do update set n = press_mail_drops.n + 1;
+    end if;
     return 'rate_limited';
   end if;
 
@@ -70,13 +102,14 @@ begin
   return 'saved';
 end $$;
 
--- 내 전용 주소 화면에 한도·못 받은 건수도 같이 보여 준다
+-- 기자 화면: 우리 언론사의 오늘 한도·사용량·못 받은 건수
 drop function if exists public.my_press_inbox();
 create or replace function public.my_press_inbox()
 returns table (address text, token text, verify_code text, verify_link text, verify_at timestamptz, last_received_at timestamptz, received_count int,
-               dropped_count int, last_dropped_at timestamptz, daily_limit int, monthly_limit int, used_today int, used_month int)
+               daily_limit int, used_today int, dropped_today int)
 language plpgsql security definer set search_path = public, private as $$
-declare base text; t text;
+declare base text; t text; oid uuid; lim int; used int; dropped int;
+  day_start timestamptz := date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul';
 begin
   if auth.uid() is null then raise exception '로그인이 필요합니다.'; end if;
   select value into base from private.settings where key = 'press_mail_address';
@@ -85,19 +118,61 @@ begin
     t := substr(replace(gen_random_uuid()::text, '-', ''), 1, 12);
     insert into press_inboxes (user_id, token) values (auth.uid(), t);
   end if;
+  select outlet_id into oid from profiles where id = auth.uid();
+  select coalesce((select l.daily_limit from press_mail_limits l where l.outlet_id = oid),
+                  (select value::int from private.settings where key = 'press_mail_daily_limit'), 30) into lim;
+  if oid is not null then
+    select count(*)::int into used from press_releases r
+      where r.source_key = 'email' and r.fetched_at >= day_start and r.created_by in (select id from profiles where outlet_id = oid);
+    select coalesce((select n from press_mail_drops d where d.outlet_id = oid and d.day = (now() at time zone 'Asia/Seoul')::date), 0) into dropped;
+  else
+    select count(*)::int into used from press_releases r where r.source_key = 'email' and r.fetched_at >= day_start and r.created_by = auth.uid();
+    dropped := 0;
+  end if;
   return query
     select case when base is null then null else split_part(base, '@', 1) || '+' || t || '@' || split_part(base, '@', 2) end,
            i.token, i.verify_code, i.verify_link, i.verify_at, i.last_received_at, i.received_count,
-           i.dropped_count, i.last_dropped_at,
-           coalesce((select value::int from private.settings where key = 'press_mail_daily_limit'), 30),
-           coalesce((select value::int from private.settings where key = 'press_mail_monthly_limit'), 300),
-           (select count(*)::int from press_releases r where r.created_by = auth.uid() and r.source_key = 'email' and r.fetched_at > now() - interval '1 day'),
-           (select count(*)::int from press_releases r where r.created_by = auth.uid() and r.source_key = 'email'
-              and r.fetched_at >= (date_trunc('month', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul'))
+           lim, used, dropped
     from press_inboxes i where i.user_id = auth.uid();
+end $$;
+
+-- 총관리자: 언론사별 오늘 한도·사용량 보기
+create or replace function public.admin_press_mail_limits()
+returns table (outlet_id uuid, outlet_name text, daily_limit int, is_custom boolean, used_today int, dropped_today int)
+language plpgsql stable security definer set search_path = public, private as $$
+declare def int;
+  day_start timestamptz := date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul';
+begin
+  if not public.is_super() then raise exception '총관리자만 볼 수 있습니다.'; end if;
+  select coalesce((select value::int from private.settings where key = 'press_mail_daily_limit'), 30) into def;
+  return query
+    select o.id, o.name::text, coalesce(l.daily_limit, def), l.outlet_id is not null,
+           (select count(*)::int from press_releases r where r.source_key = 'email' and r.fetched_at >= day_start
+              and r.created_by in (select p.id from profiles p where p.outlet_id = o.id)),
+           coalesce((select d.n from press_mail_drops d where d.outlet_id = o.id and d.day = (now() at time zone 'Asia/Seoul')::date), 0)
+    from outlets o left join press_mail_limits l on l.outlet_id = o.id
+    order by o.name;
+end $$;
+
+-- 총관리자: 언론사 한도 정하기 (p_limit 이 null 이면 기본 한도로 되돌림)
+create or replace function public.admin_set_press_mail_limit(p_outlet uuid, p_limit int)
+returns void language plpgsql security definer set search_path = public, private as $$
+begin
+  if not public.is_super() then raise exception '총관리자만 바꿀 수 있습니다.'; end if;
+  if p_limit is null then
+    delete from press_mail_limits where outlet_id = p_outlet;
+  else
+    if p_limit < 0 or p_limit > 2000 then raise exception '하루 한도는 0~2000건 사이로 정해 주세요.'; end if;
+    insert into press_mail_limits (outlet_id, daily_limit) values (p_outlet, p_limit)
+    on conflict (outlet_id) do update set daily_limit = excluded.daily_limit, updated_at = now();
+  end if;
 end $$;
 
 revoke all on function public.press_ingest_email(text, text, text, text, text, text, text, text, text, text, timestamptz, jsonb) from public;
 grant execute on function public.press_ingest_email(text, text, text, text, text, text, text, text, text, text, timestamptz, jsonb) to anon, authenticated;
 revoke all on function public.my_press_inbox() from public, anon;
 grant execute on function public.my_press_inbox() to authenticated;
+revoke all on function public.admin_press_mail_limits() from public, anon;
+grant execute on function public.admin_press_mail_limits() to authenticated;
+revoke all on function public.admin_set_press_mail_limit(uuid, int) from public, anon;
+grant execute on function public.admin_set_press_mail_limit(uuid, int) to authenticated;
