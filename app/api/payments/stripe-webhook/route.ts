@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import type Stripe from 'stripe'
 import { stripe, stripeReady } from '@/lib/stripe-pay'
 import { recordStripeIntent } from '@/lib/stripe-record'
+import { savePayLinkAutopay } from '@/lib/pay-link-autopay'
 
 // Stripe 웹훅 (대시보드 → 개발자 → 웹훅에 https://imcms.vercel.app/api/payments/stripe-webhook 등록)
 //   서명(STRIPE_WEBHOOK_SECRET)을 확인한 뒤, 결제를 다시 조회해서 우리 주문과 맞는 것만 기록한다
@@ -34,7 +35,9 @@ export async function POST(req: NextRequest) {
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
   try {
-    await recordStripeIntent(supabase, intentId)
+    const r = await recordStripeIntent(supabase, intentId)
+    // 결제 전용 링크에서 자동결제에 동의하고 결제한 건: 카드를 자동결제로 저장
+    if (r.status === 'done' && r.pi) await savePayLinkAutopay(supabase, r.pi)
   } catch {
     // 조회 실패면 500 을 돌려 Stripe 가 다시 보내게 한다
     return NextResponse.json({ error: 'retry' }, { status: 500 })

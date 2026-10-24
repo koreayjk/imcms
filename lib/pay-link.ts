@@ -36,6 +36,7 @@ export type PayInvoice = {
   paid_at: string | null
   created_at: string
   manager_email: string | null
+  has_autopay?: boolean // 이미 카드 자동결제가 등록된 매체
 }
 
 export async function invoiceByToken(token: string): Promise<PayInvoice | null> {

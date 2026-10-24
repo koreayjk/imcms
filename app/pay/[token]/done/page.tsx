@@ -4,6 +4,7 @@ import { invoiceByToken, publicDb } from '@/lib/pay-link'
 import { recordStripeIntent } from '@/lib/stripe-record'
 import { stripe, stripeMessage, stripeReady, stripeTestMode } from '@/lib/stripe-pay'
 import { won } from '@/lib/support'
+import { savePayLinkAutopay } from '@/lib/pay-link-autopay'
 import PaymentResult from '@/components/cms/PaymentResult'
 
 export const dynamic = 'force-dynamic'
@@ -32,12 +33,18 @@ export default async function PayLinkDonePage(props: { params: Promise<{ token: 
         </PaymentResult>
       )
     }
+    // 자동결제에 동의하고 결제한 경우: 이 카드를 매체의 자동결제로 저장한다 (웹훅도 같은 일을 한다)
+    const ap = r.pi ? await savePayLinkAutopay(publicDb(), r.pi) : { saved: null, error: null }
+    const autopay = ap.saved
+    const autopayError = ap.error ?? ''
     return (
       <PaymentResult ok title={stripeTestMode() ? '시험 결제가 끝났습니다' : '결제가 끝났습니다'} actions={back}>
         <p className="font-semibold text-ink">{inv.outlet_name} · {inv.invoice_no ?? '이용료'}</p>
         <p className="tabular-nums">{won(Number(inv.total))}</p>
         {r.charge?.receipt_url && <p><a href={r.charge.receipt_url} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">영수증 보기 ↗</a></p>}
         {stripeTestMode() && <p className="text-draft">시험 키로 한 결제라 실제 돈은 나가지 않았고, 청구서는 미납 그대로입니다.</p>}
+        {autopay && <p className="font-semibold text-published">자동결제가 등록되었습니다 · {autopay.company} {autopay.number}<br /><span className="font-normal text-muted">다음 달부터 청구서가 나오면 납부 기한에 이 카드로 자동 결제됩니다. 해지는 편집국 고객센터 → 결제 정보에서 할 수 있습니다.</span></p>}
+        {autopayError && <p className="text-danger">결제는 됐지만 자동결제 등록은 되지 않았습니다. 운영팀에 알려 주세요. ({autopayError})</p>}
         {r.error && <p className="text-danger">결제는 됐지만 기록 중 문제가 생겼습니다. 운영팀에 알려 주세요. ({r.error})</p>}
       </PaymentResult>
     )

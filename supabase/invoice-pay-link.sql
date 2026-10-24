@@ -35,7 +35,8 @@ begin
   return jsonb_build_object(
     'id', i.id, 'invoice_no', i.invoice_no, 'outlet_name', oname, 'month', i.month, 'items', i.items,
     'total', i.total, 'due_date', i.due_date, 'memo', i.memo, 'status', i.status, 'paid_at', i.paid_at,
-    'created_at', i.created_at, 'manager_email', mail);
+    'created_at', i.created_at, 'manager_email', mail,
+    'has_autopay', exists (select 1 from outlet_autopay a where a.outlet_id = i.outlet_id and a.active));
 end $$;
 
 -- 토큰으로 결제 시작 (payment_start 와 같은데 로그인 대신 토큰·서버 열쇠로 확인)
@@ -60,3 +61,52 @@ end $$;
 
 revoke all on function public.invoice_pay_token(text, uuid), public.invoice_by_pay_token(text, text), public.payment_start_by_token(text, text, text, text) from public;
 grant execute on function public.invoice_pay_token(text, uuid), public.invoice_by_pay_token(text, text), public.payment_start_by_token(text, text, text, text) to anon, authenticated;
+
+-- ── 첫 결제 = 자동결제 등록 (결제 전용 링크에서 동의한 경우) ──
+-- 매체의 자동결제 고객 키 (없으면 만든다. autopay_customer_key 와 같은 값이지만 로그인 대신 토큰으로 확인)
+create or replace function public.payment_link_autopay_key(secret text, p_token text) returns jsonb
+language plpgsql security definer set search_path = public, private as $$
+declare i invoices%rowtype; k text; mail text;
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  if p_token is null or length(p_token) < 40 then raise exception '결제 링크가 올바르지 않습니다.'; end if;
+  select * into i from invoices where pay_token = p_token;
+  if i.id is null then raise exception '결제 링크가 올바르지 않습니다.'; end if;
+  select customer_key into k from private.billing_keys where outlet_id = i.outlet_id;
+  if k is null then
+    insert into private.settings (key, value) values ('autopay_ck_' || i.outlet_id::text, 'IMN_' || replace(gen_random_uuid()::text, '-', ''))
+    on conflict (key) do nothing;
+    select value into k from private.settings where key = 'autopay_ck_' || i.outlet_id::text;
+  end if;
+  select nullif(trim(manager_email), '') into mail from outlet_billing where outlet_id = i.outlet_id;
+  return jsonb_build_object('outlet_id', i.outlet_id, 'customer_key', k, 'manager_email', mail, 'outlet_name', (select name from outlets where id = i.outlet_id));
+end $$;
+
+-- 결제 전용 링크에서 자동결제에 동의한 기록 (누가·언제·어느 문구 버전: 담당자 이메일과 매체로 남긴다)
+create or replace function public.payment_link_autopay_consent(secret text, p_token text, p_version text) returns void
+language plpgsql security definer set search_path = public as $$
+declare i invoices%rowtype; mail text;
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  select * into i from invoices where pay_token = p_token;
+  if i.id is null then raise exception '결제 링크가 올바르지 않습니다.'; end if;
+  select nullif(trim(manager_email), '') into mail from outlet_billing where outlet_id = i.outlet_id;
+  insert into consents (user_id, email, kind, version, source, outlet_id)
+  values (null, coalesce(mail, '(결제 전용 링크)'), 'autopay', left(coalesce(p_version, ''), 20), 'pay_link', i.outlet_id);
+end $$;
+
+-- 결제가 끝난 뒤 그 카드를 매체의 자동결제로 저장 (autopay_save 와 같음 + 동의 시각)
+drop function if exists public.payment_link_autopay_save(text, text, text, text, text, text);
+create or replace function public.payment_link_autopay_save(secret text, p_invoice uuid, p_customer_key text, p_billing_key text, p_card_company text, p_card_number text) returns void
+language plpgsql security definer set search_path = public, private as $$
+declare i invoices%rowtype;
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  select * into i from invoices where id = p_invoice and pay_token is not null;
+  if i.id is null then raise exception '결제 링크로 낸 청구서가 아닙니다.'; end if;
+  perform public.autopay_save(secret, i.outlet_id, p_customer_key, p_billing_key, p_card_company, p_card_number, null, 'stripe');
+  update outlet_autopay set consent_at = now() where outlet_id = i.outlet_id;
+end $$;
+
+revoke all on function public.payment_link_autopay_key(text, text), public.payment_link_autopay_consent(text, text, text), public.payment_link_autopay_save(text, uuid, text, text, text, text) from public;
+grant execute on function public.payment_link_autopay_key(text, text), public.payment_link_autopay_consent(text, text, text), public.payment_link_autopay_save(text, uuid, text, text, text, text) to anon, authenticated;

@@ -54,7 +54,7 @@ export default async function PayLinkPage(props: { params: Promise<{ token: stri
         ) : (
           <>
             {canceled && <p role="status" className="mb-3 rounded-lg bg-draft/10 px-4 py-2.5 text-[13.5px]">결제를 마치지 않았습니다. 준비되면 아래 버튼으로 다시 결제해 주세요.</p>}
-            <PayLinkButton token={token} testMode={stripeTestMode()} />
+            <PayLinkButton token={token} testMode={stripeTestMode()} hasAutopay={!!inv.has_autopay} />
           </>
         )}
       </div>

@@ -34,7 +34,7 @@ export function invoiceIssuedMail(inv: IssuedInv) {
       inv.autopay
         ? `등록하신 결제수단(${inv.autopay.card_company ?? ''} ${inv.autopay.card_number ?? ''})으로 ${formatDate(chargeAt)}에 자동 결제됩니다. 바꾸거나 해지하려면 편집국 고객센터 → 결제 정보에서 할 수 있습니다.`
         : inv.payUrl
-          ? '아래 버튼을 누르면 로그인 없이 청구서를 확인하고 카드·간편결제로 바로 결제할 수 있습니다. 이 링크는 이 청구서 전용이니 다른 사람에게 전달하지 마세요.'
+          ? '아래 버튼을 누르면 로그인 없이 청구서를 확인하고 카드·간편결제로 바로 결제할 수 있습니다. 처음 결제할 때 자동결제에 동의하면 그 카드로 다음 달부터 자동 결제됩니다. 이 링크는 이 청구서 전용이니 다른 사람에게 전달하지 마세요.'
           : '편집국 고객센터 → 청구서에서 카드·간편결제로 바로 결제할 수 있습니다.',
     ],
     button: inv.payUrl && !inv.autopay
