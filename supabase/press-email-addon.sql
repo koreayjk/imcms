@@ -192,7 +192,10 @@ begin
   if not public.is_super() then raise exception '총관리자만 바꿀 수 있습니다.'; end if;
   -- 꺼져 있던 것을 켤 때만 켠 날을 기록하고(이미 켜진 것을 다시 눌러도 그대로), 끄면 지운다
   update outlets set
-    press_mail_addon_since = case when coalesce(p_on, false) and not press_mail_addon then (now() at time zone 'Asia/Seoul')::date
+    -- 켠 날. 그달 마지막 날이면 다음 청구서가 이미 만들어진 뒤라서 다음 달 1일부터 청구한다 (다음 달 청구서에 못 넣어 한 달 무료가 되는 것을 막는다)
+    press_mail_addon_since = case when coalesce(p_on, false) and not press_mail_addon
+                                       then (case when date_trunc('month', (now() at time zone 'Asia/Seoul')::date + 1) <> date_trunc('month', (now() at time zone 'Asia/Seoul')::date)
+                                                  then (now() at time zone 'Asia/Seoul')::date + 1 else (now() at time zone 'Asia/Seoul')::date end)
                                   when coalesce(p_on, false) then press_mail_addon_since else null end,
     press_mail_addon = coalesce(p_on, false)
   where id = p_outlet;
