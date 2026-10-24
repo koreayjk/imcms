@@ -109,7 +109,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
       <div className="grid gap-3 sm:grid-cols-2">
         {([
           ['auto', '자동으로 받기', '지메일 · PC에서 한 번, 약 3분', '추천'],
-          ['manual', '그때그때 보내기', '네이버·다음·회사 메일 · 휴대폰도 됨', ''],
+          ['manual', '직접 전달하기', '네이버·다음·회사 메일 · 보도자료가 올 때마다 “전달” 한 번', ''],
         ] as const).map(([k, t, d, badge]) => (
           <button key={k} type="button" onClick={() => setMode(k)} aria-pressed={mode === k}
             className={`rounded-lg border-2 px-5 py-4 text-left transition ${mode === k ? 'border-ink bg-white' : 'border-line bg-white/60 hover:border-ink/40'}`}>
@@ -205,12 +205,31 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
 
       {mode === 'manual' && (
         <section className="space-y-4 rounded-lg border border-line bg-white p-4 text-[14.5px] sm:p-6 leading-[1.8]">
-          <p className="text-[17px] font-bold">보도자료 메일을 열고 “전달”만 누르면 됩니다</p>
-          <ol className="list-decimal space-y-1.5 pl-5">
-            <li>처음 한 번: 메일 주소록에 <strong>“IM 보도자료함”</strong> 이름으로 내 전용 주소를 저장 <CopyButton text={address} label="주소 복사" /></li>
-            <li>보도자료 메일을 열고 <Btn>전달</Btn> → 받는 사람에 “IM” 입력 → <Btn>보내기</Btn></li>
-          </ol>
-          <p className="text-[13px] text-muted">본문은 비워 두셔도 됩니다. 보낸 기관과 제목은 IM 뉴스룸이 알아서 찾습니다. 휴대폰 메일 앱에서도 똑같이 됩니다.</p>
+          <p className="text-[17px] font-bold">보도자료 메일이 올 때마다 “전달”을 한 번 눌러 주세요</p>
+          <p className="text-[13.5px] text-muted">지메일은 보도자료만 골라 자동으로 넘길 수 있지만, 네이버·다음 메일은 그런 설정을 쓰기 어렵습니다. 대신 <strong>처음에 주소록에 한 번 저장</strong>해 두면, 이후에는 보도자료 메일을 열어 <Btn>전달</Btn>만 누르면(메일 한 통에 5초) 보도자료함에 들어옵니다.</p>
+
+          <div className="rounded-lg bg-[#F8F9FA] px-4 py-4">
+            <p className="font-bold">① 처음 한 번만 — 내 전용 주소를 주소록에 저장</p>
+            <p className="mt-1 text-[13px] text-muted">먼저 위의 <strong>내 전용 주소</strong>를 복사해 두세요. <CopyButton text={address} label="주소 복사" /></p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5">
+              <li><strong>네이버 메일</strong> 화면 맨 위 가운데 아이콘들 중 <strong>사람 모양(주소록)</strong>을 눌러 주소록으로 갑니다.</li>
+              <li>왼쪽 위 <Btn>연락처 추가</Btn>를 누르면 입력 창이 열립니다.</li>
+              <li><strong>이름</strong> 칸(성 칸 옆)에 <strong>IM 보도자료함</strong>이라고 씁니다. <span className="text-muted">(성 칸은 비워 둬도 됩니다. 알아보기 쉬운 이름이면 아무거나 괜찮습니다.)</span></li>
+              <li><strong>이메일</strong> 칸에 복사해 둔 <strong>내 전용 주소</strong>를 붙여넣습니다 <span className="text-muted">(Ctrl+V · 맥은 ⌘+V)</span>. 이름 칸이 아니라 이메일 칸입니다.</li>
+              <li><Btn>저장</Btn>을 누르면 끝입니다. 다른 칸은 비워 두세요.</li>
+            </ol>
+          </div>
+
+          <div className="rounded-lg bg-[#F8F9FA] px-4 py-4">
+            <p className="font-bold">② 보도자료 메일이 올 때마다</p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5">
+              <li>받은메일함에서 보도자료 메일을 열고 <Btn>전달</Btn>을 누릅니다.</li>
+              <li><strong>받는 사람</strong> 칸에 <strong>IM</strong>이라고 입력하면 주소록에 저장한 <strong>IM 보도자료함</strong>이 나타납니다. 그것을 고릅니다.</li>
+              <li><Btn>보내기</Btn>를 누르면 끝입니다. 본문은 비워 두셔도 됩니다.</li>
+            </ol>
+          </div>
+
+          <p className="text-[13px] text-muted">보낸 기관과 제목, 첨부한 사진은 IM 뉴스룸이 알아서 찾아 보도자료함에 “메일” 표시로 넣어 줍니다. 휴대폰 메일 앱에서도 같은 방법으로 됩니다. 다음 메일·회사 메일도 주소록(연락처)에 저장하는 방법만 조금 다를 뿐 똑같습니다.</p>
           <details className="text-[13px] text-muted">
             <summary className="cursor-pointer font-semibold text-ink">회사 메일을 자동으로 받고 싶다면</summary>
             <p className="mt-1.5">구글 워크스페이스(주소가 @회사도메인이어도 화면이 지메일)면 “자동으로 받기”와 똑같이 하면 됩니다. 아웃룩·네이버웍스는 “규칙(자동 전달)” 메뉴에서 <strong>제목에 ‘보도자료’ 포함 → 내 전용 주소로 전달</strong>을 만드세요. 저장이 안 되면 회사 전산 담당자에게 “외부 주소 자동 전달 허용”을 요청하세요.</p>
