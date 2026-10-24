@@ -31,13 +31,15 @@ export async function saveOutletPlan(form: FormData) {
     updated_at: new Date().toISOString(),
   })
   if (error) back(/outlet_plans/.test(error.message) ? 'Supabase에서 billing-auto.sql을 먼저 실행해 주세요.' : `저장하지 못했습니다: ${error.message}`, 'error')
-  // 추가 매체는 베이직 사양 (AI 월 300회·뉴스레터 없음 등) — 요금제를 베이직으로 맞춘다
+  // 추가 매체는 고른 요금제(사양)로 맞춘다: 베이직(기본) · 스탠다드 · 프리미엄 — AI 한도·뉴스레터 등이 그 요금제를 따른다
   let note = ''
   if (bill_to) {
+    const want = (['basic', 'standard', 'premium'] as const).find((x) => x === String(form.get('extra_plan') ?? '')) ?? 'basic'
     const { data: cur } = await supabase.from('outlets').select('plan').eq('id', outlet_id).maybeSingle()
-    if (cur && cur.plan !== 'basic') {
-      const { error: e } = await supabase.from('outlets').update({ plan: 'basic' }).eq('id', outlet_id)
-      note = e ? ` (요금제를 베이직으로 바꾸지 못했습니다: ${e.message})` : ' 추가 매체라 요금제를 베이직으로 맞췄습니다.'
+    if (cur && cur.plan !== want) {
+      const { error: e } = await supabase.from('outlets').update({ plan: want }).eq('id', outlet_id)
+      const label = { basic: '베이직', standard: '스탠다드', premium: '프리미엄' }[want]
+      note = e ? ` (요금제를 ${label}로 바꾸지 못했습니다: ${e.message})` : ` 추가 매체 요금제를 ${label}로 맞췄습니다.`
     }
   }
   revalidatePath('/support/invoices/auto')

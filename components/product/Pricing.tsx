@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { appLink } from '@/lib/product'
 
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PLANS, REGULAR_AFTER_LABEL, BETA_PERIOD_LABEL, SETUP_FEE, SETUP_ITEMS, SETUP_WAIVER_NOTE, betaDaysLeft, isBeta, planCharge, won, type PlanId } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, EXTRA_AI_FEE, EXTRA_OUTLET_FEES, PLANS, REGULAR_AFTER_LABEL, BETA_PERIOD_LABEL, SETUP_FEE, SETUP_ITEMS, SETUP_WAIVER_NOTE, betaDaysLeft, isBeta, planCharge, won, type PlanId } from '@/lib/pricing'
 
 // 소개 페이지 요금표 (금액은 lib/pricing.ts)
 //   요금제의 신청 버튼을 누르면 아래 신청서에 그 요금제·결제 방식이 골라진다 (im-pick-plan 이벤트)
@@ -175,7 +175,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
 
       <dl className="mt-4 grid gap-3 text-[14px] sm:grid-cols-2">
         {[
-          ['매체 추가', `${won(EXTRA_OUTLET_FEE)}/월`, '프리미엄 전용 · 매체 2개까지 포함, 3번째 매체부터 매체마다 (추가 매체는 베이직 사양)'],
+          ['매체 추가', `${won(EXTRA_OUTLET_FEES.basic)}부터/월`, `프리미엄 전용 · 매체 2개까지 포함, 3번째 매체부터 매체마다. 추가 매체 사양을 고릅니다: 베이직 ${won(EXTRA_OUTLET_FEES.basic)} · 스탠다드 ${won(EXTRA_OUTLET_FEES.standard)} · 프리미엄 ${won(EXTRA_OUTLET_FEES.premium)} (월)`],
           ['AI 사용 추가', won(EXTRA_AI_FEE), '월 한도(초안·법적 검수)를 넘으면 100회마다'],
         ].map(([k, v, d]) => (
           <div key={k} className="rounded-[1.25rem] bg-white p-5 ring-1 ring-black/5">

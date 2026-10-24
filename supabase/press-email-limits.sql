@@ -3,12 +3,12 @@
 --   · 기준: 한국 시간 하루(0시~24시). 그날 한도를 넘으면 그날 오는 메일은 받지 않고(나중에 다시 가져오지도 않음),
 --           다음 날 0시부터는 새로 오는 메일을 다시 한도까지 받습니다
 --   · 언론사 안에서 기자가 여러 명이어도 합쳐서 센다
---   · 한도는 요금제마다 기본값이 있고(베이직 10 · 스탠다드 20 · 프리미엄 40 · 엔터프라이즈/요금제 없음 100건), 언론사 한 곳만 따로 정할 수도 있습니다
+--   · 한도는 요금제마다 기본값이 있고(베이직 10 · 스탠다드 30 · 프리미엄 50 · 엔터프라이즈/요금제 없음 100건), 언론사 한 곳만 따로 정할 수도 있습니다
 --     (편집국 보도자료 → 메일로 받기 설정 맨 아래, 총관리자 화면에서 바꿉니다. 이 파일을 다시 실행해도 바꿔 둔 값은 그대로입니다)
 --   · 여러 번 실행해도 되고, 이전에 있던 기자별 한도 버전도 이 파일이 대신합니다. press-email-fix-dedupe.sql 의 수정도 들어 있습니다
 
 insert into private.settings (key, value) values
-  ('press_mail_limit_basic', '10'), ('press_mail_limit_standard', '20'), ('press_mail_limit_premium', '40'), ('press_mail_limit_other', '100')
+  ('press_mail_limit_basic', '10'), ('press_mail_limit_standard', '30'), ('press_mail_limit_premium', '50'), ('press_mail_limit_other', '100')
 on conflict (key) do nothing;
 
 

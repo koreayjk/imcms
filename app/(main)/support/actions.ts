@@ -273,7 +273,7 @@ export async function invoiceDraft(outletId: string, month: string): Promise<{ i
     const [{ data: o }, { data: p }, { data: kids }] = await Promise.all([
       supabase.from('outlets').select('id, name, plan').eq('id', outletId).maybeSingle(),
       supabase.from('outlet_plans').select('*').eq('outlet_id', outletId).maybeSingle(),
-      supabase.from('outlet_plans').select('outlet_id, outlet:outlets!outlet_plans_outlet_id_fkey(name)').eq('bill_to', outletId),
+      supabase.from('outlet_plans').select('outlet_id, outlet:outlets!outlet_plans_outlet_id_fkey(name, plan)').eq('bill_to', outletId),
     ])
     if (!o) return { items: [], note: '매체를 찾지 못했습니다.' }
     const plan = p as { cycle?: string; beta?: boolean; start_month?: string | null; setup_fee_pending?: boolean; custom_monthly?: number | null; bill_to?: string | null } | null
@@ -283,7 +283,7 @@ export async function invoiceDraft(outletId: string, month: string): Promise<{ i
       cycle: plan?.cycle === 'annual' ? 'annual' : 'monthly', beta: !!plan?.beta, start_month: plan?.start_month ?? null,
       setup_fee_pending: !!plan?.setup_fee_pending, custom_monthly: plan?.custom_monthly ?? null, has_invoice: false,
       over_count: 0, autopay: null,
-      children: ((kids ?? []) as unknown as { outlet_id: string; outlet: { name: string } | null }[]).map((k) => ({ outlet_id: k.outlet_id, name: k.outlet?.name ?? '추가 매체', over_count: 0 })),
+      children: ((kids ?? []) as unknown as { outlet_id: string; outlet: { name: string; plan: string | null } | null }[]).map((k) => ({ outlet_id: k.outlet_id, name: k.outlet?.name ?? '추가 매체', plan: k.outlet?.plan ?? null, over_count: 0 })),
     }
     partial = true
   }

@@ -41,7 +41,7 @@ begin
       'autopay', (select jsonb_build_object('card_company', a.card_company, 'card_number', a.card_number) from outlet_autopay a where a.outlet_id = o.id and a.active),
       'children', coalesce((
         select jsonb_agg(jsonb_build_object(
-          'outlet_id', c.id, 'name', c.name,
+          'outlet_id', c.id, 'name', c.name, 'plan', c.plan,
           'over_count', (select count(*) from ai_usage u where u.outlet_id = c.id and u.over_limit and u.created_at >= prev_from and u.created_at < prev_to)
         ) order by c.name)
         from outlet_plans cp join outlets c on c.id = cp.outlet_id

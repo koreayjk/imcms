@@ -52,7 +52,14 @@ export const SETUP_ITEMS: [string, string][] = [
 ]
 // 매체 추가: 프리미엄 전용. 프리미엄은 추가 매체 1개 포함(매체 2개), 그다음부터 매체마다.
 //   추가 매체는 베이직 사양 (AI 월 300회·뉴스레터 없음 등, extra-outlet-basic.sql)
-export const EXTRA_OUTLET_FEE = 90_000
+export const EXTRA_OUTLET_FEE = 90_000 // 베이직 사양 추가 매체 (약관·요금표에 적힌 기본 금액)
+//   추가 매체의 요금제(사양)를 고를 수 있다: 베이직 9만 · 스탠다드 11만 · 프리미엄 15만 (월). 프리미엄에 포함된 1개는 베이직 사양까지만 포함이고,
+//   더 높은 사양을 고르면 베이직 금액과의 차액만 청구한다
+export const EXTRA_OUTLET_FEES = { basic: 90_000, standard: 110_000, premium: 150_000 } as const
+export type ExtraPlan = keyof typeof EXTRA_OUTLET_FEES
+export const extraPlanOf = (plan: string | null | undefined): ExtraPlan => (plan === 'standard' || plan === 'premium' ? plan : 'basic')
+export const extraOutletFee = (plan: string | null | undefined) => EXTRA_OUTLET_FEES[extraPlanOf(plan)]
+export const EXTRA_PLAN_LABEL: Record<ExtraPlan, string> = { basic: '베이직', standard: '스탠다드', premium: '프리미엄' }
 export const PREMIUM_INCLUDED_EXTRA = 1
 export const EXTRA_AI_FEE = 11_000 // 100회마다 (AI 초안·법적 검수 합계)
 
@@ -93,7 +100,7 @@ export const PLANS: Plan[] = [
     for: '방문자가 많거나 매체를 여럿 운영하는 언론사',
     monthly: 230_000,
     specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '주 2회 · 회당 5,000명']],
-    extras: ['홈페이지 맞춤 수정 지원', '그룹장 화면 · 여러 매체 동시 송고', '3번째 매체부터 매체마다 월 90,000원 (베이직 사양)', '우선 지원'],
+    extras: ['홈페이지 맞춤 수정 지원', '그룹장 화면 · 여러 매체 동시 송고', '3번째 매체부터 매체마다 월 90,000원(베이직)·110,000원(스탠다드)·150,000원(프리미엄) 중 선택', '우선 지원'],
   },
   {
     id: 'enterprise',

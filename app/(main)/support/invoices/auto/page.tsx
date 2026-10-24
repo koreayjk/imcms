@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { billingItems, billingTargets, dueDate, kstToday, type BillingTarget } from '@/lib/billing'
-import { ANNUAL_MONTHS, BETA_RATE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, planById } from '@/lib/pricing'
+import { ANNUAL_MONTHS, BETA_RATE, EXTRA_OUTLET_FEES, EXTRA_PLAN_LABEL, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, extraPlanOf, planById } from '@/lib/pricing'
 import { monthLabel, won } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import { runBillingNow, saveOutletPlan } from './actions'
@@ -68,7 +68,7 @@ export default async function AutoBillingPage(props: Props) {
         <ul className="mt-1 list-disc space-y-0.5 pl-5">
           <li>요금제 월 이용료 (요금제는 <Link href="/admin/ai-usage" className="text-[#2F6BF0] underline">AI 사용량</Link> 화면에서 정합니다) · 베타 반값이면 {Math.round(BETA_RATE * 100)}%</li>
           <li>1년 결제는 첫 청구 월부터 12개월마다 한 번, {ANNUAL_MONTHS}개월 값</li>
-          <li>추가 매체(프리미엄 전용): &lsquo;청구 받을 매체&rsquo;를 고른 매체는 그 매체 청구서에 월 {won(EXTRA_OUTLET_FEE)}으로 붙습니다 (프리미엄은 {PREMIUM_INCLUDED_EXTRA}개 포함). 추가 매체로 저장하면 그 매체 요금제는 베이직으로 맞춰집니다 (AI 월 300회 등)</li>
+          <li>추가 매체(프리미엄 전용): &lsquo;청구 받을 매체&rsquo;를 고른 매체는 그 매체 청구서에 요금제(사양)에 따라 월 {won(EXTRA_OUTLET_FEES.basic)}(베이직) · {won(EXTRA_OUTLET_FEES.standard)}(스탠다드) · {won(EXTRA_OUTLET_FEES.premium)}(프리미엄)으로 붙습니다. 프리미엄은 베이직 사양 {PREMIUM_INCLUDED_EXTRA}개가 포함이고, 더 높은 사양을 고르면 베이직 금액과의 차액만 청구합니다. 저장하면 그 매체 요금제가 고른 사양으로 맞춰집니다 (AI 한도·뉴스레터 등이 그 요금제를 따름)</li>
           <li>지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다) · 세팅비 {won(SETUP_FEE)}는 체크한 경우 다음 청구서에 한 번</li>
         </ul>
         {isSuper && !missingSql && (
@@ -144,6 +144,12 @@ export default async function AutoBillingPage(props: Props) {
                   <select name="bill_to" defaultValue={p?.bill_to ?? ''} className="field-input py-1.5">
                     <option value="">이 매체 (따로 청구)</option>
                     {(outlets ?? []).filter((x) => x.id !== o.id).map((x) => <option key={x.id} value={x.id}>{x.name} 청구서에 추가 매체로</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="field-label">추가 매체 요금제 (청구 받을 매체를 고른 경우)</span>
+                  <select name="extra_plan" defaultValue={p?.bill_to ? extraPlanOf(o.plan) : 'basic'} className="field-input py-1.5">
+                    {(['basic', 'standard', 'premium'] as const).map((k) => <option key={k} value={k}>{EXTRA_PLAN_LABEL[k]} 사양 · 월 {won(EXTRA_OUTLET_FEES[k])}</option>)}
                   </select>
                 </label>
                 <label className="block">

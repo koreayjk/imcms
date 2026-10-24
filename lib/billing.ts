@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ANNUAL_MONTHS, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEE, PREMIUM_INCLUDED_EXTRA, SETUP_FEE, addMonth, annualPrice, betaRateFor, planById } from './pricing'
+import { ANNUAL_MONTHS, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEES, EXTRA_PLAN_LABEL, PREMIUM_INCLUDED_EXTRA, extraOutletFee, extraPlanOf, SETUP_FEE, addMonth, annualPrice, betaRateFor, planById } from './pricing'
 import { invoiceTotals, type InvoiceItem } from './support'
 import { paymentDbSecret } from './toss'
 import { notifyInvoiceDunning, notifyInvoiceIssued } from './invoice-mail'
@@ -8,7 +8,7 @@ import { notifyInvoiceDunning, notifyInvoiceIssued } from './invoice-mail'
 //   매월 1일 발행 · 5일 납부 · 10일까지 유예. 1년 결제는 시작 월부터 12개월마다 한 번(11개월 값)
 //   항목: 요금제 이용료(베타 반값) · 추가 매체 · 지난달 AI 추가 사용(100회마다) · 세팅비(처음 한 번)
 
-export type BillingChild = { outlet_id: string; name: string; over_count: number }
+export type BillingChild = { outlet_id: string; name: string; over_count: number; plan?: string | null }
 export type BillingTarget = {
   outlet_id: string
   name: string
@@ -63,11 +63,17 @@ export function billingItems(t: BillingTarget, month: string) {
     }
     // 매체 추가는 프리미엄 전용: 추가 매체 1개 포함, 그다음부터 매체마다 (맞춤 금액이면 포함 없이 모두 청구)
     const included = t.plan === 'premium' && t.custom_monthly == null ? PREMIUM_INCLUDED_EXTRA : 0
-    for (const c of t.children.slice(included)) {
-      items.push(annual
-        ? { name: `추가 매체 · ${c.name} (1년, ${ANNUAL_MONTHS}개월 값)`, qty: 1, unit_price: EXTRA_OUTLET_FEE * ANNUAL_MONTHS }
-        : { name: `추가 매체 · ${c.name}`, qty: 1, unit_price: EXTRA_OUTLET_FEE })
-    }
+    // 추가 매체는 요금제(사양)에 따라 금액이 다르다 (베이직 9만 · 스탠다드 11만 · 프리미엄 15만).
+    //   프리미엄에 포함된 추가 매체는 베이직 사양까지만 포함이라, 더 높은 사양이면 베이직 금액과의 차액만 청구한다
+    const mult = annual ? ANNUAL_MONTHS : 1
+    const when = annual ? ` (1년, ${ANNUAL_MONTHS}개월 값)` : ''
+    t.children.forEach((c, i) => {
+      const kind = extraPlanOf(c.plan)
+      const fee = i < included ? extraOutletFee(c.plan) - EXTRA_OUTLET_FEES.basic : extraOutletFee(c.plan)
+      if (fee <= 0) return
+      const spec = kind === 'basic' ? '' : ` ${EXTRA_PLAN_LABEL[kind]} 사양${i < included ? ' 차액' : ''}`
+      items.push({ name: `추가 매체 · ${c.name}${spec}${when}`, qty: 1, unit_price: fee * mult })
+    })
   }
 
   // 지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다). 본 매체와 추가 매체가 넘긴 횟수를 합쳐 한 번에 센다
