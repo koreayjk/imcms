@@ -4,7 +4,7 @@ import { getCmsContext } from '@/lib/cms'
 import PressEmailSetup from '@/components/cms/PressEmailSetup'
 import MailServiceSettings from '@/components/cms/MailServiceSettings'
 import PressMailLimits from '@/components/cms/PressMailLimits'
-import { getMyInbox, getOutletLimits } from './actions'
+import { getMyInbox, getMailLimits } from './actions'
 
 export default async function PressEmailPage() {
   const { supabase, isSuper } = await getCmsContext()
@@ -13,7 +13,7 @@ export default async function PressEmailPage() {
   const isAdmin = isSuper
   const { data: admin } = isAdmin ? await supabase.rpc('admin_press_mail_settings') : { data: null }
   const settings = (Array.isArray(admin) ? admin[0] : admin) as { secret: string | null; address: string | null } | null
-  const limits = isAdmin ? await getOutletLimits() : null
+  const limits = isAdmin ? await getMailLimits() : null
   const host = (await headers()).get('host') ?? 'imcms.vercel.app'
   const webhook = settings?.secret ? `https://${host}/api/inbound/email?key=${settings.secret}` : null
 
@@ -39,7 +39,7 @@ export default async function PressEmailPage() {
 
       {isAdmin && !error && <MailServiceSettings address={settings?.address ?? null} webhook={webhook} />}
       {isAdmin && !error && (limits
-        ? <PressMailLimits initial={limits} defaultLimit={30} />
+        ? <PressMailLimits initial={limits.outlets} plans={limits.plans} />
         : <p className="mt-6 rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">언론사별 하루 한도를 쓰려면 Supabase에서 <code>supabase/press-email-limits.sql</code>을 실행해 주세요.</p>)}
     </div>
   )

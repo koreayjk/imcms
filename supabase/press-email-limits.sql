@@ -3,10 +3,15 @@
 --   · 기준: 한국 시간 하루(0시~24시). 그날 한도를 넘으면 그날 오는 메일은 받지 않고(나중에 다시 가져오지도 않음),
 --           다음 날 0시부터는 새로 오는 메일을 다시 한도까지 받습니다
 --   · 언론사 안에서 기자가 여러 명이어도 합쳐서 센다
---   · 기본 한도는 아래 숫자(30건). 언론사마다 따로 정하려면 편집국 보도자료 → 메일로 받기 설정 맨 아래(총관리자 화면)에서 바꿉니다
+--   · 한도는 요금제마다 기본값이 있고(베이직 10 · 스탠다드 20 · 프리미엄 40 · 엔터프라이즈/요금제 없음 100건), 언론사 한 곳만 따로 정할 수도 있습니다
+--     (편집국 보도자료 → 메일로 받기 설정 맨 아래, 총관리자 화면에서 바꿉니다. 이 파일을 다시 실행해도 바꿔 둔 값은 그대로입니다)
 --   · 여러 번 실행해도 되고, 이전에 있던 기자별 한도 버전도 이 파일이 대신합니다. press-email-fix-dedupe.sql 의 수정도 들어 있습니다
 
-insert into private.settings (key, value) values ('press_mail_daily_limit', '30') on conflict (key) do update set value = excluded.value;
+insert into private.settings (key, value) values
+  ('press_mail_limit_basic', '10'), ('press_mail_limit_standard', '20'), ('press_mail_limit_premium', '40'), ('press_mail_limit_other', '100')
+on conflict (key) do nothing;
+
+
 
 -- 언론사별 하루 한도 (없으면 기본 한도)
 create table if not exists press_mail_limits (
@@ -24,6 +29,15 @@ create table if not exists press_mail_drops (
   primary key (outlet_id, day)
 );
 alter table press_mail_drops enable row level security;
+
+-- 언론사의 오늘 한도: 그 언론사에 따로 정한 값 → 요금제 기본값 → (그 밖) 기타 기본값
+create or replace function public.press_mail_limit_of(o uuid) returns int language sql stable security definer set search_path = public, private as $$
+  select coalesce(
+    (select l.daily_limit from press_mail_limits l where l.outlet_id = o),
+    (select value::int from private.settings where key = 'press_mail_limit_' || coalesce((select case plan when 'basic' then 'basic' when 'standard' then 'standard' when 'premium' then 'premium' else 'other' end from outlets where id = o), 'other')),
+    30)
+$$;
+revoke all on function public.press_mail_limit_of(uuid) from public, anon, authenticated;
 
 alter table press_inboxes add column if not exists dropped_count int not null default 0;
 alter table press_inboxes add column if not exists last_dropped_at timestamptz;
@@ -58,10 +72,7 @@ begin
 
   -- 이 기자가 속한 언론사의 오늘 한도
   select outlet_id into oid from profiles where id = owner;
-  select coalesce(
-    (select daily_limit from press_mail_limits where outlet_id = oid),
-    (select value::int from private.settings where key = 'press_mail_daily_limit'),
-    30) into lim;
+  select public.press_mail_limit_of(oid) into lim;
   if oid is not null then
     select count(*) into used from press_releases r
       where r.source_key = 'email' and r.fetched_at >= day_start
@@ -119,8 +130,7 @@ begin
     insert into press_inboxes (user_id, token) values (auth.uid(), t);
   end if;
   select outlet_id into oid from profiles where id = auth.uid();
-  select coalesce((select l.daily_limit from press_mail_limits l where l.outlet_id = oid),
-                  (select value::int from private.settings where key = 'press_mail_daily_limit'), 30) into lim;
+  select public.press_mail_limit_of(oid) into lim;
   if oid is not null then
     select count(*)::int into used from press_releases r
       where r.source_key = 'email' and r.fetched_at >= day_start and r.created_by in (select id from profiles where outlet_id = oid);
@@ -136,22 +146,45 @@ begin
     from press_inboxes i where i.user_id = auth.uid();
 end $$;
 
--- 총관리자: 언론사별 오늘 한도·사용량 보기
+-- 총관리자: 언론사별 오늘 한도·사용량 보기 (plan_limit = 그 언론사 요금제의 기본 한도)
+drop function if exists public.admin_press_mail_limits();
 create or replace function public.admin_press_mail_limits()
-returns table (outlet_id uuid, outlet_name text, daily_limit int, is_custom boolean, used_today int, dropped_today int)
+returns table (outlet_id uuid, outlet_name text, plan text, plan_limit int, daily_limit int, is_custom boolean, used_today int, dropped_today int)
 language plpgsql stable security definer set search_path = public, private as $$
-declare def int;
+declare
   day_start timestamptz := date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul';
 begin
   if not public.is_super() then raise exception '총관리자만 볼 수 있습니다.'; end if;
-  select coalesce((select value::int from private.settings where key = 'press_mail_daily_limit'), 30) into def;
   return query
-    select o.id, o.name::text, coalesce(l.daily_limit, def), l.outlet_id is not null,
+    select o.id, o.name::text, coalesce(o.plan::text, ''),
+           coalesce((select value::int from private.settings where key = 'press_mail_limit_' || case o.plan when 'basic' then 'basic' when 'standard' then 'standard' when 'premium' then 'premium' else 'other' end), 30),
+           public.press_mail_limit_of(o.id), l.outlet_id is not null,
            (select count(*)::int from press_releases r where r.source_key = 'email' and r.fetched_at >= day_start
               and r.created_by in (select p.id from profiles p where p.outlet_id = o.id)),
            coalesce((select d.n from press_mail_drops d where d.outlet_id = o.id and d.day = (now() at time zone 'Asia/Seoul')::date), 0)
     from outlets o left join press_mail_limits l on l.outlet_id = o.id
     order by o.name;
+end $$;
+
+-- 총관리자: 요금제별 기본 한도 보기·바꾸기 (basic·standard·premium·other)
+create or replace function public.admin_press_mail_plan_limits()
+returns table (plan text, daily_limit int)
+language plpgsql stable security definer set search_path = public, private as $$
+begin
+  if not public.is_super() then raise exception '총관리자만 볼 수 있습니다.'; end if;
+  return query select replace(s.key, 'press_mail_limit_', ''), s.value::int from private.settings s
+    where s.key in ('press_mail_limit_basic', 'press_mail_limit_standard', 'press_mail_limit_premium', 'press_mail_limit_other')
+    order by case s.key when 'press_mail_limit_basic' then 1 when 'press_mail_limit_standard' then 2 when 'press_mail_limit_premium' then 3 else 4 end;
+end $$;
+
+create or replace function public.admin_set_press_mail_plan_limit(p_plan text, p_limit int)
+returns void language plpgsql security definer set search_path = public, private as $$
+begin
+  if not public.is_super() then raise exception '총관리자만 바꿀 수 있습니다.'; end if;
+  if p_plan not in ('basic', 'standard', 'premium', 'other') then raise exception '요금제 이름이 올바르지 않습니다.'; end if;
+  if p_limit is null or p_limit < 0 or p_limit > 2000 then raise exception '하루 한도는 0~2000건 사이로 정해 주세요.'; end if;
+  insert into private.settings (key, value) values ('press_mail_limit_' || p_plan, p_limit::text)
+  on conflict (key) do update set value = excluded.value;
 end $$;
 
 -- 총관리자: 언론사 한도 정하기 (p_limit 이 null 이면 기본 한도로 되돌림)
@@ -173,6 +206,10 @@ grant execute on function public.press_ingest_email(text, text, text, text, text
 revoke all on function public.my_press_inbox() from public, anon;
 grant execute on function public.my_press_inbox() to authenticated;
 revoke all on function public.admin_press_mail_limits() from public, anon;
+revoke all on function public.admin_press_mail_plan_limits() from public, anon;
+grant execute on function public.admin_press_mail_plan_limits() to authenticated;
+revoke all on function public.admin_set_press_mail_plan_limit(text, int) from public, anon;
+grant execute on function public.admin_set_press_mail_plan_limit(text, int) to authenticated;
 grant execute on function public.admin_press_mail_limits() to authenticated;
 revoke all on function public.admin_set_press_mail_limit(uuid, int) from public, anon;
 grant execute on function public.admin_set_press_mail_limit(uuid, int) to authenticated;

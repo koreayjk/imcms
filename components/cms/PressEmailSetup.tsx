@@ -105,7 +105,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
         </p>
         {inbox?.daily_limit != null && (
           <p className="mt-1.5 text-[12.5px] text-muted">
-            우리 언론사는 <strong>하루 {inbox.daily_limit}건</strong>까지 메일로 받습니다(기자들이 받은 것을 합쳐서, 한국 시간 0시에 새로 시작).
+            우리 언론사(요금제 기준)는 <strong>하루 {inbox.daily_limit}건</strong>까지 메일로 받습니다(기자들이 받은 것을 합쳐서, 한국 시간 0시에 새로 시작).
             오늘 {inbox.used_today ?? 0}건 받았습니다. 한도를 넘은 날의 메일은 받지 않으니 <strong>보도자료만</strong> 넘어오게 설정해 주세요.
           </p>
         )}

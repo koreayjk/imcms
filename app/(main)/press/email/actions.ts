@@ -35,22 +35,35 @@ export async function saveMailAddress(_prev: AddressState, form: FormData): Prom
   return { ok: true }
 }
 
-export type OutletLimit = { outlet_id: string; outlet_name: string; daily_limit: number; is_custom: boolean; used_today: number; dropped_today: number }
+export type OutletLimit = { outlet_id: string; outlet_name: string; plan: string; plan_limit: number; daily_limit: number; is_custom: boolean; used_today: number; dropped_today: number }
+export type PlanLimit = { plan: 'basic' | 'standard' | 'premium' | 'other'; daily_limit: number }
 
-// 총관리자: 언론사별 하루 한도 목록 (press-email-limits.sql 실행 전이면 null)
-export async function getOutletLimits(): Promise<OutletLimit[] | null> {
+// 총관리자: 요금제별 기본 한도 + 언론사별 한도 목록 (press-email-limits.sql 실행 전이면 null)
+export async function getMailLimits(): Promise<{ outlets: OutletLimit[]; plans: PlanLimit[] } | null> {
   const { supabase, isSuper } = await getCmsContext()
   if (!isSuper) return null
-  const { data, error } = await supabase.rpc('admin_press_mail_limits')
-  if (error) return null
-  return (data ?? []) as OutletLimit[]
+  const [o, p] = await Promise.all([supabase.rpc('admin_press_mail_limits'), supabase.rpc('admin_press_mail_plan_limits')])
+  if (o.error || p.error) return null
+  return { outlets: (o.data ?? []) as OutletLimit[], plans: (p.data ?? []) as PlanLimit[] }
 }
+
+const okLimit = (n: number | null) => n === null || (Number.isInteger(n) && n >= 0 && n <= 2000)
 
 export async function saveOutletLimit(outletId: string, limit: number | null): Promise<{ ok?: boolean; error?: string }> {
   const { supabase, isSuper } = await getCmsContext()
   if (!isSuper) return { error: '총관리자만 바꿀 수 있습니다.' }
-  if (limit !== null && (!Number.isInteger(limit) || limit < 0 || limit > 2000)) return { error: '하루 한도는 0~2000 사이의 숫자로 적어 주세요.' }
+  if (!okLimit(limit)) return { error: '하루 한도는 0~2000 사이의 숫자로 적어 주세요.' }
   const { error } = await supabase.rpc('admin_set_press_mail_limit', { p_outlet: outletId, p_limit: limit })
+  if (error) return { error: error.message }
+  revalidatePath('/press/email')
+  return { ok: true }
+}
+
+export async function savePlanLimit(plan: PlanLimit['plan'], limit: number): Promise<{ ok?: boolean; error?: string }> {
+  const { supabase, isSuper } = await getCmsContext()
+  if (!isSuper) return { error: '총관리자만 바꿀 수 있습니다.' }
+  if (!okLimit(limit) || limit === null) return { error: '하루 한도는 0~2000 사이의 숫자로 적어 주세요.' }
+  const { error } = await supabase.rpc('admin_set_press_mail_plan_limit', { p_plan: plan, p_limit: limit })
   if (error) return { error: error.message }
   revalidatePath('/press/email')
   return { ok: true }
