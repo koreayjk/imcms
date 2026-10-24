@@ -15,6 +15,8 @@ export type InboundMail = {
   HtmlBody?: string
   Headers?: { Name: string; Value: string }[]
   Attachments?: { Name?: string; Content?: string; ContentType?: string; ContentLength?: number }[]
+  // 첨부를 가져오는 중 있었던 일 (원인 확인용, 비밀 값 없음)
+  AttachNotes?: string[]
 }
 
 export type ParsedMail =

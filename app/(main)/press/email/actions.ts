@@ -10,6 +10,13 @@ export type MyInbox = {
   verify_at: string | null
   last_received_at: string | null
   received_count: number
+  // press-email-limits.sql 실행 전에는 없다
+  dropped_count?: number
+  last_dropped_at?: string | null
+  daily_limit?: number
+  monthly_limit?: number
+  used_today?: number
+  used_month?: number
 }
 
 export async function getMyInbox(): Promise<{ inbox: MyInbox | null; error?: string }> {

@@ -103,6 +103,18 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
             : '아직 받은 보도자료가 없습니다.'}
           {' '}이 주소는 나만 쓰는 주소이니 다른 사람에게 알려주지 마세요.
         </p>
+        {inbox?.daily_limit != null && inbox.monthly_limit != null && (
+          <p className="mt-1.5 text-[12.5px] text-muted">
+            받는 양은 기자 한 명당 <strong>하루 {inbox.daily_limit}건 · 한 달 {inbox.monthly_limit}건</strong>까지입니다
+            (지금 오늘 {inbox.used_today ?? 0}건 · 이번 달 {inbox.used_month ?? 0}건). 넘는 메일은 받지 않으니 <strong>보도자료만</strong> 넘어오게 설정해 주세요.
+          </p>
+        )}
+        {(inbox?.dropped_count ?? 0) > 0 && (
+          <p role="status" className="mt-1.5 rounded bg-danger/10 px-3 py-2 text-[12.5px] font-semibold text-danger">
+            한도를 넘어 받지 못한 메일이 {inbox!.dropped_count}건 있습니다{inbox!.last_dropped_at ? ` (마지막 ${formatDateTime(inbox!.last_dropped_at)})` : ''}.
+            지메일 필터를 좁혀 보도자료만 전달되게 해 주세요. 한도를 늘려야 하면 업무요청으로 알려 주세요.
+          </p>
+        )}
       </section>
 
       {/* 방법 고르기 */}

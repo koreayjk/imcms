@@ -43,25 +43,31 @@ export async function resendInboundMail(emailId: string): Promise<InboundMail> {
 
   // 첨부: 사진·문서만, 사진부터 합계 15MB까지 내려받는다 (나머지는 이름만 남는다)
   const attachments: InboundMail['Attachments'] = []
+  const notes: string[] = []
   const list = await fetch(`${API}/emails/receiving/${encodeURIComponent(emailId)}/attachments?limit=50`, { headers: headers(), cache: 'no-store' })
+  if (!list.ok) notes.push(`첨부 목록을 읽지 못했습니다 (HTTP ${list.status})`)
   if (list.ok) {
     const { data } = (await list.json()) as { data: Att[] }
+    notes.push(`첨부 ${data?.length ?? 0}개`)
     let total = 0
     const ordered = [...(data ?? [])].sort((x, y) => Number(isImageAttachment(y.content_type ?? '', y.filename ?? '')) - Number(isImageAttachment(x.content_type ?? '', x.filename ?? '')))
     for (const a of ordered) {
       const nameOf = a.filename ?? '첨부파일'
       const type = a.content_type ?? 'application/octet-stream'
       if (!(KEEP.test(type) || KEEP_EXT.test(nameOf)) || total + a.size > MAX_ATTACH_TOTAL) {
+        notes.push(`${nameOf}: 종류·용량 때문에 건너뜀 (${type}, ${a.size}바이트)`)
         attachments.push({ Name: nameOf, ContentType: type, ContentLength: a.size }) // 내용 없이 → “가져오지 못한 파일”로 표시
         continue
       }
       try {
         const file = await fetch(a.download_url, { cache: 'no-store' })
-        if (!file.ok) throw new Error()
+        if (!file.ok) throw new Error(`내려받기 HTTP ${file.status}`)
         const buf = Buffer.from(await file.arrayBuffer())
         total += buf.length
         attachments.push({ Name: nameOf, ContentType: type, ContentLength: buf.length, Content: buf.toString('base64') })
-      } catch {
+        notes.push(`${nameOf}: 가져옴 (${buf.length}바이트)`)
+      } catch (e) {
+        notes.push(`${nameOf}: 가져오지 못함 — ${e instanceof Error ? e.message : '알 수 없는 오류'}`)
         attachments.push({ Name: nameOf, ContentType: type, ContentLength: a.size })
       }
     }
@@ -79,5 +85,6 @@ export async function resendInboundMail(emailId: string): Promise<InboundMail> {
     TextBody: m.text ?? undefined,
     HtmlBody: m.html ?? undefined,
     Attachments: attachments,
+    AttachNotes: notes,
   }
 }

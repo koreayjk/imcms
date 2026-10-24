@@ -66,6 +66,8 @@ export async function POST(req: NextRequest) {
   let { data, error } = await supabase.rpc('press_ingest_email', { secret, p_token: parsed.token, ...args })
   // 첨부가 너무 커서 저장하지 못했으면 본문만이라도 저장한다 (첨부는 이름만 남긴다)
   if (error && parsed.kind === 'release' && parsed.attachments.length) {
+    console.error('[inbound-email] 첨부를 포함한 저장이 실패해 본문만 저장합니다:', error.message)
+    mail.AttachNotes = [...(mail.AttachNotes ?? []), `첨부 포함 저장 실패: ${error.message.slice(0, 160)}`]
     const names = parsed.attachments.map((a) => a.name.replace(/[<>&]/g, '')).join(', ')
     ;({ data, error } = await supabase.rpc('press_ingest_email', {
       secret, p_token: parsed.token, ...args,
@@ -78,6 +80,6 @@ export async function POST(req: NextRequest) {
     const status = /forbidden/.test(error.message) ? 401 : 500
     return NextResponse.json({ error: status === 401 ? 'unauthorized' : 'save_failed' }, { status })
   }
-  console.log('[inbound-email] 처리 결과:', data, parsed.kind)
-  return NextResponse.json({ result: data })
+  console.log('[inbound-email] 처리 결과:', data, parsed.kind, mail.AttachNotes?.join(' / ') ?? '')
+  return NextResponse.json({ result: data, ...(mail.AttachNotes?.length ? { attachments: mail.AttachNotes } : {}) })
 }
