@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition, useActionState } from 'react'
-import { invoiceDraft, saveInvoice, type FormState } from '@/app/(main)/support/actions'
+import { invoiceDraft, saveInvoice, sendInvoicePreview, type FormState } from '@/app/(main)/support/actions'
 import { TAX_NOTE, invoiceTotals, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from './PendingButton'
 
@@ -35,6 +35,16 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setPicked(false); if (!edited) fill(undefined, true) }, [outletId, month])
+  const [preview, setPreview] = useState<{ text: string; error?: boolean }>({ text: '' })
+  const [sending, startSend] = useTransition()
+  const sendToMe = (form: HTMLFormElement) => {
+    const data = new FormData(form)
+    setPreview({ text: '' })
+    startSend(async () => {
+      const r = await sendInvoicePreview(data)
+      setPreview(r.ok ? { text: `${r.to} 로 미리보기를 보냈습니다. ${r.note ?? ''}` } : { text: r.error ?? '보내지 못했습니다.', error: true })
+    })
+  }
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
   return (
@@ -108,7 +118,11 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       </div>
       <p className="text-[12.5px] text-muted">같은 매체·같은 월 청구서가 이미 있으면 새 내용으로 바뀝니다.</p>
       {state.error && <p role="alert" className="text-[13.5px] text-danger">{state.error}</p>}
-      <div className="flex justify-end"><PendingButton pending="저장 중…" className="rounded-full bg-[#2F6BF0] px-8 py-2.5 text-[14.5px] font-bold text-white">청구서 발행</PendingButton></div>
+      {preview.text && <p role={preview.error ? 'alert' : 'status'} className={`text-right text-[13px] ${preview.error ? 'text-danger' : 'text-published'}`}>{preview.text}</p>}
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <button type="button" onClick={(e) => sendToMe(e.currentTarget.form!)} disabled={sending || !outletId} className="rounded-full border border-[#2F6BF0] bg-white px-6 py-2.5 text-[14.5px] font-bold text-[#2F6BF0] hover:bg-[#2F6BF0]/5 disabled:opacity-50">{sending ? '보내는 중…' : '나에게 보내기'}</button>
+        <PendingButton pending="저장 중…" className="rounded-full bg-[#2F6BF0] px-8 py-2.5 text-[14.5px] font-bold text-white">청구서 발행</PendingButton>
+      </div>
     </form>
   )
 }

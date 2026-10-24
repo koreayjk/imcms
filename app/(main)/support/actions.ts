@@ -6,7 +6,8 @@ import { createClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { notify } from '@/lib/notify'
-import { notifyInvoiceIssued } from '@/lib/invoice-mail'
+import { invoiceIssuedMail, notifyInvoiceIssued } from '@/lib/invoice-mail'
+import { mailReady, noticeMail, sendMails } from '@/lib/mail'
 import { cmsOrigin } from '@/lib/origin'
 import { billingItems, billingTargets, type BillingTarget } from '@/lib/billing'
 import { planById } from '@/lib/pricing'
@@ -255,6 +256,45 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
   await notifyInvoice(supabase, data.id)
   revalidatePath('/support', 'layout')
   redirect(`/support/invoices/${data.id}`)
+}
+
+// 청구서를 발행하기 전에 안내 메일을 나에게 먼저 보내 본다 (저장·발행은 하지 않는다. 받는 사람은 지금 로그인한 총관리자 본인)
+export async function sendInvoicePreview(form: FormData): Promise<{ ok?: boolean; error?: string; to?: string; note?: string }> {
+  const { supabase, user } = await superContext()
+  if (!user.email) return { error: '내 계정에 이메일이 없어 보낼 수 없습니다.' }
+  if (!mailReady()) return { error: '메일 발송이 설정되지 않았습니다 (메일 설정을 먼저 해 주세요).' }
+  const outlet_id = text(form, 'outlet_id', 40)
+  const month = text(form, 'month', 7)
+  if (!outlet_id) return { error: '매체를 먼저 고르세요.' }
+  if (!/^\d{4}-\d{2}$/.test(month)) return { error: '청구 월을 고르세요.' }
+  const names = form.getAll('item_name').map(String)
+  const qtys = form.getAll('item_qty').map(Number)
+  const prices = form.getAll('item_price').map((v) => Number(String(v).replace(/[^\d.-]/g, '')))
+  const items: InvoiceItem[] = names.map((name, i) => ({ name: name.trim().slice(0, 100), qty: qtys[i] || 0, unit_price: prices[i] || 0 })).filter((i) => i.name && i.qty)
+  if (!items.length) return { error: '청구 항목을 한 줄 이상 적어주세요.' }
+  const t = invoiceTotals(items)
+  const [{ data: o }, { data: auto }, { data: billing }] = await Promise.all([
+    supabase.from('outlets').select('name').eq('id', outlet_id).maybeSingle(),
+    supabase.from('outlet_autopay').select('card_company, card_number').eq('outlet_id', outlet_id).eq('active', true).maybeSingle(),
+    supabase.from('outlet_billing').select('manager_name, manager_email').eq('outlet_id', outlet_id).maybeSingle(),
+  ])
+  const mail = invoiceIssuedMail({
+    id: '', outletName: (o as { name?: string } | null)?.name ?? '', month: `${month}-01`, total: t.total,
+    dueDate: text(form, 'due_date', 10) || null, createdAt: new Date().toISOString(), autopay: auto ?? null, origin: await cmsOrigin(),
+  })
+  const target = (billing as { manager_email?: string | null } | null)?.manager_email?.trim()
+  const memo = text(form, 'memo', 1000)
+  const lines = [
+    '※ 미리보기입니다. 아직 발행되지 않았고 고객에게는 가지 않았습니다.',
+    ...mail.lines,
+    `청구 항목: ${items.map((i) => `${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''} ${(i.qty * i.unit_price).toLocaleString('ko-KR')}원`).join(' / ')}`,
+    ...(memo ? [`안내: ${memo}`] : []),
+    `발행하면 이 메일이 가는 곳: ${target ? target : '결제 담당자 이메일이 없어 그 그룹의 발행인 계정'}`,
+  ]
+  const { html, text: plain } = noticeMail({ ...mail, title: `[미리보기] ${mail.title}`, lines, button: { label: '청구서 목록 보기', url: `${await cmsOrigin()}/support/invoices` } })
+  const res = await sendMails([{ to: user.email, subject: `[미리보기] ${mail.subject}`, html, text: plain, tag: 'invoice_preview' }])
+  if (!res.sent) return { error: `보내지 못했습니다${res.error ? `: ${res.error}` : ''}` }
+  return { ok: true, to: user.email, note: target ? `발행하면 ${target} 로 갑니다.` : '결제 담당자 이메일이 없어 발행인 계정으로 갑니다.' }
 }
 
 // 청구서 발행 화면: 요금표와 그 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·AI 추가 사용·세팅비)으로 항목을 채운다
