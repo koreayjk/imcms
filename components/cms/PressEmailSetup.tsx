@@ -266,7 +266,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
         <summary className="cursor-pointer text-[14px] font-bold">알아둘 점</summary>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-[#3B4048]">
           <li>들어온 보도자료는 <strong>편집국 모두가 볼 수 있습니다.</strong> 개인 메일이 섞이지 않게 보도자료만 보내세요.</li>
-          <li>첨부는 사진·PDF·한글·워드 파일을 가져옵니다(한 통에 합계 15MB까지, 넘는 첨부는 이름만 남고 받은 메일에서 확인). 사진은 기사 본문에 자동으로 들어갑니다.</li>
+          <li>첨부는 사진·PDF·한글·워드·텍스트(.txt·.md) 파일을 가져옵니다(한 통에 합계 15MB까지, 넘는 첨부는 이름만 남고 받은 메일에서 확인). 사진은 기사 본문에 자동으로 들어가고, 스탠다드 요금제부터는 문서 파일의 글자도 본문 아래에 자동으로 들어갑니다(베이직은 내려받기).</li>
           <li>같은 보도자료가 여러 기자에게 오면 하나만 들어오고, 메일 끝 “수신거부” 안내는 자동으로 잘라냅니다.</li>
         </ul>
       </details>

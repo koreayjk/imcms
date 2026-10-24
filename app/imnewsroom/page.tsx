@@ -397,7 +397,7 @@ export default async function ProductHome() {
               <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">뉴스와이어와 정책브리핑의 보도자료가 30분마다 들어오고, <strong>기자 메일함으로 온 보도자료</strong>도 자동으로 같은 함에 쌓입니다. 우리 매체 분야에 맞는 것만 추천 탭에 뜹니다.</p>
               <ul className="mt-7 space-y-3">
                 <Check>지메일 필터 한 번 설정하면 보도자료 메일만 자동 수집 (개인 메일은 제외)</Check>
-                <Check>보낸 기관·제목 정리, 첨부 사진은 본문에, 한글·PDF는 내려받기</Check>
+                <Check>보낸 기관·제목 정리, 첨부 사진은 본문에, 한글·PDF·워드 내용은 스탠다드부터 자동 입력</Check>
                 <Check>같은 자료가 여러 기자에게 와도 하나로, 이미 쓴 자료는 “기사화됨” 표시</Check>
                 <Check>배포처 약관(하루 사용 건수)까지 화면에서 확인</Check>
               </ul>

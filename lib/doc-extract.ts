@@ -8,18 +8,22 @@ export class DocExtractError extends Error {}
 export const DOC_ACCEPT = '.hwp,.hwpx,.doc,.docx,.txt'
 
 export async function extractDocText(file: File): Promise<string> {
-  const name = file.name.toLowerCase()
-  const bytes = new Uint8Array(await file.arrayBuffer())
+  const text = extractTextFromBytes(file.name, new Uint8Array(await file.arrayBuffer()))
+  if (text.length < 50) throw new DocExtractError('파일에서 글자를 거의 찾지 못했습니다. 그림으로만 된 문서인지 확인해 주세요.')
+  return text
+}
+
+// 파일 이름(확장자)과 내용으로 글자를 뽑는다 — 글자가 적어도 오류로 보지 않는다 (메일 첨부를 읽는 서버도 쓴다)
+export function extractTextFromBytes(fileName: string, bytes: Uint8Array): string {
+  const name = fileName.toLowerCase()
   let text: string
   if (name.endsWith('.docx')) text = docxText(bytes)
   else if (name.endsWith('.doc')) text = isZip(bytes) ? docxText(bytes) : wordText(bytes)
   else if (name.endsWith('.hwpx')) text = hwpxText(bytes)
   else if (name.endsWith('.hwp')) text = isZip(bytes) ? hwpxText(bytes) : hwpText(bytes)
-  else if (name.endsWith('.txt')) text = plainText(bytes)
+  else if (/\.(txt|md|markdown|csv)$/.test(name)) text = plainText(bytes)
   else throw new DocExtractError('한글(.hwp, .hwpx), 워드(.doc, .docx), 텍스트(.txt) 파일만 올릴 수 있습니다.')
-  text = tidy(text)
-  if (text.length < 50) throw new DocExtractError('파일에서 글자를 거의 찾지 못했습니다. 그림으로만 된 문서인지 확인해 주세요.')
-  return text
+  return tidy(text)
 }
 
 const isZip = (b: Uint8Array) => b[0] === 0x50 && b[1] === 0x4b

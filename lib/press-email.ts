@@ -40,8 +40,8 @@ export const MAX_ATTACH_TOTAL = 15 * 1024 * 1024
 const MAX_TOTAL = MAX_ATTACH_TOTAL
 // 사진 판단: 메일 프로그램마다 image/jpg, application/octet-stream 등으로 보내므로 확장자도 본다
 export const isImageAttachment = (type: string, name: string) => /^image\/(p?jpe?g|png|x-png|webp|gif)$/i.test(type) || /\.(jpe?g|png|webp|gif)$/i.test(name)
-const KEEP_TYPES = /^(image\/(jpeg|png|webp|gif)|application\/pdf|application\/(x-)?hwp|application\/haansofthwp|application\/vnd\.hancom\.hwpx|application\/octet-stream)$/i
-const KEEP_EXT = /\.(jpe?g|png|webp|gif|pdf|hwp|hwpx|docx?)$/i
+const KEEP_TYPES = /^(image\/(jpeg|png|webp|gif)|application\/pdf|application\/(x-)?hwp|application\/haansofthwp|application\/vnd\.hancom\.hwpx|application\/octet-stream|text\/(plain|markdown|x-markdown|csv))$/i
+const KEEP_EXT = /\.(jpe?g|png|webp|gif|pdf|hwp|hwpx|docx?|txt|md|markdown|csv)$/i
 
 // 받는 주소 abc+토큰@도메인 에서 토큰을 꺼낸다
 export function tokenOf(mail: InboundMail) {

@@ -27,8 +27,8 @@ type Received = {
 }
 type Att = { id: string; filename: string | null; size: number; content_type: string | null; download_url: string }
 
-const KEEP = /^(image\/(jpeg|png|webp|gif)|application\/pdf|application\/(x-)?hwp|application\/haansofthwp|application\/vnd\.hancom\.hwpx|application\/octet-stream|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i
-const KEEP_EXT = /\.(jpe?g|png|webp|gif|pdf|hwp|hwpx|docx?)$/i
+const KEEP = /^(image\/(jpeg|png|webp|gif)|application\/pdf|application\/(x-)?hwp|application\/haansofthwp|application\/vnd\.hancom\.hwpx|application\/octet-stream|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|text\/(plain|markdown|x-markdown|csv))$/i
+const KEEP_EXT = /\.(jpe?g|png|webp|gif|pdf|hwp|hwpx|docx?|txt|md|markdown|csv)$/i
 
 export async function resendInboundMail(emailId: string): Promise<InboundMail> {
   const res = await fetch(`${API}/emails/receiving/${encodeURIComponent(emailId)}`, { headers: headers(), cache: 'no-store' })

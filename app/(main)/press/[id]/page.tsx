@@ -7,7 +7,8 @@ import { formatDateTime } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
 import { aiReady } from '@/lib/ai-draft'
 import { aiLevel, aiLimitMessage, getAiStatus, myLimitFull, myLimitMessage } from '@/lib/ai-usage'
-import { ensureEmailImages } from '@/lib/press-attachments'
+import { ensureEmailImages, ensureEmailText } from '@/lib/press-attachments'
+import { pressAutoText } from '@/lib/pricing'
 import { createArticleFromPress, deleteManualPress } from '../actions'
 import { isForeignSource } from '@/lib/press-sources'
 
@@ -24,7 +25,12 @@ export default async function PressDetailPage(
 
   const { data } = await supabase.from('press_releases').select('*').eq('id', params.id).maybeSingle()
   if (!data) notFound()
-  const { release: r, attachments } = await ensureEmailImages(supabase, await ensureFullBody(supabase, data as PressRelease), outletId)
+  const withImages = await ensureEmailImages(supabase, await ensureFullBody(supabase, data as PressRelease), outletId)
+  const attachments = withImages.attachments
+  // 스탠다드 요금제부터: 첨부 문서의 글자를 본문에 넣는다 (베이직 요금제는 내려받기만)
+  const { data: outletRow } = outletId ? await supabase.from('outlets').select('plan').eq('id', outletId).maybeSingle() : { data: null }
+  const autoText = pressAutoText(outletRow?.plan)
+  const { release: r, notes: readNotes } = autoText ? await ensureEmailText(supabase, withImages.release, attachments) : { release: withImages.release, notes: [] as string[] }
   const files = attachments.filter((a) => !a.content_type.startsWith('image/') || !a.copied_url)
 
   const [{ data: made }, usage] = await Promise.all([
@@ -98,7 +104,12 @@ export default async function PressDetailPage(
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-[12px] text-muted">한글·PDF 파일 내용은 기사에 자동으로 들어가지 않습니다. 내려받아 확인한 뒤 필요한 부분을 옮겨 주세요.</p>
+            {readNotes.map((n) => <p key={n} className="mt-2 text-[12px] text-draft">{n}</p>)}
+            <p className="mt-2 text-[12px] text-muted">
+              {autoText
+                ? '한글·워드·PDF·텍스트 파일의 글자는 위 본문 아래에 자동으로 옮겨 두었습니다. 표·그림 속 글자는 빠질 수 있으니 파일도 함께 확인해 주세요.'
+                : '베이직 요금제는 첨부파일을 내려받아 확인해 주세요. 스탠다드 요금제부터 한글·워드·PDF·텍스트 파일 내용을 보도자료에 자동으로 읽어 드립니다.'}
+            </p>
           </div>
         )}
       </article>
