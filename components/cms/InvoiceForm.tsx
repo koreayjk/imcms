@@ -16,16 +16,25 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const [edited, setEdited] = useState(false)
   const [note, setNote] = useState('')
   const [filling, startFill] = useTransition()
-  const fill = () => {
+  // 베타 반값·첫 청구 월: 처음엔 그 매체의 자동 청구 설정을 따르고, 여기서 고르면 이번 청구서 계산에 쓴다
+  const [beta, setBeta] = useState(false)
+  const [start, setStart] = useState('')
+  const [picked, setPicked] = useState(false)
+  const fill = (over?: { beta: boolean; start: string }, fresh = false) => {
     if (!outletId || !/^\d{4}-\d{2}$/.test(month)) return
     startFill(async () => {
-      const r = await invoiceDraft(outletId, month)
+      const r = await invoiceDraft(outletId, month, over ?? (picked && !fresh ? { beta, start: start || month } : undefined))
       setNote(r.note)
+      if (!over && (!picked || fresh)) { setBeta(r.beta); setStart(r.start ?? '') }
       if (r.items.length) { setItems(r.items); setEdited(false) }
     })
   }
+  const pick = (nextBeta: boolean, nextStart: string) => {
+    setPicked(true); setBeta(nextBeta); setStart(nextStart)
+    fill({ beta: nextBeta, start: nextStart || month })
+  }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (!edited) fill() }, [outletId, month])
+  useEffect(() => { setPicked(false); if (!edited) fill(undefined, true) }, [outletId, month])
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
   return (
@@ -49,9 +58,21 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-line px-4 py-2.5 text-[13.5px]">
+        <label className="flex items-center gap-2 font-semibold">
+          <input type="checkbox" checked={beta} onChange={(e) => pick(e.target.checked, start || month)} disabled={!outletId} />
+          베타 반값 (첫 청구 월부터 3개월)
+        </label>
+        <label className="flex items-center gap-2">
+          <span className="text-muted">첫 청구 월</span>
+          <input type="month" value={start} onChange={(e) => pick(beta, e.target.value)} disabled={!outletId || !beta} className="field-input w-40 py-1" />
+        </label>
+        <span className="text-[12px] text-muted">이번 청구서 계산에만 쓰입니다. 다음 달 자동 청구에도 반값을 이어 가려면 자동 청구 설정에 같은 값을 저장해 두세요.</span>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#F4F6FA] px-4 py-2.5 text-[12.5px] text-muted">
         <span>{filling ? '요금표로 계산하는 중…' : note || (outletId ? '요금표와 이 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·세팅비)으로 채웠습니다. 고쳐서 발행해도 됩니다.' : '매체를 고르면 요금표대로 항목이 채워집니다.')}</span>
-        {outletId && <button type="button" onClick={fill} disabled={filling} className="shrink-0 whitespace-nowrap font-semibold text-[#2F6BF0] disabled:opacity-50">요금표대로 다시 채우기</button>}
+        {outletId && <button type="button" onClick={() => fill()} disabled={filling} className="shrink-0 whitespace-nowrap font-semibold text-[#2F6BF0] disabled:opacity-50">요금표대로 다시 채우기</button>}
       </div>
 
       <div className="overflow-x-auto">
