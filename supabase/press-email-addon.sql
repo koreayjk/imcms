@@ -20,6 +20,8 @@ begin
   end if;
 end $$;
 alter table outlets add column if not exists press_mail_trial_used int not null default 0;
+-- 부가 서비스를 켠 날(한국 날짜): 켠 달의 남은 일수를 일할로 다음 청구서에 붙인다. 기존에 켜 둔 매체는 비어 있어 일할이 붙지 않는다
+alter table outlets add column if not exists press_mail_addon_since date;
 
 -- 그 매체가 메일로 보도자료를 받을 수 있는가: 프리미엄·엔터프라이즈·요금제 없음은 포함, 베이직·스탠다드는 부가 서비스를 켠 매체
 create or replace function public.press_mail_on(o uuid) returns boolean language sql stable security definer set search_path = public, private as $$
@@ -188,7 +190,12 @@ create or replace function public.admin_set_press_mail_addon(p_outlet uuid, p_on
 returns void language plpgsql security definer set search_path = public, private as $$
 begin
   if not public.is_super() then raise exception '총관리자만 바꿀 수 있습니다.'; end if;
-  update outlets set press_mail_addon = coalesce(p_on, false) where id = p_outlet;
+  -- 꺼져 있던 것을 켤 때만 켠 날을 기록하고(이미 켜진 것을 다시 눌러도 그대로), 끄면 지운다
+  update outlets set
+    press_mail_addon_since = case when coalesce(p_on, false) and not press_mail_addon then (now() at time zone 'Asia/Seoul')::date
+                                  when coalesce(p_on, false) then press_mail_addon_since else null end,
+    press_mail_addon = coalesce(p_on, false)
+  where id = p_outlet;
 end $$;
 
 -- 청구할 매체 목록 (billing-extra-plan.sql 과 같고, 부가 서비스 켜짐 'press_addon' 이 매체·추가 매체마다 더해졌다)
@@ -202,7 +209,7 @@ begin
   if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
   return coalesce((
     select jsonb_agg(jsonb_build_object(
-      'outlet_id', o.id, 'name', o.name, 'plan', o.plan, 'press_addon', o.press_mail_addon,
+      'outlet_id', o.id, 'name', o.name, 'plan', o.plan, 'press_addon', o.press_mail_addon, 'press_addon_since', o.press_mail_addon_since,
       'cycle', p.cycle, 'beta', p.beta, 'start_month', p.start_month,
       'setup_fee_pending', p.setup_fee_pending, 'custom_monthly', p.custom_monthly,
       'has_invoice', exists (select 1 from invoices i where i.outlet_id = o.id and i.month = m),
@@ -210,7 +217,7 @@ begin
       'autopay', (select jsonb_build_object('card_company', a.card_company, 'card_number', a.card_number) from outlet_autopay a where a.outlet_id = o.id and a.active),
       'children', coalesce((
         select jsonb_agg(jsonb_build_object(
-          'outlet_id', c.id, 'name', c.name, 'plan', c.plan, 'press_addon', c.press_mail_addon,
+          'outlet_id', c.id, 'name', c.name, 'plan', c.plan, 'press_addon', c.press_mail_addon, 'press_addon_since', c.press_mail_addon_since,
           'over_count', (select count(*) from ai_usage u where u.outlet_id = c.id and u.over_limit and u.created_at >= prev_from and u.created_at < prev_to)
         ) order by c.name)
         from outlet_plans cp join outlets c on c.id = cp.outlet_id

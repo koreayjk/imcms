@@ -29,7 +29,7 @@ export default function PressMailLimits({ initial, plans: initialPlans }: { init
       const res = await saveOutletAddon(r.outlet_id, on)
       if (res.error) return setMsg({ id: r.outlet_id, text: res.error, error: true })
       setRows((all) => all.map((x) => (x.outlet_id === r.outlet_id ? { ...x, addon: on } : x)))
-      setMsg({ id: r.outlet_id, text: on ? '부가 서비스를 켰습니다. 다음 청구서부터 월 39,000원이 들어갑니다.' : '부가 서비스를 껐습니다. 이후 오는 메일은 받지 않습니다.' })
+      setMsg({ id: r.outlet_id, text: on ? '부가 서비스를 켰습니다. 오늘부터 말일까지는 일할로 다음 청구서에, 그다음부터 월 39,000원이 들어갑니다.' : '부가 서비스를 껐습니다. 이후 오는 메일은 받지 않습니다.' })
     })
   }
   const savePlan = (plan: PlanLimit['plan'], raw: string) => {

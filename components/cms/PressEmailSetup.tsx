@@ -74,7 +74,7 @@ function AddonNotice({ inbox }: { inbox: MyInbox }) {
           ? <>처음 {PRESS_MAIL_TRIAL}통은 무료로 받아 볼 수 있습니다. 보도자료가 자동으로 보도자료함에 들어오고, 첨부파일(한글·워드·PDF·텍스트) 내용이 본문에 들어오고, AI가 메일 본문과 첨부를 함께 읽고 초안을 씁니다.</>
           : <>{lost > 0 ? <strong className="text-danger">최근 7일 동안 {lost}통이 도착했지만 받지 못했습니다. </strong> : null}이미 받은 보도자료는 그대로 쓸 수 있고, 새 메일을 계속 받으려면 부가 서비스를 신청해 주세요.</>}
       </p>
-      <p className="mt-1.5 text-[13.5px]"><strong>보도자료 메일 자동 수신 · 월 {fee}원</strong> <span className="text-muted">(프리미엄 요금제는 기본 포함 · 다음 청구서부터 부가 항목으로 청구)</span></p>
+      <p className="mt-1.5 text-[13.5px]"><strong>보도자료 메일 자동 수신 · 월 {fee}원</strong> <span className="text-muted">(프리미엄 요금제는 기본 포함 · 켠 달은 남은 일수만큼 일할 계산해 다음 청구서에 포함)</span></p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {state === 'done' || state === 'already'
           ? <p role="status" className="rounded bg-published/10 px-3 py-2 text-[13px] font-semibold text-published">{state === 'already' ? '이미 신청이 접수돼 있습니다. 운영팀이 확인해 켜 드립니다.' : '신청이 접수됐습니다. 운영팀이 확인해 켜 드리고, 켜지면 바로 메일을 받습니다.'}</p>

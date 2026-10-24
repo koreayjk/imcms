@@ -8,12 +8,13 @@ import { notifyInvoiceDunning, notifyInvoiceIssued } from './invoice-mail'
 //   매월 1일 발행 · 5일 납부 · 10일까지 유예. 1년 결제는 시작 월부터 12개월마다 한 번(11개월 값)
 //   항목: 요금제 이용료(베타 반값) · 추가 매체 · 지난달 AI 추가 사용(100회마다) · 세팅비(처음 한 번)
 
-export type BillingChild = { outlet_id: string; name: string; over_count: number; plan?: string | null; press_addon?: boolean }
+export type BillingChild = { outlet_id: string; name: string; over_count: number; plan?: string | null; press_addon?: boolean; press_addon_since?: string | null }
 export type BillingTarget = {
   outlet_id: string
   name: string
   plan: string | null
   press_addon?: boolean // 보도자료 메일 자동 수신 부가 서비스 (press-email-addon.sql)
+  press_addon_since?: string | null // 부가 서비스를 켠 날 'YYYY-MM-DD' (켠 달의 남은 일수는 일할로 다음 청구서에)
   cycle: 'monthly' | 'annual'
   beta: boolean
   start_month: string | null
@@ -31,6 +32,7 @@ export const GRACE_DAYS = 5
 
 const ym = (d: string) => Number(d.slice(0, 4)) * 12 + Number(d.slice(5, 7)) - 1
 const label = (n: number) => `${Math.floor(n / 12)}년 ${(n % 12) + 1}월`
+const label2ym = (n: number) => `${Math.floor(n / 12)}-${String((n % 12) + 1).padStart(2, '0')}`
 const aiQty = (over: number) => Math.ceil(over / 100)
 
 // 한국 날짜 'YYYY-MM-DD'
@@ -42,6 +44,7 @@ export function kstToday() {
 export function billingItems(t: BillingTarget, month: string) {
   const items: InvoiceItem[] = []
   const m = ym(`${month}-01`)
+  const prev = label(m - 1)
   const plan = planById(t.plan)
   const monthly = t.custom_monthly ?? plan?.monthly ?? null
   const planName = t.custom_monthly != null ? '이용료' : plan ? `${plan.name} 요금제` : null
@@ -75,17 +78,22 @@ export function billingItems(t: BillingTarget, month: string) {
       const spec = kind === 'basic' ? '' : ` ${EXTRA_PLAN_LABEL[kind]} 사양${i < included ? ' 차액' : ''}`
       items.push({ name: `추가 매체 · ${c.name}${spec}${when}`, qty: 1, unit_price: fee * mult })
     })
-
-    // 부가 서비스: 보도자료 메일 자동 수신 (켜 둔 매체마다, 프리미엄·엔터프라이즈는 요금제에 포함이라 청구하지 않는다)
-    const addonMult = annual ? ANNUAL_MONTHS : 1
-    ;[{ name: t.name, plan: t.plan, on: t.press_addon }, ...t.children.map((c) => ({ name: c.name, plan: c.plan ?? null, on: c.press_addon }))].forEach((o, i) => {
-      if (!o.on || pressMailIncluded(o.plan)) return
-      items.push({ name: `부가 서비스 · 보도자료 메일 자동 수신${i === 0 ? '' : ` · ${o.name}`}${annual ? ` (1년, ${ANNUAL_MONTHS}개월 값)` : ''}`, qty: 1, unit_price: PRESS_MAIL_ADDON_FEE * addonMult })
-    })
   }
 
+  // 부가 서비스: 보도자료 메일 자동 수신 (켜 둔 매체마다 매월. 1년 결제 고객사도 매월 따로 청구한다. 프리미엄·엔터프라이즈는 요금제에 포함이라 청구하지 않는다)
+  //   켠 달은 켠 날부터 말일까지 일할로 계산해 다음 달 청구서에 함께 넣는다
+  ;[{ name: t.name, plan: t.plan, on: t.press_addon, since: t.press_addon_since }, ...t.children.map((c) => ({ name: c.name, plan: c.plan ?? null, on: c.press_addon, since: c.press_addon_since }))].forEach((o, i) => {
+    if (!o.on || pressMailIncluded(o.plan)) return
+    const who = i === 0 ? '' : ` · ${o.name}`
+    if (o.since && o.since.slice(0, 7) === label2ym(m - 1)) {
+      const days = new Date(Number(o.since.slice(0, 4)), Number(o.since.slice(5, 7)), 0).getDate()
+      const used = days - Number(o.since.slice(8, 10)) + 1
+      items.push({ name: `부가 서비스 · 보도자료 메일 자동 수신${who} (${prev} ${o.since.slice(8, 10).replace(/^0/, '')}일~말일 ${used}일, 일할)`, qty: 1, unit_price: Math.round((PRESS_MAIL_ADDON_FEE * used) / days) })
+    }
+    items.push({ name: `부가 서비스 · 보도자료 메일 자동 수신${who} (${label(m)})`, qty: 1, unit_price: PRESS_MAIL_ADDON_FEE })
+  })
+
   // 지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다). 본 매체와 추가 매체가 넘긴 횟수를 합쳐 한 번에 센다
-  const prev = label(m - 1)
   const over = t.over_count + t.children.reduce((n, c) => n + c.over_count, 0)
   if (over > 0) items.push({ name: `AI 추가 사용${t.children.length ? ' (추가 매체 포함)' : ''} (${prev} ${over.toLocaleString('ko-KR')}회, 100회마다)`, qty: aiQty(over), unit_price: EXTRA_AI_FEE })
 

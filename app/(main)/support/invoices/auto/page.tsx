@@ -69,7 +69,7 @@ export default async function AutoBillingPage(props: Props) {
           <li>요금제 월 이용료 (요금제는 <Link href="/admin/ai-usage" className="text-[#2F6BF0] underline">AI 사용량</Link> 화면에서 정합니다) · 베타 반값이면 {Math.round(BETA_RATE * 100)}%</li>
           <li>1년 결제는 첫 청구 월부터 12개월마다 한 번, {ANNUAL_MONTHS}개월 값</li>
           <li>추가 매체(프리미엄 전용): &lsquo;청구 받을 매체&rsquo;를 고른 매체는 그 매체 청구서에 요금제(사양)에 따라 월 {won(EXTRA_OUTLET_FEES.basic)}(베이직) · {won(EXTRA_OUTLET_FEES.standard)}(스탠다드) · {won(EXTRA_OUTLET_FEES.premium)}(프리미엄)으로 붙습니다. 프리미엄은 베이직 사양 {PREMIUM_INCLUDED_EXTRA}개가 포함이고, 더 높은 사양을 고르면 베이직 금액과의 차액만 청구합니다. 저장하면 그 매체 요금제가 고른 사양으로 맞춰집니다 (AI 한도·뉴스레터 등이 그 요금제를 따름)</li>
-          <li>부가 서비스 &lsquo;보도자료 메일 자동 수신&rsquo;(베이직·스탠다드): 편집국 → 보도자료 → 메일로 받기에서 그 매체의 부가 서비스를 켜 두면 매달 월 {won(PRESS_MAIL_ADDON_FEE)}이 별도 항목으로 붙습니다. 프리미엄은 포함이라 붙지 않습니다.</li>
+          <li>부가 서비스 &lsquo;보도자료 메일 자동 수신&rsquo;(베이직·스탠다드): 편집국 → 보도자료 → 메일로 받기에서 그 매체의 부가 서비스를 켜 두면 매달 월 {won(PRESS_MAIL_ADDON_FEE)}이 별도 항목으로 붙습니다(켠 달은 남은 일수 일할 계산, 1년 결제 매체도 매월). 프리미엄은 포함이라 붙지 않습니다.</li>
           <li>지난달 AI 추가 사용 (한도를 넘겨 쓴 횟수, 100회마다) · 세팅비 {won(SETUP_FEE)}는 체크한 경우 다음 청구서에 한 번</li>
         </ul>
         {isSuper && !missingSql && (
