@@ -10,13 +10,14 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('key')
-  if (!secret || !process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  if (!secret || !process.env.NEXT_PUBLIC_SUPABASE_URL) { console.error('[inbound-email] 주소에 ?key= 가 없습니다'); return NextResponse.json({ error: 'unauthorized' }, { status: 401 }) }
 
   const raw = await req.text()
   let payload: (InboundMail & { type?: string; data?: { email_id?: string } }) | null = null
   try {
     payload = JSON.parse(raw)
   } catch {
+    console.error('[inbound-email] 본문이 JSON 이 아닙니다')
     return NextResponse.json({ error: 'bad json' }, { status: 400 })
   }
   let mail: InboundMail
@@ -24,11 +25,12 @@ export async function POST(req: NextRequest) {
     // Resend
     if (payload.type !== 'email.received' || !payload.data?.email_id) return NextResponse.json({ result: 'ignored' })
     const whSecret = process.env.RESEND_WEBHOOK_SECRET
-    if (whSecret && !verifyResendWebhook(raw, req.headers, whSecret)) return NextResponse.json({ error: 'bad signature' }, { status: 401 })
-    if (!process.env.RESEND_API_KEY) return NextResponse.json({ error: 'not configured' }, { status: 503 })
+    if (whSecret && !verifyResendWebhook(raw, req.headers, whSecret)) { console.error('[inbound-email] Resend 웹훅 서명이 맞지 않습니다 (RESEND_WEBHOOK_SECRET 값을 Resend 의 서명 비밀값과 맞춰 주세요)'); return NextResponse.json({ error: 'bad signature' }, { status: 401 }) }
+    if (!process.env.RESEND_API_KEY) { console.error('[inbound-email] RESEND_API_KEY 가 설정되어 있지 않습니다'); return NextResponse.json({ error: 'not configured' }, { status: 503 }) }
     try {
       mail = await resendInboundMail(payload.data.email_id)
-    } catch {
+    } catch (e) {
+      console.error('[inbound-email] 받은 메일 내용을 Resend 에서 읽지 못했습니다:', e instanceof Error ? e.message : e)
       return NextResponse.json({ error: 'fetch_failed' }, { status: 500 })
     }
   } else {
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   const parsed = await parseInbound(mail)
   // 누구 주소인지 알 수 없는 메일은 다시 보내봐야 소용없으니 받은 것으로 처리한다
-  if (!parsed) return NextResponse.json({ result: 'no_token' })
+  if (!parsed) { console.error('[inbound-email] 받는 주소에서 전용 주소 토큰(press+토큰@)을 찾지 못했습니다'); return NextResponse.json({ result: 'no_token' }) }
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -71,8 +73,10 @@ export async function POST(req: NextRequest) {
     }))
   }
   if (error) {
+    console.error('[inbound-email] 저장 실패:', error.message)
     const status = /forbidden/.test(error.message) ? 401 : 500
     return NextResponse.json({ error: status === 401 ? 'unauthorized' : 'save_failed' }, { status })
   }
+  console.log('[inbound-email] 처리 결과:', data, parsed.kind)
   return NextResponse.json({ result: data })
 }
