@@ -23,7 +23,7 @@ export default function AutopaySection({ autopay, ready, provider, clientKey, te
     <section aria-labelledby="autopay-title" className="ios-app-hide mt-8 rounded-2xl bg-white p-4 ring-1 sm:p-6 ring-black/5">
       <h2 id="autopay-title" className="text-[16px] font-bold">자동결제</h2>
       <p className="mt-1 text-[13px] leading-relaxed text-muted">
-        카드나 계좌를 등록해 두면 청구서가 나올 때 납부 기한 오전 10시에 자동으로 결제됩니다. 결제가 실패하면 청구서와 이 화면에 알려 드립니다.
+        첫 청구서를 결제하면서 자동결제에 동의하면 그 카드가 자동으로 등록되어, 매월 청구서가 나온 뒤 납부 기한(매월 1일) 오전 10시에 자동 결제됩니다. 따로 등록하실 필요는 없고, 이 화면에서는 카드를 바꾸거나 해지할 수 있습니다. 결제가 실패하면 청구서와 이 화면에 알려 드립니다.
       </p>
       {!ready ? (
         <p className="mt-4 rounded-lg bg-[#F8F9FA] px-4 py-3 text-[13.5px] text-muted">자동결제는 준비 중입니다. 청구서에서 카드·계좌이체로 바로 결제할 수 있습니다.</p>

@@ -23,10 +23,12 @@ export default async function AutoBillingPage(props: Props) {
 
   const thisMonth = kstToday().slice(0, 7)
   const nextMonth = nextMonthOf(thisMonth)
-  const [{ data: outlets }, plansRes] = await Promise.all([
+  const [{ data: outlets }, plansRes, { data: cards }] = await Promise.all([
     supabase.from('outlets').select('*').order('created_at'),
     supabase.from('outlet_plans').select('*'),
+    supabase.from('outlet_autopay').select('outlet_id, card_company, card_number, last_error').eq('active', true),
   ])
+  const cardOf = new Map(((cards ?? []) as { outlet_id: string; card_company: string | null; card_number: string | null; last_error: string | null }[]).map((c) => [c.outlet_id, c]))
   const missingSql = !!plansRes.error
   const plans = new Map(((plansRes.data ?? []) as PlanRow[]).map((p) => [p.outlet_id, p]))
 
@@ -53,9 +55,10 @@ export default async function AutoBillingPage(props: Props) {
         </div>
         <h1 className="mt-1 text-[22px] font-extrabold tracking-tight">자동 청구</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
-          자동 청구를 켠 매체는 <strong className="text-ink">매월 1일</strong>에 청구서가 만들어지고 안내 메일이 나갑니다. 납부 기한은 <strong className="text-ink">5일</strong>이고,
-          자동결제를 등록한 매체는 발행 7일 뒤(8일) 오전 10시에 결제됩니다. 기한이 지나면 다음 날 미납 안내가 가고, <strong className="text-ink">10일까지</strong> 내지 않으면
-          11일부터 그 매체(와 추가 매체)의 편집국 이용이 제한됩니다. 결제하면 바로 풀립니다. 연체료는 없고, 해외 법인(미국) 공급이라 한국 부가세는 붙지 않습니다.
+          자동 청구 매체는 <strong className="text-ink">매월 말일(0시 30분)</strong>에 다음 달 청구서가 만들어지고 &ldquo;내일 자동 결제 예정&rdquo; 안내 메일이 나갑니다.
+          카드가 등록된 매체는 <strong className="text-ink">매월 1일 오전 10시</strong>에 자동 결제되고, 카드가 없는 매체는 5일까지 결제 링크로 직접 냅니다.
+          기한이 지나면 다음 날 미납 안내가 가고, 유예 5일이 지나면 이용이 제한됩니다(결제하면 바로 풀림). 연체료는 없고, 해외 법인(미국) 공급이라 한국 부가세는 붙지 않습니다.
+          카드는 고객이 첫 청구서를 결제할 때 동의하면 자동으로 등록됩니다.
         </p>
       </div>
 
@@ -82,97 +85,145 @@ export default async function AutoBillingPage(props: Props) {
         )}
       </div>
 
-      <ul className="mt-6 space-y-4">
-        {(outlets ?? []).map((o) => {
+      {(() => {
+        const all = outlets ?? []
+        const on = all.filter((o) => plans.get(o.id)?.auto)
+        const off = all.filter((o) => !plans.get(o.id)?.auto)
+        const lastDay = new Date(Date.parse(`${nextMonth}-01T00:00:00Z`) - 864e5).toISOString().slice(0, 10)
+        const total = on.reduce((n, o) => n + (preview.get(o.id)?.totals.total ?? 0), 0)
+
+        // 매체 한 곳의 설정 (자주 바꾸지 않아 접어 둔다)
+        const settings = (o: (typeof all)[number]) => {
           const p = plans.get(o.id)
-          const plan = planById(o.plan)
-          const pv = preview.get(o.id)
-          const parent = p?.bill_to ? nameOf.get(p.bill_to) : null
           return (
-            <li key={o.id} className="rounded-2xl bg-white p-5 ring-1 ring-black/5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-[16px] font-bold">{o.name}</h2>
-                <span className="rounded bg-[#F4F5F7] px-2 py-0.5 text-[12px] font-semibold text-[#5B616B]">{plan ? `${plan.name}${plan.monthly ? ` 월 ${won(plan.monthly)}` : ''}` : '요금제 없음'}</span>
-                <span className={`rounded px-2 py-0.5 text-[12px] font-semibold ${p?.auto ? 'bg-published/10 text-published' : 'bg-line/60 text-muted'}`}>{p?.auto ? '자동 청구 켜짐' : '자동 청구 꺼짐'}</span>
-                {(o as { billing_hold?: boolean }).billing_hold && <span className="rounded bg-danger/10 px-2 py-0.5 text-[12px] font-semibold text-danger">미납 · 이용 제한 중</span>}
-                {thisMonthHas.has(o.id) && <span className="rounded bg-[#EEF3FF] px-2 py-0.5 text-[12px] font-semibold text-[#2F6BF0]">{monthLabel(`${thisMonth}-01`)} 청구서 있음</span>}
+            <form action={saveOutletPlan} className="mt-3 grid gap-3 text-[13px] sm:grid-cols-2 lg:grid-cols-4">
+              <input type="hidden" name="outlet_id" value={o.id} />
+              <label className="flex items-center gap-2 font-semibold lg:col-span-4">
+                <input type="checkbox" name="auto" defaultChecked={!!p?.auto} className="h-4 w-4" />
+                매월 자동 청구
+              </label>
+              <label className="block">
+                <span className="field-label">결제 주기</span>
+                <select name="cycle" defaultValue={p?.cycle ?? 'monthly'} className="field-input py-1.5">
+                  <option value="monthly">월 결제</option>
+                  <option value="annual">1년 결제 ({ANNUAL_MONTHS}개월 값)</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="field-label">첫 청구 월</span>
+                <input type="month" name="start_month" defaultValue={p?.start_month?.slice(0, 7) ?? nextMonth} className="field-input py-1.5" />
+              </label>
+              <label className="block">
+                <span className="field-label">청구 받을 매체</span>
+                <select name="bill_to" defaultValue={p?.bill_to ?? ''} className="field-input py-1.5">
+                  <option value="">이 매체 (따로 청구)</option>
+                  {all.filter((x) => x.id !== o.id).map((x) => <option key={x.id} value={x.id}>{x.name} 청구서에 추가 매체로</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="field-label">추가 매체 요금제 (청구 받을 매체를 고른 경우)</span>
+                <select name="extra_plan" defaultValue={p?.bill_to ? extraPlanOf(o.plan) : 'basic'} className="field-input py-1.5">
+                  {(['basic', 'standard', 'premium'] as const).map((k) => <option key={k} value={k}>{EXTRA_PLAN_LABEL[k]} 사양 · 월 {won(EXTRA_OUTLET_FEES[k])}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="field-label">맞춤 월 금액 (선택)</span>
+                <input name="custom_monthly" inputMode="numeric" defaultValue={p?.custom_monthly ?? ''} placeholder="요금제 금액 대신" className="field-input py-1.5 text-right tabular-nums" />
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="beta" defaultChecked={!!p?.beta} className="h-4 w-4" />
+                베타 반값 (첫 청구 월부터 3개월)
+              </label>
+              <label className="flex items-center gap-2 sm:col-span-2">
+                <input type="checkbox" name="setup_fee_pending" defaultChecked={!!p?.setup_fee_pending} className="h-4 w-4" />
+                다음 청구서에 세팅비 {won(SETUP_FEE)} 넣기
+              </label>
+              <div className="flex justify-end">
+                <PendingButton pending="저장 중…" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[13px] font-bold text-white">저장</PendingButton>
               </div>
-
-              {p?.auto && parent && <p className="mt-2 text-[13px] text-muted">{parent} 청구서에 추가 매체로 함께 청구됩니다.</p>}
-              {p?.bill_to && (() => {
-                // 매체 추가는 프리미엄 전용 (맞춤 금액 고객은 예외)
-                const root = (outlets ?? []).find((x) => x.id === p.bill_to)
-                const rootPlan = plans.get(p.bill_to)
-                return root && root.plan !== 'premium' && rootPlan?.custom_monthly == null
-                  ? <p role="alert" className="mt-2 rounded bg-danger/10 px-3 py-2 text-[12.5px] text-danger">⚠ {root.name}은(는) 프리미엄 요금제가 아닙니다. 매체 추가는 프리미엄 전용이니 요금제를 바꾸거나 맞춤 금액으로 정해 주세요.</p>
-                  : null
-              })()}
-              {pv && (
-                <div className="mt-3 rounded-lg border border-line px-4 py-3 text-[13px]">
-                  <p className="flex flex-wrap justify-between gap-2 font-semibold">
-                    <span>{monthLabel(`${nextMonth}-01`)} 1일 청구 예정 · 납부 기한 {dueDate(nextMonth, `${nextMonth}-01`).replace(/-/g, '.')}</span>
-                    <span className="tabular-nums">{pv.items.length ? won(pv.totals.total) : '청구 없음'}</span>
-                  </p>
-                  {pv.items.length > 0 && (
-                    <ul className="mt-1.5 space-y-0.5 text-muted">
-                      {pv.items.map((it, i) => (
-                        <li key={i} className="flex justify-between gap-3"><span>{it.name}{it.qty > 1 ? ` × ${it.qty}` : ''}</span><span className="shrink-0 whitespace-nowrap tabular-nums">{won(it.qty * it.unit_price)}</span></li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-
-              <form action={saveOutletPlan} className="mt-4 grid gap-3 text-[13px] sm:grid-cols-2 lg:grid-cols-4">
-                <input type="hidden" name="outlet_id" value={o.id} />
-                <label className="flex items-center gap-2 font-semibold lg:col-span-4">
-                  <input type="checkbox" name="auto" defaultChecked={!!p?.auto} className="h-4 w-4" />
-                  매월 자동 청구
-                </label>
-                <label className="block">
-                  <span className="field-label">결제 주기</span>
-                  <select name="cycle" defaultValue={p?.cycle ?? 'monthly'} className="field-input py-1.5">
-                    <option value="monthly">월 결제</option>
-                    <option value="annual">1년 결제 ({ANNUAL_MONTHS}개월 값)</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="field-label">첫 청구 월</span>
-                  <input type="month" name="start_month" defaultValue={p?.start_month?.slice(0, 7) ?? nextMonth} className="field-input py-1.5" />
-                </label>
-                <label className="block">
-                  <span className="field-label">청구 받을 매체</span>
-                  <select name="bill_to" defaultValue={p?.bill_to ?? ''} className="field-input py-1.5">
-                    <option value="">이 매체 (따로 청구)</option>
-                    {(outlets ?? []).filter((x) => x.id !== o.id).map((x) => <option key={x.id} value={x.id}>{x.name} 청구서에 추가 매체로</option>)}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="field-label">추가 매체 요금제 (청구 받을 매체를 고른 경우)</span>
-                  <select name="extra_plan" defaultValue={p?.bill_to ? extraPlanOf(o.plan) : 'basic'} className="field-input py-1.5">
-                    {(['basic', 'standard', 'premium'] as const).map((k) => <option key={k} value={k}>{EXTRA_PLAN_LABEL[k]} 사양 · 월 {won(EXTRA_OUTLET_FEES[k])}</option>)}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="field-label">맞춤 월 금액 (선택)</span>
-                  <input name="custom_monthly" inputMode="numeric" defaultValue={p?.custom_monthly ?? ''} placeholder="요금제 금액 대신" className="field-input py-1.5 text-right tabular-nums" />
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" name="beta" defaultChecked={!!p?.beta} className="h-4 w-4" />
-                  베타 반값 (첫 청구 월부터 3개월)
-                </label>
-                <label className="flex items-center gap-2 sm:col-span-2">
-                  <input type="checkbox" name="setup_fee_pending" defaultChecked={!!p?.setup_fee_pending} className="h-4 w-4" />
-                  다음 청구서에 세팅비 {won(SETUP_FEE)} 넣기
-                </label>
-                <div className="flex justify-end">
-                  <PendingButton pending="저장 중…" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[13px] font-bold text-white">저장</PendingButton>
-                </div>
-              </form>
-            </li>
+            </form>
           )
-        })}
-      </ul>
+        }
+
+        return (
+          <>
+            <section className="mt-6">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-[16px] font-bold">자동 청구 중인 매체 <span className="text-[13px] font-normal text-muted">{on.length}곳</span></h2>
+                {on.length > 0 && preview.size > 0 && <p className="text-[13px] tabular-nums text-muted">{monthLabel(`${nextMonth}-01`)} 청구 예정 합계 <strong className="text-ink">{won(total)}</strong></p>}
+              </div>
+              {on.length === 0 ? (
+                <p className="mt-3 rounded-xl bg-white px-5 py-6 text-[13.5px] text-muted ring-1 ring-black/5">자동 청구 중인 매체가 없습니다. 청구서를 처음 발행할 때 &ldquo;매달 자동 청구로 설정&rdquo;을 체크하면 여기에 나타납니다.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {on.map((o) => {
+                    const p = plans.get(o.id)!
+                    const plan = planById(o.plan)
+                    const pv = preview.get(o.id)
+                    const card = cardOf.get(o.id)
+                    const parent = p.bill_to ? nameOf.get(p.bill_to) : null
+                    return (
+                      <li key={o.id} className="rounded-xl bg-white p-4 ring-1 ring-black/5">
+                        <details>
+                          <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1.5">
+                            <span className="min-w-[8rem] text-[15px] font-bold">{o.name}</span>
+                            <span className="rounded bg-[#F4F5F7] px-2 py-0.5 text-[12px] font-semibold text-[#5B616B]">{p.custom_monthly != null ? `맞춤 월 ${won(p.custom_monthly)}` : plan ? `${plan.name}${plan.monthly ? ` 월 ${won(plan.monthly)}` : ''}` : '요금제 없음'}</span>
+                            {p.beta && <span className="rounded bg-[#FFF3EB] px-2 py-0.5 text-[12px] font-bold text-[#C2410C]">베타 반값</span>}
+                            {p.cycle === 'annual' && <span className="rounded bg-[#EEF3FF] px-2 py-0.5 text-[12px] font-semibold text-[#2F6BF0]">1년 결제</span>}
+                            {parent && <span className="text-[12px] text-muted">→ {parent} 청구서에 포함</span>}
+                            <span className={`rounded px-2 py-0.5 text-[12px] font-semibold ${card ? (card.last_error ? 'bg-danger/10 text-danger' : 'bg-published/10 text-published') : 'bg-draft/15 text-[#6B5F22]'}`}>
+                              {card ? `카드 ${card.card_company ?? ''} ${card.card_number ?? ''}${card.last_error ? ' · 결제 실패' : ''}` : '카드 미등록 (직접 결제)'}
+                            </span>
+                            {(o as { billing_hold?: boolean }).billing_hold && <span className="rounded bg-danger/10 px-2 py-0.5 text-[12px] font-semibold text-danger">미납 · 이용 제한 중</span>}
+                            {thisMonthHas.has(o.id) && <span className="rounded bg-[#EEF3FF] px-2 py-0.5 text-[12px] font-semibold text-[#2F6BF0]">{monthLabel(`${thisMonth}-01`)} 청구서 있음</span>}
+                            <span className="ml-auto text-[14px] font-bold tabular-nums">{pv ? (pv.items.length ? won(pv.totals.total) : '청구 없음') : '-'}</span>
+                          </summary>
+                          {pv && pv.items.length > 0 && (
+                            <div className="mt-3 rounded-lg border border-line px-4 py-3 text-[13px]">
+                              <p className="font-semibold">{monthLabel(`${nextMonth}-01`)} 청구 · 발행 {lastDay.replace(/-/g, '.')} · {card ? `결제 ${nextMonth.replace('-', '.')}.01 오전 10시 (카드)` : `납부 기한 ${dueDate(nextMonth, `${nextMonth}-01`).replace(/-/g, '.')}`}</p>
+                              <ul className="mt-1.5 space-y-0.5 text-muted">
+                                {pv.items.map((it, i) => (
+                                  <li key={i} className="flex justify-between gap-3"><span>{it.name}{it.qty > 1 ? ` × ${it.qty}` : ''}</span><span className="shrink-0 whitespace-nowrap tabular-nums">{won(it.qty * it.unit_price)}</span></li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          <details className="mt-3">
+                            <summary className="cursor-pointer text-[12.5px] font-semibold text-[#2F6BF0]">설정 바꾸기</summary>
+                            {settings(o)}
+                          </details>
+                        </details>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+
+            {off.length > 0 && (
+              <details className="mt-6 rounded-xl bg-white p-4 ring-1 ring-black/5">
+                <summary className="cursor-pointer text-[14px] font-bold">자동 청구가 꺼진 매체 <span className="font-normal text-muted">{off.length}곳 · 켜려면 펼치세요</span></summary>
+                <ul className="mt-3 divide-y divide-line">
+                  {off.map((o) => {
+                    const plan = planById(o.plan)
+                    return (
+                      <li key={o.id} className="py-3">
+                        <details>
+                          <summary className="flex cursor-pointer flex-wrap items-center gap-2 text-[14px]">
+                            <span className="font-semibold">{o.name}</span>
+                            <span className="rounded bg-[#F4F5F7] px-2 py-0.5 text-[12px] font-semibold text-[#5B616B]">{plan ? plan.name : '요금제 없음'}</span>
+                          </summary>
+                          {settings(o)}
+                        </details>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </details>
+            )}
+          </>
+        )
+      })()}
     </div>
   )
 }
