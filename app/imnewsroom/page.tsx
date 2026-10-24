@@ -885,7 +885,7 @@ export default async function ProductHome() {
             <div>
               <h2 className={H2}>서비스 신청</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-[#5B616B]">
-                요금제를 고르고 신청서를 보내주시면 담당자가 연락드려 개통 일정과 계약 서류를 안내합니다. 첫 이용료 청구서는 홈페이지를 여는 개통 시점에 발행되며, 그 전에는 비용이 생기지 않습니다.
+                요금제를 고르고 신청서를 보내주시면 담당자가 연락드려 개통 일정과 계약 서류를 안내합니다. 첫 이용료는 정식 오픈 전에 청구서로 먼저 받고 납부를 확인한 뒤 오픈하며, 오픈 전에 취소하면 낸 금액을 모두 돌려드립니다. 신청만 한 지금은 비용이 생기지 않습니다.
               </p>
               <ul className="mt-8 space-y-3">
                 {beta && <Check>{BETA_END_LABEL}까지 신청하면 {BETA_PERIOD_LABEL} 이용료 반값 · 세팅비 무료 ({REGULAR_AFTER_LABEL} 정상가)</Check>}

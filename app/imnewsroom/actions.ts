@@ -137,7 +137,7 @@ async function sendApplyMails(a: { company: string; contactName: string; phone: 
       `${a.contactName}님, ${PRODUCT.name}을 신청해 주셔서 감사합니다. 담당자가 영업일 기준 이틀 안에 ${a.phone}으로 연락드려 개통 일정과 계약 내용을 안내합니다.`,
       `신청 내용: ${a.plan} · ${BILLING_LABEL[a.billing]} · 첫 결제 예상 ${won}${a.domain ? ` · 도메인 ${a.domain}` : ''}`,
       `개통까지 어떤 순서로, 보통 며칠이 걸리는지는 ${ONBOARDING_URL} 에서 보실 수 있습니다.`,
-      '첫 이용료 청구서는 홈페이지를 여는 개통 시점에 발행되며, 그 전에는 비용이 생기지 않습니다. 아래 버튼으로 이 신청 내용의 견적서를 보고 인쇄(PDF 저장)할 수 있습니다.',
+      '첫 이용료는 정식 오픈 전에 청구서로 먼저 받고 납부를 확인한 뒤 오픈합니다. 오픈 전에 취소하면 낸 금액을 모두 돌려드리며, 신청만 한 지금은 비용이 생기지 않습니다. 아래 버튼으로 이 신청 내용의 견적서를 보고 인쇄(PDF 저장)할 수 있습니다.',
     ],
     button: { label: '견적서 보기', url: quote },
     footer: `이 메일은 ${PRODUCT.name} 서비스 신청 접수 확인입니다. 문의: ${ISSUER.contact ?? ''}`,

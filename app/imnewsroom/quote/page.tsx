@@ -107,7 +107,7 @@ export default async function QuotePage(props: { searchParams: Promise<{ plan?: 
                 <li>세팅비에는 편집국·홈페이지 개설, 로고·색 맞춤, 법정 표기·정책 페이지, 도메인 연결, 기존 기사·사진 옮기기와 옛 주소 연결, 네이버·구글 검색 등록 대행, 사용법 안내(고객센터 이용안내·작성 가이드)가 들어 있습니다.</li>
                 <li>표시된 금액이 최종 금액입니다. 미국 법인 공급이라 한국 부가가치세가 붙지 않으며 세금계산서 대신 청구서와 결제 영수증을 드립니다. <Link href={`${PRODUCT.path}/tax`} className="underline">비용 처리 안내</Link></li>
                 <li>AI 사용이 한도를 넘거나 매체를 추가하면 요금표에 따라 추가 요금이 생길 수 있습니다.</li>
-                <li>이 견적은 {kstDate(until)}까지 유효하며, 계약 조건은 <a href={`${PRODUCT.url}${PRODUCT.path}/terms`} className="underline">서비스 이용약관</a>을 따릅니다. 첫 청구서는 개통(홈페이지 정식 오픈) 시점에 발행됩니다.</li>
+                <li>이 견적은 {kstDate(until)}까지 유효하며, 계약 조건은 <a href={`${PRODUCT.url}${PRODUCT.path}/terms`} className="underline">서비스 이용약관</a>을 따릅니다. 첫 청구서는 정식 오픈 전에 발행하며 납부를 확인한 뒤 오픈합니다. 정식 오픈일이 그달 1일이 아니면 그달의 남은 기간은 이용료가 없고, 첫 청구서는 다음 달 이용료입니다. 이후 매월 1일 청구합니다.</li>
               </ul>
             </>
           )}
