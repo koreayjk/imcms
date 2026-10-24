@@ -10,9 +10,9 @@ export const dynamic = 'force-dynamic'
 // 링크를 아는 사람만 보는 화면: 검색에 나오지 않게, 주소가 다른 곳으로 새지 않게
 export const metadata: Metadata = { title: '청구서 결제 — IM 뉴스룸', robots: { index: false, follow: false }, referrer: 'no-referrer' }
 
-export default async function PayLinkPage(props: { params: Promise<{ token: string }>; searchParams: Promise<{ canceled?: string }> }) {
+export default async function PayLinkPage(props: { params: Promise<{ token: string }>; searchParams: Promise<{ canceled?: string; error?: string }> }) {
   const { token } = await props.params
-  const { canceled } = await props.searchParams
+  const { canceled, error } = await props.searchParams
   const inv = await invoiceByToken(token)
   if (!inv) {
     return (
@@ -53,6 +53,7 @@ export default async function PayLinkPage(props: { params: Promise<{ token: stri
           <p className="rounded-2xl bg-draft/10 px-5 py-4 text-[14px] leading-relaxed">이 링크에서는 아직 온라인 결제를 열 수 없습니다. 편집국에 로그인해 청구서 화면에서 결제하시거나 운영팀에 문의해 주세요.</p>
         ) : (
           <>
+            {error && <p role="alert" className="mb-3 rounded-lg bg-danger/10 px-4 py-2.5 text-[13.5px] font-semibold text-danger">{error.slice(0, 200)}</p>}
             {canceled && <p role="status" className="mb-3 rounded-lg bg-draft/10 px-4 py-2.5 text-[13.5px]">결제를 마치지 않았습니다. 준비되면 아래 버튼으로 다시 결제해 주세요.</p>}
             <PayLinkButton token={token} testMode={stripeTestMode()} hasAutopay={!!inv.has_autopay} />
           </>

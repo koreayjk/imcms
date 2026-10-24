@@ -97,7 +97,8 @@ end $$;
 
 -- 결제가 끝난 뒤 그 카드를 매체의 자동결제로 저장 (autopay_save 와 같음 + 동의 시각)
 drop function if exists public.payment_link_autopay_save(text, text, text, text, text, text);
-create or replace function public.payment_link_autopay_save(secret text, p_invoice uuid, p_customer_key text, p_billing_key text, p_card_company text, p_card_number text) returns void
+drop function if exists public.payment_link_autopay_save(text, uuid, text, text, text, text);
+create or replace function public.payment_link_autopay_save(secret text, p_invoice uuid, p_customer_key text, p_billing_key text, p_card_company text, p_card_number text, p_version text default null) returns void
 language plpgsql security definer set search_path = public, private as $$
 declare i invoices%rowtype;
 begin
@@ -106,7 +107,10 @@ begin
   if i.id is null then raise exception '결제 링크로 낸 청구서가 아닙니다.'; end if;
   perform public.autopay_save(secret, i.outlet_id, p_customer_key, p_billing_key, p_card_company, p_card_number, null, 'stripe');
   update outlet_autopay set consent_at = now() where outlet_id = i.outlet_id;
+  -- 동의 기록: 결제 화면의 안내 문구(결제하면 자동결제 카드로 저장되는 데 동의한 것으로 봄)를 보고 결제를 마친 것
+  insert into consents (user_id, email, kind, version, source, outlet_id)
+  values (null, coalesce((select nullif(trim(manager_email), '') from outlet_billing where outlet_id = i.outlet_id), '(결제 전용 링크)'), 'autopay', left(coalesce(p_version, ''), 20), 'pay_link', i.outlet_id);
 end $$;
 
-revoke all on function public.payment_link_autopay_key(text, text), public.payment_link_autopay_consent(text, text, text), public.payment_link_autopay_save(text, uuid, text, text, text, text) from public;
-grant execute on function public.payment_link_autopay_key(text, text), public.payment_link_autopay_consent(text, text, text), public.payment_link_autopay_save(text, uuid, text, text, text, text) to anon, authenticated;
+revoke all on function public.payment_link_autopay_key(text, text), public.payment_link_autopay_consent(text, text, text), public.payment_link_autopay_save(text, uuid, text, text, text, text, text) from public;
+grant execute on function public.payment_link_autopay_key(text, text), public.payment_link_autopay_consent(text, text, text), public.payment_link_autopay_save(text, uuid, text, text, text, text, text) to anon, authenticated;

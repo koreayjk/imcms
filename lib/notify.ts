@@ -11,7 +11,7 @@ export async function notify(
   kind: NoticeKind,
   ref: string,
   dedupeKey: string,
-  build: (to: { email: string; name: string | null }) => { subject: string; title: string; lines: string[]; button?: { label: string; url: string }; footer?: string },
+  build: (to: { email: string; name: string | null }) => { subject: string; title: string; lines: string[]; button?: { label: string; url: string }; footer?: string } | { subject: string; html: string; text: string },
 ) {
   if (!mailReady() || !process.env.PAYMENT_DB_SECRET) return
   try {
@@ -23,7 +23,7 @@ export async function notify(
       .filter((r) => r.email)
       .map((r) => {
         const m = build(r)
-        const { html, text } = noticeMail(m)
+        const { html, text } = 'html' in m ? m : noticeMail(m)
         return { to: r.email, subject: m.subject, html, text, tag: kind }
       })
     const res = await sendMails(mails)
