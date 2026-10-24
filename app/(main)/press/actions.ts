@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
 import { foreignTopicOf, isForeignSource } from '@/lib/press-sources'
-import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, refreshPress, sourceLabel, textToParagraphs, type PressRelease } from '@/lib/press'
+import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, pressTextForAi, refreshPress, sourceLabel, textToParagraphs, type PressRelease } from '@/lib/press'
 import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 import { duplicateNotes } from '@/lib/duplicate-check'
@@ -83,7 +83,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       redirect(`/press/${id}?error=${encodeURIComponent(msg)}`)
     }
     try {
-      const result = await draftFromPressRelease({ title: r.title, text: htmlToText(original) || r.summary || '', source: sourceLabel(r), foreign: isForeignSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link })
+      const result = await draftFromPressRelease({ title: r.title, text: pressTextForAi(original) || r.summary || '', source: sourceLabel(r), foreign: isForeignSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link })
       await finishAi(supabase, slot.id, result)
       const draft = result.draft
       title = draft.title

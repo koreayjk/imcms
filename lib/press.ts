@@ -267,6 +267,19 @@ export function htmlToText(html: string) {
     .join('\n\n')
 }
 
+// 메일로 받은 보도자료: 메일 본문(전달 글) 뒤에 첨부 문서 내용이 붙어 있으면 둘을 나눠 AI에 알려 준다 (ensureEmailText 가 넣는 표시 기준)
+const ATTACH_MARK = '<hr><p><strong>첨부파일 내용 ('
+export function pressTextForAi(html: string) {
+  const at = html.indexOf(ATTACH_MARK)
+  if (at < 0) return htmlToText(html)
+  const cover = htmlToText(html.slice(0, at))
+  const docs = html.slice(at).split('<hr>').filter(Boolean).map((part) => {
+    const name = part.match(/^<p><strong>첨부파일 내용 \(([\s\S]*?)\)<\/strong><\/p>/)?.[1] ?? '첨부 문서'
+    return `[첨부 문서: ${decode(name)}]\n${htmlToText(part.replace(/^<p><strong>[\s\S]*?<\/strong><\/p>/, ''))}`
+  })
+  return `[메일 본문 — 보낸 사람이 쓴 전달 글]\n${cover || '(없음)'}\n\n${docs.join('\n\n')}`
+}
+
 // 보도자료를 낸 곳 이름 (AI 초안에 출처로 알려 준다)
 export function sourceLabel(r: Pick<PressRelease, 'source_key' | 'source_name'>) {
   if (r.source_key.startsWith('nw-')) return '뉴스와이어'
