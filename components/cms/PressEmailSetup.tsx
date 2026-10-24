@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { getMyInbox, type MyInbox } from '@/app/(main)/press/email/actions'
+import { getMyInbox, requestPressAddon, type MyInbox } from '@/app/(main)/press/email/actions'
 import { formatDateTime } from '@/lib/format'
+import { PRESS_MAIL_ADDON_FEE, PRESS_MAIL_TRIAL } from '@/lib/pricing'
 
 const FILTER_WORDS = '보도자료 OR 보도참고자료 OR 배포자료 OR "press release"'
 
@@ -50,6 +51,40 @@ function OpenGmail({ href, children, onClick }: { href: string; children: ReactN
   )
 }
 
+// 부가 서비스(월 39,000원) 안내: 체험 중이거나 체험을 다 쓴 베이직·스탠다드 매체에 보인다
+function AddonNotice({ inbox }: { inbox: MyInbox }) {
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'already'>('idle')
+  const [err, setErr] = useState('')
+  const left = inbox.trial_left ?? 0
+  const fee = PRESS_MAIL_ADDON_FEE.toLocaleString('ko-KR')
+  const lost = inbox.dropped_week ?? 0
+  const apply = async () => {
+    setState('busy'); setErr('')
+    const res = await requestPressAddon()
+    if (res.error) { setErr(res.error); setState('idle'); return }
+    setState(res.already ? 'already' : 'done')
+  }
+  return (
+    <section className={`rounded-lg border px-5 py-4 ${left > 0 ? 'border-review/40 bg-review/5' : 'border-draft/50 bg-draft/10'}`}>
+      <h2 className="text-[15px] font-bold">
+        {left > 0 ? `부가 서비스 체험 중 — 메일 ${left}통 남았습니다` : '체험이 끝났습니다 — 이제 오는 메일은 받지 못합니다'}
+      </h2>
+      <p className="mt-1.5 text-[13.5px] leading-relaxed">
+        {left > 0
+          ? <>처음 {PRESS_MAIL_TRIAL}통은 무료로 받아 볼 수 있습니다. 보도자료가 자동으로 보도자료함에 들어오고, 첨부파일(한글·워드·PDF·텍스트) 내용이 본문에 들어오고, AI가 메일 본문과 첨부를 함께 읽고 초안을 씁니다.</>
+          : <>{lost > 0 ? <strong className="text-danger">최근 7일 동안 {lost}통이 도착했지만 받지 못했습니다. </strong> : null}이미 받은 보도자료는 그대로 쓸 수 있고, 새 메일을 계속 받으려면 부가 서비스를 신청해 주세요.</>}
+      </p>
+      <p className="mt-1.5 text-[13.5px]"><strong>보도자료 메일 자동 수신 · 월 {fee}원</strong> <span className="text-muted">(프리미엄 요금제는 기본 포함 · 다음 청구서부터 부가 항목으로 청구)</span></p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        {state === 'done' || state === 'already'
+          ? <p role="status" className="rounded bg-published/10 px-3 py-2 text-[13px] font-semibold text-published">{state === 'already' ? '이미 신청이 접수돼 있습니다. 운영팀이 확인해 켜 드립니다.' : '신청이 접수됐습니다. 운영팀이 확인해 켜 드리고, 켜지면 바로 메일을 받습니다.'}</p>
+          : <button type="button" onClick={apply} disabled={state === 'busy'} className="rounded bg-ink px-4 py-2 text-[13.5px] font-semibold text-white hover:opacity-90 disabled:opacity-60">{state === 'busy' ? '신청 중…' : `부가 서비스 신청하기 (월 ${fee}원)`}</button>}
+        {err && <span role="alert" className="text-[13px] text-danger">{err}</span>}
+      </div>
+    </section>
+  )
+}
+
 export default function PressEmailSetup({ initial }: { initial: MyInbox | null }) {
   const [inbox, setInbox] = useState(initial)
   const [mode, setMode] = useState<'auto' | 'manual'>('auto')
@@ -90,6 +125,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
 
   return (
     <div className="mt-6 space-y-5">
+      {inbox && inbox.mail_on === false && <AddonNotice inbox={inbox} />}
       {/* 내 전용 주소 + 받은 현황 */}
       <section className="rounded-lg border border-line bg-white px-5 py-4">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">

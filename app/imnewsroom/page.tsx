@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { ISSUER, PRODUCT, appLink, isProductHost } from '@/lib/product'
-import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, BETA_PERIOD_LABEL, EXTRA_OUTLET_FEES, PLANS, REGULAR_AFTER_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
+import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_END_LABEL, BETA_PERIOD_LABEL, EXTRA_OUTLET_FEES, PLANS, PRESS_MAIL_ADDON_FEE, PRESS_MAIL_TRIAL, REGULAR_AFTER_LABEL, betaDaysLeft, isBeta, planCharge, won } from '@/lib/pricing'
 import ProofDemo from '@/components/product/ProofDemo'
 import ApplyForm from '@/components/product/ApplyForm'
 import { Browser, Phone } from '@/components/product/Devices'
@@ -195,6 +195,7 @@ function pricingFaq(beta: boolean) {
     { q: '부가세가 붙나요? 세금계산서를 받을 수 있나요?', a: 'IM 뉴스룸은 미국 법인 IM America Group Corp(DBA IM Genesis)이 공급하는 해외 서비스라 요금에 한국 부가세가 따로 붙지 않습니다. 요금표 금액이 그대로 최종 금액입니다. 한국 세금계산서는 발행하지 않고, 편집국 고객센터에서 청구서와 결제 영수증(카드 결제 시 카드 영수증)을 드립니다. 경비 처리 방법은 거래하시는 세무사와 확인해 주세요.' },
     { q: '1년 한 번에 결제하면 할인되나요?', a: `네. 1년 요금을 한 번에 내시면 ${ANNUAL_FREE}라 12개월을 ${ANNUAL_MONTHS}개월 값으로 씁니다. 따로 계약서를 쓰지 않고 신청서에서 결제 방식만 고르시면 됩니다.${beta ? ` 베타 기간에는 12개월 중 ${BETA_PERIOD_LABEL}분을 반값으로 계산한 뒤 ${ANNUAL_FREE}를 적용합니다. 예: 지금 베이직 1년 ${won(planCharge(PLANS[0], 'annual', true)!.price)}.` : ''}` },
     { q: '세팅비는 무엇인가요?', a: `처음 개통할 때 한 번만 내는 150,000원입니다. 편집국·홈페이지 개설, 로고·색 등 맞춤 적용, 법정 표기·정책 페이지, 도메인 연결, 기존 기사·사진 옮기기와 옛 주소 연결, 네이버·구글 검색 등록 대행, 사용법 안내(고객센터 이용안내·작성 가이드)가 들어 있습니다.${beta ? ` 베타 기간(${BETA_END_LABEL}까지)에 신청하시면 세팅비는 무료입니다. 단, 개통 후 3개월 이상 이용하시는 조건이며 3개월 안에 해지하시면 면제된 세팅비를 정산합니다.` : ''}` },
+    { q: '메일로 온 보도자료를 자동으로 받는 기능은 요금에 포함되나요?', a: `프리미엄 요금제에는 기본 포함이고, 베이직·스탠다드는 부가 서비스로 월 ${won(PRESS_MAIL_ADDON_FEE)}입니다. 신청하기 전에 메일 ${PRESS_MAIL_TRIAL}통을 무료로 받아 써 볼 수 있습니다. 메일로 온 보도자료를 보도자료함에 모으고, 첨부(한글·워드·PDF·텍스트) 내용을 본문에 넣고, 메일 본문과 첨부를 함께 읽어 AI가 초안을 씁니다. 뉴스와이어·정책브리핑 보도자료와 직접 올리기는 모든 요금제에서 쓸 수 있습니다.` },
     { q: '매체를 여러 개 운영할 수 있나요?', a: `네. 여러 매체 운영은 프리미엄 요금제에서 쓸 수 있습니다. 프리미엄에는 매체 2개가 포함되고, 3번째 매체부터 매체마다 월 요금이 듭니다. 추가 매체는 사양을 골라 운영합니다: 베이직 ${won(EXTRA_OUTLET_FEES.basic)}(AI 초안·법적 검수 월 300회, 뉴스레터 없음 등) · 스탠다드 ${won(EXTRA_OUTLET_FEES.standard)} · 프리미엄 ${won(EXTRA_OUTLET_FEES.premium)}입니다(포함된 1개는 베이직 사양까지 포함이라 더 높은 사양은 차액만 냅니다). 또한 그룹장 화면에서 여러 매체를 한 번에 관리하고 기사를 여러 매체에 동시에 송고할 수 있습니다. 매체가 아주 많으면 엔터프라이즈로 상담해 주세요.` },
   ]
 }
@@ -396,8 +397,8 @@ export default async function ProductHome() {
               <h2 className={`mt-5 ${H2}`}>보도자료를 찾으러 다니지 마세요.<br />메일함까지 알아서 모입니다.</h2>
               <p className="mt-5 text-[17px] leading-[1.8] text-[#3B4048]">뉴스와이어와 정책브리핑의 보도자료가 30분마다 들어오고, <strong>기자 메일함으로 온 보도자료</strong>도 자동으로 같은 함에 쌓입니다. 우리 매체 분야에 맞는 것만 추천 탭에 뜹니다.</p>
               <ul className="mt-7 space-y-3">
-                <Check>지메일 필터 한 번 설정하면 보도자료 메일만 자동 수집 (개인 메일은 제외)</Check>
-                <Check>보낸 기관·제목 정리, 첨부 사진은 본문에, 한글·PDF·워드 내용은 스탠다드부터 자동 입력</Check>
+                <Check>지메일 필터 한 번 설정하면 보도자료 메일만 자동 수집 (개인 메일은 제외) · 부가 서비스</Check>
+                <Check>보낸 기관·제목 정리, 첨부 사진은 본문에, 한글·PDF·워드 내용은 읽어서 본문에 자동 입력</Check>
                 <Check>같은 자료가 여러 기자에게 와도 하나로, 이미 쓴 자료는 “기사화됨” 표시</Check>
                 <Check>배포처 약관(하루 사용 건수)까지 화면에서 확인</Check>
               </ul>

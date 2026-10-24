@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ANNUAL_MONTHS, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEES, EXTRA_PLAN_LABEL, PREMIUM_INCLUDED_EXTRA, extraOutletFee, extraPlanOf, SETUP_FEE, addMonth, annualPrice, betaRateFor, planById } from './pricing'
+import { ANNUAL_MONTHS, PRESS_MAIL_ADDON_FEE, pressMailIncluded, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEES, EXTRA_PLAN_LABEL, PREMIUM_INCLUDED_EXTRA, extraOutletFee, extraPlanOf, SETUP_FEE, addMonth, annualPrice, betaRateFor, planById } from './pricing'
 import { invoiceTotals, type InvoiceItem } from './support'
 import { paymentDbSecret } from './toss'
 import { notifyInvoiceDunning, notifyInvoiceIssued } from './invoice-mail'
@@ -8,11 +8,12 @@ import { notifyInvoiceDunning, notifyInvoiceIssued } from './invoice-mail'
 //   매월 1일 발행 · 5일 납부 · 10일까지 유예. 1년 결제는 시작 월부터 12개월마다 한 번(11개월 값)
 //   항목: 요금제 이용료(베타 반값) · 추가 매체 · 지난달 AI 추가 사용(100회마다) · 세팅비(처음 한 번)
 
-export type BillingChild = { outlet_id: string; name: string; over_count: number; plan?: string | null }
+export type BillingChild = { outlet_id: string; name: string; over_count: number; plan?: string | null; press_addon?: boolean }
 export type BillingTarget = {
   outlet_id: string
   name: string
   plan: string | null
+  press_addon?: boolean // 보도자료 메일 자동 수신 부가 서비스 (press-email-addon.sql)
   cycle: 'monthly' | 'annual'
   beta: boolean
   start_month: string | null
@@ -73,6 +74,13 @@ export function billingItems(t: BillingTarget, month: string) {
       if (fee <= 0) return
       const spec = kind === 'basic' ? '' : ` ${EXTRA_PLAN_LABEL[kind]} 사양${i < included ? ' 차액' : ''}`
       items.push({ name: `추가 매체 · ${c.name}${spec}${when}`, qty: 1, unit_price: fee * mult })
+    })
+
+    // 부가 서비스: 보도자료 메일 자동 수신 (켜 둔 매체마다, 프리미엄·엔터프라이즈는 요금제에 포함이라 청구하지 않는다)
+    const addonMult = annual ? ANNUAL_MONTHS : 1
+    ;[{ name: t.name, plan: t.plan, on: t.press_addon }, ...t.children.map((c) => ({ name: c.name, plan: c.plan ?? null, on: c.press_addon }))].forEach((o, i) => {
+      if (!o.on || pressMailIncluded(o.plan)) return
+      items.push({ name: `부가 서비스 · 보도자료 메일 자동 수신${i === 0 ? '' : ` · ${o.name}`}${annual ? ` (1년, ${ANNUAL_MONTHS}개월 값)` : ''}`, qty: 1, unit_price: PRESS_MAIL_ADDON_FEE * addonMult })
     })
   }
 

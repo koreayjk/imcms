@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { saveOutletLimit, savePlanLimit, type OutletLimit, type PlanLimit } from '@/app/(main)/press/email/actions'
+import { saveOutletAddon, saveOutletLimit, savePlanLimit, type OutletLimit, type PlanLimit } from '@/app/(main)/press/email/actions'
 
 const PLAN_LABEL: Record<string, string> = { basic: '베이직', standard: '스탠다드', premium: '프리미엄', other: '엔터프라이즈·요금제 없음', '': '요금제 없음' }
 
@@ -23,6 +23,15 @@ export default function PressMailLimits({ initial, plans: initialPlans }: { init
       setMsg({ id: r.outlet_id, text: n === null ? `요금제 기본 한도(${planLimit(r.plan)}건)로 되돌렸습니다.` : `하루 ${n}건으로 저장했습니다.` })
     })
   }
+  const toggleAddon = (r: OutletLimit) => {
+    const on = !r.addon
+    start(async () => {
+      const res = await saveOutletAddon(r.outlet_id, on)
+      if (res.error) return setMsg({ id: r.outlet_id, text: res.error, error: true })
+      setRows((all) => all.map((x) => (x.outlet_id === r.outlet_id ? { ...x, addon: on } : x)))
+      setMsg({ id: r.outlet_id, text: on ? '부가 서비스를 켰습니다. 다음 청구서부터 월 39,000원이 들어갑니다.' : '부가 서비스를 껐습니다. 이후 오는 메일은 받지 않습니다.' })
+    })
+  }
   const savePlan = (plan: PlanLimit['plan'], raw: string) => {
     const n = Number(raw)
     start(async () => {
@@ -40,6 +49,7 @@ export default function PressMailLimits({ initial, plans: initialPlans }: { init
       <p className="mt-1 text-[13px] leading-relaxed text-muted">
         언론사 한 곳이 메일로 받을 수 있는 보도자료 수입니다. 그날 한도를 넘으면 그날 오는 메일은 받지 않고, 다음 날 0시(한국 시간)부터 새로 오는 메일을 다시 한도까지 받습니다.
         요금제마다 기본 한도를 정하고, 필요한 언론사만 따로 바꿉니다.
+        베이직·스탠다드는 <b>부가 서비스(월 39,000원)</b>를 켠 매체만 메일을 받습니다(켜기 전에는 체험 3통). 프리미엄·엔터프라이즈는 기본 포함입니다.
       </p>
 
       <h3 className="mt-4 text-[13.5px] font-bold">요금제별 기본 한도</h3>
@@ -62,7 +72,14 @@ export default function PressMailLimits({ initial, plans: initialPlans }: { init
         {rows.map((r) => (
           <li key={r.outlet_id} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 py-2.5">
             <span className="min-w-[10rem] flex-1"><span className="font-semibold">{r.outlet_name}</span> <span className="ml-1 text-[12px] text-muted">{PLAN_LABEL[planKey(r.plan) === 'other' && !r.plan ? '' : planKey(r.plan)]}</span></span>
-            <span className="tabular-nums text-muted">오늘 {r.used_today}/{r.daily_limit}건{r.is_custom ? ' (따로 정함)' : ''}{r.dropped_today > 0 ? <b className="ml-1 text-danger">· 못 받음 {r.dropped_today}</b> : null}</span>
+            {r.included
+              ? <span className="rounded bg-published/10 px-2 py-0.5 text-[12px] font-semibold text-published">요금제 포함</span>
+              : (
+                <button type="button" disabled={pending} onClick={() => toggleAddon(r)} aria-pressed={!!r.addon} className={`rounded px-2.5 py-1 text-[12px] font-semibold ${r.addon ? 'bg-published text-white' : 'border border-line text-muted hover:border-ink hover:text-ink'}`}>
+                  {r.addon ? '부가 서비스 켜짐' : `꺼짐 · 체험 ${r.trial_used ?? 0}통 씀`}
+                </button>
+              )}
+            <span className="tabular-nums text-muted">오늘 {r.used_today}/{r.daily_limit}건{r.is_custom ? ' (따로 정함)' : ''}{r.dropped_today > 0 ? <b className="ml-1 text-danger">· 못 받음 {r.dropped_today}</b> : null}{!r.addon && !r.included && (r.dropped_week ?? 0) > 0 ? <b className="ml-1 text-draft">· 부가 서비스 없어 7일간 {r.dropped_week}통 못 받음 (신청 후보)</b> : null}</span>
             <form className="flex items-center gap-1.5" onSubmit={(e) => { e.preventDefault(); saveOutlet(r, String(new FormData(e.currentTarget).get('limit') ?? '')) }}>
               <label className="sr-only" htmlFor={`lim-${r.outlet_id}`}>{r.outlet_name} 하루 한도</label>
               <input id={`lim-${r.outlet_id}`} name="limit" type="number" min={0} max={2000} defaultValue={r.is_custom ? r.daily_limit : ''} placeholder={String(planLimit(r.plan))} className="field-input w-24 py-1 text-right" />

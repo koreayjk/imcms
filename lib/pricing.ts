@@ -58,8 +58,11 @@ export const EXTRA_OUTLET_FEE = 90_000 // 베이직 사양 추가 매체 (약관
 export const EXTRA_OUTLET_FEES = { basic: 90_000, standard: 110_000, premium: 150_000 } as const
 export type ExtraPlan = keyof typeof EXTRA_OUTLET_FEES
 export const extraPlanOf = (plan: string | null | undefined): ExtraPlan => (plan === 'standard' || plan === 'premium' ? plan : 'basic')
-// 메일로 받은 보도자료의 첨부파일(한글·워드·PDF·텍스트) 내용을 본문에 자동으로 넣어 주는 요금제 (베이직은 파일 내려받기만)
-export const pressAutoText = (plan: string | null | undefined) => plan !== 'basic'
+// 부가 서비스 "보도자료 메일 자동 수신": 메일로 온 보도자료를 보도자료함에 모으고, 첨부(한글·워드·PDF·텍스트) 내용을 읽어 AI 초안의 재료로 쓴다
+//   프리미엄·엔터프라이즈·요금제 없음(내부)은 기본 포함, 베이직·스탠다드는 월 39,000원 (신청 전 메일 3통 체험). 켜고 끄기는 총관리자 (supabase/press-email-addon.sql)
+export const PRESS_MAIL_ADDON_FEE = 39_000
+export const PRESS_MAIL_TRIAL = 3
+export const pressMailIncluded = (plan: string | null | undefined) => plan !== 'basic' && plan !== 'standard'
 
 export const extraOutletFee = (plan: string | null | undefined) => EXTRA_OUTLET_FEES[extraPlanOf(plan)]
 export const EXTRA_PLAN_LABEL: Record<ExtraPlan, string> = { basic: '베이직', standard: '스탠다드', premium: '프리미엄' }
@@ -85,7 +88,7 @@ export const PLANS: Plan[] = [
     name: '베이직',
     for: '기자 몇 명이 매일 기사를 내는 소규모 인터넷신문',
     monthly: 110_000,
-    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 300회'], ['저장 용량', '30G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 3건'], ['뉴스레터', '없음'], ['보도자료 첨부', '파일 내려받기']],
+    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 300회'], ['저장 용량', '30G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 3건'], ['뉴스레터', '없음'], ['보도자료 메일 자동 수신', '부가 서비스 월 39,000원']],
     extras: [],
   },
   {
@@ -94,7 +97,7 @@ export const PLANS: Plan[] = [
     for: '섹션이 많고 기사량이 꾸준한 일반 언론사',
     monthly: 150_000,
     pick: true,
-    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 900회'], ['저장 용량', '60G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 5건'], ['뉴스레터', '주 1회 · 회당 2,000명'], ['보도자료 첨부', '한글·PDF·워드 내용 자동 입력']],
+    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 900회'], ['저장 용량', '60G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 5건'], ['뉴스레터', '주 1회 · 회당 2,000명'], ['보도자료 메일 자동 수신', '부가 서비스 월 39,000원']],
     extras: ['홈페이지 맞춤 수정 지원'],
   },
   {
@@ -102,7 +105,7 @@ export const PLANS: Plan[] = [
     name: '프리미엄',
     for: '방문자가 많거나 매체를 여럿 운영하는 언론사',
     monthly: 230_000,
-    specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '주 2회 · 회당 5,000명'], ['보도자료 첨부', '한글·PDF·워드 내용 자동 입력']],
+    specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '주 2회 · 회당 5,000명'], ['보도자료 메일 자동 수신', '포함']],
     extras: ['홈페이지 맞춤 수정 지원', '그룹장 화면 · 여러 매체 동시 송고', '3번째 매체부터 매체마다 월 90,000원(베이직)·110,000원(스탠다드)·150,000원(프리미엄) 중 선택', '우선 지원'],
   },
   {
@@ -110,7 +113,7 @@ export const PLANS: Plan[] = [
     name: '엔터프라이즈',
     for: '방문자·기사량이 아주 많은 중대형 언론사',
     monthly: null,
-    specs: [['운영 매체', '맞춤'], ['AI 초안·법적 검수', '맞춤'], ['저장 용량', '맞춤'], ['전송량', '맞춤'], ['배너·팝업 디자인', '상담'], ['뉴스레터', '맞춤'], ['보도자료 첨부', '내용 자동 입력']],
+    specs: [['운영 매체', '맞춤'], ['AI 초안·법적 검수', '맞춤'], ['저장 용량', '맞춤'], ['전송량', '맞춤'], ['배너·팝업 디자인', '상담'], ['뉴스레터', '맞춤'], ['보도자료 메일 자동 수신', '포함']],
     extras: ['전용 지원 담당'],
   },
 ]

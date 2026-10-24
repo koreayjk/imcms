@@ -276,14 +276,18 @@ export async function invoiceDraft(outletId: string, month: string): Promise<{ i
       supabase.from('outlet_plans').select('outlet_id, outlet:outlets!outlet_plans_outlet_id_fkey(name, plan)').eq('bill_to', outletId),
     ])
     if (!o) return { items: [], note: '매체를 찾지 못했습니다.' }
+    // 부가 서비스(보도자료 메일 자동 수신) 켜짐: press-email-addon.sql 실행 전에는 열이 없어 읽지 못하므로 따로 읽는다
+    const kidIds = ((kids ?? []) as unknown as { outlet_id: string }[]).map((k) => k.outlet_id)
+    const { data: addons } = await supabase.from('outlets').select('id, press_mail_addon').in('id', [o.id, ...kidIds])
+    const addonOf = (id: string) => !!(addons as { id: string; press_mail_addon: boolean }[] | null)?.find((a) => a.id === id)?.press_mail_addon
     const plan = p as { cycle?: string; beta?: boolean; start_month?: string | null; setup_fee_pending?: boolean; custom_monthly?: number | null; bill_to?: string | null } | null
     if (plan?.bill_to) return { items: [], note: '추가 매체는 청구 받는 매체의 청구서에 함께 들어갑니다. 그 매체를 골라 주세요.' }
     target = {
-      outlet_id: o.id, name: o.name, plan: o.plan ?? null,
+      outlet_id: o.id, name: o.name, plan: o.plan ?? null, press_addon: addonOf(o.id),
       cycle: plan?.cycle === 'annual' ? 'annual' : 'monthly', beta: !!plan?.beta, start_month: plan?.start_month ?? null,
       setup_fee_pending: !!plan?.setup_fee_pending, custom_monthly: plan?.custom_monthly ?? null, has_invoice: false,
       over_count: 0, autopay: null,
-      children: ((kids ?? []) as unknown as { outlet_id: string; outlet: { name: string; plan: string | null } | null }[]).map((k) => ({ outlet_id: k.outlet_id, name: k.outlet?.name ?? '추가 매체', plan: k.outlet?.plan ?? null, over_count: 0 })),
+      children: ((kids ?? []) as unknown as { outlet_id: string; outlet: { name: string; plan: string | null } | null }[]).map((k) => ({ outlet_id: k.outlet_id, name: k.outlet?.name ?? '추가 매체', plan: k.outlet?.plan ?? null, press_addon: addonOf(k.outlet_id), over_count: 0 })),
     }
     partial = true
   }

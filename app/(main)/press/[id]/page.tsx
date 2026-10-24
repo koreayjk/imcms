@@ -8,7 +8,6 @@ import PendingButton from '@/components/cms/PendingButton'
 import { aiReady } from '@/lib/ai-draft'
 import { aiLevel, aiLimitMessage, getAiStatus, myLimitFull, myLimitMessage } from '@/lib/ai-usage'
 import { ensureEmailImages, ensureEmailText } from '@/lib/press-attachments'
-import { pressAutoText } from '@/lib/pricing'
 import { createArticleFromPress, deleteManualPress } from '../actions'
 import { isForeignSource } from '@/lib/press-sources'
 
@@ -27,10 +26,8 @@ export default async function PressDetailPage(
   if (!data) notFound()
   const withImages = await ensureEmailImages(supabase, await ensureFullBody(supabase, data as PressRelease), outletId)
   const attachments = withImages.attachments
-  // 스탠다드 요금제부터: 첨부 문서의 글자를 본문에 넣는다 (베이직 요금제는 내려받기만)
-  const { data: outletRow } = outletId ? await supabase.from('outlets').select('plan').eq('id', outletId).maybeSingle() : { data: null }
-  const autoText = pressAutoText(outletRow?.plan)
-  const { release: r, notes: readNotes } = autoText ? await ensureEmailText(supabase, withImages.release, attachments) : { release: withImages.release, notes: [] as string[] }
+  // 메일 첨부 문서의 글자를 본문에 넣는다 (메일 자동 수신 부가 서비스를 쓰거나 체험 중인 매체에만 메일이 들어오므로 따로 구분하지 않는다)
+  const { release: r, notes: readNotes } = await ensureEmailText(supabase, withImages.release, attachments)
   const files = attachments.filter((a) => !a.content_type.startsWith('image/') || !a.copied_url)
 
   const [{ data: made }, usage] = await Promise.all([
@@ -106,9 +103,7 @@ export default async function PressDetailPage(
             </ul>
             {readNotes.map((n) => <p key={n} className="mt-2 text-[12px] text-draft">{n}</p>)}
             <p className="mt-2 text-[12px] text-muted">
-              {autoText
-                ? '한글·워드·PDF·텍스트 파일의 글자는 위 본문 아래에 자동으로 옮겨 두었습니다. 표·그림 속 글자는 빠질 수 있으니 파일도 함께 확인해 주세요.'
-                : '베이직 요금제는 첨부파일을 내려받아 확인해 주세요. 스탠다드 요금제부터 한글·워드·PDF·텍스트 파일 내용을 보도자료에 자동으로 읽어 드립니다.'}
+              한글·워드·PDF·텍스트 파일의 글자는 위 본문 아래에 자동으로 옮겨 두었습니다. 표·그림 속 글자나 문서 안의 사진은 빠질 수 있으니 파일도 함께 확인해 주세요.
             </p>
           </div>
         )}
