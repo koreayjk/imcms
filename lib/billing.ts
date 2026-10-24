@@ -40,6 +40,12 @@ export function kstToday() {
   return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)
 }
 
+// 예약 작업이 만들 청구서의 월: 그달 마지막 날(한국)이면 다음 달 청구서를 미리 만들어 “내일 결제 예정” 안내를 보내고, 아닌 날은 이번 달(못 만든 것 보충)
+export function billingMonthNow(today = kstToday()) {
+  const tomorrow = new Date(Date.parse(`${today}T00:00:00Z`) + 864e5).toISOString().slice(0, 10)
+  return tomorrow.slice(0, 7) !== today.slice(0, 7) ? tomorrow.slice(0, 7) : today.slice(0, 7)
+}
+
 // 이번 청구서에 들어갈 항목. month = 'YYYY-MM'
 export function billingItems(t: BillingTarget, month: string) {
   const items: InvoiceItem[] = []
@@ -143,13 +149,14 @@ export async function runBilling(supabase: SupabaseClient, month: string, origin
   const targets = await billingTargets(supabase, month)
   const created: { outlet: string; id: string; total: number }[] = []
   const skipped: { outlet: string; reason: string }[] = []
-  const due = dueDate(month)
   let pending = 0
   for (const t of targets) {
     if (Date.now() > deadline) { if (!t.has_invoice) pending++; continue }
     if (t.has_invoice) { skipped.push({ outlet: t.name, reason: '이번 달 청구서가 이미 있음' }); continue }
     const { items, totals, clearSetup } = billingItems(t, month)
     if (!items.length || totals.total <= 0) { skipped.push({ outlet: t.name, reason: '청구할 항목 없음' }); continue }
+    // 자동결제를 등록한 매체는 그 달 1일 오전 10시에 결제 (말일에 발행해 전날 안내), 아닌 매체는 그달 5일까지 직접 결제
+    const due = t.autopay ? `${month}-01` : dueDate(month)
     const { data: id, error } = await supabase.rpc('billing_create', {
       secret: paymentDbSecret(), o: t.outlet_id, p_month: `${month}-01`, p_items: items,
       p_supply: totals.supply, p_vat: totals.vat, p_total: totals.total, p_due: due,
@@ -160,7 +167,7 @@ export async function runBilling(supabase: SupabaseClient, month: string, origin
     created.push({ outlet: t.name, id: id as string, total: totals.total })
     await notifyInvoiceIssued(supabase, {
       id: id as string, outletName: t.name, month: `${month}-01`, total: totals.total, dueDate: due,
-      createdAt: new Date().toISOString(), autopay: t.autopay, origin,
+      createdAt: new Date().toISOString(), autopay: t.autopay, origin, items,
     })
   }
   return { created, skipped, pending }

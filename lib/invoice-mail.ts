@@ -16,29 +16,34 @@ type IssuedInv = {
   autopay: { card_company: string | null; card_number: string | null } | null
   origin: string
   payUrl?: string | null // 로그인 없이 결제하는 전용 링크 (supabase/invoice-pay-link.sql)
+  items?: { name: string; qty: number; unit_price: number }[] // 메일 본문에 그대로 보여 줄 청구 항목
 }
 
 // 발행 안내 메일 내용 (실제 발송과 "나에게 보내기" 미리보기가 같이 쓴다)
 export function invoiceIssuedMail(inv: IssuedInv) {
   const monthText = `${Number(inv.month.slice(0, 4))}년 ${Number(inv.month.slice(5, 7))}월`
-  // 자동결제는 발행 7일 뒤부터 납부 기한 오전 10시에
-  const earliest = Date.parse(inv.createdAt) + 7 * 864e5
+  // 자동결제는 발행 다음 날부터, 납부 기한 오전 10시에 (매월 정기 청구는 말일에 발행해 1일 오전 10시에 결제)
+  const earliest = Date.parse(inv.createdAt) + 864e5
   const due = inv.dueDate ? Date.parse(`${inv.dueDate}T10:00:00+09:00`) : earliest
   const chargeAt = new Date(Math.max(due, earliest)).toISOString()
   const won = Number(inv.total).toLocaleString('ko-KR')
+  const chargeDay = formatDate(chargeAt)
   return {
-    subject: `[IM 뉴스룸] ${inv.outletName} ${monthText} 청구서 (${won}원)`,
-    title: `${monthText} 청구서가 발행되었습니다`,
+    subject: inv.autopay ? `[IM 뉴스룸] ${inv.outletName} ${chargeDay} ${won}원 자동 결제 예정 (${monthText} 청구서)` : `[IM 뉴스룸] ${inv.outletName} ${monthText} 청구서 (${won}원)`,
+    title: inv.autopay ? `${chargeDay}에 ${won}원이 자동 결제될 예정입니다` : `${monthText} 청구서가 발행되었습니다`,
+    rows: inv.items?.length
+      ? [...inv.items.map((i) => ({ label: `${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''}`, value: `${(i.qty * i.unit_price).toLocaleString('ko-KR')}원` })), { label: '합계', value: `${won}원`, strong: true }]
+      : undefined,
     lines: [
-      `${inv.outletName} · 청구 금액 ${won}원${inv.dueDate ? ` · 납부 기한 ${formatDate(inv.dueDate)}` : ''}`,
+      `${inv.outletName} · ${monthText} 청구 금액 ${won}원${inv.dueDate ? ` · 납부 기한 ${formatDate(inv.dueDate)}` : ''}`,
       inv.autopay
-        ? `등록하신 결제수단(${inv.autopay.card_company ?? ''} ${inv.autopay.card_number ?? ''})으로 ${formatDate(chargeAt)}에 자동 결제됩니다. 바꾸거나 해지하려면 편집국 고객센터 → 결제 정보에서 할 수 있습니다.`
+        ? `등록하신 결제수단(${inv.autopay.card_company ?? ''} ${inv.autopay.card_number ?? ''})으로 ${chargeDay} 오전 10시에 자동 결제됩니다. 따로 하실 일은 없습니다. 카드를 바꾸거나 해지하려면 편집국 고객센터 → 결제 정보에서 할 수 있습니다.`
         : inv.payUrl
           ? '아래 버튼을 누르면 로그인 없이 청구서를 확인하고 카드·간편결제로 바로 결제할 수 있습니다. 처음 결제할 때 자동결제에 동의하면 그 카드로 다음 달부터 자동 결제됩니다. 이 링크는 이 청구서 전용이니 다른 사람에게 전달하지 마세요.'
           : '편집국 고객센터 → 청구서에서 카드·간편결제로 바로 결제할 수 있습니다.',
     ],
     button: inv.payUrl && !inv.autopay
-      ? { label: '청구서 보고 결제하기', url: inv.payUrl }
+      ? { label: '결제하기', url: inv.payUrl }
       : { label: '청구서 보기', url: `${inv.origin}/support/invoices/${inv.id}` },
     footer: '이 메일은 IM 뉴스룸 이용료 청구 안내입니다.',
   }

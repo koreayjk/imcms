@@ -125,17 +125,18 @@ async function sendPostmark(mails: Mail[], stream: 'outbound' | 'broadcast', res
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 // 알림 메일 (제목, 문단들, 버튼 하나)
-export function noticeMail(o: { title: string; lines: string[]; button?: { label: string; url: string }; footer?: string }) {
+export function noticeMail(o: { title: string; lines: string[]; rows?: { label: string; value: string; strong?: boolean }[]; button?: { label: string; url: string }; footer?: string }) {
   const html = `<!doctype html><html lang="ko"><body style="margin:0;background:#F4F5F7;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#14171C">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:12px;padding:28px">
 <tr><td style="font-size:14px;font-weight:800;color:#1D3461"><img src="https://app.imnewsroom.com/brand/icon-192.png" width="32" height="32" alt="" style="vertical-align:middle;border-radius:7px;margin-right:8px;border:0">IM 뉴스룸</td></tr>
 <tr><td style="padding-top:10px;font-size:20px;font-weight:800;line-height:1.4">${esc(o.title)}</td></tr>
 ${o.lines.map((l) => `<tr><td style="padding-top:12px;font-size:15px;line-height:1.7;color:#3B4048">${esc(l)}</td></tr>`).join('')}
+${o.rows?.length ? `<tr><td style="padding-top:16px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #E5E8EC">${o.rows.map((r) => `<tr><td style="padding:9px 0;border-bottom:1px solid #E5E8EC;font-size:14px;color:#3B4048;${r.strong ? 'font-weight:800;color:#14171C;' : ''}">${esc(r.label)}</td><td align="right" style="padding:9px 0;border-bottom:1px solid #E5E8EC;font-size:14px;white-space:nowrap;${r.strong ? 'font-weight:800;font-size:16px;color:#14171C;' : 'color:#3B4048;'}">${esc(r.value)}</td></tr>`).join('')}</table></td></tr>` : ''}
 ${o.button ? `<tr><td style="padding-top:22px"><a href="${esc(o.button.url)}" style="display:inline-block;background:#14171C;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:12px 20px;border-radius:8px">${esc(o.button.label)}</a></td></tr>` : ''}
 <tr><td style="padding-top:26px;font-size:12px;line-height:1.6;color:#8A9099">${esc(o.footer ?? '이 메일은 IM 뉴스룸 편집국 알림입니다. 알림 메일은 편집국 “내 정보”에서 끌 수 있습니다.')}</td></tr>
 </table></td></tr></table></body></html>`
-  const text = [o.title, '', ...o.lines, ...(o.button ? ['', `${o.button.label}: ${o.button.url}`] : []), '', o.footer ?? '알림 메일은 편집국 “내 정보”에서 끌 수 있습니다.'].join('\n')
+  const text = [o.title, '', ...o.lines, ...(o.rows?.length ? ['', ...o.rows.map((r) => `${r.label}: ${r.value}`)] : []), ...(o.button ? ['', `${o.button.label}: ${o.button.url}`] : []), '', o.footer ?? '알림 메일은 편집국 “내 정보”에서 끌 수 있습니다.'].join('\n')
   return { html, text }
 }
 
