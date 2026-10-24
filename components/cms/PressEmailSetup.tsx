@@ -109,7 +109,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
       <div className="grid gap-3 sm:grid-cols-2">
         {([
           ['auto', '자동으로 받기', '지메일 · PC에서 한 번, 약 3분', '추천'],
-          ['manual', '직접 전달하기', '네이버·다음·회사 메일 · 보도자료가 올 때마다 “전달” 한 번', ''],
+          ['manual', '직접 전달하기', '네이버·다음 메일 · 메일 한 통씩 직접 전달', ''],
         ] as const).map(([k, t, d, badge]) => (
           <button key={k} type="button" onClick={() => setMode(k)} aria-pressed={mode === k}
             className={`rounded-lg border-2 px-5 py-4 text-left transition ${mode === k ? 'border-ink bg-white' : 'border-line bg-white/60 hover:border-ink/40'}`}>
@@ -205,7 +205,11 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
 
       {mode === 'manual' && (
         <section className="space-y-4 rounded-lg border border-line bg-white p-4 text-[14.5px] sm:p-6 leading-[1.8]">
-          <p className="text-[17px] font-bold">보도자료 메일이 올 때마다 “전달”을 한 번 눌러 주세요</p>
+          <p className="rounded-lg border border-draft/40 bg-draft/10 px-4 py-3 text-[14px] font-semibold leading-relaxed">
+            네이버 메일은 자동으로 넘기는 기능이 없어서, <strong>보도자료 메일을 한 통씩 직접 전달</strong>해야 합니다.
+            보도자료를 자주 받으신다면 <strong className="text-published">지메일 사용을 권장합니다</strong>(위의 “자동으로 받기”). 네이버 방식도 기능은 똑같이 쓸 수 있으니 아래를 따라 해 주세요.
+          </p>
+          <p className="text-[17px] font-bold">직접 전달하는 방법</p>
           <p className="text-[13.5px] text-muted">지메일은 보도자료만 골라 자동으로 넘길 수 있지만, <strong>네이버 메일에는 자동 전달 기능이 없습니다</strong>(환경설정의 “메일 자동분류”에는 메일함 이동·읽음·중요·색상·삭제만 있습니다). 대신 <strong>처음에 주소록에 한 번 저장</strong>해 두면, 이후에는 보도자료 메일을 열어 <Btn>전달</Btn>만 누르면(메일 한 통에 5초) 보도자료함에 들어옵니다.</p>
 
           <div className="rounded-lg bg-[#F8F9FA] px-4 py-4">
