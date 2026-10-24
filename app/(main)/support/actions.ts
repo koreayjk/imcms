@@ -234,7 +234,8 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
     .map((name, i) => ({ name: name.trim().slice(0, 100), qty: qtys[i] || 0, unit_price: prices[i] || 0 }))
     .filter((i) => i.name && i.qty)
   if (!items.length) return { error: '청구 항목을 한 줄 이상 적어주세요.' }
-  if (items.some((i) => i.qty < 0 || i.unit_price < 0)) return { error: '수량·단가는 0 이상으로 적어 주세요. 할인은 항목 금액에서 빼서 적습니다.' }
+  if (items.some((i) => i.qty < 0)) return { error: '수량은 0 이상으로 적어 주세요. 할인은 단가를 마이너스(예: -55000)로 적습니다.' }
+  if (invoiceTotals(items).total <= 0) return { error: '청구 합계가 0원 이하입니다. 할인 금액을 확인해 주세요.' }
   const t = invoiceTotals(items)
 
   // 이미 낸 청구서(또는 결제가 끝난 청구서)는 금액을 고치지 않는다 (DB도 막는다: legal-billing-safety.sql)

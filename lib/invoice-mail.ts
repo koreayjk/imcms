@@ -48,7 +48,7 @@ export function invoiceDocMail(inv: IssuedInv, preview?: { note: string }) {
     const [main, ...rest] = i.name.split(' — ')
     return `<tr><td style="padding:12px 0;border-bottom:1px solid #E5E8EC;font-size:14px;line-height:1.55;color:#14171C">${e(main)}${rest.length ? `<div style="margin-top:2px;font-size:12.5px;color:#6B7280">${e(rest.join(' — '))}</div>` : ''}</td>
 <td align="center" style="padding:12px 8px;border-bottom:1px solid #E5E8EC;font-size:14px;color:#3B4048;white-space:nowrap">${i.qty}</td>
-<td align="right" style="padding:12px 0;border-bottom:1px solid #E5E8EC;font-size:14px;white-space:nowrap;${amount === 0 ? 'color:#0E7A3E;font-weight:700' : 'color:#14171C'}">${amount === 0 ? '무료' : e(wonText(amount))}</td></tr>`
+<td align="right" style="padding:12px 0;border-bottom:1px solid #E5E8EC;font-size:14px;white-space:nowrap;${amount === 0 ? 'color:#0E7A3E;font-weight:700' : amount < 0 ? 'color:#C2410C;font-weight:700' : 'color:#14171C'}">${amount === 0 ? '무료' : amount < 0 ? `-${e(wonText(-amount))}` : e(wonText(amount))}</td></tr>`
   }).join('')
 
   const html = `<!doctype html><html lang="ko"><body style="margin:0;background:#F4F5F7;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#14171C">
@@ -84,7 +84,7 @@ ${inv.autopay ? '' : `<tr><td style="padding-top:10px;font-size:12px;line-height
     inv.invoiceNo ? `청구서 번호: ${inv.invoiceNo}` : '',
     inv.dueDate ? `${inv.autopay ? '결제 예정일' : '납부 기한'}: ${formatDate(`${inv.dueDate}T00:00:00+09:00`)}` : '',
     '',
-    ...items.map((i) => `· ${i.name} × ${i.qty}: ${i.qty * i.unit_price === 0 ? '무료' : wonText(i.qty * i.unit_price)}`),
+    ...items.map((i) => `· ${i.name} × ${i.qty}: ${i.qty * i.unit_price === 0 ? '무료' : i.qty * i.unit_price < 0 ? `-${wonText(-(i.qty * i.unit_price))}` : wonText(i.qty * i.unit_price)}`),
     `합계: ${won} (한국 부가세 없음)`,
     ...(notes.length ? ['', ...notes] : []),
     '',

@@ -67,17 +67,18 @@ export function billingItems(t: BillingTarget, month: string) {
   const billPlan = !annual || (t.start_month != null && (m - ym(t.start_month)) % 12 === 0 && m >= ym(t.start_month))
   if (billPlan) {
     if (monthly != null && planName) {
-      // 베타 반값이 걸린 청구서는 정가와 할인 금액을 항목 이름에 함께 적는다 (고객이 얼마를 할인받았는지 보이게)
-      const wonText = (n: number) => `${n.toLocaleString('ko-KR')}원`
+      // 베타 반값이 걸린 청구서는 정가 줄 아래에 할인 줄(마이너스)을 따로 둔다 (고객이 얼마를 할인받았는지 바로 보이게)
       if (annual) {
         const price = annualPrice(monthly, month, beta, start)
         const regular = annualPrice(monthly, month, false, start)
         const off = regular - price
-        items.push({ name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값${annualBeta})${off > 0 ? ` — 정가 ${wonText(regular)}, 베타 반값 할인 -${wonText(off)}` : ''}`, qty: 1, unit_price: price })
+        items.push({ name: `IM 뉴스룸 ${planName} 1년 (${label(m)}~${label(m + 11)}, ${ANNUAL_MONTHS}개월 값)`, qty: 1, unit_price: off > 0 ? regular : price })
+        if (off > 0) items.push({ name: `베타 반값 할인 (첫 ${BETA_MONTHS}개월분)`, qty: 1, unit_price: -off })
       } else {
         const price = Math.round(monthly * rate)
         const off = monthly - price
-        items.push({ name: `IM 뉴스룸 ${planName} (${label(m)}${betaTag})${off > 0 ? ` — 정가 ${wonText(monthly)}, 베타 반값 할인 -${wonText(off)}` : ''}`, qty: 1, unit_price: price })
+        items.push({ name: `IM 뉴스룸 ${planName} (${label(m)})`, qty: 1, unit_price: off > 0 ? monthly : price })
+        if (off > 0) items.push({ name: `베타 반값 할인 (${Math.round((1 - rate) * 100)}%)`, qty: 1, unit_price: -off })
       }
     }
     // 매체 추가는 프리미엄 전용: 추가 매체 1개 포함, 그다음부터 매체마다 (맞춤 금액이면 포함 없이 모두 청구)

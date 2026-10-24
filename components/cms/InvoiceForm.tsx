@@ -146,7 +146,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
             <tr key={i} className="border-b border-line/60 max-md:!px-0">
               <td className="tc-full py-2 pr-2"><input name="item_name" value={it.name} onChange={(e) => set(i, { name: e.target.value })} aria-label="항목" className="field-input py-1.5" /></td>
               <td data-label="수량" className="w-20 py-2 pr-2 md:w-auto"><input name="item_qty" type="number" min={0} value={it.qty} onChange={(e) => set(i, { qty: Number(e.target.value) })} aria-label="수량" className="field-input py-1.5" /></td>
-              <td data-label="단가(원)" className="w-36 py-2 pr-2 md:w-auto"><input name="item_price" type="number" min={0} step={100} value={it.unit_price} onChange={(e) => set(i, { unit_price: Number(e.target.value) })} aria-label="단가" className="field-input py-1.5" /></td>
+              <td data-label="단가(원)" className="w-36 py-2 pr-2 md:w-auto"><input name="item_price" type="number" step={100} value={it.unit_price} onChange={(e) => set(i, { unit_price: Number(e.target.value) })} aria-label="단가" className="field-input py-1.5" /></td>
               <td data-label="금액" className="py-2 text-right tabular-nums">{won(it.qty * it.unit_price)}</td>
               <td className="ml-auto py-2 text-right"><button type="button" onClick={() => { setEdited(true); setItems(items.filter((_, j) => j !== i)) }} aria-label="줄 빼기" className="text-muted hover:text-danger">×</button></td>
             </tr>
