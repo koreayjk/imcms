@@ -31,7 +31,17 @@ begin
   select * into i from invoices where pay_token = p_token;
   if i.id is null then return null; end if;
   select name into oname from outlets where id = i.outlet_id;
+  -- 결제 화면에 미리 적어 둘 이메일: 결제 담당자 이메일 → 없으면 그 매체(그룹)의 발행인·편집장 계정 이메일 (청구서 안내 메일을 받는 사람과 같게)
   select nullif(trim(manager_email), '') into mail from outlet_billing where outlet_id = i.outlet_id;
+  if mail is null then
+    select u.email::text into mail
+    from outlets o
+    join profiles p on p.role in ('admin', 'editor') and (p.outlet_id = o.id or (p.role = 'admin' and p.publisher_id is not null and p.publisher_id = o.publisher_id))
+    join auth.users u on u.id = p.id
+    where o.id = i.outlet_id and u.email is not null
+    order by (p.role = 'admin') desc, u.created_at
+    limit 1;
+  end if;
   return jsonb_build_object(
     'id', i.id, 'invoice_no', i.invoice_no, 'outlet_name', oname, 'month', i.month, 'items', i.items,
     'total', i.total, 'due_date', i.due_date, 'memo', i.memo, 'status', i.status, 'paid_at', i.paid_at,
