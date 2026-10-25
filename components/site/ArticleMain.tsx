@@ -13,7 +13,7 @@ import { siteText } from '@/lib/site-text'
 
 // 홈페이지 기사 본문 (제목·부제·기자·본문·관련기사·태그·기자 정보·섹션 다른 기사). 실제 기사 화면과 기사쓰기 미리보기가 같이 쓴다
 // bodyHtml은 이미 정리(sanitizeBody)한 HTML
-export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, lang }: {
+export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, topAd, lang }: {
   a: PublicArticle
   bodyHtml: string
   sectionName?: string
@@ -23,11 +23,13 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
   // 본문 아래 '관련기사' 글 목록 (태그가 겹치는 기사)
   relatedLinks?: PublicArticle[]
   bottomAd?: ReactNode
+  topAd?: ReactNode
   lang?: SiteLang
 }) {
   const t = siteText(lang)
   return (
     <article className="min-w-0">
+      {topAd}
       <header className="border-b border-rule pb-5">
         {a.category && (
           <Link href={`/section/${a.category.slug}`} className="text-[13px] font-semibold text-gold-ink hover:underline">

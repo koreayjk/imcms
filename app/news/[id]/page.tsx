@@ -87,6 +87,7 @@ export default async function ArticlePage(props: Props) {
           source={source}
           related={related}
           relatedLinks={relatedLinks}
+          topAd={<AdArea site={site} slot="article_top" className="mb-6" />}
           bottomAd={<AdArea site={site} slot="article_bottom" className="mt-9" />}
         />
         <ArticleAside site={site} mostViewed={mostViewed} latest={latest} />

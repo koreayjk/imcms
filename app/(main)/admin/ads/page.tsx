@@ -4,6 +4,8 @@ import { getCmsContext } from '@/lib/cms'
 import AdManager, { type ManagedBanner } from '@/components/cms/AdManager'
 import AdTabs from '@/components/cms/AdTabs'
 import AdHowItWorks from '@/components/cms/AdHowItWorks'
+import AdSlotSettings from '@/components/cms/AdSlotSettings'
+import { cleanAdSlots } from '@/lib/ad-slot-settings'
 
 // 광고 배너 관리 (편집장·발행인·운영팀). 작업 중인 매체의 배너만
 export default async function AdsPage() {
@@ -36,6 +38,9 @@ export default async function AdsPage() {
     return { ...b, views: sum(mine, 'views'), clicks: sum(mine, 'clicks'), views30: sum(recent, 'views'), clicks30: sum(recent, 'clicks') }
   })
 
+  const { data: siteRow } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
+  const slotSettings = cleanAdSlots((siteRow as { site?: { adSlots?: unknown } } | null)?.site?.adSlots)
+
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-5">
@@ -53,6 +58,7 @@ export default async function AdsPage() {
       </header>
       <AdTabs current="banners" showContracts={isEditorPlus} />
       {isEditorPlus && <AdHowItWorks current="banners" />}
+      {isEditorPlus && !error && <div className="mb-5"><AdSlotSettings key={JSON.stringify(slotSettings ?? {})} outletId={outletId} initial={slotSettings} /></div>}
       {error ? (
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">광고 배너를 쓰려면 Supabase에서 <code>supabase/ad-banners.sql</code>을 실행해 주세요.</p>
       ) : (

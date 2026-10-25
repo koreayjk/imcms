@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
 import { fromKstInput } from '@/lib/format'
 import { slotOf } from '@/lib/ads'
+import { cleanAdSlots } from '@/lib/ad-slot-settings'
 
 export type AdState = { error?: string; ok?: string }
 
@@ -96,4 +97,20 @@ export async function deleteBanner(id: string): Promise<AdState> {
   if (error || !data?.length) return { error: error?.message ?? '지울 권한이 없습니다.' }
   done()
   return { ok: '지웠습니다.' }
+}
+
+// 광고 자리 설정 (편집장 이상): 안 쓰는 자리 끄기, 오른쪽 광고 개수. 매체 설정에 저장한다 (supabase/ad-slots-more.sql)
+export async function saveAdSlotSettings(outletId: string, input: { off: string[]; sidebarMax: number }): Promise<AdState> {
+  const { supabase, isEditorPlus, isStaff } = await getCmsContext()
+  if (!isEditorPlus && !isStaff) return { error: '편집장 이상만 바꿀 수 있습니다.' }
+  const clean = cleanAdSlots({ off: input.off, sidebarMax: input.sidebarMax })
+  const { error } = await supabase.rpc('outlet_ad_slots_save', { o: outletId, p_ad: clean ? JSON.parse(JSON.stringify(clean)) : null })
+  if (error) {
+    if (/outlet_ad_slots_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return { error: '이 기능을 쓰려면 운영팀이 Supabase에서 ad-slots-more.sql을 실행해야 합니다.' }
+    return { error: error.message.replace(/^.*?:\s*/, '') }
+  }
+  revalidateTag('sites', { expire: 0 })
+  revalidatePath('/', 'layout')
+  revalidatePath('/admin/ads')
+  return { ok: '저장했습니다. 홈페이지에 바로 반영됩니다.' }
 }

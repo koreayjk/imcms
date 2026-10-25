@@ -54,6 +54,8 @@ export type SiteConfig = {
   openIndexable?: boolean
   // 홈페이지 맨 아래에 좌에서 우로 흐르는 로고 띠 (협력·후원·제휴 기관)
   logoStrip?: LogoStrip
+  // 광고 자리 설정 (끈 자리, 오른쪽 광고 개수)
+  adSlots?: AdSlotSettings
   // 오픈 준비 중인 매체를 미리보기로 열어 보는 중 (방문자에게는 안내 화면이 보인다)
   softPreview?: boolean
   domains: string[]
@@ -222,6 +224,7 @@ export type OutletSiteSettings = {
   openAt?: string
   openTz?: string
   logoStrip?: LogoStrip
+  adSlots?: AdSlotSettings
   pressKeywords?: string
   legal?: Partial<SiteLegal>
   homeLayout?: HomeLayout
@@ -309,6 +312,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     openTz: s.openTz,
     openIndexable: s.indexable ?? code?.indexable ?? false,
     logoStrip: cleanLogoStrip(s.logoStrip),
+    adSlots: cleanAdSlots(s.adSlots),
     // 오픈 준비 중에는 검색 노출을 켜 두었어도 수집하지 않는다
     indexable: s.comingSoon === true ? false : (s.indexable ?? code?.indexable ?? false),
     name: o.name,
@@ -383,6 +387,8 @@ export function applyOpenSchedule<T extends { comingSoon?: boolean; openAt?: str
   if (!site.comingSoon || site.softPreview || !openTimePassed(site, now)) return site
   return { ...site, comingSoon: false, indexable: site.openIndexable ?? false }
 }
+
+import { cleanAdSlots, type AdSlotSettings } from './ad-slot-settings'
 
 // 홈페이지 맨 아래 로고 띠 (협력·후원·제휴 기관 로고가 좌에서 우로 흐른다)
 export type LogoStrip = { title?: string; speed?: 'slow' | 'normal' | 'fast'; items: { name: string; img: string; url?: string }[] }

@@ -8,6 +8,8 @@ export const SLOT_COLOR: Record<AdSlotId, string> = {
   header: '#E5483A',
   sidebar: '#2F6BF0',
   home_middle: '#0F9F6E',
+  home_bottom: '#0891B2',
+  article_top: '#DB2777',
   article_bottom: '#D97706',
   popup: '#7C3AED',
 }
@@ -77,6 +79,7 @@ export function PageSketch({ kind, show = 'all', small = false, counts, onPick }
           </div>
           <div className={small ? 'mt-1' : 'mt-2'}>{s('home_middle', H(24))}</div>
           <div className={`grid grid-cols-4 ${small ? 'mt-1 gap-0.5' : 'mt-2 gap-1'}`}>{[0, 1, 2, 3].map((i) => <Box key={i} h={H(20)} />)}</div>
+          <div className={small ? 'mt-1' : 'mt-2'}>{s('home_bottom', H(20))}</div>
           {/* 팝업: 첫 화면 위에 뜨는 창 */}
           {(show === 'all' || show === 'popup') && (
             <div className="pointer-events-none absolute inset-0 bg-black/[0.04]">
@@ -92,6 +95,7 @@ export function PageSketch({ kind, show = 'all', small = false, counts, onPick }
       {kind === 'article' && (
         <div className={`grid grid-cols-[1fr_28%] ${small ? 'mt-1 gap-1' : 'mt-2 gap-2'}`}>
           <div className={small ? 'space-y-0.5' : 'space-y-1'}>
+            {s('article_top', H(18))}
             <Bar w="85%" h={H(9)} /><Bar w="60%" h={H(5)} />
             <Box h={H(36)} className={small ? '' : 'mt-1'} />
             {[0, 1, 2, 3].map((i) => <Bar key={i} w={i === 3 ? '70%' : '100%'} h={H(4)} />)}

@@ -79,6 +79,7 @@ export default function SiteFrame({ site, current, children, home }: Props) {
       <SiteHeader site={site} current={current} />
       <AdArea site={site} slot="header" className="mx-auto max-w-[1200px] px-4 pt-4" />
       <main id="content">{children}</main>
+      {home && <AdArea site={site} slot="home_bottom" className="mx-auto max-w-[1200px] px-4 py-6" />}
       {home && site.logoStrip && <LogoStrip strip={site.logoStrip} en={en} />}
       <SiteFooter site={site} />
     </div>
