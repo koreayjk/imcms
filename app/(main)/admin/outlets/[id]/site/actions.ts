@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { mentionsAi } from '@/lib/ai-notice'
 import { getCmsContext } from '@/lib/cms'
-import { foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal, cleanStats } from '@/lib/sites'
+import { cleanLogoStrip, foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal, cleanStats } from '@/lib/sites'
 import { parseAiBotMode } from '@/lib/ai-crawlers'
 import { parseHomeLayout } from '@/lib/home-layouts'
 import { connectDomain } from '@/lib/vercel-domains'
@@ -63,6 +63,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     // 예약 오픈: 그 시각이 되면 오픈 준비 중 화면이 저절로 풀린다 (스위치가 켜져 있을 때만 뜻이 있다)
     openAt: s.openAt && Number.isFinite(Date.parse(s.openAt)) ? new Date(s.openAt).toISOString() : undefined,
     openTz: s.openAt && isOpenZone(s.openTz) ? s.openTz : undefined,
+    logoStrip: cleanLogoStrip(s.logoStrip),
     // 'allow'는 안 막는 기본값이므로 저장하지 않는다
     aiBots: parseAiBotMode(s.aiBots) === 'allow' ? undefined : parseAiBotMode(s.aiBots),
     pressKeywords: cut(s.pressKeywords, 2000),

@@ -6,13 +6,14 @@ import SiteHeader from './SiteHeader'
 import SiteFooter from './SiteFooter'
 import AdArea from './AdArea'
 import ComingSoon from './ComingSoon'
+import LogoStrip from './LogoStrip'
 import { siteText } from '@/lib/site-text'
 import { HOME_LAYOUTS } from '@/lib/home-layouts'
 import { LAYOUTS_EN } from '@/lib/home-layouts-en'
 
-type Props = { site: SiteConfig; current?: string; children: ReactNode }
+type Props = { site: SiteConfig; current?: string; children: ReactNode; home?: boolean }
 
-export default function SiteFrame({ site, current, children }: Props) {
+export default function SiteFrame({ site, current, children, home }: Props) {
   // 오픈 준비 중: 방문자에게는 안내 화면만 (children 은 그리지 않는다)
   if (site.comingSoon) return <ComingSoon site={site} />
   const vars = {
@@ -78,6 +79,7 @@ export default function SiteFrame({ site, current, children }: Props) {
       <SiteHeader site={site} current={current} />
       <AdArea site={site} slot="header" className="mx-auto max-w-[1200px] px-4 pt-4" />
       <main id="content">{children}</main>
+      {home && site.logoStrip && <LogoStrip strip={site.logoStrip} en={en} />}
       <SiteFooter site={site} />
     </div>
   )

@@ -115,7 +115,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     )
     const common = { site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras }
     return (
-      <SiteFrame site={site}>
+      <SiteFrame site={site} home>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
         {layoutKey === 'editorial' ? <HomeEditorial {...common} realtime={realtime} />
           : layoutKey === 'cards' ? <HomeCards {...common} />
@@ -126,7 +126,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   }
 
   return (
-    <SiteFrame site={site}>
+    <SiteFrame site={site} home>
       {/* 매체 이름·로고 구조화 데이터 (구글 검색·구글 뉴스용, 화면에는 안 보임) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
       <div className="mx-auto max-w-[1200px] px-4">

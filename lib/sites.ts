@@ -52,6 +52,8 @@ export type SiteConfig = {
   openTz?: string
   // 오픈 준비 중 스위치와 상관없이 홈페이지 설정에 저장된 검색 노출 값 (예약 오픈 시각이 지나면 이 값이 쓰인다)
   openIndexable?: boolean
+  // 홈페이지 맨 아래에 좌에서 우로 흐르는 로고 띠 (협력·후원·제휴 기관)
+  logoStrip?: LogoStrip
   // 오픈 준비 중인 매체를 미리보기로 열어 보는 중 (방문자에게는 안내 화면이 보인다)
   softPreview?: boolean
   domains: string[]
@@ -219,6 +221,7 @@ export type OutletSiteSettings = {
   comingSoon?: boolean
   openAt?: string
   openTz?: string
+  logoStrip?: LogoStrip
   pressKeywords?: string
   legal?: Partial<SiteLegal>
   homeLayout?: HomeLayout
@@ -305,6 +308,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     openAt: s.openAt,
     openTz: s.openTz,
     openIndexable: s.indexable ?? code?.indexable ?? false,
+    logoStrip: cleanLogoStrip(s.logoStrip),
     // 오픈 준비 중에는 검색 노출을 켜 두었어도 수집하지 않는다
     indexable: s.comingSoon === true ? false : (s.indexable ?? code?.indexable ?? false),
     name: o.name,
@@ -378,4 +382,22 @@ export const isPrepNow = (s: { comingSoon?: boolean | null; openAt?: string | nu
 export function applyOpenSchedule<T extends { comingSoon?: boolean; openAt?: string; openIndexable?: boolean; indexable?: boolean; softPreview?: boolean }>(site: T, now = Date.now()): T {
   if (!site.comingSoon || site.softPreview || !openTimePassed(site, now)) return site
   return { ...site, comingSoon: false, indexable: site.openIndexable ?? false }
+}
+
+// 홈페이지 맨 아래 로고 띠 (협력·후원·제휴 기관 로고가 좌에서 우로 흐른다)
+export type LogoStrip = { title?: string; speed?: 'slow' | 'normal' | 'fast'; items: { name: string; img: string; url?: string }[] }
+const STRIP_IMG_OK = (u: string) => u.startsWith('/sites/') || (!!process.env.NEXT_PUBLIC_SUPABASE_URL && u.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`))
+// 저장·표시 전에 걸러낸다: 로고 이미지는 이 서비스에 올린 것만, 링크는 http(s)만, 최대 40개
+export function cleanLogoStrip(v: unknown): LogoStrip | undefined {
+  const o = (v ?? {}) as Partial<LogoStrip>
+  const items = (Array.isArray(o.items) ? o.items : [])
+    .map((x) => ({
+      name: String(x?.name ?? '').trim().slice(0, 40),
+      img: String(x?.img ?? '').trim().slice(0, 500),
+      url: /^https?:\/\/\S+$/.test(String(x?.url ?? '').trim()) ? String(x.url).trim().slice(0, 300) : undefined,
+    }))
+    .filter((x) => x.img && STRIP_IMG_OK(x.img))
+    .slice(0, 40)
+  if (!items.length) return undefined
+  return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, speed: o.speed === 'slow' || o.speed === 'fast' ? o.speed : undefined, items }
 }
