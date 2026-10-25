@@ -6,7 +6,7 @@ export type AdSlotId = 'header' | 'sidebar' | 'home_middle' | 'home_bottom' | 'a
 
 export const AD_SLOTS: { id: AdSlotId; label: string; where: string; size: string; many?: boolean }[] = [
   { id: 'header', label: '상단 띠', where: '모든 페이지 메뉴 아래', size: 'PC 1200×100 · 휴대폰 640×160' },
-  { id: 'sidebar', label: '오른쪽', where: '홈·기사·섹션 오른쪽 (휴대폰은 본문 아래)', size: '300×250 (최대 3개까지 차례로)', many: true },
+  { id: 'sidebar', label: '오른쪽', where: '홈·기사·섹션 오른쪽 (넓은 화면은 본문 옆 여백에 따라다님, 휴대폰은 본문 아래)', size: '300×250 (최대 3개까지 차례로)', many: true },
   { id: 'home_middle', label: '홈 중간', where: '첫 화면 주요뉴스 아래', size: 'PC 1200×150 · 휴대폰 640×200' },
   { id: 'home_bottom', label: '홈 맨 아래', where: '첫 화면 맨 아래 (로고 띠·하단 정보 위)', size: 'PC 1200×150 · 휴대폰 640×200' },
   { id: 'article_top', label: '기사 위', where: '기사 제목 위', size: '760×150 · 휴대폰 640×200' },
