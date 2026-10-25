@@ -116,7 +116,7 @@ export default async function PressPage(props: Props) {
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3 md:mb-6 md:gap-4">
         <div>
           <h1 className="text-[22px] font-bold tracking-tight">보도자료함</h1>
-          <p className="mt-1 text-[13px] text-muted">정부·기관·기업 보도자료를 30분마다 자동으로 모읍니다. 내 메일로 온 보도자료도 “메일로 받기”를 설정하면 자동으로 들어옵니다.</p>
+          <p className="mt-1 text-[13px] text-muted">정부·기관·기업 보도자료를 30분마다 자동으로 모읍니다. 내 메일로 온 보도자료도 “메일로 받기”를 설정하면 자동으로 들어옵니다(프리미엄 포함, 베이직·스탠다드는 부가 서비스).</p>
         </div>
         <div className="flex gap-2">
           <Link href="/press/email" className="btn-secondary bg-white">✉ 메일로 받기 설정</Link>
