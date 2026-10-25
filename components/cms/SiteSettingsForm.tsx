@@ -387,7 +387,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </Card>
 
-      <Card title="로고 띠 (협력·후원 기관)" note="홈페이지 맨 아래에 로고가 좌에서 우로 천천히 흐릅니다. 마우스를 올리면 멈추고, 로고를 누르면 그 기관 사이트가 새 창으로 열립니다. 비워 두면 나오지 않습니다.">
+      <Card title="로고 띠 (협력·후원 기관)" note="홈페이지 맨 아래에 로고가 오른쪽에서 왼쪽으로 천천히 흐릅니다. 마우스를 올리면 멈추고, 로고를 누르면 그 기관 사이트가 새 창으로 열립니다. 비워 두면 나오지 않습니다.">
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
             <Field label="띠 제목 (선택)" hint="예: 함께하는 기관">

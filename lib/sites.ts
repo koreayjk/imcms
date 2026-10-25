@@ -52,7 +52,7 @@ export type SiteConfig = {
   openTz?: string
   // 오픈 준비 중 스위치와 상관없이 홈페이지 설정에 저장된 검색 노출 값 (예약 오픈 시각이 지나면 이 값이 쓰인다)
   openIndexable?: boolean
-  // 홈페이지 맨 아래에 좌에서 우로 흐르는 로고 띠 (협력·후원·제휴 기관)
+  // 홈페이지 맨 아래에 오른쪽에서 왼쪽으로 흐르는 로고 띠 (협력·후원·제휴 기관)
   logoStrip?: LogoStrip
   // 광고 자리 설정 (끈 자리, 오른쪽 광고 개수)
   adSlots?: AdSlotSettings
@@ -398,7 +398,7 @@ export function applyOpenSchedule<T extends { comingSoon?: boolean; openAt?: str
 
 import { cleanAdSlots, type AdSlotSettings } from './ad-slot-settings'
 
-// 홈페이지 맨 아래 로고 띠 (협력·후원·제휴 기관 로고가 좌에서 우로 흐른다)
+// 홈페이지 맨 아래 로고 띠 (협력·후원·제휴 기관 로고가 오른쪽에서 왼쪽으로 흐른다)
 export type LogoStrip = { title?: string; speed?: 'slow' | 'normal' | 'fast'; items: { name: string; img: string; url?: string }[] }
 const STRIP_IMG_OK = (u: string) => u.startsWith('/sites/') || (!!process.env.NEXT_PUBLIC_SUPABASE_URL && u.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`))
 // 저장·표시 전에 걸러낸다: 로고 이미지는 이 서비스에 올린 것만, 링크는 http(s)만, 최대 40개
