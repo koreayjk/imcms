@@ -75,7 +75,7 @@ ${rowHtml}
 </table></td></tr>
 ${notes.length ? `<tr><td style="padding-top:18px"><div style="background:#ECF8F1;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.7;color:#14532D">${notes.map((l) => e(l)).join('<br>')}</div></td></tr>` : ''}
 <tr><td style="padding-top:26px"><a href="${e(payBtn)}" style="display:block;background:#2F6BF0;color:#fff;text-decoration:none;font-weight:800;font-size:17px;text-align:center;padding:16px 20px;border-radius:10px">${inv.autopay ? '청구서 보기' : `결제하기 · ${e(won)}`}</a></td></tr>
-${inv.autopay ? '' : `<tr><td style="padding-top:10px;font-size:12px;line-height:1.7;color:#6B7280;text-align:center">버튼을 누르면 로그인 없이 Stripe 결제창이 바로 열립니다(국내 카드·카카오페이·네이버페이 등).<br>처음 결제하면 이 카드가 다음 달부터 자동결제 카드로 저장되며, 결제 화면에서 안내를 확인할 수 있습니다.</td></tr>`}
+${inv.autopay ? '' : `<tr><td style="padding-top:10px;font-size:12px;line-height:1.7;color:#6B7280;text-align:center">버튼을 누르면 로그인 없이 Stripe 결제창이 바로 열립니다(국내 카드·카카오페이·네이버페이 등).<br>처음 결제하면 이 카드가 다음 달부터 자동결제 카드로 저장되며, 결제 화면에서 안내를 확인할 수 있습니다.<br>※ 결제창의 <strong>"카드"</strong> 항목은 카드사에 따라 해외결제 수수료(약 1~3%)가 카드사에서 따로 붙을 수 있습니다(체크카드에서 흔합니다). 청구 금액 그대로 결제하려면 <strong>"국내 카드"</strong>를 선택하세요.</td></tr>`}
 <tr><td style="padding-top:26px;font-size:12px;line-height:1.6;color:#8A9099">이 메일은 IM 뉴스룸 이용료 청구 안내입니다. 문의 ${e(ISSUER.contact ?? '고객센터')}${preview ? '' : ''}</td></tr>
 </table></td></tr></table></body></html>`
 

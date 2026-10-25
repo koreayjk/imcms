@@ -38,6 +38,7 @@ export default function PayLinkButton({ token, testMode, hasAutopay }: { token: 
       >
         {busy ? '결제 페이지로 이동 중…' : hasAutopay ? '카드·간편결제로 결제하기' : '동의하고 결제하기 (자동결제 등록)'}
       </button>
+      <p className="text-[12px] text-muted">결제창에서 <strong>&ldquo;국내 카드&rdquo;</strong>를 고르면 청구 금액 그대로 결제됩니다. <strong>&ldquo;카드&rdquo;</strong>(Visa·Mastercard 번호 입력)는 카드사에 따라 해외결제 수수료(약 1~3%, 체크카드에서 흔함)가 카드사에서 따로 붙을 수 있습니다.</p>
       <p className="text-[12px] text-muted">국내 카드·카카오페이·네이버페이·구글페이·해외 카드로 결제할 수 있습니다. 카드 정보는 결제사(Stripe)가 직접 받고 IM 뉴스룸은 보관하지 않습니다.</p>
       {testMode && <p className="text-[12px] font-semibold text-draft">시험 결제 모드입니다. 실제 돈이 나가지 않고 자동결제도 등록되지 않습니다. (시험 카드 4242 4242 4242 4242)</p>}
       {error && <p role="alert" className="text-[13px] font-semibold text-danger">{error}</p>}
