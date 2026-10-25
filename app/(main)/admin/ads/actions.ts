@@ -99,6 +99,26 @@ export async function moveBanner(id: string, slot: string): Promise<AdState> {
   return { ok: `“${to.label}” 자리로 옮겼습니다.` }
 }
 
+// 한 자리 안의 배너 순서 정하기 (위에서 아래로, 번호가 작을수록 위). 다른 자리에서 끌어온 배너는 이 자리로 옮겨 함께 정리한다
+export async function reorderBanners(slot: string, ids: string[]): Promise<AdState> {
+  const { supabase, isEditorPlus, isStaff } = await getCmsContext()
+  if (!isEditorPlus && !isStaff) return { error: '광고는 편집장·발행인만 관리할 수 있습니다.' }
+  const to = slotOf(slot)
+  if (!to) return { error: '광고 자리를 확인해 주세요.' }
+  const list = Array.from(new Set(ids)).slice(0, 200)
+  if (!list.length) return { error: '순서를 바꿀 배너가 없습니다.' }
+  const { data: cur } = await supabase.from('ad_banners').select('id, slot, kind').in('id', list)
+  const rows = (cur ?? []) as { id: string; slot: string; kind: string }[]
+  if (rows.length !== list.length) return { error: '배너를 찾지 못했습니다.' }
+  if (!isStaff && rows.some((r) => r.kind === 'code' && r.slot !== slot)) return { error: '광고 코드 배너는 운영팀만 다른 자리로 옮길 수 있습니다.' }
+  const now = new Date().toISOString()
+  const results = await Promise.all(list.map((id, i) => supabase.from('ad_banners').update({ slot, sort_order: i, updated_at: now }).eq('id', id).select('id')))
+  const bad = results.find((r) => r.error || !r.data?.length)
+  if (bad) return { error: bad.error ? `순서를 바꾸지 못했습니다: ${bad.error.message}` : '순서를 바꿀 권한이 없습니다.' }
+  done()
+  return { ok: '순서를 바꿨습니다.' }
+}
+
 export async function setBannerActive(id: string, active: boolean): Promise<AdState> {
   const { supabase } = await getCmsContext()
   const { data, error } = await supabase.from('ad_banners').update({ active, updated_at: new Date().toISOString() }).eq('id', id).select('id')

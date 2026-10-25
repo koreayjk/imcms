@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { deleteBanner, moveBanner, saveBanner, setBannerActive, type AdInput, type AdState } from '@/app/(main)/admin/ads/actions'
+import { deleteBanner, moveBanner, reorderBanners, saveBanner, setBannerActive, type AdInput, type AdState } from '@/app/(main)/admin/ads/actions'
 import { AD_SLOTS, SLOT_SHAPE, slotOf, type AdSlotId } from '@/lib/ads'
 import AdSlotMap, { SLOT_COLOR, SLOT_NO, SlotThumb } from './AdSlotMap'
 import { formatDateTime, toKstInput } from '@/lib/format'
@@ -24,6 +24,8 @@ function statusOf(b: ManagedBanner, now: number): Status {
 }
 
 const ctr = (v: number, c: number) => (v ? `${((c / v) * 100).toFixed(2)}%` : '-')
+
+const SHAPE_DIFF = (a: AdSlotId, b: AdSlotId) => SLOT_SHAPE[a] !== SLOT_SHAPE[b]
 
 const EMPTY: AdInput = { slot: 'sidebar', kind: 'image', name: '', image_url: '', mobile_image_url: '', link_url: '', code: '', starts_at: '', ends_at: '', active: true, sort_order: 0 }
 
@@ -187,6 +189,25 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
     }
     run(() => moveBanner(b.id, slot))
   }
+  // 한 자리 안에서 순서 바꾸기: 끌어서 다른 배너 위·아래에 놓거나 ▲▼ 버튼
+  const [overBanner, setOverBanner] = useState<{ id: string; after: boolean } | null>(null)
+  const place = (slot: AdSlotId, movedId: string, beforeId: string | null, after = false) => {
+    const moved = banners.find((x) => x.id === movedId)
+    if (!moved) return
+    if (moved.slot !== slot && SHAPE_DIFF(moved.slot, slot) && !window.confirm(`“${slotOf(slot)?.label}” 자리는 권장 크기가 다릅니다.\n\n그대로 옮기면 배너가 찌그러지거나 작게 보일 수 있습니다. 그래도 옮길까요?`)) return
+    const ids = banners.filter((b) => b.slot === slot && b.id !== movedId).map((b) => b.id)
+    const at = beforeId ? ids.indexOf(beforeId) + (after ? 1 : 0) : ids.length
+    ids.splice(at < 0 ? ids.length : at, 0, movedId)
+    run(() => reorderBanners(slot, ids))
+  }
+  const nudge = (b: ManagedBanner, d: -1 | 1) => {
+    const ids = banners.filter((x) => x.slot === b.slot).map((x) => x.id)
+    const i = ids.indexOf(b.id)
+    const j = i + d
+    if (i < 0 || j < 0 || j >= ids.length) return
+    ;[ids[i], ids[j]] = [ids[j], ids[i]]
+    run(() => reorderBanners(b.slot, ids))
+  }
   const drop = { dragging: !!dragId, over, setOver, onDrop: dropTo }
 
   const run = (fn: () => Promise<AdState>) => start(async () => { const r = await fn(); setMsg(r.error ?? r.ok ?? ''); router.refresh() })
@@ -222,7 +243,7 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                   <span className="grid h-5 w-5 place-items-center rounded text-[11px] text-white" style={{ background: SLOT_COLOR[s.id] }}>{SLOT_NO[s.id]}</span>
                   {s.label} <span className="text-[12.5px] font-normal text-muted">· {s.where}</span>
                 </h2>
-                <p className="mt-1 text-[12px] text-muted">권장 {s.size}{list.length > 0 && ' · 배너를 끌어서 다른 자리로 옮길 수 있어요'}</p>
+                <p className="mt-1 text-[12px] text-muted">권장 {s.size}{list.length > 0 && ' · 배너를 끌어서 순서를 바꾸거나 다른 자리로 옮길 수 있어요 (▲▼ 버튼도 됩니다)'}</p>
               </div>
             </header>
             {list.length ? (
@@ -234,8 +255,22 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                       key={b.id}
                       draggable={!pending && (b.kind === 'image' || isStaff)}
                       onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', b.id); setDragId(b.id) }}
-                      onDragEnd={() => { setDragId(null); setOver(null) }}
-                      className={`grid gap-3 px-5 py-4 md:grid-cols-[160px_1fr_auto] md:items-center ${b.kind === 'image' || isStaff ? 'cursor-grab active:cursor-grabbing' : ''} ${dragId === b.id ? 'opacity-40' : ''}`}
+                      onDragEnd={() => { setDragId(null); setOver(null); setOverBanner(null) }}
+                      {...(dragId && dragId !== b.id ? {
+                        onDragOver: (e: React.DragEvent<HTMLLIElement>) => {
+                          e.preventDefault(); e.stopPropagation()
+                          const r = e.currentTarget.getBoundingClientRect()
+                          setOver(s.id); setOverBanner({ id: b.id, after: e.clientY > r.top + r.height / 2 })
+                        },
+                        onDrop: (e: React.DragEvent<HTMLLIElement>) => {
+                          e.preventDefault(); e.stopPropagation()
+                          const after = overBanner?.id === b.id ? overBanner.after : false
+                          const moved = dragId
+                          setDragId(null); setOver(null); setOverBanner(null)
+                          if (moved) place(s.id, moved, b.id, after)
+                        },
+                      } : {})}
+                      className={`grid gap-3 px-5 py-4 ${overBanner?.id === b.id ? (overBanner.after ? 'shadow-[inset_0_-3px_0_0_#2F6BF0]' : 'shadow-[inset_0_3px_0_0_#2F6BF0]') : ''} md:grid-cols-[160px_1fr_auto] md:items-center ${b.kind === 'image' || isStaff ? 'cursor-grab active:cursor-grabbing' : ''} ${dragId === b.id ? 'opacity-40' : ''}`}
                     >
                       <div className="grid h-20 w-full place-items-center overflow-hidden rounded border border-line bg-paper md:w-[160px]">
                         {b.kind === 'image' && b.image_url
@@ -260,6 +295,10 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                       <div className="flex flex-wrap gap-2 md:justify-end">
                         {(b.kind === 'image' || isStaff) && (
                           <>
+                            <span className="flex gap-1" role="group" aria-label="순서 바꾸기">
+                              <button type="button" disabled={pending || list[0]?.id === b.id} onClick={() => nudge(b, -1)} className="btn-secondary px-2.5 py-1.5 text-[13px] disabled:opacity-30" aria-label="위로" title="위로">▲</button>
+                              <button type="button" disabled={pending || list[list.length - 1]?.id === b.id} onClick={() => nudge(b, 1)} className="btn-secondary px-2.5 py-1.5 text-[13px] disabled:opacity-30" aria-label="아래로" title="아래로">▼</button>
+                            </span>
                             <button type="button" disabled={pending} onClick={() => run(() => setBannerActive(b.id, !b.active))} className="btn-secondary px-3 py-1.5 text-[13px]">{b.active ? '끄기' : '켜기'}</button>
                             <button type="button" onClick={() => { setEditing(toInput(b)); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn-secondary px-3 py-1.5 text-[13px]">고치기</button>
                           </>
