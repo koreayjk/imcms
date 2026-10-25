@@ -6,9 +6,11 @@
 do $$
 declare c record;
 begin
-  for c in select conname from pg_constraint where conrelid = 'public.ad_banners'::regclass and contype = 'c' and pg_get_constraintdef(oid) ilike '%slot%in%' loop
+  -- 자리 목록 검사(CHECK)를 모두 지우고 새로 만든다 (Postgres 는 slot in (...) 을 slot = ANY (ARRAY[...]) 로 저장하므로 이름으로도 지운다)
+  for c in select conname from pg_constraint where conrelid = 'public.ad_banners'::regclass and contype = 'c' and pg_get_constraintdef(oid) ilike '%slot%' loop
     execute format('alter table public.ad_banners drop constraint %I', c.conname);
   end loop;
+  alter table public.ad_banners drop constraint if exists ad_banners_slot_check;
   alter table public.ad_banners add constraint ad_banners_slot_check
     check (slot in ('header', 'sidebar', 'home_middle', 'home_bottom', 'article_top', 'article_bottom', 'popup'));
 end $$;
