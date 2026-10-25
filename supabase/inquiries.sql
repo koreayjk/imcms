@@ -13,6 +13,10 @@ create table if not exists public.site_inquiries (
   status text not null default 'new' check (status in ('new', 'done')),
   created_at timestamptz not null default now()
 );
+-- 편집국 안에서 보낸 답변 기록
+alter table public.site_inquiries add column if not exists reply_body text;
+alter table public.site_inquiries add column if not exists replied_at timestamptz;
+alter table public.site_inquiries add column if not exists replied_by uuid;
 create index if not exists site_inquiries_outlet_idx on public.site_inquiries (outlet_id, created_at desc);
 alter table public.site_inquiries enable row level security;
 
