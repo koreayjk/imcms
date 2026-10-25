@@ -24,13 +24,26 @@ export default async function InvoicePage(
   const { data: inv } = await supabase.from('invoices').select('*, outlet:outlets(name)').eq('id', params.id).maybeSingle()
   if (!inv) notFound()
   // payments.sql 실행 전이면 결제 기록·자동결제 표가 없어 비어 있다
-  const [{ data: billingRow }, { data: payments }, { data: autopay }] = await Promise.all([
+  const [{ data: billingRow }, { data: siteRow }, { data: payments }, { data: autopay }] = await Promise.all([
     supabase.from('outlet_billing').select('*').eq('outlet_id', inv.outlet_id).maybeSingle(),
+    supabase.from('outlets').select('site').eq('id', inv.outlet_id).maybeSingle(),
     supabase.from('payments').select('*').eq('invoice_id', inv.id).order('created_at', { ascending: false }),
     supabase.from('outlet_autopay').select('card_company, card_number, last_error').eq('outlet_id', inv.outlet_id).eq('active', true).maybeSingle(),
   ])
   // 자료를 지운(해지) 매체의 청구서: 매체 이름·청구 정보는 청구서에 남겨 둔 값으로 보여 준다
-  const billing = billingRow ?? ((inv as { bill_to_snapshot?: typeof billingRow }).bill_to_snapshot ?? null)
+  const saved = billingRow ?? ((inv as { bill_to_snapshot?: typeof billingRow }).bill_to_snapshot ?? null)
+  // 결제 정보에 아직 적지 않은 칸은 홈페이지 설정의 “하단 표시 정보”(발행소·대표·사업자번호·전화·이메일·주소)로 채운다
+  const legal = ((siteRow as { site?: { legal?: Record<string, string | undefined> } } | null)?.site?.legal ?? {}) as Record<string, string | undefined>
+  const pick = (a: string | null | undefined, b: string | undefined) => (a && a.trim() ? a : b?.trim() || null)
+  const billing = {
+    company_name: pick(saved?.company_name, legal.company),
+    biz_no: pick(saved?.biz_no, legal.bizNo),
+    ceo_name: pick(saved?.ceo_name, legal.ceo || legal.publisher),
+    address: pick(saved?.address, [legal.postcode, legal.address].filter(Boolean).join(' ')),
+    manager_name: pick(saved?.manager_name, legal.ceo || legal.publisher),
+    manager_email: pick(saved?.manager_email, legal.email),
+    manager_phone: pick(saved?.manager_phone, legal.phone),
+  }
   const outletName = (inv.outlet as { name?: string } | null)?.name ?? (inv as { outlet_name?: string | null }).outlet_name ?? null
   const items = (inv.items ?? []) as InvoiceItem[]
   // 운영팀: 로그인 없이 결제하는 전용 링크 (미납일 때)
@@ -128,10 +141,10 @@ export default async function InvoicePage(
       </article>
 
       {isStaff && (
-        <details className="mt-5 rounded-xl border border-line bg-white p-4 print:hidden" open={!billingRow?.company_name && !billingRow?.manager_email}>
-          <summary className="cursor-pointer text-[14px] font-bold">공급받는 자·담당자 정보 {billingRow?.company_name || billingRow?.manager_email ? '수정' : '입력'} <span className="text-[12px] font-normal text-muted">(운영팀에게만 보입니다)</span></summary>
-          <p className="mb-3 mt-1 text-[12.5px] leading-relaxed text-muted">이 매체의 &ldquo;결제 정보&rdquo;에 저장됩니다. 청구서의 공급받는 자 칸, 청구서 안내 메일 받는 사람, 결제창 이메일에 쓰입니다. 고객이 자기 결제 정보 화면에서 직접 고칠 수도 있습니다.</p>
-          <BillingForm outletId={inv.outlet_id} billing={billingRow} />
+        <details className="mt-5 rounded-xl border border-line bg-white p-4 print:hidden" open={!saved?.company_name && !saved?.manager_email}>
+          <summary className="cursor-pointer text-[14px] font-bold">공급받는 자·담당자 정보 {saved?.company_name || saved?.manager_email ? '수정' : '입력'} <span className="text-[12px] font-normal text-muted">(운영팀에게만 보입니다)</span></summary>
+          <p className="mb-3 mt-1 text-[12.5px] leading-relaxed text-muted">홈페이지 설정에 적어 둔 하단 표시 정보(발행소·대표·사업자번호·전화·주소)가 비어 있는 칸에 미리 채워져 있습니다. 확인하고 저장하면 이 매체의 &ldquo;결제 정보&rdquo;에 저장됩니다. 청구서의 공급받는 자 칸, 청구서 안내 메일 받는 사람, 결제창 이메일에 쓰입니다. 고객이 자기 결제 정보 화면에서 직접 고칠 수도 있습니다.</p>
+          <BillingForm outletId={inv.outlet_id} billing={billing} />
         </details>
       )}
 
