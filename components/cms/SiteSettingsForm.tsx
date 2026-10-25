@@ -9,6 +9,7 @@ import HomeLayoutThumb from './HomeLayoutThumb'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
 import { saveSelfSiteSettings } from '@/app/(main)/admin/settings/site-actions'
+import { OPEN_ZONES, formatZoned, isoToZoned, zonedToIso } from '@/lib/zoned-time'
 import SearchRegisterGuide from './SearchRegisterGuide'
 import { buildSite, DEFAULT_COLORS, foreignTopics, pressFields, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { FOREIGN_TOPICS, PRESS_FIELDS } from '@/lib/press-sources'
@@ -126,6 +127,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     [outlet.id, name, domain, s, sections]
   )
   const vars = { '--brand': preview.colors.brand, '--brand-dark': preview.colors.brandDark, '--gold': preview.colors.gold, '--gold-ink': preview.colors.goldInk } as CSSProperties
+  const openLocal = isoToZoned(s.openAt, s.openTz ?? 'Asia/Seoul')
   const missing = LEGAL.filter((f) => f.required && !s.legal?.[f.k]?.trim())
 
   async function pickLogo(files: FileList | null) {
@@ -396,6 +398,27 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             <span className="mt-0.5 block text-[12.5px] text-muted">켜 두면 도메인으로 들어온 방문자에게 “오픈 준비 중입니다” 화면만 보이고, 검색엔진 수집도 막힙니다. 우리와 고객은 아래 “홈페이지 미리보기” 링크로 실제 홈페이지를 볼 수 있습니다. <strong>정식 오픈하는 날 끄세요</strong> (이날이 개통일이고 첫 청구서를 발행하는 날입니다).</span>
           </span>
         </label>
+        <div className="mt-4 rounded-lg border border-line p-3 text-[13.5px]">
+          <p className="font-bold">예약 오픈 <span className="font-normal text-muted">(정한 시각이 되면 위 스위치를 켜 둔 채로도 안내 화면이 저절로 풀리고 홈페이지가 열립니다)</span></p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5"><span className="text-muted">시간대</span>
+              <select value={s.openTz ?? 'Asia/Seoul'} onChange={(e) => { const tz = e.target.value; set({ openTz: tz, openAt: openLocal ? zonedToIso(openLocal, tz) ?? undefined : s.openAt }) }} className="field-input w-56 py-1">
+                {OPEN_ZONES.map((z) => <option key={z.tz} value={z.tz}>{z.label}</option>)}
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5"><span className="text-muted">오픈 일시</span>
+              <input type="datetime-local" value={openLocal} onChange={(e) => set({ openAt: e.target.value ? zonedToIso(e.target.value, s.openTz ?? 'Asia/Seoul') ?? undefined : undefined, openTz: s.openTz ?? 'Asia/Seoul' })} className="field-input w-56 py-1" />
+            </label>
+            {s.openAt && <button type="button" onClick={() => set({ openAt: undefined })} className="text-[12.5px] text-danger underline">예약 취소</button>}
+          </div>
+          {s.openAt && Number.isFinite(Date.parse(s.openAt)) && (
+            <p className="mt-2 text-[12.5px] leading-relaxed">
+              <strong>{formatZoned(s.openAt, s.openTz ?? 'Asia/Seoul')}</strong>에 열립니다. 한국 시간으로는 {formatZoned(s.openAt, 'Asia/Seoul')}.
+              {Date.parse(s.openAt) <= Date.now() && <span className="text-danger"> (이미 지난 시각입니다 — 저장하면 바로 열립니다)</span>}
+            </p>
+          )}
+          <p className="mt-1.5 text-[12px] leading-relaxed text-muted">미리 해 둘 것: ① 위 “도메인”을 연결하고 DNS가 맞는지 확인 ② 아래 “검색 노출”을 켜고 저장(예약 시각에 검색 노출이 함께 적용됩니다) ③ 하단 표시 정보·기사·섹션 점검. 저장 후 오픈 시각까지 방문자에게는 “○월 ○일 오픈 예정” 안내 화면이 보입니다.</p>
+        </div>
         <p className="mt-3 text-[12.5px]"><a href={previewUrl(outlet.id)} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">홈페이지 미리보기 ↗</a><span className="ml-2 text-muted">고객에게 보여 줄 때 이 링크를 보내세요.</span></p>
       </Card>
 

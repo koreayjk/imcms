@@ -12,6 +12,7 @@ import { getCmsContext } from '@/lib/cms'
 import { hasUnreadReply } from '@/lib/support'
 import { GRACE_DAYS, holdFrom, kstToday } from '@/lib/billing'
 import { formatDate } from '@/lib/format'
+import { isPrepNow } from '@/lib/sites'
 
 // 편집국: 아이폰 사파리는 글씨가 16px보다 작은 입력칸(매체 고르기 등)을 누르면 화면을 확대하고 그대로 둬서 좌우가 잘린다 → 자동 확대를 막는다
 //   (아이폰은 두 손가락 확대는 그대로 된다)
@@ -53,7 +54,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes, { data: onboardOutlet }, { count: staffOnboardingCount }] = await Promise.all([
     pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'), onboardQ, staffCommentQ,
   ])
-  const onboarding = (onboardOutlet?.site as { comingSoon?: boolean } | null | undefined)?.comingSoon === true
+  const onboarding = isPrepNow((onboardOutlet?.site ?? {}) as { comingSoon?: boolean; openAt?: string })
   // 고객: 운영팀이 코멘트를 쓰거나 체크한 새 소식 수 (내가 개통 현황을 연 뒤부터 센다, launch-notice.sql 전이면 0)
   let onboardingCount = 0
   if (onboarding && outletId) {

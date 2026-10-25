@@ -47,6 +47,11 @@ export type SiteConfig = {
   preview?: boolean
   // 오픈 준비 중: 켜져 있으면 방문자에게는 안내 화면만 보인다 (홈페이지 설정의 "오픈 준비 중" 스위치)
   comingSoon?: boolean
+  // 예약 오픈: 이 시각(절대 시각, ISO)이 되면 오픈 준비 중 화면이 저절로 풀리고 검색 노출 설정이 적용된다 (openTz 는 입력·표시에 쓴 시간대)
+  openAt?: string
+  openTz?: string
+  // 오픈 준비 중 스위치와 상관없이 홈페이지 설정에 저장된 검색 노출 값 (예약 오픈 시각이 지나면 이 값이 쓰인다)
+  openIndexable?: boolean
   // 오픈 준비 중인 매체를 미리보기로 열어 보는 중 (방문자에게는 안내 화면이 보인다)
   softPreview?: boolean
   domains: string[]
@@ -212,6 +217,8 @@ export type OutletSiteSettings = {
   indexable?: boolean
   // 오픈 준비 중 (신규 매체는 켜진 채로 만든다. 꺼야 방문자에게 홈페이지가 열린다. 없으면 열린 매체)
   comingSoon?: boolean
+  openAt?: string
+  openTz?: string
   pressKeywords?: string
   legal?: Partial<SiteLegal>
   homeLayout?: HomeLayout
@@ -295,6 +302,9 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     domains: o.domain ? [o.domain, `www.${o.domain}`] : [],
     createdAt: o.created_at ?? undefined,
     comingSoon: s.comingSoon === true,
+    openAt: s.openAt,
+    openTz: s.openTz,
+    openIndexable: s.indexable ?? code?.indexable ?? false,
     // 오픈 준비 중에는 검색 노출을 켜 두었어도 수집하지 않는다
     indexable: s.comingSoon === true ? false : (s.indexable ?? code?.indexable ?? false),
     name: o.name,
@@ -358,4 +368,14 @@ export function cleanStats(b: StatsBoard | undefined | null): StatsBoard | undef
     .filter((x) => x.label && x.value)
     .slice(0, 8)
   return items.length ? { title: str(b.title, 30) || '숫자로 보는 현황', items, footnote: str(b.footnote, 200) || undefined } : undefined
+}
+
+// 예약 오픈 시각이 지났는가 (지났으면 오픈 준비 중 스위치가 켜져 있어도 열린 매체로 본다)
+export const openTimePassed = (s: { openAt?: string | null }, now = Date.now()) => !!s.openAt && Number.isFinite(Date.parse(s.openAt)) && now >= Date.parse(s.openAt)
+// 지금 "오픈 준비 중"인가: 스위치가 켜져 있고 예약 시각이 아직 안 왔을 때
+export const isPrepNow = (s: { comingSoon?: boolean | null; openAt?: string | null }, now = Date.now()) => s.comingSoon === true && !openTimePassed(s, now)
+// 요청이 올 때마다 적용: 예약 시각이 지난 매체는 안내 화면을 풀고, 저장해 둔 검색 노출 설정을 켠다 (매체 설정 캐시 5분과 상관없이 정확한 시각에 열린다)
+export function applyOpenSchedule<T extends { comingSoon?: boolean; openAt?: string; openIndexable?: boolean; indexable?: boolean; softPreview?: boolean }>(site: T, now = Date.now()): T {
+  if (!site.comingSoon || site.softPreview || !openTimePassed(site, now)) return site
+  return { ...site, comingSoon: false, indexable: site.openIndexable ?? false }
 }

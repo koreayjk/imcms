@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { demoArticles, demoSite } from './demo-articles'
 import { withLayout } from './sites'
 import { isLayoutDemoHost } from './home-layouts'
-import { SITES, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
+import { SITES, applyOpenSchedule, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
 import { normalizeLayout, type SlotKey } from './home-layout'
 import { INDEX_WEEKS, type IndexKey, type IndexSeries } from './market-index'
 import { outletTag } from './outlet-cache'
@@ -65,7 +65,7 @@ export async function currentSite(): Promise<SiteConfig> {
   const host = ((await headers()).get('host') ?? '').split(':')[0].toLowerCase()
   const previewId = jar.get(PREVIEW_COOKIE)?.value ?? null
   try {
-    const site = (await loadSite(host, /^[0-9a-f-]{36}$/.test(previewId ?? '') ? previewId : null)) ?? resolveSite(host)
+    const site = applyOpenSchedule((await loadSite(host, /^[0-9a-f-]{36}$/.test(previewId ?? '') ? previewId : null)) ?? resolveSite(host))
     if (isLayoutDemoHost(host)) return { ...site, layoutDemo: true }
     return site.preview ? withLayout(site, layout) : site
   } catch {

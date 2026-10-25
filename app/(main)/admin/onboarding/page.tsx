@@ -5,10 +5,11 @@ import { getCmsContext } from '@/lib/cms'
 import { formatDateTime } from '@/lib/format'
 import { ONBOARDING_STEPS, stepStates } from '@/lib/onboarding-guide'
 import type { LaunchDone } from '@/lib/launch-checklist'
+import { isPrepNow } from '@/lib/sites'
 
 export const metadata: Metadata = { title: '개통 현황' }
 
-type OutletRow = { id: string; name: string; domain: string | null; site: { comingSoon?: boolean } | null; publisher_id: string | null; created_at: string; publisher: { name: string } | null }
+type OutletRow = { id: string; name: string; domain: string | null; site: { comingSoon?: boolean; openAt?: string } | null; publisher_id: string | null; created_at: string; publisher: { name: string } | null }
 
 // 운영팀: 개설한 고객사의 개통 진행 현황 목록 (진행 중 → 개통 완료). 고객 코멘트가 새로 오면 숫자로 보인다
 export default async function OnboardingListPage() {
@@ -36,9 +37,9 @@ export default async function OnboardingListPage() {
     const states = stepStates(doneBy.get(id) ?? {}, true)
     return { finished: states.filter((s) => s === 'done').length, total: states.length, doing: ONBOARDING_STEPS[states.findIndex((s) => s === 'doing')]?.title }
   }
-  const ongoing = outlets.filter((o) => o.site?.comingSoon === true)
+  const ongoing = outlets.filter((o) => isPrepNow(o.site ?? {}))
     .sort((a, b) => (unseen.get(b.id) ?? 0) - (unseen.get(a.id) ?? 0))
-  const opened = outlets.filter((o) => o.site?.comingSoon !== true)
+  const opened = outlets.filter((o) => !isPrepNow(o.site ?? {}))
 
   const Row = ({ o }: { o: OutletRow }) => {
     const p = progress(o.id)

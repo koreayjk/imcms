@@ -6,6 +6,7 @@ import { ISSUER, previewUrl } from '@/lib/product'
 import LaunchComments, { type LaunchComment } from '@/components/cms/LaunchComments'
 import StepChecklist from '@/components/cms/StepChecklist'
 import OnboardingSeen from '@/components/cms/OnboardingSeen'
+import { isPrepNow } from '@/lib/sites'
 
 // 개통 진행 현황: 고객은 자기 매체의 단계·코멘트를 보고, 운영팀(담당 매니저)은 같은 화면에서 항목을 체크하고 답한다
 //   단계 진행도는 운영팀 체크 항목(lib/launch-checklist.ts)에서 정해진다 (launch-progress.sql, launch-hub.sql)
@@ -35,7 +36,7 @@ export default async function OnboardingView({ outletId, staff }: { outletId: st
   const fresh = FRESH_KEY in doneMap
   const finished = states.filter((s) => s === 'done').length
   const pct = Math.round((finished / states.length) * 100)
-  const comingSoon = (outlet?.site as { comingSoon?: boolean } | null)?.comingSoon === true
+  const comingSoon = isPrepNow((outlet?.site ?? {}) as { comingSoon?: boolean; openAt?: string })
   const commentsReady = !commentRes.error
   const comments = (commentRes.data ?? []) as LaunchComment[]
   const of = (stepId: string | null) => comments.filter((c) => c.step_id === stepId)

@@ -8,6 +8,7 @@ import { TICKET_CATEGORIES, TICKET_STATUS, won, type TicketCategory, type Ticket
 import type { OutletSiteSettings } from '@/lib/sites'
 import ConfirmSubmit from '@/components/cms/ConfirmSubmit'
 import { removeGroup, removeOutlet } from './actions'
+import { isPrepNow } from '@/lib/sites'
 
 // 인터넷신문 필수 표시 항목 (홈페이지 설정과 같은 기준)
 const REQUIRED_LEGAL = ['company', 'registrationNo', 'registeredAt', 'publisher', 'editor', 'youthOfficer', 'phone', 'address'] as const
@@ -60,7 +61,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
   const sum = (k: keyof Stat) => outlets.reduce((a, o) => a + Number(st(o.id)[k] ?? 0), 0)
 
   // 매체 상태: 운영(도메인 + 검색 노출) / 비공개(도메인만) / 준비(도메인 없음 또는 오픈 준비 중 스위치 켜짐)
-  const stateOf = (o: (typeof outlets)[number]) => (!o.domain || o.site?.comingSoon ? 'prep' : o.site?.indexable ? 'live' : 'hidden')
+  const stateOf = (o: (typeof outlets)[number]) => (!o.domain || isPrepNow((o.site ?? {}) as { comingSoon?: boolean; openAt?: string }) ? 'prep' : o.site?.indexable ? 'live' : 'hidden')
   const legalDone = (o: (typeof outlets)[number]) => REQUIRED_LEGAL.filter((k) => o.site?.legal?.[k]?.trim()).length
   const live = outlets.filter((o) => stateOf(o) === 'live').length
   const unpaidCount = sum('unpaid_invoices')
