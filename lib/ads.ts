@@ -13,6 +13,11 @@ export const AD_SLOTS: { id: AdSlotId; label: string; where: string; size: strin
   { id: 'article_bottom', label: '기사 아래', where: '기사 본문 끝', size: '760×150 · 휴대폰 640×200' },
   { id: 'popup', label: '첫 화면 팝업', where: '첫 화면에 뜨는 창 (“오늘 하루 보지 않기”)', size: '400×500' },
 ]
+// 배너 모양: 가로로 긴 자리끼리는 그대로 옮겨도 어울린다. 모양이 다른 자리로 옮길 때는 확인을 받는다
+export const SLOT_SHAPE: Record<AdSlotId, 'wide' | 'box' | 'popup'> = {
+  header: 'wide', home_middle: 'wide', home_bottom: 'wide', article_top: 'wide', article_bottom: 'wide', sidebar: 'box', popup: 'popup',
+}
+
 export const slotOf = (id: string) => AD_SLOTS.find((s) => s.id === id)
 
 export type AdBanner = {

@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteBanner, moveBanner, saveBanner, setBannerActive, type AdInput, type AdState } from '@/app/(main)/admin/ads/actions'
-import { AD_SLOTS, slotOf, type AdSlotId } from '@/lib/ads'
+import { AD_SLOTS, SLOT_SHAPE, slotOf, type AdSlotId } from '@/lib/ads'
 import AdSlotMap, { SLOT_COLOR, SLOT_NO, SlotThumb } from './AdSlotMap'
 import { formatDateTime, toKstInput } from '@/lib/format'
 import { uploadImage } from '@/components/editor/upload'
@@ -181,6 +181,10 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
     setDragId(null); setOver(null)
     const b = banners.find((x) => x.id === id)
     if (!b || b.slot === slot) return
+    if (SLOT_SHAPE[b.slot] !== SLOT_SHAPE[slot]) {
+      const from = slotOf(b.slot), to = slotOf(slot)
+      if (!window.confirm(`“${to?.label}” 자리는 권장 크기가 다릅니다.\n\n현재 자리(${from?.label}): ${from?.size}\n옮길 자리(${to?.label}): ${to?.size}\n\n그대로 옮기면 배너가 찌그러지거나 작게 보일 수 있습니다. 그래도 옮길까요?`)) return
+    }
     run(() => moveBanner(b.id, slot))
   }
   const drop = { dragging: !!dragId, over, setOver, onDrop: dropTo }
