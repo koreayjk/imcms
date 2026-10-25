@@ -304,6 +304,20 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             boxClass="h-[84px] w-40"
           />
         </div>
+        <details className="mt-4 rounded-lg border border-line bg-[#F8F9FA] px-4 py-3 text-[13px] leading-relaxed">
+          <summary className="cursor-pointer font-semibold">공유 사진을 바꿨는데 카카오톡에서 예전 사진이 나와요</summary>
+          <div className="mt-2 space-y-2 text-muted">
+            <p>카카오톡·페이스북·네이버 등은 주소를 한 번 공유하면 그때의 사진을 <strong className="text-body">저장(캐시)해 두고</strong> 며칠~몇 주 동안 그대로 보여 줍니다. 여기서 사진을 바꿔도 이미 공유된 주소는 바로 바뀌지 않을 수 있고, 새로 올린 사진은 아직 공유하지 않은 주소부터 정상으로 나옵니다.</p>
+            <p className="font-semibold text-body">저장된 예전 사진 지우는 방법</p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li><strong className="text-body">카카오톡</strong>: <a href="https://developers.kakao.com/tool/debugger/sharing" target="_blank" rel="noopener" className="underline underline-offset-2">카카오 디벨로퍼스 → 도구 → 공유 디버거</a>에 홈페이지 주소를 넣고 <strong className="text-body">디버그 → 초기화</strong>를 누르세요. 카카오 계정 로그인이 필요하고, 도메인 등록을 요구하면 운영팀(고객센터)에 요청해 주세요.</li>
+              <li><strong className="text-body">페이스북</strong>: <a href="https://developers.facebook.com/tools/debug/" target="_blank" rel="noopener" className="underline underline-offset-2">공유 디버거</a>에 주소를 넣고 <strong className="text-body">다시 스크랩(Scrape Again)</strong>을 누르세요.</li>
+              <li><strong className="text-body">네이버·문자·메신저 등 나머지</strong>: 따로 지우는 곳이 없어 며칠 지나면 저절로 바뀝니다.</li>
+              <li><strong className="text-body">가장 빠른 방법</strong>: 공유할 주소 뒤에 아무 글자를 붙이면 새 주소로 보고 사진을 새로 가져옵니다. 예) <code>https://내주소.kr/?v=2</code></li>
+            </ul>
+            <p>탭 아이콘도 브라우저가 기억하고 있어, 바꾼 뒤 새로고침(Cmd+Shift+R)을 하거나 탭을 닫았다 다시 열어야 보일 수 있습니다.</p>
+          </div>
+        </details>
       </Card>
 
       <Card title="로고">
