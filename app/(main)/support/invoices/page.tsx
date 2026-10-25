@@ -63,11 +63,13 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ mont
 // 운영팀: 결제 현황 — 이번 달 요약, 조치가 필요한 매체(결제 실패·기한 지남·이용 제한), 전체 목록
 async function StaffDashboard({ supabase, isSuper, month, show }: { supabase: Awaited<ReturnType<typeof getCmsContext>>['supabase']; isSuper: boolean; month: string; show: string }) {
   const today = kstToday()
-  const [{ data: monthRows }, { data: unpaidRows }, { data: outlets }, { data: cards }] = await Promise.all([
+  const [{ data: monthRows }, { data: unpaidRows }, { data: outlets }, { data: cards }, { count: nextCount }, { count: prevCount }] = await Promise.all([
     supabase.from('invoices').select('id, month, total, status, due_date, outlet_id, outlet_name, outlet:outlets(name)').eq('month', `${month}-01`).order('created_at').limit(1000),
     supabase.from('invoices').select('id, month, total, status, due_date, outlet_id, outlet_name, outlet:outlets(name)').eq('status', 'unpaid').order('month').limit(1000),
     supabase.from('outlets').select('id, billing_hold'),
     supabase.from('outlet_autopay').select('outlet_id, last_error').eq('active', true),
+    supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('month', `${shiftMonth(month, 1)}-01`),
+    supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('month', `${shiftMonth(month, -1)}-01`),
   ])
   const monthInv = (monthRows ?? []) as unknown as Inv[]
   const unpaidInv = (unpaidRows ?? []) as unknown as Inv[]
@@ -143,6 +145,12 @@ async function StaffDashboard({ supabase, isSuper, month, show }: { supabase: Aw
             <Link href={link(shiftMonth(month, 1))} className="rounded border border-line bg-white px-3 py-1 hover:border-ink">다음 달 ›</Link>
           </nav>
         </div>
+        {((nextCount ?? 0) > 0 || (prevCount ?? 0) > 0) && (
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 rounded-lg bg-[#EEF3FF] px-4 py-2 text-[13px]">
+            {(nextCount ?? 0) > 0 && <Link href={link(shiftMonth(month, 1))} className="font-semibold text-[#2F6BF0] underline underline-offset-2">{monthLabel(`${shiftMonth(month, 1)}-01`)} 청구서 {nextCount}건이 발행되어 있습니다 →</Link>}
+            {(prevCount ?? 0) > 0 && <Link href={link(shiftMonth(month, -1))} className="text-muted underline underline-offset-2">{monthLabel(`${shiftMonth(month, -1)}-01`)} 청구서 {prevCount}건 보기</Link>}
+          </p>
+        )}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           {([['', '전체', rows.length, sum(() => true)], ['paid', '납부 완료', count('paid'), sum((r) => r.k === 'paid')], ['scheduled', '자동 결제 예정', count('scheduled'), sum((r) => r.k === 'scheduled')], ['waiting', '납부 대기', count('waiting'), sum((r) => r.k === 'waiting')], ['failed', '결제 실패', count('failed'), sum((r) => r.k === 'failed')], ['overdue', '기한 지남·제한', count('overdue') + count('hold'), sum((r) => r.k === 'overdue' || r.k === 'hold')]] as [string, string, number, number][]).map(([k, label, n, amount]) => (
             <Link key={k || 'all'} href={link(month, k === 'overdue' ? 'overdue' : k)} className={`rounded-xl bg-white px-4 py-3 ring-1 ${show === k || (!show && k === '') ? 'ring-2 ring-ink' : 'ring-black/5 hover:ring-ink/40'}`}>
