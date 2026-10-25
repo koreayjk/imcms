@@ -42,9 +42,19 @@ export function isoToZoned(iso: string | undefined | null, tz: string): string {
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`
 }
 
-// 사람이 읽는 표기 ("2026년 10월 26일 오전 9:00 (한국 시간)")
-export function formatZoned(iso: string, tz: string, lang: 'ko' | 'en' = 'ko') {
+// 사람이 읽는 표기: 날짜·시각과 시간대 이름을 나눠 돌려준다 (서버 ICU 에 따라 "오전"이 "AM"으로 나오지 않게 직접 만든다)
+export function formatZonedParts(iso: string, tz: string, lang: 'ko' | 'en' = 'ko') {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).formatToParts(new Date(iso)).map((x) => [x.type, x.value]))
+  const h = Number(p.hour), mm = p.minute
   const z = OPEN_ZONES.find((x) => x.tz === tz)
-  const d = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'ko-KR', { timeZone: tz, year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(iso))
-  return lang === 'en' ? `${d} (${tz})` : `${d} (${z ? z.label.replace(/ \(.*\)$/, '') : tz} 시간)`
+  if (lang === 'en') {
+    const month = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'long' }).format(new Date(iso))
+    return { date: `${month} ${p.day}, ${p.year}, ${h % 12 === 0 ? 12 : h % 12}:${mm} ${h < 12 ? 'AM' : 'PM'}`, zone: tz }
+  }
+  return { date: `${p.year}년 ${p.month}월 ${p.day}일 ${h < 12 ? '오전' : '오후'} ${h % 12 === 0 ? 12 : h % 12}:${mm}`, zone: `${z ? z.label.replace(/ \(.*\)$/, '') : tz} 시간` }
+}
+
+export function formatZoned(iso: string, tz: string, lang: 'ko' | 'en' = 'ko') {
+  const { date, zone } = formatZonedParts(iso, tz, lang)
+  return `${date} (${zone})`
 }

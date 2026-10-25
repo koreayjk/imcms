@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 
 // 오픈 준비 중 안내 화면의 카운트다운: 오픈 시각(절대 시각)까지 남은 시간을 보여 주고, 시각이 되면 화면을 새로 불러 홈페이지로 넘어간다
-export default function OpenCountdown({ openAt, en = false }: { openAt: string; en?: boolean }) {
+export default function OpenCountdown({ openAt, en = false, onDark = false }: { openAt: string; en?: boolean; onDark?: boolean }) {
   const target = Date.parse(openAt)
   const [now, setNow] = useState<number | null>(null)
 
@@ -27,16 +27,16 @@ export default function OpenCountdown({ openAt, en = false }: { openAt: string; 
   return (
     <div className="mt-6" role="timer" aria-label={en ? 'Time until opening' : '오픈까지 남은 시간'}>
       {left <= 0 ? (
-        <p className="text-[15px] font-bold text-[color:var(--brand)]">{en ? 'Opening now…' : '지금 오픈합니다…'}</p>
+        <p className={`text-[15px] font-bold ${onDark ? 'text-white' : 'text-[color:var(--brand)]'}`}>{en ? 'Opening now…' : '지금 오픈합니다…'}</p>
       ) : (
         <div className="flex items-start justify-center gap-2.5">
           {parts.map(([n, label], i) => (
             <div key={label} className="flex items-start gap-2.5">
-              <div className="min-w-[64px] rounded-xl bg-[color:var(--brand)] px-2 py-2.5 text-white">
+              <div className={`min-w-[64px] rounded-xl px-2 py-2.5 sm:min-w-[78px] ${onDark ? 'bg-white text-[color:var(--brand)] shadow-[0_6px_20px_rgba(0,0,0,.2)]' : 'bg-[color:var(--brand)] text-white'}`}>
                 <div className="text-[30px] font-extrabold leading-none tabular-nums">{String(n).padStart(2, '0')}</div>
                 <div className="mt-1 text-[11.5px] font-semibold opacity-80">{label}</div>
               </div>
-              {i < parts.length - 1 && <span className="pt-2.5 text-[24px] font-bold text-[#9AA0A8]" aria-hidden>:</span>}
+              {i < parts.length - 1 && <span className={`pt-2.5 text-[24px] font-bold ${onDark ? 'text-white/60' : 'text-[#9AA0A8]'}`} aria-hidden>:</span>}
             </div>
           ))}
         </div>
