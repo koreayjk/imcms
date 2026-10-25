@@ -55,17 +55,24 @@ export async function removeAutopay(): Promise<{ error?: string }> {
 // 청구서 결제: Stripe 결제 페이지(한국 카드·카카오페이·네이버페이·구글페이 등, 대시보드에서 켠 것)로 보낸다
 export async function startStripeCheckout(invoiceId: string): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   if (!stripeReady()) return { ok: false, error: '온라인 결제가 아직 준비되지 않았습니다. 운영팀에 문의해 주세요.' }
-  const { supabase, user } = await getCmsContext()
+  const { supabase, user, isStaff } = await getCmsContext()
   const { data, error } = await supabase.rpc('payment_start', { inv: invoiceId, p_kind: 'card', p_provider: 'stripe' })
   if (error || !data) return { ok: false, error: error?.message.replace(/^.*?:\s*/, '') || '결제를 시작하지 못했습니다.' }
   const o = data as { orderId: string; orderName: string; amount: number }
   const origin = (await siteOrigin())
+  // 결제창에 미리 적을 이메일: 고객이 직접 누르면 내 이메일, 운영팀이 대신 열 때는 그 매체의 결제 담당자 이메일 (운영팀 이메일이 고객 영수증으로 가지 않게)
+  let prefill: string | undefined = user.email ?? undefined
+  if (isStaff) {
+    const { data: invRow } = await supabase.from('invoices').select('outlet_id').eq('id', invoiceId).maybeSingle()
+    const { data: bill } = invRow ? await supabase.from('outlet_billing').select('manager_email').eq('outlet_id', invRow.outlet_id).maybeSingle() : { data: null }
+    prefill = (bill as { manager_email?: string | null } | null)?.manager_email?.trim() || undefined
+  }
   try {
     const session = await stripe().checkout.sessions.create({
       mode: 'payment',
       locale: 'ko',
       client_reference_id: o.orderId,
-      customer_email: user.email ?? undefined,
+      customer_email: prefill,
       line_items: [{ quantity: 1, price_data: { currency: 'krw', unit_amount: Number(o.amount), product_data: { name: o.orderName } } }],
       metadata: { order_id: o.orderId, invoice_id: invoiceId },
       payment_intent_data: { description: o.orderName, metadata: { order_id: o.orderId, invoice_id: invoiceId } },
