@@ -95,11 +95,11 @@ ${inv.autopay ? '' : `<tr><td style="padding-top:10px;font-size:12px;line-height
   return { subject, html, text }
 }
 
-export async function notifyInvoiceIssued(supabase: SupabaseClient, inv: IssuedInv) {
+export async function notifyInvoiceIssued(supabase: SupabaseClient, inv: IssuedInv, resend = false) {
   // 메일의 결제하기 버튼: 로그인 없이 바로 Stripe 결제창으로 가는 주소 (/pay/토큰/go)
   const base = inv.payUrl ?? (await payLinkFor(supabase, inv.id, inv.origin))
   const payUrl = base ? `${base}/go` : null
-  await notify(supabase, 'invoice_issued', inv.id, `invoice:${inv.id}`, () => invoiceDocMail({ ...inv, payUrl }))
+  await notify(supabase, 'invoice_issued', inv.id, resend ? `invoice:${inv.id}:resend:${Date.now()}` : `invoice:${inv.id}`, () => invoiceDocMail({ ...inv, payUrl }))
 }
 
 // 미납 안내(납부 기한 다음 날, 유예 중)와 이용 제한 안내(유예가 지난 날). 같은 청구서·같은 단계는 한 번만

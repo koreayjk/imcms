@@ -6,7 +6,7 @@ import { ISSUER, PRODUCT } from '@/lib/product'
 import { TAX_NOTE, monthLabel, won, type InvoiceItem } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import PrintButton from '@/components/cms/PrintButton'
-import { deleteInvoice, setInvoicePaid } from '../../actions'
+import { deleteInvoice, resendInvoiceMail, setInvoicePaid } from '../../actions'
 import ConfirmSubmit from '@/components/cms/ConfirmSubmit'
 import InvoicePayments, { type PaymentRow } from '@/components/cms/InvoicePayments'
 import { payProvider } from '@/lib/pay-provider'
@@ -16,7 +16,7 @@ import CopyPayLink from '@/components/cms/CopyPayLink'
 import BillingForm from '@/components/cms/BillingForm'
 
 export default async function InvoicePage(
-  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; sent?: string }> }
 ) {
   const searchParams = await props.searchParams
   const params = await props.params
@@ -146,6 +146,17 @@ export default async function InvoicePage(
           <p className="mb-3 mt-1 text-[12.5px] leading-relaxed text-muted">홈페이지 설정에 적어 둔 하단 표시 정보(발행소·대표·사업자번호·전화·주소)가 비어 있는 칸에 미리 채워져 있습니다. 확인하고 저장하면 이 매체의 &ldquo;결제 정보&rdquo;에 저장됩니다. 청구서의 공급받는 자 칸, 청구서 안내 메일 받는 사람, 결제창 이메일에 쓰입니다. 고객이 자기 결제 정보 화면에서 직접 고칠 수도 있습니다.</p>
           <BillingForm outletId={inv.outlet_id} billing={billing} />
         </details>
+      )}
+
+      {isStaff && inv.status !== 'paid' && (
+        <section className="mt-5 rounded-xl border border-line bg-white p-4 print:hidden">
+          <h2 className="text-[14px] font-bold">청구서 메일 다시 보내기 <span className="text-[12px] font-normal text-muted">(운영팀에게만 보입니다)</span></h2>
+          {searchParams.sent && <p role="status" className="mt-2 rounded bg-published/10 px-3 py-2 text-[13px] font-semibold text-published">청구서 메일을 다시 보냈습니다.</p>}
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">받는 곳: <strong className="text-ink">{saved?.manager_email ?? '결제 담당자 이메일이 없어 그 그룹의 발행인 계정'}</strong>. 담당자 이메일을 고친 뒤 이 버튼으로 다시 보내세요. 처음 보낸 메일과는 별개로 한 번 더 나갑니다.</p>
+          <form action={resendInvoiceMail.bind(null, inv.id)} className="mt-2">
+            <PendingButton pending="보내는 중…" confirm="이 청구서 메일을 다시 보낼까요?" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[13px] font-bold text-white">청구서 메일 다시 보내기</PendingButton>
+          </form>
+        </section>
       )}
 
       {payUrl && (

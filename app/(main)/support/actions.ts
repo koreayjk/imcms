@@ -393,8 +393,18 @@ export async function setTicketAssignee(id: string, form: FormData) {
   revalidatePath('/support', 'layout')
 }
 
+// 청구서 안내 메일 다시 보내기 (운영팀): 받는 사람(결제 담당자 이메일)을 고친 뒤 다시 보낼 때. 같은 청구서의 첫 발송 기록과 따로 센다
+export async function resendInvoiceMail(id: string) {
+  const { supabase } = await superContext()
+  const { data: inv } = await supabase.from('invoices').select('id, status').eq('id', id).maybeSingle()
+  if (!inv) redirect('/support/invoices')
+  if (inv.status === 'paid') redirect(`/support/invoices/${id}?error=${encodeURIComponent('이미 납부된 청구서입니다.')}`)
+  await notifyInvoice(supabase, id, true)
+  redirect(`/support/invoices/${id}?sent=1`)
+}
+
 // 청구서 발행 안내 메일 (lib/invoice-mail.ts)
-async function notifyInvoice(supabase: Awaited<ReturnType<typeof getCmsContext>>['supabase'], id: string) {
+async function notifyInvoice(supabase: Awaited<ReturnType<typeof getCmsContext>>['supabase'], id: string, resend = false) {
   const { data: inv } = await supabase.from('invoices').select('id, month, total, due_date, created_at, outlet_id, items, memo, invoice_no, outlet:outlets(name)').eq('id', id).maybeSingle()
   if (!inv) return
   const { data: auto } = await supabase.from('outlet_autopay').select('card_company, card_number').eq('outlet_id', inv.outlet_id).eq('active', true).maybeSingle()
@@ -402,5 +412,5 @@ async function notifyInvoice(supabase: Awaited<ReturnType<typeof getCmsContext>>
     id, outletName: (inv.outlet as unknown as { name: string } | null)?.name ?? '', month: String(inv.month), total: Number(inv.total),
     dueDate: inv.due_date, createdAt: inv.created_at, autopay: auto ?? null, origin: (await cmsOrigin()),
     items: (inv.items ?? []) as InvoiceItem[], memo: inv.memo, invoiceNo: (inv as { invoice_no?: string | null }).invoice_no ?? null,
-  })
+  }, resend)
 }
