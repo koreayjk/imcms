@@ -13,6 +13,7 @@ import { payProvider } from '@/lib/pay-provider'
 import { payLinkFor } from '@/lib/pay-link'
 import { cmsOrigin } from '@/lib/origin'
 import CopyPayLink from '@/components/cms/CopyPayLink'
+import BillingForm from '@/components/cms/BillingForm'
 
 export default async function InvoicePage(
   props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
@@ -125,6 +126,14 @@ export default async function InvoicePage(
           </div>
         )}
       </article>
+
+      {isStaff && (
+        <details className="mt-5 rounded-xl border border-line bg-white p-4 print:hidden" open={!billingRow?.company_name && !billingRow?.manager_email}>
+          <summary className="cursor-pointer text-[14px] font-bold">공급받는 자·담당자 정보 {billingRow?.company_name || billingRow?.manager_email ? '수정' : '입력'} <span className="text-[12px] font-normal text-muted">(운영팀에게만 보입니다)</span></summary>
+          <p className="mb-3 mt-1 text-[12.5px] leading-relaxed text-muted">이 매체의 &ldquo;결제 정보&rdquo;에 저장됩니다. 청구서의 공급받는 자 칸, 청구서 안내 메일 받는 사람, 결제창 이메일에 쓰입니다. 고객이 자기 결제 정보 화면에서 직접 고칠 수도 있습니다.</p>
+          <BillingForm outletId={inv.outlet_id} billing={billingRow} />
+        </details>
+      )}
 
       {payUrl && (
         <section className="mt-5 rounded-xl border border-line bg-white p-4 print:hidden">

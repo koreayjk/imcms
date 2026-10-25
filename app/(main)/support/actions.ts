@@ -271,6 +271,15 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
   redirect(`/support/invoices/${data.id}`)
 }
 
+// 청구서 발행 화면: 선택한 매체의 결제 정보(공급받는 자·담당자)가 비어 있는지
+export async function outletBillingStatus(outletId: string): Promise<{ company: string | null; email: string | null; name: string | null }> {
+  const { supabase } = await superContext()
+  if (!/^[0-9a-f-]{36}$/.test(outletId)) return { company: null, email: null, name: null }
+  const { data } = await supabase.from('outlet_billing').select('company_name, manager_email, manager_name').eq('outlet_id', outletId).maybeSingle()
+  const b = data as { company_name?: string | null; manager_email?: string | null; manager_name?: string | null } | null
+  return { company: b?.company_name?.trim() || null, email: b?.manager_email?.trim() || null, name: b?.manager_name?.trim() || null }
+}
+
 // 청구서를 발행하기 전에 안내 메일을 나에게 먼저 보내 본다 (저장·발행은 하지 않는다. 받는 사람은 지금 로그인한 총관리자 본인)
 export async function sendInvoicePreview(form: FormData): Promise<{ ok?: boolean; error?: string; to?: string; note?: string }> {
   const { supabase, user } = await superContext()

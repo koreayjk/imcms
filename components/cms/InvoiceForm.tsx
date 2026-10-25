@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition, useActionState } from 'react'
-import { invoiceDraft, saveInvoice, sendInvoicePreview, type FormState } from '@/app/(main)/support/actions'
+import { invoiceDraft, outletBillingStatus, saveInvoice, sendInvoicePreview, type FormState } from '@/app/(main)/support/actions'
 import { TAX_NOTE, invoiceTotals, won, type InvoiceItem } from '@/lib/support'
 import { SETUP_FEE, SETUP_WAIVER_NOTE } from '@/lib/pricing'
 import PendingButton from './PendingButton'
@@ -21,6 +21,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const [start, setStart] = useState('')
   const [picked, setPicked] = useState(false)
   const [auto, setAuto] = useState(true)
+  const [billingInfo, setBillingInfo] = useState<{ company: string | null; email: string | null; name: string | null } | null>(null)
   // 개통 전 무료 기간 안내: 개통일부터 청구 월 전달 말일까지는 무료, 청구 월 1일부터 청구 (줄과 안내 문구를 자동으로 넣는다)
   const [freeOn, setFreeOn] = useState(true)
   const [openDate, setOpenDate] = useState('')
@@ -43,7 +44,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
     fill({ beta: nextBeta, start: nextStart || month })
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setPicked(false); if (!edited) fill(undefined, true) }, [outletId, month])
+  useEffect(() => { setBillingInfo(null); if (outletId) outletBillingStatus(outletId).then(setBillingInfo).catch(() => null); setPicked(false); if (!edited) fill(undefined, true) }, [outletId, month])
   const [preview, setPreview] = useState<{ text: string; error?: boolean }>({ text: '' })
   const [sending, startSend] = useTransition()
   const sendToMe = (form: HTMLFormElement) => {
@@ -111,6 +112,12 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         <span className="text-[12px] text-muted">이번 청구서 계산에만 쓰입니다. 다음 달 자동 청구에도 반값을 이어 가려면 자동 청구 설정에 같은 값을 저장해 두세요.</span>
       </div>
 
+      {outletId && billingInfo && (!billingInfo.company || !billingInfo.email) && (
+        <p role="status" className="rounded-lg border border-draft/50 bg-draft/10 px-4 py-2.5 text-[13px] leading-relaxed">
+          이 매체의 <strong>결제 정보(공급받는 자 상호·사업자번호·대표자·담당자 이메일)</strong>가 비어 있습니다{!billingInfo.email ? ' — 담당자 이메일이 없으면 청구서 메일이 발행인 계정으로 갑니다' : ''}.
+          발행한 뒤 청구서 화면 아래의 &ldquo;공급받는 자·담당자 정보 입력&rdquo;에서 바로 채울 수 있습니다.
+        </p>
+      )}
       <input type="hidden" name="beta_on" value={beta ? 'on' : ''} />
       <input type="hidden" name="beta_start" value={start} />
       {outletId && !auto && (
