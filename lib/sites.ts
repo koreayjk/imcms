@@ -128,7 +128,8 @@ export function defaultOgImage(logo?: string) {
 //   편집장이 탭 아이콘을 따로 올렸으면 그 이미지를 쓴다 (주소가 바뀌면 브라우저가 새 아이콘을 받도록 ?v= 를 붙인다)
 export const siteIcon = (site: SiteConfig) =>
   site.iconUrl ? `/site-favicon.png?v=${[...site.iconUrl].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`
-  : site.logoMark ? '/site-favicon.png' : '/site-icon.svg'
+  // 이름까지 들어 있는 가로로 긴 로고(로고 이미지만 모드)는 정사각형 안에서 너무 작아 흰 네모로 보이므로, 아이콘을 올리기 전에는 매체 이름 첫 글자 아이콘을 쓴다
+  : site.logoMark && site.logoMode !== 'full' ? '/site-favicon.png' : '/site-icon.svg'
 
 export const SITES: SiteConfig[] = [
   {
