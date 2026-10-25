@@ -76,7 +76,11 @@ export default async function InvoicePage(
       <article className="rounded-2xl bg-white p-5 ring-1 sm:p-10 ring-black/5 print:rounded-none print:p-0 print:ring-0">
         <header className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-5">
           <div>
-            <p className="text-[13px] font-bold text-muted">{PRODUCT.name}</p>
+            <p className="flex items-center gap-2 text-[14px] font-bold text-[#1D3461]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/icon-192.png" alt="" width={36} height={36} className="rounded-lg" />
+              {PRODUCT.name}
+            </p>
             <h1 className="mt-1 text-[28px] font-extrabold tracking-tight">{monthLabel(inv.month)} 청구서</h1>
             <p className="mt-1.5 text-[12.5px] text-muted tabular-nums">
               {inv.invoice_no && <>청구서 번호 {inv.invoice_no} · </>}발행일 {formatDate(inv.created_at)}

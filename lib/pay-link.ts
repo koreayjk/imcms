@@ -45,3 +45,16 @@ export async function invoiceByToken(token: string): Promise<PayInvoice | null> 
   if (error || !data) return null
   return data as PayInvoice
 }
+
+export type BillTo = { outlet?: string | null; company?: string | null; biz_no?: string | null; ceo?: string | null; address?: string | null; manager?: string | null; manager_email?: string | null; manager_phone?: string | null }
+
+// 청구서 메일에 보여 줄 공급받는 자 (SQL 전이면 null → 메일에는 매체 이름만)
+export async function billToFor(supabase: SupabaseClient, invoiceId: string): Promise<BillTo | null> {
+  if (!process.env.PAYMENT_DB_SECRET) return null
+  try {
+    const { data, error } = await supabase.rpc('invoice_bill_to', { secret: paymentDbSecret(), inv: invoiceId })
+    return error || !data ? null : (data as BillTo)
+  } catch {
+    return null
+  }
+}

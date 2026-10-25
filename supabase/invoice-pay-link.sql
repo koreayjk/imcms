@@ -126,3 +126,27 @@ end $$;
 
 revoke all on function public.payment_link_autopay_key(text, text), public.payment_link_autopay_consent(text, text, text), public.payment_link_autopay_save(text, uuid, text, text, text, text, text) from public;
 grant execute on function public.payment_link_autopay_key(text, text), public.payment_link_autopay_consent(text, text, text), public.payment_link_autopay_save(text, uuid, text, text, text, text, text) to anon, authenticated;
+
+-- 청구서 메일에 보여 줄 공급받는 자 정보 (결제 정보에 적은 값, 비어 있으면 홈페이지 설정의 하단 표시 정보로 채운다)
+create or replace function public.invoice_bill_to(secret text, inv uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare i invoices%rowtype; b outlet_billing%rowtype; lg jsonb; nm text;
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  select * into i from invoices where id = inv;
+  if i.id is null then return null; end if;
+  select * into b from outlet_billing where outlet_id = i.outlet_id;
+  select coalesce(site -> 'legal', '{}'::jsonb), name into lg, nm from outlets where id = i.outlet_id;
+  return jsonb_build_object(
+    'outlet', nm,
+    'company', coalesce(nullif(trim(b.company_name), ''), nullif(trim(lg ->> 'company'), '')),
+    'biz_no', coalesce(nullif(trim(b.biz_no), ''), nullif(trim(lg ->> 'bizNo'), '')),
+    'ceo', coalesce(nullif(trim(b.ceo_name), ''), nullif(trim(lg ->> 'ceo'), ''), nullif(trim(lg ->> 'publisher'), '')),
+    'address', coalesce(nullif(trim(b.address), ''), nullif(trim(concat_ws(' ', lg ->> 'postcode', lg ->> 'address')), '')),
+    'manager', coalesce(nullif(trim(b.manager_name), ''), nullif(trim(lg ->> 'ceo'), ''), nullif(trim(lg ->> 'publisher'), '')),
+    'manager_email', nullif(trim(b.manager_email), ''),
+    'manager_phone', coalesce(nullif(trim(b.manager_phone), ''), nullif(trim(lg ->> 'phone'), ''))
+  );
+end $$;
+revoke all on function public.invoice_bill_to(text, uuid) from public;
+grant execute on function public.invoice_bill_to(text, uuid) to anon, authenticated;

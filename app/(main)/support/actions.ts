@@ -299,15 +299,20 @@ export async function sendInvoicePreview(form: FormData): Promise<{ ok?: boolean
   const [{ data: o }, { data: auto }, { data: billing }] = await Promise.all([
     supabase.from('outlets').select('name').eq('id', outlet_id).maybeSingle(),
     supabase.from('outlet_autopay').select('card_company, card_number').eq('outlet_id', outlet_id).eq('active', true).maybeSingle(),
-    supabase.from('outlet_billing').select('manager_name, manager_email').eq('outlet_id', outlet_id).maybeSingle(),
+    supabase.from('outlet_billing').select('*').eq('outlet_id', outlet_id).maybeSingle(),
   ])
+  const { data: siteRow } = await supabase.from('outlets').select('site').eq('id', outlet_id).maybeSingle()
+  const lg = ((siteRow as { site?: { legal?: Record<string, string | undefined> } } | null)?.site?.legal ?? {}) as Record<string, string | undefined>
+  const bl = (billing ?? {}) as Record<string, string | null | undefined>
+  const first = (...v: (string | null | undefined)[]) => v.map((x) => x?.trim()).find(Boolean) || null
+  const billTo = { company: first(bl.company_name, lg.company), biz_no: first(bl.biz_no, lg.bizNo), ceo: first(bl.ceo_name, lg.ceo, lg.publisher), manager: first(bl.manager_name, lg.ceo, lg.publisher), manager_email: first(bl.manager_email) }
   const target = (billing as { manager_email?: string | null } | null)?.manager_email?.trim()
   const origin = await cmsOrigin()
   const mail = invoiceDocMail({
     id: '', outletName: (o as { name?: string } | null)?.name ?? '', month: `${month}-01`, total: t.total,
     dueDate: text(form, 'due_date', 10) || null, createdAt: new Date().toISOString(), autopay: auto ?? null, origin,
     // 미리보기라 결제 링크는 아직 없다 (발행하면 청구서마다 만들어진다)
-    payUrl: `${origin}/support/invoices`, items, memo: memo || null, invoiceNo: '(발행하면 부여됩니다)',
+    payUrl: `${origin}/support/invoices`, items, memo: memo || null, invoiceNo: '(발행하면 부여됩니다)', billTo,
   }, { note: `발행하면 이 메일이 가는 곳: ${target ? target : '결제 담당자 이메일이 없어 그 그룹의 발행인 계정'}. 결제하기 버튼은 발행한 뒤 청구서마다 만들어지는 결제 링크로 연결됩니다.` })
   const res = await sendMails([{ to: user.email, subject: `[미리보기] ${mail.subject}`, html: mail.html, text: mail.text, tag: 'invoice_preview' }])
   if (!res.sent) return { error: `보내지 못했습니다${res.error ? `: ${res.error}` : ''}` }
