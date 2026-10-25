@@ -16,7 +16,8 @@ export default async function AdArea({ site, slot, className = '', wing = false 
   if (wing && !wide) return null
   if (slot === 'popup') return <AdPopup banner={banners[0]} lang={site.lang} />
   return (
-    <div className={`space-y-3 ${className} ${wide && !wing ? 'min-[1840px]:hidden' : ''}`} data-ad-slot={slot}>
+    // 옆 여백 광고: 3개까지는 화면을 따라다니고(sticky), 그보다 많으면 한 화면을 넘으므로 따라다니지 않고 페이지와 함께 자연스럽게 스크롤된다
+    <div className={`space-y-3 ${className} ${wide && !wing ? 'min-[1840px]:hidden' : ''} ${wing && banners.length <= 3 ? 'sticky top-24' : ''}`} data-ad-slot={slot}>
       {banners.map((b) => <AdBannerView key={b.id} banner={b} lang={site.lang} />)}
     </div>
   )

@@ -81,7 +81,7 @@ export default function SiteFrame({ site, current, children, home }: Props) {
       <main id="content">{children}</main>
       {/* 넓은 화면(1840px 이상): 본문 오른쪽 바깥 빈 여백에 오른쪽 광고를 띄우고 스크롤을 따라다니게 한다 */}
       <div className="pointer-events-none absolute inset-y-0 left-[calc(50%+616px)] hidden w-[300px] pt-40 min-[1840px]:block">
-        <div className="pointer-events-auto sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"><AdArea site={site} slot="sidebar" wing /></div>
+        <AdArea site={site} slot="sidebar" wing className="pointer-events-auto" />
       </div>
       {home && <AdArea site={site} slot="home_bottom" className="mx-auto max-w-[1200px] px-4 py-6" />}
       {home && site.logoStrip && <LogoStrip strip={site.logoStrip} en={en} />}
