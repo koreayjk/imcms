@@ -39,6 +39,8 @@ begin
     join profiles p on p.role in ('admin', 'editor') and (p.outlet_id = o.id or (p.role = 'admin' and p.publisher_id is not null and p.publisher_id = o.publisher_id))
     join auth.users u on u.id = p.id
     where o.id = i.outlet_id and u.email is not null
+      -- IM 뉴스룸 운영팀 계정은 제외 (운영팀이 그 매체로 작업 전환해 두면 profiles.outlet_id 가 그 매체가 되므로)
+      and not coalesce(p.is_super, false) and not coalesce((to_jsonb(p) ->> 'is_staff')::boolean, false)
     order by (p.role = 'admin') desc, u.created_at
     limit 1;
   end if;
