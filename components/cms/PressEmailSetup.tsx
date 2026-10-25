@@ -215,7 +215,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
                     <p className="text-[13.5px] text-muted">{watching ? '⏳ 구글 확인 메일을 기다리는 중… 보통 1분 안에 여기에 코드가 나타납니다.' : '코드가 아직 없습니다. 1단계를 마쳤다면 '}{!watching && <button type="button" onClick={() => setWatching(true)} className="font-semibold text-review underline underline-offset-2">다시 확인</button>}</p>
                   )}
                 </div>
-                <p>지메일 화면으로 돌아가 <Btn>확인 코드</Btn> 칸에 붙여넣고 <Btn>확인</Btn>.</p>
+                <p><strong>링크</strong>가 나왔다면 눌러서 열린 구글 화면에서 <Btn>확인</Btn>을 누르면 끝납니다(“이제 …님이 메일을 전달할 수 있습니다” 문구가 나오면 성공). <strong>6자리 코드</strong>가 나왔다면 지메일 화면으로 돌아가 <Btn>확인 코드</Btn> 칸에 붙여넣고 <Btn>확인</Btn>.</p>
                 <p className="text-[13px] text-[#6B5F22]">⚠ 그 아래 <strong>“전달 사용 중지”는 그대로</strong> 두세요. 바꾸면 개인 메일까지 모두 넘어옵니다.</p>
                 <button type="button" onClick={() => go(3)} className="btn-primary">다 했어요, 다음 →</button>
               </div>
@@ -229,7 +229,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
                 <ol className="list-decimal space-y-1 pl-5">
                   <li>맨 위 검색창 오른쪽 끝 <Btn>검색 옵션</Btn>(조절 막대 모양) 누르기</li>
                   <li>아래쪽 <Btn>필터 만들기</Btn> 누르기</li>
-                  <li><Btn>다음 주소로 전달</Btn>에 체크하고 내 전용 주소 고르기 → <Btn>필터 만들기</Btn></li>
+                  <li><Btn>다음 주소로 전달</Btn>에 체크하고 내 전용 주소 고르기 → <Btn>필터 만들기</Btn> (맨 아래 “일치하는 대화 n개에도 필터 적용”은 <strong>체크하지 마세요</strong>. 체크하면 예전 메일까지 한꺼번에 넘어옵니다)</li>
                 </ol>
                 <details className="text-[13px] text-muted">
                   <summary className="cursor-pointer">“포함하는 단어” 칸이 비어 있다면</summary>
