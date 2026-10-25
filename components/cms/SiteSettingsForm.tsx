@@ -405,7 +405,10 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <span className="grid h-12 w-24 shrink-0 place-items-center rounded border border-line bg-white p-1">{it.img ? <img src={it.img} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[11px] text-muted">없음</span>}</span>
                 <input value={it.name} maxLength={40} onChange={(e) => setStripItem(i, { name: e.target.value })} placeholder="기관 이름" className="field-input w-40 py-1.5" aria-label="기관 이름" />
-                <input value={it.url ?? ''} maxLength={300} onChange={(e) => setStripItem(i, { url: e.target.value })} placeholder="연결할 주소 (https://…, 선택)" className="field-input min-w-[10rem] flex-1 py-1.5" aria-label="연결 주소" />
+                <label className="flex min-w-[12rem] flex-1 items-center gap-1.5">
+                  <span className="shrink-0 text-[12px] font-semibold text-muted">누르면 갈 주소</span>
+                  <input value={it.url ?? ''} maxLength={300} onChange={(e) => setStripItem(i, { url: e.target.value })} inputMode="url" placeholder="https://기관-홈페이지.com" className={`field-input min-w-0 flex-1 py-1.5 ${it.url?.trim() ? '' : 'border-draft'}`} aria-label="연결 주소" />
+                </label>
                 <label className="btn-secondary cursor-pointer px-3 py-1.5 text-[12.5px]">
                   {it.img ? '로고 바꾸기' : '로고 올리기'}
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { void pickStripLogo(i, e.target.files); e.target.value = '' }} />
@@ -424,7 +427,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { void addStripLogos(e.target.files); e.target.value = '' }} />
             </label>
           )}
-          <p className="text-[12px] text-muted">로고 이미지는 가로로 긴 모양(가로 140 × 세로 64 정도) 배경이 흰색이거나 투명한 파일이 가장 보기 좋습니다. 최대 40개까지 넣을 수 있습니다.</p>
+          <p className="text-[12px] text-muted">로고 이미지는 가로로 긴 모양(가로 140 × 세로 64 정도) 배경이 흰색이거나 투명한 파일이 가장 보기 좋습니다. 최대 40개까지 넣을 수 있습니다. 로고를 올리면 줄마다 “누르면 갈 주소” 칸이 생깁니다. 주소(https://…)를 적으면 로고를 눌렀을 때 그 사이트가 새 창으로 열리고, 비워 두면 눌러도 이동하지 않습니다(빈 칸은 주황색 테두리로 표시).</p>
           {cleanLogoStrip(s.logoStrip) && (
             <div className="pointer-events-none overflow-hidden rounded-lg border border-line" aria-hidden>
               <LogoStrip strip={cleanLogoStrip(s.logoStrip)!} />
