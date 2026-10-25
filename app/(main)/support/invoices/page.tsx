@@ -22,10 +22,13 @@ const shiftMonth = (m: string, d: number) => {
 
 export default async function InvoicesPage(props: { searchParams: Promise<{ month?: string; show?: string }> }) {
   const sp = await props.searchParams
-  const { supabase, isSuper, isStaff, isEditorPlus } = await getCmsContext()
+  const { supabase, isSuper, isStaff, isEditorPlus, isGroupAdmin, outletId } = await getCmsContext()
   if (!isEditorPlus && !isStaff) redirect('/support')
   if (isStaff) return <StaffDashboard supabase={supabase} isSuper={isSuper} month={/^\d{4}-\d{2}$/.test(sp.month ?? '') ? sp.month! : kstToday().slice(0, 7)} show={sp.show ?? ''} />
-  const { data } = await supabase.from('invoices').select('*, outlet:outlets(name)').order('month', { ascending: false }).limit(120)
+  // 편집장 화면: 지금 매체의 청구서만 (총관리자가 "편집장 화면으로 보기"를 켜도 다른 매체 것이 섞이지 않게). 그룹 발행인은 여러 매체가 있어 전체를 보여 준다
+  let q = supabase.from('invoices').select('*, outlet:outlets(name)').order('month', { ascending: false }).limit(120)
+  if (!isGroupAdmin && outletId) q = q.eq('outlet_id', outletId)
+  const { data } = await q
 
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-6 md:px-8 md:py-10">
@@ -46,7 +49,7 @@ export default async function InvoicesPage(props: { searchParams: Promise<{ mont
               {/* 휴대폰에서는 매체 이름을 달 아래로 내려 한 줄에 다 들어가게 */}
               <span className="flex shrink-0 flex-col sm:flex-row sm:items-center sm:gap-4">
               <span className="w-28 font-bold">{monthLabel(i.month)}</span>
-              {isStaff && <span className="w-28 truncate text-[13.5px] text-muted sm:w-40">{i.outlet?.name ?? (i.outlet_name ? `${i.outlet_name} (해지)` : "")}</span>}
+              {(isStaff || isGroupAdmin) && <span className="w-28 truncate text-[13.5px] text-muted sm:w-40">{i.outlet?.name ?? (i.outlet_name ? `${i.outlet_name} (해지)` : "")}</span>}
               </span>
               <span className="flex-1 text-right text-[16px] font-bold tabular-nums">{won(i.total)}</span>
               <span className={`w-20 shrink-0 whitespace-nowrap rounded px-2 py-1 text-center text-[12px] font-semibold ${i.status === 'paid' ? 'bg-published/10 text-published' : 'bg-danger/10 text-danger'}`}>{i.status === 'paid' ? '납부 완료' : '미납'}</span>
