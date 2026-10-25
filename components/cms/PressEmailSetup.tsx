@@ -40,7 +40,7 @@ function Btn({ children }: { children: ReactNode }) {
 
 // 지메일 화면 바로 열기 (u/0 = 지금 로그인한 첫 번째 계정)
 const GMAIL_FORWARD = 'https://mail.google.com/mail/u/0/#settings/fwdandpop'
-const GMAIL_SEARCH = `https://mail.google.com/mail/u/0/#search/${encodeURIComponent(FILTER_WORDS)}`
+const GMAIL_FILTERS = 'https://mail.google.com/mail/u/0/#settings/filters'
 const STEP_KEY = 'im_press_mail_step'
 
 function OpenGmail({ href, children, onClick }: { href: string; children: ReactNode; onClick?: () => void }) {
@@ -224,17 +224,19 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
             {step === 3 && (
               <div className="space-y-4 text-[14.5px] leading-[1.8]">
                 <p className="text-[17px] font-bold">보도자료 메일만 보내도록 정합니다</p>
-                <p>아래 버튼을 누르면 지메일에서 보도자료 메일이 검색된 화면이 열립니다.</p>
-                <OpenGmail href={GMAIL_SEARCH}>지메일에서 보도자료 검색 열기</OpenGmail>
+                <p>아래 버튼을 누르면 지메일의 <strong>필터 설정</strong>이 열립니다.</p>
+                <div className="flex flex-wrap gap-2">
+                  <CopyButton text={FILTER_WORDS} label="① 필터 단어 복사" />
+                  <OpenGmail href={GMAIL_FILTERS}>② 지메일 필터 설정 열기</OpenGmail>
+                </div>
                 <ol className="list-decimal space-y-1 pl-5">
-                  <li>맨 위 검색창 오른쪽 끝 <Btn>검색 옵션</Btn>(조절 막대 모양) 누르기</li>
-                  <li>아래쪽 <Btn>필터 만들기</Btn> 누르기</li>
-                  <li><Btn>다음 주소로 전달</Btn>에 체크하고 내 전용 주소 고르기 → <Btn>필터 만들기</Btn> (맨 아래 “일치하는 대화 n개에도 필터 적용”은 <strong>체크하지 마세요</strong>. 체크하면 예전 메일까지 한꺼번에 넘어옵니다)</li>
+                  <li>가운데 파란 글씨 <Btn>새 필터 만들기</Btn> 누르기</li>
+                  <li><Btn>포함하는 단어</Btn> 칸에 <strong>붙여넣기</strong>(①에서 복사한 단어) 후 오른쪽 아래 <Btn>필터 만들기</Btn></li>
+                  <li><Btn>전달</Btn>에 체크하고 내 전용 주소 고르기</li>
+                  <li>맨 아래 “일치하는 대화 n개에도 필터 적용”은 <strong>체크하지 마세요</strong>(체크하면 예전 메일까지 한꺼번에 넘어옵니다)</li>
+                  <li>파란 <Btn>필터 만들기</Btn></li>
                 </ol>
-                <details className="text-[13px] text-muted">
-                  <summary className="cursor-pointer">“포함하는 단어” 칸이 비어 있다면</summary>
-                  <div className="mt-1">이 문구를 붙여넣으세요.<Copyable text={FILTER_WORDS} /></div>
-                </details>
+                <p className="text-[12.5px] text-muted">지메일 계정이 여러 개라 다른 계정이 열리면, 주소 맨 앞 <code>/u/0/</code>의 숫자를 내 계정 번호(<code>/u/1/</code> 등)로 바꾸거나 지메일 오른쪽 위에서 계정을 바꿔 주세요.</p>
                 <button type="button" onClick={() => go(4)} className="btn-primary">설정 끝 ✓</button>
               </div>
             )}
