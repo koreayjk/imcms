@@ -13,6 +13,8 @@ type Props = { site: SiteConfig; current?: string }
 
 export default function SiteHeader({ site, current }: Props) {
   const mail = `mailto:${site.legal.email}`
+  // 광고문의는 홈페이지 양식으로 받아 편집국 '광고문의'에서 확인한다 (매체가 없는 미리보기만 메일)
+  const adsHref = site.outletId ? '/inquiry/ads' : `${mail}?subject=${encodeURIComponent(siteText(site).adsSubject)}`
   const tops = topSections(site)
   const t = siteText(site)
   return (
@@ -23,7 +25,7 @@ export default function SiteHeader({ site, current }: Props) {
           <span>{formatToday(site.lang)}</span>
           <nav className="flex items-center gap-4" aria-label={t.utilNav}>
             <a href={`${mail}?subject=${encodeURIComponent(t.tipSubject)}`} className="hover:text-brand">{t.tip}</a>
-            <a href={`${mail}?subject=${encodeURIComponent(t.adsSubject)}`} className="hover:text-brand">{t.ads}</a>
+            <a href={adsHref} className="hover:text-brand">{t.ads}</a>
             <Link href="/login" className="hover:text-brand">{t.login}</Link>
           </nav>
         </div>

@@ -12,6 +12,7 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
   const mail = `mailto:${l.email}`
   const year = new Date().getFullYear()
   const t = siteText(site)
+  const adsHref = site.outletId ? '/inquiry/ads' : `${mail}?subject=${encodeURIComponent(t.adsSubject)}`
   const en = site.lang === 'en'
   return (
     <footer className="mt-14 border-t-4 border-brand bg-soft">
@@ -27,7 +28,7 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
           {l.email && (
             <>
               <a href={`${mail}?subject=${encodeURIComponent(t.tipSubject)}`} className="font-semibold text-body hover:text-brand">{t.tip}</a>
-              <a href={`${mail}?subject=${encodeURIComponent(t.adsSubject)}`} className="font-semibold text-body hover:text-brand">{t.ads}</a>
+              <a href={adsHref} className="font-semibold text-body hover:text-brand">{t.ads}</a>
             </>
           )}
         </nav>

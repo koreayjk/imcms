@@ -27,7 +27,7 @@ export default async function PrivacyPage() {
         <table className="table-cards">
           <thead><tr><th>구분</th><th>항목</th><th>목적</th><th>보유 기간</th></tr></thead>
           <tbody>
-            <tr><td className="tc-full">기사제보·광고문의 (이메일)</td><td data-label="항목">이름, 이메일 주소, 연락처, 문의 내용</td><td data-label="목적">제보 확인·취재, 문의 답변</td><td data-label="보유 기간">처리 완료 후 1년</td></tr>
+            <tr><td className="tc-full">기사제보 (이메일)·광고문의 (홈페이지 문의 양식)</td><td data-label="항목">이름, 이메일 주소, 연락처, 문의 내용</td><td data-label="목적">제보 확인·취재, 문의 답변</td><td data-label="보유 기간">처리 완료 후 1년</td></tr>
             <tr><td className="tc-full">편집국 회원 (기자·편집인)</td><td data-label="항목">이름, 이메일 주소, 소속 매체, 로그인 기록</td><td data-label="목적">기사 작성·편집·발행, 본인 확인</td><td data-label="보유 기간">탈퇴 시까지 (기사의 기자명은 기사와 함께 보존)</td></tr>
             <tr><td className="tc-full">뉴스레터 구독 (신청한 분만)</td><td data-label="항목">이메일 주소, (선택) 이름, 구독 확인·수신거부 일시</td><td data-label="목적">뉴스레터 발송, 구독 확인</td><td data-label="보유 기간">수신거부할 때까지 (메일마다 수신거부 링크)</td></tr>
             <tr><td className="tc-full">홈페이지 이용 (자동 수집)</td><td data-label="항목">접속 IP, 브라우저 종류, 접속 일시</td><td data-label="목적">서비스 안정 운영, 부정 이용 방지</td><td data-label="보유 기간">최대 1년</td></tr>

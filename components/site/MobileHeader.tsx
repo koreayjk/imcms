@@ -183,7 +183,7 @@ export default function MobileHeader({ site, current }: Props) {
                 { href: '/#popular', label: t.popular, icon: <ChartTile />, color: 'text-[#3AA79B]' },
                 { href: '/#major', label: t.major, icon: <CrownTile />, color: 'text-gold' },
                 { href: `${mail}?subject=${encodeURIComponent(t.tipSubject)}`, label: t.tip, icon: <PenTile />, color: 'text-[#7B5EA7]' },
-                { href: `${mail}?subject=${encodeURIComponent(t.adsSubject)}`, label: t.ads, icon: <MegaphoneTile />, color: 'text-[#3C423E]' },
+                { href: site.outletId ? '/inquiry/ads' : `${mail}?subject=${encodeURIComponent(t.adsSubject)}`, label: t.ads, icon: <MegaphoneTile />, color: 'text-[#3C423E]' },
               ].map((t) => (
                 <li key={t.label} className="bg-white">
                   {t.href.startsWith('/#') ? (

@@ -44,6 +44,8 @@ function isPublicPath(pathname: string) {
     pathname === '/api/view' ||
     // 뉴스레터 구독 확인·수신거부 (메일 속 링크)
     pathname.startsWith('/newsletter/') ||
+    // 홈페이지 광고문의 양식 (독자·광고주가 보낸다)
+    pathname.startsWith('/inquiry/') ||
     pathname === '/api/newsletter/unsubscribe' ||
     // 광고 배너 클릭·노출 (독자가 부른다)
     pathname.startsWith('/ad/') ||

@@ -39,6 +39,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const feedbackQ = isStaff
     ? supabase.from('feedback_posts').select('id', { count: 'exact', head: true }).eq('status', 'received')
     : Promise.resolve({ count: 0 })
+  // 편집장 이상: 아직 확인하지 않은 홈페이지 광고문의 수 (inquiries.sql 전이면 0). 운영팀은 고객 매체 문의를 세지 않는다
+  const inquiryQ = !isStaff && isEditorPlus && outletId
+    ? supabase.from('site_inquiries').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId).eq('status', 'new')
+    : Promise.resolve({ count: 0 })
   // 개통 진행 현황 메뉴 (launch-hub.sql 전이면 숫자 0): 고객은 개통(정식 오픈) 전까지, 운영팀은 새 고객 글 수
   const onboardQ = !isStaff && !trial && outletId && isEditorPlus
     ? supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
@@ -51,8 +55,8 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     const q = supabase.from('outlets').select(fields).order('created_at')
     return isGroupAdmin || isStaff ? q : q.eq('id', outletId ?? '00000000-0000-0000-0000-000000000000')
   }
-  const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes, { data: onboardOutlet }, { count: staffOnboardingCount }] = await Promise.all([
-    pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'), onboardQ, staffCommentQ,
+  const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes, { data: onboardOutlet }, { count: staffOnboardingCount }, { count: inquiryCount }] = await Promise.all([
+    pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'), onboardQ, staffCommentQ, inquiryQ,
   ])
   const onboarding = isPrepNow((onboardOutlet?.site ?? {}) as { comingSoon?: boolean; openAt?: string })
   // 고객: 운영팀이 코멘트를 쓰거나 체크한 새 소식 수 (내가 개통 현황을 연 뒤부터 센다, launch-notice.sql 전이면 0)
@@ -102,7 +106,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     <div className="flex h-[100dvh] overflow-hidden bg-[#F4F5F7] print:block print:h-auto print:overflow-visible print:bg-white">
       <AppServiceWorker />
       <div className="contents print:hidden">
-        <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} feedbackCount={feedbackCount ?? 0} onboarding={onboarding} onboardingCount={onboardingCount} staffOnboardingCount={staffOnboardingCount ?? 0} />
+        <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} feedbackCount={feedbackCount ?? 0} inquiryCount={inquiryCount ?? 0} onboarding={onboarding} onboardingCount={onboardingCount} staffOnboardingCount={staffOnboardingCount ?? 0} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         {trial && <TrialBar role={trial.role} daysLeft={trial.daysLeft} />}
