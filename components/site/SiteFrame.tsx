@@ -26,7 +26,7 @@ export default function SiteFrame({ site, current, children, home }: Props) {
   const t = siteText(site)
   const en = site.lang === 'en'
   return (
-    <div className="site min-h-screen" data-layout={site.homeLayout ?? 'standard'} style={en ? { ...vars, fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif" } : vars} lang={t.htmlLang} data-lang={t.htmlLang}>
+    <div className="site relative min-h-screen" data-layout={site.homeLayout ?? 'standard'} style={en ? { ...vars, fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif" } : vars} lang={t.htmlLang} data-lang={t.htmlLang}>
       {/* 영문 매체: 문서 언어를 영어로 (루트 html 은 편집국과 같이 쓰므로 여기서 바꾼다), 미국 신문 느낌의 세리프 글꼴 */}
       {en && (
         <>
@@ -79,6 +79,10 @@ export default function SiteFrame({ site, current, children, home }: Props) {
       <SiteHeader site={site} current={current} />
       <AdArea site={site} slot="header" className="mx-auto max-w-[1200px] px-4 pt-4" />
       <main id="content">{children}</main>
+      {/* 넓은 화면(1840px 이상): 본문 오른쪽 바깥 빈 여백에 오른쪽 광고를 띄우고 스크롤을 따라다니게 한다 */}
+      <div className="pointer-events-none absolute inset-y-0 left-[calc(50%+616px)] hidden w-[300px] pt-40 min-[1840px]:block">
+        <div className="pointer-events-auto sticky top-24"><AdArea site={site} slot="sidebar" wing /></div>
+      </div>
       {home && <AdArea site={site} slot="home_bottom" className="mx-auto max-w-[1200px] px-4 py-6" />}
       {home && site.logoStrip && <LogoStrip strip={site.logoStrip} en={en} />}
       <SiteFooter site={site} />

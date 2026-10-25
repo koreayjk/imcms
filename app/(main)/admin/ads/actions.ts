@@ -116,10 +116,10 @@ export async function deleteBanner(id: string): Promise<AdState> {
 }
 
 // 광고 자리 설정 (편집장 이상): 안 쓰는 자리 끄기, 오른쪽 광고 개수. 매체 설정에 저장한다 (supabase/ad-slots-more.sql)
-export async function saveAdSlotSettings(outletId: string, input: { off: string[]; sidebarMax: number }): Promise<AdState> {
+export async function saveAdSlotSettings(outletId: string, input: { off: string[]; sidebarMax: number; noWing?: boolean }): Promise<AdState> {
   const { supabase, isEditorPlus, isStaff } = await getCmsContext()
   if (!isEditorPlus && !isStaff) return { error: '편집장 이상만 바꿀 수 있습니다.' }
-  const clean = cleanAdSlots({ off: input.off, sidebarMax: input.sidebarMax })
+  const clean = cleanAdSlots({ off: input.off, sidebarMax: input.sidebarMax, noWing: input.noWing })
   const { error } = await supabase.rpc('outlet_ad_slots_save', { o: outletId, p_ad: clean ? JSON.parse(JSON.stringify(clean)) : null })
   if (error) {
     if (/outlet_ad_slots_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return { error: '이 기능을 쓰려면 운영팀이 Supabase에서 ad-slots-more.sql을 실행해야 합니다.' }

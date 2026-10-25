@@ -12,11 +12,12 @@ export default function AdSlotSettings({ outletId, initial }: { outletId: string
   const router = useRouter()
   const [off, setOff] = useState<string[]>(initial?.off ?? [])
   const [max, setMax] = useState<number>(initial?.sidebarMax ?? 3)
+  const [wing, setWing] = useState(!initial?.noWing)
   const [msg, setMsg] = useState<{ ok?: string; error?: string }>({})
   const [pending, start] = useTransition()
   const toggle = (id: string) => setOff((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
   const save = () => start(async () => {
-    const r = await saveAdSlotSettings(outletId, { off, sidebarMax: max })
+    const r = await saveAdSlotSettings(outletId, { off, sidebarMax: max, noWing: !wing })
     setMsg(r)
     if (!r.error) router.refresh()
   })
@@ -49,6 +50,15 @@ export default function AdSlotSettings({ outletId, initial }: { outletId: string
           )
         })}
       </ul>
+      {!off.includes('sidebar') && (
+        <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-line px-3 py-2.5 text-[13px]">
+          <input type="checkbox" checked={wing} onChange={(e) => setWing(e.target.checked)} className="mt-1" />
+          <span>
+            <span className="font-bold">넓은 화면에서는 오른쪽 광고를 본문 옆 빈 여백에 띄우기</span>
+            <span className="mt-0.5 block text-[12px] text-muted">모니터가 넓어(가로 1840px 이상) 본문 오른쪽에 빈 공간이 있으면 오른쪽 광고를 거기에 띄우고 스크롤을 따라다닙니다. 그보다 좁은 화면과 휴대폰은 예전처럼 오른쪽 칸·본문 아래에 나옵니다. 끄면 항상 오른쪽 칸에만 나옵니다.</span>
+          </span>
+        </label>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button type="button" onClick={save} disabled={pending} className="btn-primary px-5">{pending ? '저장 중…' : '자리 설정 저장'}</button>
         {msg.ok && <p role="status" className="text-[13px] text-published">{msg.ok}</p>}
