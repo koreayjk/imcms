@@ -8,6 +8,7 @@ import { previewUrl } from '@/lib/product'
 import HomeLayoutThumb from './HomeLayoutThumb'
 import { useRouter } from 'next/navigation'
 import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
+import { saveSelfSiteSettings } from '@/app/(main)/admin/settings/site-actions'
 import SearchRegisterGuide from './SearchRegisterGuide'
 import { buildSite, DEFAULT_COLORS, foreignTopics, pressFields, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { FOREIGN_TOPICS, PRESS_FIELDS } from '@/lib/press-sources'
@@ -20,6 +21,8 @@ type Props = {
   outlet: { id: string; name: string; domain: string | null; site: OutletSiteSettings | null }
   sections: Section[]
   defaults: OutletSiteSettings
+  // 편집장 이상이 편집국 설정에서 쓰는 화면: 운영팀 전용 항목(도메인·검색 노출·오픈 준비 중·홈 배치 등)을 숨기고 허용된 항목만 저장한다
+  self?: boolean
 }
 
 const PRESETS = [
@@ -97,7 +100,7 @@ async function trimLogo(file: File): Promise<File> {
   }
 }
 
-export default function SiteSettingsForm({ outlet, sections: initialSections, defaults }: Props) {
+export default function SiteSettingsForm({ outlet, sections: initialSections, defaults, self = false }: Props) {
   const router = useRouter()
   const init = { ...defaults, ...(outlet.site ?? {}) }
   const [name, setName] = useState(outlet.name)
@@ -141,6 +144,16 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
   }
 
   const save = () => start(async () => {
+    if (self) {
+      const r = await saveSelfSiteSettings(outlet.id, {
+        name,
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign },
+        sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
+      })
+      setMsg(r)
+      if (!r.error) router.refresh()
+      return
+    }
     const r = await saveSiteSettings(outlet.id, {
       name, domain, site: s,
       sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
@@ -172,6 +185,8 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <Field label="영문 슬로건"><input value={s.sloganEn ?? ''} onChange={(e) => set({ sloganEn: e.target.value })} maxLength={80} className="field-input" /></Field>
           <div className="space-y-4 sm:col-span-2">
             <Field label="매체 소개" hint="검색 결과·공유할 때 나오는 설명 (160자 이내 권장)"><input value={s.description ?? ''} onChange={(e) => set({ description: e.target.value })} maxLength={200} className="field-input" /></Field>
+            {!self && (
+              <>
             <Field label="전문뉴스 제목" hint="첫 화면 전문 섹션 묶음의 제목 (예: 국제물류 전문뉴스)"><input value={s.specialtyTitle ?? ''} onChange={(e) => set({ specialtyTitle: e.target.value })} maxLength={30} placeholder="전문뉴스" className="field-input" /></Field>
             <label className="flex items-start gap-2 text-[13.5px]">
               <input type="checkbox" checked={!!s.indexWidget} onChange={(e) => set({ indexWidget: e.target.checked })} className="mt-1" />
@@ -206,6 +221,8 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <input type="checkbox" checked={s.lang === 'en'} onChange={(e) => set({ lang: e.target.checked ? 'en' : 'ko' })} className="mt-1" />
               <span><strong>영문 홈페이지</strong> (메뉴·날짜·안내 문구·개인정보처리방침을 영어로) <span className="block text-[12px] text-muted">기사는 쓴 언어 그대로 나갑니다. 해외 독자를 위한 영문 매체에 켜세요.</span></span>
             </label>
+              </>
+            )}
             <div className="space-y-1.5 rounded-lg border border-line p-3 text-[13.5px]">
               <label className="flex items-start gap-2">
                 <input type="checkbox" checked={!!s.aiNotice?.on} onChange={(e) => set({ aiNotice: { ...s.aiNotice, on: e.target.checked } })} className="mt-1" />
@@ -240,7 +257,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
                 )
               })}
             </fieldset>
-            <Field label="쇼핑몰 주소" hint="SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')"><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>
+            {!self && <Field label="쇼핑몰 주소" hint="SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')"><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>}
           </div>
         </div>
       </Card>
@@ -346,6 +363,8 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         {missing.length > 0 && <p className="mt-3 rounded bg-draft/10 px-3 py-2 text-[12.5px] text-[#6B5F22]">⚠ 아직 비어 있는 필수 항목: {missing.map((m) => m.label).join(', ')}</p>}
       </Card>
 
+      {!self && (
+        <>
       <Card title="보도자료 추천" note="보도자료함 ‘추천’ 탭에 보여줄 자료를 정합니다. ‘전체’ 탭에는 언제나 모든 자료가 나옵니다.">
         <fieldset className="space-y-1.5 text-[13.5px]">
           <legend className="font-bold">매체 분야</legend>
@@ -426,6 +445,9 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
         <SearchRegisterGuide outletId={outlet.id} domain={outlet.domain} />
       </Card>
+
+        </>
+      )}
 
       {/* 하단 미리보기 */}
       <section className="overflow-hidden rounded-lg border border-line bg-white">

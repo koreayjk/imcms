@@ -3,11 +3,17 @@ import { outletEmailOf } from '@/lib/outlet-email'
 import { getAiStatus } from '@/lib/ai-usage'
 import ContactEmailForm from '@/components/cms/ContactEmailForm'
 import MemberAiRow, { type MemberAi } from '@/components/cms/MemberAiRow'
+import Link from 'next/link'
+import SiteSettingsForm from '@/components/cms/SiteSettingsForm'
+import { SITES, type OutletSiteSettings } from '@/lib/sites'
 
 // 편집국 설정: 언론사 대표 이메일(편집장 이상) · 기자별 AI 사용량(편집장 이상은 모두, 기자는 자기 것)
-export default async function NewsroomSettingsPage() {
+export default async function NewsroomSettingsPage(props: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await props.searchParams
   const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
   const manager = isEditorPlus || isStaff
+  // 편집장 이상: 매체 정보 | AI 탭, 기자: AI(내 사용량)만
+  const activeTab: 'site' | 'ai' = manager && tab !== 'ai' ? 'site' : 'ai'
   if (!outletId) {
     return <div className="mx-auto max-w-[960px] px-4 py-10 md:px-8"><p className="rounded-lg border border-line bg-white px-5 py-4 text-sm">위쪽에서 작업할 매체를 먼저 골라 주세요.</p></div>
   }
@@ -18,13 +24,48 @@ export default async function NewsroomSettingsPage() {
   ])
   const month = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long' }).format(new Date())
 
+  // 매체 정보 탭: 편집장 이상이 고칠 수 있는 항목 (로고·색·슬로건·하단 표시 정보·AI 활용 표시·해외 언론 자료 받기·섹션)
+  let siteForm: React.ReactNode = null
+  if (activeTab === 'site') {
+    const [{ data: outlet }, { data: cats }] = await Promise.all([
+      supabase.from('outlets').select('*').eq('id', outletId).maybeSingle(),
+      supabase.from('categories').select('*').eq('outlet_id', outletId).order('sort_order'),
+    ])
+    if (!outlet || !('site' in outlet)) {
+      siteForm = <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">매체 정보를 쓰려면 운영팀이 Supabase에서 <code>supabase/outlet-sites.sql</code>과 <code>supabase/outlet-site-self.sql</code>을 실행해야 합니다.</p>
+    } else {
+      const code = SITES.find((x) => outlet.domain && x.domains.includes(outlet.domain))
+      const defaults: OutletSiteSettings = code
+        ? { nameEn: code.nameEn, slogan: code.slogan, sloganEn: code.sloganEn, description: code.description, logoUrl: code.logoMark, logoMode: 'mark', colors: { brand: code.colors.brand, accent: code.colors.gold }, legal: code.legal }
+        : { logoMode: 'text', legal: { company: outlet.name } }
+      siteForm = (
+        <SiteSettingsForm
+          self
+          outlet={{ id: outlet.id, name: outlet.name, domain: outlet.domain, site: outlet.site as OutletSiteSettings }}
+          sections={(cats ?? []) as never}
+          defaults={defaults}
+        />
+      )
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[960px] space-y-6 px-4 py-5 md:px-8 md:py-8">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight">{manager ? '편집국 설정' : '내 AI 사용량'}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight">{manager ? '설정' : '내 AI 사용량'}</h1>
+        {manager && (
+          <nav className="mt-3 flex gap-1 border-b border-line text-[14px]" aria-label="설정 구역">
+            {([['site', '매체 정보'], ['ai', 'AI·이메일']] as const).map(([k, label]) => (
+              <Link key={k} href={`/admin/settings?tab=${k}`} aria-current={activeTab === k ? 'page' : undefined} className={`-mb-px border-b-2 px-4 py-2 font-semibold ${activeTab === k ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'}`}>{label}</Link>
+            ))}
+          </nav>
+        )}
+        {manager && activeTab === 'site' && <p className="mt-3 text-[13px] leading-relaxed text-muted">홈페이지에 나오는 로고·색·슬로건·하단 표시 정보를 직접 고칠 수 있습니다. 도메인·검색 노출 같은 항목은 운영팀이 관리하니 필요하면 고객센터 업무요청으로 알려 주세요.</p>}
       </header>
 
-      {!contact.ready ? (
+      {activeTab === 'site' && siteForm}
+
+      {activeTab === 'ai' && (!contact.ready ? (
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">이 화면을 쓰려면 운영팀이 Supabase에서 <code>supabase/newsroom-settings.sql</code>을 실행해야 합니다.</p>
       ) : (
         <>
@@ -57,7 +98,7 @@ export default async function NewsroomSettingsPage() {
             )}
           </section>
         </>
-      )}
+      ))}
     </div>
   )
 }
