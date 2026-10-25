@@ -32,6 +32,11 @@ export default async function BillingPage() {
     <div className="mx-auto max-w-[800px] px-4 py-6 md:px-8 md:py-10">
       <h1 className="text-[22px] font-extrabold tracking-tight">결제 정보 · {outlet?.name}</h1>
       <p className="mb-6 mt-1 text-[13px] text-muted">청구서·영수증과 결제 안내에 쓰입니다. 편집장 이상만 보고 고칠 수 있습니다.</p>
+      {(!billing?.manager_name || !billing?.manager_email) && (prefilled.manager_name || prefilled.manager_email) && (
+        <p className="mb-5 rounded-lg border border-review/30 bg-review/5 px-4 py-3 text-[13px] leading-relaxed">
+          아직 저장되지 않았습니다. 아래 칸은 설정의 “하단 표시 정보”로 <strong>미리 채워 둔 것</strong>입니다. 내용을 확인하고 맨 아래 <strong>저장</strong>을 눌러야 청구서에 쓰이고, 위쪽 빨간 안내도 사라집니다.
+        </p>
+      )}
       <BillingForm outletId={outletId} billing={prefilled} />
       <AutopaySection autopay={autopay ?? null} ready={payProvider().autopay} provider={payProvider().provider} clientKey={process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? ''} testMode={payProvider().testMode} />
     </div>
