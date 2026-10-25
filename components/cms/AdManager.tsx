@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { deleteBanner, saveBanner, setBannerActive, type AdInput, type AdState } from '@/app/(main)/admin/ads/actions'
+import { deleteBanner, moveBanner, saveBanner, setBannerActive, type AdInput, type AdState } from '@/app/(main)/admin/ads/actions'
 import { AD_SLOTS, slotOf, type AdSlotId } from '@/lib/ads'
 import AdSlotMap, { SLOT_COLOR, SLOT_NO, SlotThumb } from './AdSlotMap'
 import { formatDateTime, toKstInput } from '@/lib/format'
@@ -173,6 +173,18 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
   const [msg, setMsg] = useState('')
   const [pending, start] = useTransition()
 
+  // 끌어서 다른 자리로 옮기기
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [over, setOver] = useState<AdSlotId | null>(null)
+  const dropTo = (slot: AdSlotId) => {
+    const id = dragId
+    setDragId(null); setOver(null)
+    const b = banners.find((x) => x.id === id)
+    if (!b || b.slot === slot) return
+    run(() => moveBanner(b.id, slot))
+  }
+  const drop = { dragging: !!dragId, over, setOver, onDrop: dropTo }
+
   const run = (fn: () => Promise<AdState>) => start(async () => { const r = await fn(); setMsg(r.error ?? r.ok ?? ''); router.refresh() })
 
   return (
@@ -186,12 +198,19 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
         </div>
       )}
 
-      {!editing && <AdSlotMap counts={Object.fromEntries(AD_SLOTS.map((s) => [s.id, banners.filter((b) => b.slot === s.id && statusOf(b, now).label === '게재 중').length]))} />}
+      {!editing && <AdSlotMap drop={drop} counts={Object.fromEntries(AD_SLOTS.map((s) => [s.id, banners.filter((b) => b.slot === s.id && statusOf(b, now).label === '게재 중').length]))} />}
 
       {AD_SLOTS.map((s) => {
         const list = banners.filter((b) => b.slot === s.id)
         return (
-          <section key={s.id} id={`slot-card-${s.id}`} aria-labelledby={`slot-${s.id}`} className="scroll-mt-20 rounded-xl border border-line bg-white transition-shadow" style={{ ['--tw-ring-color' as string]: SLOT_COLOR[s.id] }}>
+          <section key={s.id} id={`slot-card-${s.id}`} aria-labelledby={`slot-${s.id}`} className={`scroll-mt-20 rounded-xl border bg-white transition-shadow ${dragId && over === s.id ? 'border-2 border-dashed' : 'border-line'}`}
+            style={{ ['--tw-ring-color' as string]: SLOT_COLOR[s.id], ...(dragId && over === s.id ? { borderColor: SLOT_COLOR[s.id], background: `${SLOT_COLOR[s.id]}0D` } : {}) }}
+            {...(dragId ? {
+              onDragOver: (e: React.DragEvent) => { e.preventDefault(); setOver(s.id) },
+              onDragLeave: (e: React.DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(null) },
+              onDrop: (e: React.DragEvent) => { e.preventDefault(); dropTo(s.id) },
+            } : {})}
+          >
             <header className="flex items-center gap-4 border-b border-line px-5 py-3">
               <SlotThumb id={s.id} />
               <div className="min-w-0 flex-1">
@@ -199,7 +218,7 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                   <span className="grid h-5 w-5 place-items-center rounded text-[11px] text-white" style={{ background: SLOT_COLOR[s.id] }}>{SLOT_NO[s.id]}</span>
                   {s.label} <span className="text-[12.5px] font-normal text-muted">· {s.where}</span>
                 </h2>
-                <p className="mt-1 text-[12px] text-muted">권장 {s.size}</p>
+                <p className="mt-1 text-[12px] text-muted">권장 {s.size}{list.length > 0 && ' · 배너를 끌어서 다른 자리로 옮길 수 있어요'}</p>
               </div>
             </header>
             {list.length ? (
@@ -207,7 +226,13 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                 {list.map((b) => {
                   const st = statusOf(b, now)
                   return (
-                    <li key={b.id} className="grid gap-3 px-5 py-4 md:grid-cols-[160px_1fr_auto] md:items-center">
+                    <li
+                      key={b.id}
+                      draggable={!pending && (b.kind === 'image' || isStaff)}
+                      onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', b.id); setDragId(b.id) }}
+                      onDragEnd={() => { setDragId(null); setOver(null) }}
+                      className={`grid gap-3 px-5 py-4 md:grid-cols-[160px_1fr_auto] md:items-center ${b.kind === 'image' || isStaff ? 'cursor-grab active:cursor-grabbing' : ''} ${dragId === b.id ? 'opacity-40' : ''}`}
+                    >
                       <div className="grid h-20 w-full place-items-center overflow-hidden rounded border border-line bg-paper md:w-[160px]">
                         {b.kind === 'image' && b.image_url
                           // eslint-disable-next-line @next/next/no-img-element

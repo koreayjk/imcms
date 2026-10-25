@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { DragEvent, ReactNode } from 'react'
 import { AD_SLOTS, type AdSlotId } from '@/lib/ads'
 
 // 광고 자리 지도: 홈페이지를 단순하게 그린 그림 위에 광고 자리를 색으로 표시한다
@@ -18,20 +18,29 @@ const LABEL = Object.fromEntries(AD_SLOTS.map((s) => [s.id, s.label])) as Record
 
 type Kind = 'home' | 'article' | 'mobile'
 
+// 배너를 끌어다 놓는 자리 (광고 관리 화면)
+export type Drop = { dragging: boolean; over: AdSlotId | null; setOver: (id: AdSlotId | null) => void; onDrop: (id: AdSlotId) => void }
+
 // 회색 막대 = 기사·글자 자리
 const Bar = ({ w = '100%', h = 6 }: { w?: string; h?: number }) => <span className="block rounded-sm bg-[#DADDE2]" style={{ width: w, height: h }} />
 const Box = ({ h, className = '' }: { h: number; className?: string }) => <span className={`block rounded-sm bg-[#E6E8EC] ${className}`} style={{ height: h }} />
 
-function Slot({ id, h, show, small, count, onPick, className = '', children }: {
-  id: AdSlotId; h?: number; show: AdSlotId | 'all'; small: boolean; count?: number; onPick?: (id: AdSlotId) => void; className?: string; children?: ReactNode
+function Slot({ id, h, show, small, count, onPick, drop, className = '', children }: {
+  id: AdSlotId; h?: number; show: AdSlotId | 'all'; small: boolean; count?: number; onPick?: (id: AdSlotId) => void; drop?: Drop; className?: string; children?: ReactNode
 }) {
   const on = show === 'all' || show === id
   const color = SLOT_COLOR[id]
   const Tag = onPick ? 'button' : 'span'
+  const hot = !!drop?.dragging && drop.over === id
   return (
     <Tag
       {...(onPick ? { type: 'button' as const, onClick: () => onPick(id), title: `${LABEL[id]} 자리 보기` } : {})}
-      className={`relative flex w-full items-center justify-center rounded-[3px] text-center leading-tight transition ${on ? 'border-2 border-dashed' : 'border border-dashed border-[#C9CDD3] bg-transparent'} ${onPick ? 'hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1' : ''} ${className}`}
+      {...(drop?.dragging ? {
+        onDragOver: (e: DragEvent) => { e.preventDefault(); drop.setOver(id) },
+        onDragLeave: () => drop.setOver(null),
+        onDrop: (e: DragEvent) => { e.preventDefault(); drop.setOver(null); drop.onDrop(id) },
+      } : {})}
+      className={`relative flex w-full items-center justify-center rounded-[3px] text-center leading-tight transition ${on ? 'border-2 border-dashed' : 'border border-dashed border-[#C9CDD3] bg-transparent'} ${hot ? 'scale-[1.04] shadow-[0_0_0_3px_currentColor]' : ''} ${drop?.dragging && !hot ? 'animate-pulse' : ''} ${onPick ? 'hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1' : ''} ${className}`}
       style={{ height: h, ...(on ? { borderColor: color, background: `${color}1F`, color, outlineColor: color } : {}) }}
     >
       {on && !small && (
@@ -47,10 +56,10 @@ function Slot({ id, h, show, small, count, onPick, className = '', children }: {
 }
 
 // 페이지 하나 그림 (홈 PC · 기사 PC · 휴대폰)
-export function PageSketch({ kind, show = 'all', small = false, counts, onPick }: {
-  kind: Kind; show?: AdSlotId | 'all'; small?: boolean; counts?: Partial<Record<AdSlotId, number>>; onPick?: (id: AdSlotId) => void
+export function PageSketch({ kind, show = 'all', small = false, counts, onPick, drop }: {
+  kind: Kind; show?: AdSlotId | 'all'; small?: boolean; counts?: Partial<Record<AdSlotId, number>>; onPick?: (id: AdSlotId) => void; drop?: Drop
 }) {
-  const s = (id: AdSlotId, h: number, className = '') => <Slot id={id} h={h} show={show} small={small} count={counts?.[id]} onPick={onPick} className={className} />
+  const s = (id: AdSlotId, h: number, className = '') => <Slot id={id} h={h} show={show} small={small} count={counts?.[id]} onPick={onPick} drop={drop} className={className} />
   const k = small ? 0.42 : 1 // 작은 그림은 높이를 줄인다
   const H = (n: number) => Math.max(3, Math.round(n * k))
   const mobile = kind === 'mobile'
@@ -128,7 +137,7 @@ export function PageSketch({ kind, show = 'all', small = false, counts, onPick }
 }
 
 // 광고 관리 화면 맨 위: 세 화면을 나란히 보여 주고, 자리를 누르면 그 자리 목록으로 이동
-export default function AdSlotMap({ counts }: { counts: Partial<Record<AdSlotId, number>> }) {
+export default function AdSlotMap({ counts, drop }: { counts: Partial<Record<AdSlotId, number>>; drop?: Drop }) {
   const pick = (id: AdSlotId) => {
     const el = document.getElementById(`slot-card-${id}`)
     if (!el) return
@@ -140,12 +149,12 @@ export default function AdSlotMap({ counts }: { counts: Partial<Record<AdSlotId,
     <section aria-labelledby="ad-map-title" className="rounded-xl border border-line bg-white p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="ad-map-title" className="text-[15px] font-bold">광고 자리 지도</h2>
-        <p className="text-[12.5px] text-muted">색칠된 자리를 누르면 그 자리에 건 배너로 이동합니다.</p>
+        <p className="text-[12.5px] text-muted">색칠된 자리를 누르면 그 자리에 건 배너로 이동합니다. 배너를 끌어서 이 지도의 다른 자리에 놓으면 그대로 옮겨집니다.</p>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1fr_0.55fr]">
         {([['home', '홈 첫 화면 (PC)'], ['article', '기사 화면 (PC)'], ['mobile', '휴대폰 (기사 화면)']] as const).map(([kind, title]) => (
           <figure key={kind} className={kind === 'mobile' ? 'mx-auto w-full max-w-[220px]' : ''}>
-            <PageSketch kind={kind} counts={counts} onPick={pick} />
+            <PageSketch kind={kind} counts={counts} onPick={pick} drop={drop} />
             <figcaption className="mt-1.5 text-center text-[12px] font-semibold text-muted">{title}</figcaption>
           </figure>
         ))}

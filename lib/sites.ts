@@ -99,6 +99,8 @@ export type SiteConfig = {
   pressFields: PressField[]
   // 카카오톡·페이스북 등에 링크를 올릴 때 나오는 대표 이미지 (1200×630 PNG/JPG)
   ogImage?: string
+  // 브라우저 탭 아이콘 (편집장이 올린 정사각형 이미지. 없으면 로고)
+  iconUrl?: string
   // IM 뉴스룸 체험용 신문 (trial.sql) — 홈페이지 맨 위에 체험판 안내 띠
   trial?: boolean
   // 요금제 (DB 매체만). 베이직은 뉴스레터 구독 칸을 보이지 않는다
@@ -123,7 +125,10 @@ export function defaultOgImage(logo?: string) {
 
 // 브라우저 탭 아이콘: 매체 로고를 정사각형으로 맞춘 PNG (app/site-favicon.png, 구글은 정사각형만 쓴다)
 //   로고가 없으면 매체 이름 첫 글자 아이콘 (app/site-icon.svg)
-export const siteIcon = (site: SiteConfig) => (site.logoMark ? '/site-favicon.png' : '/site-icon.svg')
+//   편집장이 탭 아이콘을 따로 올렸으면 그 이미지를 쓴다 (주소가 바뀌면 브라우저가 새 아이콘을 받도록 ?v= 를 붙인다)
+export const siteIcon = (site: SiteConfig) =>
+  site.iconUrl ? `/site-favicon.png?v=${[...site.iconUrl].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`
+  : site.logoMark ? '/site-favicon.png' : '/site-icon.svg'
 
 export const SITES: SiteConfig[] = [
   {
@@ -236,6 +241,7 @@ export type OutletSiteSettings = {
   // 보도자료 추천 분야 (없으면 추천 키워드로 짐작)
   pressFields?: PressField[]
   ogImage?: string
+  iconUrl?: string
   trial?: boolean
   lang?: SiteLang
   statsBoard?: StatsBoard
@@ -343,6 +349,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     })(),
     pressFields: pressFields(s, keywords),
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
+    iconUrl: (typeof s.iconUrl === 'string' && s.iconUrl) || undefined,
     trial: s.trial === true,
     lang: s.lang === 'en' ? 'en' : 'ko',
     statsBoard: cleanStats(s.statsBoard),

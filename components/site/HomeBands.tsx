@@ -6,6 +6,7 @@ import { formatShort } from '@/lib/format'
 import SectionHeading from './SectionHeading'
 import MostViewed from './MostViewed'
 import Thumb from './Thumb'
+import FitRows from './FitRows'
 import { CategoryLabel } from './items'
 
 // 홈 '섹션 띠' 배치 (홈페이지 설정 homeLayout = 'bands').
@@ -70,20 +71,20 @@ function SubLinks({ subs, light = false }: { subs: BandProps['subs']; light?: bo
   )
 }
 
-function Wrap({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`mx-auto max-w-[1200px] px-4 py-9 ${className}`}>{children}</section>
+function Wrap({ children, className = '', fit }: { children: ReactNode; className?: string; fit?: boolean }) {
+  return <section {...(fit ? { 'data-fit-grid': '' } : {})} className={`mx-auto max-w-[1200px] px-4 py-9 ${className}`}>{children}</section>
 }
 
 // ② 시간순 속보 + 많이 본 뉴스
 function BriefBand({ title, href, items, subs, mostViewed, sidebarAd }: BandProps & { mostViewed: PublicArticle[]; sidebarAd?: ReactNode }) {
   if (!items.length) return null
   return (
-    <Wrap className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <Wrap fit className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
         <SectionHeading title={title} href={href} />
         <div className="mb-3"><SubLinks subs={subs} /></div>
-        <ul className="divide-y divide-rule">
-          {items.slice(0, 8).map((a) => (
+        <FitRows as="ul" min={Math.min(8, items.length)} className="divide-y divide-rule">
+          {items.slice(0, 16).map((a) => (
             <li key={a.id}>
               <Link href={`/news/${a.id}`} className="headline-link group grid grid-cols-[56px_1fr] gap-3 py-3 sm:grid-cols-[64px_1fr_auto]">
                 <time dateTime={a.published_at ?? undefined} className="pt-0.5 text-[12.5px] font-semibold tabular-nums text-brand">{formatShort(a.published_at)}</time>
@@ -95,9 +96,9 @@ function BriefBand({ title, href, items, subs, mostViewed, sidebarAd }: BandProp
               </Link>
             </li>
           ))}
-        </ul>
+        </FitRows>
       </div>
-      <aside className="space-y-9">
+      <aside data-fit-side className="space-y-9">
         <MostViewed items={mostViewed} />
         {sidebarAd}
       </aside>

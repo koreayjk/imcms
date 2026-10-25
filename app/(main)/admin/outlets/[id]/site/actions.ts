@@ -79,7 +79,16 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
   const { data: prev } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
   const prevSite = ((prev as { site?: OutletSiteSettings | null } | null)?.site ?? {}) as OutletSiteSettings
   if (Array.isArray(prevSite.bands)) site.bands = prevSite.bands
-  if (prevSite.ogImage) site.ogImage = prevSite.ogImage
+  // 탭 아이콘·공유 미리보기 사진: 화면에서 올린 이미지만 (화면에 값이 없으면 예전 값 유지)
+  const ownImage = (v: unknown) => {
+    const u = cut(v, 500)
+    return !u || u.startsWith('/sites/') || u.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`) ? u : null
+  }
+  const iconUrl = s.iconUrl === undefined ? prevSite.iconUrl ?? '' : ownImage(s.iconUrl)
+  const ogImage = s.ogImage === undefined ? prevSite.ogImage ?? '' : ownImage(s.ogImage)
+  if (iconUrl === null || ogImage === null) return { error: '이미지는 이 화면에서 올린 것만 쓸 수 있습니다.' }
+  site.iconUrl = iconUrl || undefined
+  site.ogImage = ogImage || undefined
   if (prevSite.trial) site.trial = prevSite.trial
   site.lang = s.lang === 'en' ? 'en' : s.lang === 'ko' ? 'ko' : prevSite.lang
   site.statsBoard = s.statsBoard !== undefined ? cleanStats(s.statsBoard) : prevSite.statsBoard

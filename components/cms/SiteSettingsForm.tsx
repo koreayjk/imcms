@@ -169,7 +169,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -281,6 +281,28 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             </fieldset>
             {!self && <Field label="쇼핑몰 주소" hint="SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')"><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>}
           </div>
+        </div>
+      </Card>
+
+      <Card title="탭 아이콘 · 공유 미리보기">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <ImageSlot
+            label="탭 아이콘 (파비콘)"
+            hint="브라우저 탭·검색 결과에 작게 나오는 정사각형 그림 (512×512 PNG 추천). 비우면 로고를 씁니다."
+            value={s.iconUrl}
+            onChange={(v) => set({ iconUrl: v })}
+            outletId={outlet.id}
+            boxClass="h-20 w-20"
+            previewTab={name}
+          />
+          <ImageSlot
+            label="공유 미리보기 사진"
+            hint="카카오톡·페이스북 등에 홈페이지 주소를 올릴 때 나오는 큰 그림 (1200×630 JPG·PNG 추천). 기사는 기사 대표 사진이 먼저 나옵니다."
+            value={s.ogImage}
+            onChange={(v) => set({ ogImage: v })}
+            outletId={outlet.id}
+            boxClass="h-[84px] w-40"
+          />
         </div>
       </Card>
 
@@ -585,5 +607,44 @@ function StatsEditor({ value, onChange }: { value: OutletSiteSettings['statsBoar
       {items.length < 8 && <button type="button" onClick={() => onChange({ ...b, items: [...items, { label: '', value: '' }] })} className="btn-secondary">+ 숫자 추가</button>}
       <input value={b.footnote ?? ''} onChange={(e) => onChange({ ...b, footnote: e.target.value })} maxLength={200} placeholder="아래 작은 설명 (선택, 예: 집계 기준이 기관마다 다릅니다)" className="field-input" />
     </fieldset>
+  )
+}
+
+// 이미지 하나 올리고 빼는 칸 (탭 아이콘·공유 미리보기용)
+function ImageSlot({ label, hint, value, onChange, outletId, boxClass, previewTab }: {
+  label: string; hint: string; value?: string; onChange: (v: string | undefined) => void; outletId: string; boxClass: string; previewTab?: string
+}) {
+  const ref = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  async function pick(files: FileList | null) {
+    const f = files?.[0]
+    if (!f) return
+    setBusy(true); setErr('')
+    try { onChange(await uploadImage(f, outletId)) } catch (e) { setErr(e instanceof Error ? e.message : '올리지 못했습니다.') } finally { setBusy(false); if (ref.current) ref.current.value = '' }
+  }
+  return (
+    <div>
+      <p className="field-label">{label}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className={`grid place-items-center overflow-hidden rounded border border-dashed border-line bg-[#F8F9FA] ${boxClass}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {value ? <img src={value} alt="" className="h-full w-full object-contain" /> : <span className="text-[12px] text-muted">없음</span>}
+        </div>
+        <div className="flex flex-col items-start gap-1.5">
+          <button type="button" onClick={() => ref.current?.click()} disabled={busy} className="btn-secondary px-3 py-1.5 text-[13px]">{busy ? '올리는 중…' : value ? '바꾸기' : '이미지 올리기'}</button>
+          {value && <button type="button" onClick={() => onChange(undefined)} className="text-[12.5px] text-muted underline underline-offset-2">빼기</button>}
+          <input ref={ref} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => pick(e.target.files)} />
+        </div>
+        {previewTab && value && (
+          <span className="flex items-center gap-1.5 rounded-t-lg border border-line bg-white px-2.5 py-1.5 text-[12px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={value} alt="" className="h-4 w-4 object-contain" />
+            <span className="max-w-[110px] truncate">{previewTab}</span>
+          </span>
+        )}
+      </div>
+      <p className={`mt-1.5 text-[12px] ${err ? 'text-danger' : 'text-muted'}`}>{err || hint}</p>
+    </div>
   )
 }

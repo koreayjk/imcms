@@ -9,7 +9,7 @@ import { cleanLogoStrip, foreignTopics, type LogoMode, type OutletSiteSettings, 
 //   도메인·검색 노출·AI 봇·오픈 준비 중·홈 배치 같은 항목은 여기서 받지 않는다 (운영팀 홈페이지 설정에서만)
 export type SelfSitePayload = {
   name: string
-  site: Pick<OutletSiteSettings, 'nameEn' | 'slogan' | 'sloganEn' | 'description' | 'logoUrl' | 'logoMode' | 'logoSize' | 'colors' | 'legal' | 'aiNotice' | 'pressForeignTopics' | 'pressForeign' | 'logoStrip'>
+  site: Pick<OutletSiteSettings, 'nameEn' | 'slogan' | 'sloganEn' | 'description' | 'logoUrl' | 'logoMode' | 'logoSize' | 'colors' | 'legal' | 'aiNotice' | 'pressForeignTopics' | 'pressForeign' | 'logoStrip' | 'iconUrl' | 'ogImage'>
   sections: { id: string; specialty: boolean; description: string }[]
 }
 
@@ -27,6 +27,14 @@ export async function saveSelfSiteSettings(outletId: string, p: SelfSitePayload)
   if (logoUrl && !logoUrl.startsWith('/sites/') && !logoUrl.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`)) {
     return { error: '로고는 이 화면에서 올린 이미지만 쓸 수 있습니다.' }
   }
+  // 탭 아이콘·공유 미리보기 사진도 이 화면에서 올린 이미지만
+  const ownImage = (v: unknown) => {
+    const u = cut(v, 500)
+    return !u || u.startsWith('/sites/') || u.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`) ? u : null
+  }
+  const iconUrl = ownImage(s.iconUrl)
+  const ogImage = ownImage(s.ogImage)
+  if (iconUrl === null || ogImage === null) return { error: '이미지는 이 화면에서 올린 것만 쓸 수 있습니다.' }
   const email = cut(s.legal?.email, 120)
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: '하단 이메일 주소를 확인해 주세요.' }
   if (s.aiNotice?.on && cut(s.aiNotice.text, 150) && !mentionsAi(cut(s.aiNotice.text, 150))) return { error: 'AI 활용 표시 문구에 "AI" 또는 "인공지능"을 넣어 주세요.' }
@@ -40,6 +48,8 @@ export async function saveSelfSiteSettings(outletId: string, p: SelfSitePayload)
     sloganEn: cut(s.sloganEn, 80) || undefined,
     description: cut(s.description, 200) || undefined,
     logoUrl: logoUrl || undefined,
+    iconUrl: iconUrl || undefined,
+    ogImage: ogImage || undefined,
     logoMode: mode,
     logoSize: s.logoSize === 'large' || s.logoSize === 'xlarge' ? s.logoSize : undefined,
     colors: { brand: HEX.test(s.colors?.brand ?? '') ? s.colors!.brand : undefined, accent: HEX.test(s.colors?.accent ?? '') ? s.colors!.accent : undefined },

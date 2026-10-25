@@ -11,6 +11,7 @@ import { formatDate, formatShort } from '@/lib/format'
 import SiteFrame from '@/components/site/SiteFrame'
 import SectionHeading from '@/components/site/SectionHeading'
 import MostViewed from '@/components/site/MostViewed'
+import FitRows from '@/components/site/FitRows'
 import SpecialtyTabs from '@/components/site/SpecialtyTabs'
 import Thumb from '@/components/site/Thumb'
 import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
@@ -90,6 +91,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // 헤드라인 아래 작은 기사 4건 (가운데가 비어 보이지 않게)
   const underHeadline = take(4)
   const major = fill(pinned.major, hasImage)
+  // 오른쪽 광고가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 높이에 맞춰 연다)
+  const majorMore = site.homeLayout === 'bands' ? [] : take(12)
   const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
@@ -201,29 +204,33 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         {!bandsMode && (
           <>
         {/* ── 주요뉴스 + 많이 본 뉴스 ── */}
-        <div className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div data-fit-grid className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <section id="major" className="scroll-mt-28">
             <SectionHeading title={t.majorShort} lang={L} />
-            <ul className="divide-y divide-rule lg:grid lg:grid-cols-3 lg:gap-x-6 lg:gap-y-8 lg:divide-y-0">
-              {major.map((a) => (
-                <li key={a.id} className="py-4 first:pt-0 lg:py-0">
-                  <Link href={`/news/${a.id}`} className="headline-link group flex gap-3.5 lg:block">
-                    <Thumb sizes="(max-width: 1023px) 118px, 300px" src={a.thumbnail_url} alt={a.title} ratio="3 / 2" className="w-[118px] flex-shrink-0 lg:w-full" />
-                    <div className="min-w-0 flex-1 lg:mt-3">
-                      <CategoryLabel article={a} className="hidden lg:block" />
-                      <h3 className="headline-text line-clamp-2 text-[16px] font-bold leading-[1.42] tracking-[-0.02em] lg:mt-1">{a.title}</h3>
-                      {a.excerpt && <p className="mt-1 hidden line-clamp-2 text-[13px] leading-[1.55] text-sub lg:block">{a.excerpt}</p>}
-                      <time dateTime={a.published_at ?? undefined} className="mt-1.5 block text-[12px] text-[#8A918C] tabular-nums">
-                        {formatDate(a.published_at, L)}
-                      </time>
-                    </div>
-                  </Link>
-                </li>
+            <FitRows min={Math.ceil(major.length / 3)} className="lg:[&>*+*]:mt-8">
+              {Array.from({ length: Math.ceil((major.length + majorMore.length) / 3) }, (_, r) => [...major, ...majorMore].slice(r * 3, r * 3 + 3)).map((row) => (
+                <ul key={row[0].id} className="divide-y divide-rule lg:grid lg:grid-cols-3 lg:gap-x-6 lg:divide-y-0">
+                  {row.map((a) => (
+                  <li key={a.id} className="py-4 first:pt-0 lg:py-0">
+                    <Link href={`/news/${a.id}`} className="headline-link group flex gap-3.5 lg:block">
+                      <Thumb sizes="(max-width: 1023px) 118px, 300px" src={a.thumbnail_url} alt={a.title} ratio="3 / 2" className="w-[118px] flex-shrink-0 lg:w-full" />
+                      <div className="min-w-0 flex-1 lg:mt-3">
+                        <CategoryLabel article={a} className="hidden lg:block" />
+                        <h3 className="headline-text line-clamp-2 text-[16px] font-bold leading-[1.42] tracking-[-0.02em] lg:mt-1">{a.title}</h3>
+                        {a.excerpt && <p className="mt-1 hidden line-clamp-2 text-[13px] leading-[1.55] text-sub lg:block">{a.excerpt}</p>}
+                        <time dateTime={a.published_at ?? undefined} className="mt-1.5 block text-[12px] text-[#8A918C] tabular-nums">
+                          {formatDate(a.published_at, L)}
+                        </time>
+                      </div>
+                    </Link>
+                  </li>
+                  ))}
+                </ul>
               ))}
-            </ul>
+            </FitRows>
           </section>
 
-          <aside className="space-y-9">
+          <aside data-fit-side className="space-y-9">
             <div id="realtime" className="scroll-mt-28 lg:hidden">
               <SectionHeading title={t.realtime} as="h3" lang={L} />
               <RealtimeList items={realtime.slice(0, 5)} lang={L} />

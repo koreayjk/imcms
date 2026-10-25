@@ -83,6 +83,22 @@ export async function saveBanner(input: AdInput): Promise<AdState> {
   return { ok: input.id ? '저장했습니다.' : '배너를 올렸습니다.' }
 }
 
+// 끌어서 다른 자리로 옮기기: 자리만 바꾸고 이미지·기간·기록은 그대로 둔다
+export async function moveBanner(id: string, slot: string): Promise<AdState> {
+  const { supabase, isEditorPlus, isStaff } = await getCmsContext()
+  if (!isEditorPlus && !isStaff) return { error: '광고는 편집장·발행인만 관리할 수 있습니다.' }
+  const to = slotOf(slot)
+  if (!to) return { error: '광고 자리를 확인해 주세요.' }
+  const { data: cur } = await supabase.from('ad_banners').select('kind').eq('id', id).maybeSingle()
+  if (!cur) return { error: '배너를 찾지 못했습니다.' }
+  if (cur.kind === 'code' && !isStaff) return { error: '광고 코드 배너는 운영팀만 옮길 수 있습니다.' }
+  const { data, error } = await supabase.from('ad_banners').update({ slot, updated_at: new Date().toISOString() }).eq('id', id).select('id')
+  if (error) return { error: `옮기지 못했습니다: ${error.message}` }
+  if (!data?.length) return { error: '옮길 권한이 없습니다.' }
+  done()
+  return { ok: `“${to.label}” 자리로 옮겼습니다.` }
+}
+
 export async function setBannerActive(id: string, active: boolean): Promise<AdState> {
   const { supabase } = await getCmsContext()
   const { data, error } = await supabase.from('ad_banners').update({ active, updated_at: new Date().toISOString() }).eq('id', id).select('id')
