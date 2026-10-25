@@ -6,7 +6,7 @@ import Link from 'next/link'
 const KEY = 'im_ad_howto_closed'
 
 // 광고 화면 위 안내: 기본 배너(배너 탭)와 계약 광고(광고 계약 탭)가 어떻게 번갈아 나가는지
-export default function AdHowItWorks({ current }: { current: 'banners' | 'contracts' }) {
+export default function AdHowItWorks({ current }: { current: 'banners' | 'contracts' | 'inquiries' }) {
   const [open, setOpen] = useState(true)
   useEffect(() => {
     try { if (localStorage.getItem(KEY) === '1') setOpen(false) } catch { /* 없음 */ }

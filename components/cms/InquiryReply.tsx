@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { replyInquiry, type ReplyState } from '@/app/(main)/admin/inquiries/actions'
+import { replyInquiry, type ReplyState } from '@/app/(main)/admin/ads/inquiries/actions'
 
 // 광고문의에 편집국 안에서 답하기 (문의하신 분 이메일로 나간다)
 export default function InquiryReply({ id, email }: { id: string; email: string }) {

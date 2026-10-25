@@ -37,11 +37,11 @@ export async function submitAdInquiry(_prev: InquiryState, form: FormData): Prom
   if (mailReady()) {
     try {
       const to = ((data ?? []) as { to_email: string }[]).map((r) => r.to_email).filter(Boolean)
-      const url = `${await cmsOrigin()}/admin/inquiries`
+      const url = `${await cmsOrigin()}/admin/ads/inquiries`
       // 알림만: 문의 내용은 메일에 넣지 않고 편집국 '광고문의'에서 보고 답하게 한다
       const { html, text } = noticeMail({
         title: `${site.name}에 새 광고문의가 왔습니다`,
-        lines: ['IM 뉴스룸 편집국의 “광고문의” 메뉴에서 내용을 확인하고 바로 답할 수 있습니다.'],
+        lines: ['IM 뉴스룸 편집국의 “광고 → 광고문의” 탭에서 내용을 확인하고 바로 답할 수 있습니다.'],
         button: { label: '편집국에서 확인하기', url },
         footer: `${site.name} 홈페이지 광고문의 양식으로 접수된 문의의 알림입니다.`,
       })

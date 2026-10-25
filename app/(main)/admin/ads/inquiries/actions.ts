@@ -9,14 +9,14 @@ export async function setInquiryStatus(id: string, status: 'new' | 'done') {
   const { supabase, isEditorPlus, isStaff } = await getCmsContext()
   if (!isEditorPlus && !isStaff) return
   await supabase.from('site_inquiries').update({ status }).eq('id', id)
-  revalidatePath('/admin/inquiries', 'layout')
+  revalidatePath('/admin/ads', 'layout')
 }
 
 export async function deleteInquiry(id: string) {
   const { supabase, isEditorPlus, isStaff } = await getCmsContext()
   if (!isEditorPlus && !isStaff) return
   await supabase.from('site_inquiries').delete().eq('id', id)
-  revalidatePath('/admin/inquiries', 'layout')
+  revalidatePath('/admin/ads', 'layout')
 }
 
 export type ReplyState = { ok?: string; error?: string }
@@ -41,6 +41,6 @@ export async function replyInquiry(id: string, _prev: ReplyState, form: FormData
   const res = await sendMails([{ to: q.email, subject: `[${outletName}] 광고문의 답변드립니다`, html, text, replyTo: user.email ?? null, fromName: outletName, tag: 'inquiry-reply' }])
   if (!res.sent) return { error: '답변 메일을 보내지 못했습니다. 이메일 주소를 확인해 주세요.' }
   await supabase.from('site_inquiries').update({ reply_body: body, replied_at: new Date().toISOString(), replied_by: user.id, status: 'done' }).eq('id', id)
-  revalidatePath('/admin/inquiries', 'layout')
+  revalidatePath('/admin/ads', 'layout')
   return { ok: '답변을 보냈습니다. 처리 완료로 표시했습니다.' }
 }

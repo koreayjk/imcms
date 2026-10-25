@@ -20,7 +20,6 @@ const ITEMS: Item[] = [
   { href: '/admin/home', label: '홈편집', icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'site' },
   { href: '/admin/categories', label: '섹션', icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'site' },
   { href: '/admin/ads', label: '광고', icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'site' },
-  { href: '/admin/inquiries', label: '광고문의', icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/inquiries'), minRole: 'site' },
   { href: '/admin/newsletter', label: '뉴스레터', icon: <MailIcon />, match: (p) => p.startsWith('/admin/newsletter'), minRole: 'editor' },
   { href: '/admin/users', label: '회원', icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
   { href: '/admin/outlets', label: '매체', icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
@@ -87,9 +86,9 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
       ]
     : onboarding ? [ONB_CUSTOMER, ...visible] : visible
   const badge = (href: string) =>
-    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/inquiries' ? inquiryCount : href === '/admin/users' ? pendingCount : href === '/support/onboarding' ? onboardingCount : href === '/admin/onboarding' ? staffOnboardingCount : 0
+    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/ads' ? inquiryCount : href === '/admin/users' ? pendingCount : href === '/support/onboarding' ? onboardingCount : href === '/admin/onboarding' ? staffOnboardingCount : 0
   const badgeLabel = (href: string, n: number) =>
-    href === '/support' ? (isStaff ? `새 요청 ${n}건` : `새 답변 ${n}건`) : href === '/admin/leads' ? `새 상담 ${n}건` : href === '/support/onboarding' ? `새 답글 ${n}건` : href === '/admin/onboarding' ? `새 고객 글 ${n}건` : href === '/feedback' ? `새 개선 요청 ${n}건` : href === '/admin/inquiries' ? `새 광고문의 ${n}건` : `승인 대기 ${n}명`
+    href === '/support' ? (isStaff ? `새 요청 ${n}건` : `새 답변 ${n}건`) : href === '/admin/leads' ? `새 상담 ${n}건` : href === '/support/onboarding' ? `새 답글 ${n}건` : href === '/admin/onboarding' ? `새 고객 글 ${n}건` : href === '/feedback' ? `새 개선 요청 ${n}건` : href === '/admin/ads' ? `새 광고문의 ${n}건` : `승인 대기 ${n}명`
 
   // 휴대폰: 아래 탭 4개 + 더보기 (나머지 메뉴·내 정보·로그아웃)
   const TAB_HREFS = ['/newsroom', '/articles/new', '/articles', '/press']
