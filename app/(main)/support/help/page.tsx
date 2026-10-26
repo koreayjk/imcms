@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ISSUER, PRODUCT } from '@/lib/product'
-import { readyVideos } from '@/lib/help-videos'
+import { readyVideos, posterOf } from '@/lib/help-videos'
+import { listGuideVideos, guideVideoUrls } from '@/lib/guide-videos'
+import { getCmsContext } from '@/lib/cms'
 import HelpVideoCard from '@/components/cms/HelpVideoCard'
 
 const GUIDES = [
@@ -27,17 +29,22 @@ const FAQ = [
   { q: '업무요청에 비밀번호를 적어도 되나요?', a: '적지 마세요. 계정 정보가 꼭 필요하면 요청에 “전화로 알려드리겠다”고 남겨 주시면 연락드립니다.' },
 ]
 
-export default function HelpPage() {
-  const videos = readyVideos()
+export default async function HelpPage() {
+  const [{ isStaff }, uploaded] = await Promise.all([getCmsContext(), listGuideVideos()])
+  const videos = readyVideos(new Set(uploaded.map((u) => u.id)))
+  const urls = await guideVideoUrls(videos.filter((v) => v.own).map((v) => v.id))
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-6 md:px-8 md:py-10">
       <h1 className="text-[22px] font-extrabold tracking-tight">이용안내</h1>
-      {videos.length > 0 && (
+      {(videos.length > 0 || isStaff) && (
         <section id="videos" className="mt-6 scroll-mt-6">
-          <h2 className="text-[18px] font-extrabold">영상으로 배우기</h2>
-          <p className="mt-1 text-[13.5px] text-muted">처음 쓰시는 분은 위에서부터 차례로 보세요. 영상마다 1~2분입니다.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-[18px] font-extrabold">영상으로 배우기</h2>
+            {isStaff && <Link href="/admin/guide-videos" className="rounded-full border border-line px-3 py-0.5 text-[12px] text-muted hover:border-ink hover:text-ink">영상 올리기·바꾸기 (운영팀)</Link>}
+          </div>
+          <p className="mt-1 text-[13.5px] text-muted">처음 쓰시는 분은 위에서부터 차례로 보세요. 영상마다 1~5분입니다.</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {videos.map((v, i) => <HelpVideoCard key={v.id} n={i + 1} title={v.title} desc={v.desc} videoId={v.videoId} link={v.link} />)}
+            {videos.map((v, i) => <HelpVideoCard key={v.id} n={i + 1} title={v.title} desc={v.desc} videoId={v.videoId} src={v.own ? urls[v.id] : undefined} poster={posterOf(v.id)} link={v.link} />)}
           </div>
         </section>
       )}
