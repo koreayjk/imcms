@@ -20,7 +20,7 @@ function slotOf(raw: string, ids: string[]): string | null {
   const name = raw.normalize('NFC')
   const base = name.replace(/\.mp4$/i, '')
   if (ids.includes(base)) return base
-  if (/자막판/.test(name)) return null
+  if (/자막판|이전판/.test(name)) return null
   return NAME_RULES.find(([re]) => re.test(name))?.[1] ?? null
 }
 
@@ -80,7 +80,7 @@ export default function GuideVideoUploader({ slots }: { slots: Slot[] }) {
     <>
     <div className="mt-5 rounded-xl border border-dashed border-line bg-white p-4">
       <p className="text-[13.5px] font-bold">한꺼번에 올리기</p>
-      <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">만들어 둔 영상 파일을 모두 골라 주세요. 파일 이름(사용법-03-…, 개통안내-0-…, 보도자료메일-…)을 보고 알맞은 칸에 차례로 올립니다. 이름에 “자막판”이 들어 있는 파일은 건너뜁니다.</p>
+      <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">만들어 둔 영상 파일을 모두 골라 주세요. 파일 이름(사용법-03-…, 개통안내-0-…, 보도자료메일-…)을 보고 알맞은 칸에 차례로 올립니다. 받은 이름 그대로 고르면 됩니다. 이름에 “자막판”·“이전판”이 들어 있는 파일은 건너뜁니다.</p>
       <label className={`btn-primary mt-2.5 inline-block cursor-pointer px-4 py-2 text-[13px] ${busy ? 'pointer-events-none opacity-60' : ''}`}>
         {busy === 'bulk' ? '올리는 중… (창을 닫지 마세요)' : '영상 파일 여러 개 고르기'}
         <input type="file" accept="video/mp4" multiple className="hidden" disabled={!!busy} onChange={(e) => { void uploadMany(e.target.files); e.target.value = '' }} />
