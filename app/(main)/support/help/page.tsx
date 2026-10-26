@@ -34,7 +34,7 @@ export default async function HelpPage() {
   const videos = readyVideos(new Set(uploaded.map((u) => u.id)))
   const urls = await guideVideoUrls(videos.filter((v) => v.own).map((v) => v.id))
   return (
-    <div className="mx-auto max-w-[1000px] px-4 py-6 md:px-8 md:py-10">
+    <div className="mx-auto max-w-[1100px] px-4 py-6 md:px-8 md:py-10">
       <h1 className="text-[22px] font-extrabold tracking-tight">이용안내</h1>
       {(videos.length > 0 || isStaff) && (
         <section id="videos" className="mt-6 scroll-mt-6">
@@ -43,7 +43,7 @@ export default async function HelpPage() {
             {isStaff && <Link href="/admin/guide-videos" className="rounded-full border border-line px-3 py-0.5 text-[12px] text-muted hover:border-ink hover:text-ink">영상 올리기·바꾸기 (운영팀)</Link>}
           </div>
           <p className="mt-1 text-[13.5px] text-muted">처음 쓰시는 분은 위에서부터 차례로 보세요. 영상마다 1~5분입니다.</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((v, i) => <HelpVideoCard key={v.id} n={i + 1} title={v.title} desc={v.desc} videoId={v.videoId} src={v.own ? urls[v.id] : undefined} poster={posterOf(v.id)} link={v.link} />)}
           </div>
         </section>
