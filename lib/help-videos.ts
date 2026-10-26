@@ -29,7 +29,7 @@ export const HELP_VIDEOS: HelpVideo[] = [
   { id: 'settings', title: '설정: 로고·색·탭 아이콘·공유 사진·로고 띠', desc: '홈페이지에 나오는 이름·슬로건·로고·대표 색, 탭 아이콘과 공유 미리보기 사진, 하단의 로고 띠와 필수 표시 정보를 직접 바꾸는 방법입니다.', link: { label: '설정', href: '/admin/settings' } },
   { id: 'ads', title: '첫 화면 광고 올리기와 예약 광고', desc: '배너 광고를 올리고, 기간을 정해 예약 광고를 거는 방법입니다.', youtube: '8RJupy37b2I', link: { label: '광고', href: '/admin/ads' } },
   { id: 'ads2', title: '광고 새 기능: 자리 설정·순서 끌기·광고문의', desc: '쓰지 않는 광고 자리 끄기, 오른쪽 광고 개수 정하기, 배너를 끌어서 순서·자리 바꾸기, 광고주 문의에 답하는 방법입니다.', link: { label: '광고', href: '/admin/ads' } },
-  { id: 'billing', title: '청구서 확인과 카드 등록(자동결제)', desc: '청구서를 보고 결제하고, 카드를 등록해 자동으로 결제되게 하는 방법입니다.', youtube: 'HKvkspHjPXo', link: { label: '결제 정보', href: '/support/billing' } },
+  { id: 'billing', title: '청구서 확인과 카드 등록(자동결제)', desc: '결제 정보를 입력하고, 청구서 메일의 결제하기로 로그인 없이 결제하고, 자동결제(매월 1일 오전 10시)와 청구서 확인·PDF 저장까지 한 번에 봅니다.', youtube: 'HKvkspHjPXo', link: { label: '결제 정보', href: '/support/billing' } },
   { id: 'newsletter', title: '뉴스레터 보내기', desc: '구독자에게 기사 모음을 메일로 보내는 방법입니다.', youtube: 'S1XK6JAM49o', link: { label: '뉴스레터', href: '/admin/newsletter' } },
   { id: 'support', title: '업무요청과 고객센터 이용하기', desc: '수정이나 문의를 업무요청으로 남기고, 답변과 공지를 확인하는 방법입니다.', youtube: 'HXyETgJWYBE', link: { label: '업무요청', href: '/support/tickets/new' } },
 ]
