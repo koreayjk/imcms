@@ -7,6 +7,12 @@ import { switchOutlet } from '@/app/(main)/account/actions'
 import { createClient } from '@/lib/supabase'
 import { ROLE_LABEL, type UserRole } from '@/lib/types'
 import { ExternalIcon, SearchIcon } from './icons'
+
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" /></svg>
+  )
+}
 import BrandMark from '@/components/BrandMark'
 import { ViewAsPicker } from './ViewAs'
 import type { ViewAs } from '@/lib/cms'
@@ -75,6 +81,11 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
                 <span className="hidden md:inline">홈페이지</span> <ExternalIcon />
               </a>
             )}
+            {isStaff && currentOutletId && (
+              <Link href={`/admin/outlets/${currentOutletId}/site`} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line px-2 py-1 text-[11.5px] text-muted hover:border-ink hover:text-ink md:px-2.5 md:py-0.5" aria-label="이 매체의 홈페이지 설정 (운영팀)" title="이 매체의 홈페이지 설정 (운영팀)">
+                <GearIcon /> <span className="hidden md:inline">설정</span>
+              </Link>
+            )}
           </div>
         ) : outletName ? (
           <div className="flex min-w-0 items-center gap-2.5">
@@ -88,6 +99,11 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
             >
               <span className="hidden md:inline">홈페이지</span> <ExternalIcon />
             </a>
+            {isStaff && currentOutletId && (
+              <Link href={`/admin/outlets/${currentOutletId}/site`} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line px-2 py-1 text-[11.5px] text-muted hover:border-ink hover:text-ink md:px-2.5 md:py-0.5" aria-label="이 매체의 홈페이지 설정 (운영팀)" title="이 매체의 홈페이지 설정 (운영팀)">
+                <GearIcon /> <span className="hidden md:inline">설정</span>
+              </Link>
+            )}
           </div>
         ) : isStaff ? (
           <span className="text-[15px] font-bold tracking-tight">IM 뉴스룸 운영</span>
