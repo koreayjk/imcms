@@ -15,7 +15,9 @@ const NAME_RULES: [RegExp, string][] = [
   [/사용법-11-/, 'ads'], [/사용법-12-/, 'billing'], [/사용법-13-/, 'newsletter'], [/사용법-14-/, 'support'],
   [/보도자료메일-1-지메일자동받기-자세히/, 'pressmail-gmail-detail'], [/보도자료메일-1-/, 'pressmail-gmail'], [/보도자료메일-2-/, 'pressmail-other'],
 ]
-function slotOf(name: string, ids: string[]): string | null {
+function slotOf(raw: string, ids: string[]): string | null {
+  // 맥은 한글 파일 이름을 자음·모음으로 풀어서 저장한다. 완성형으로 합쳐서 비교한다
+  const name = raw.normalize('NFC')
   const base = name.replace(/\.mp4$/i, '')
   if (ids.includes(base)) return base
   if (/자막판/.test(name)) return null
