@@ -194,6 +194,16 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
                   <CopyButton text={address} label="① 주소 복사" />
                   <OpenGmail href={GMAIL_FORWARD} onClick={() => setWatching(true)}>② 지메일 전달 설정 열기</OpenGmail>
                 </div>
+                <details className="rounded-lg border border-line bg-[#FAFAFA] px-4 py-3 text-[13.5px] leading-[1.75]">
+                  <summary className="cursor-pointer font-semibold">전달 주소 추가 버튼이 안 보이고, 입력 칸(수신메일을 [ ] 에 전달)만 보여요</summary>
+                  <ol className="mt-2 list-decimal space-y-1.5 pl-5">
+                    <li><strong>그 칸에는 주소를 넣지 마세요.</strong> 넣으면 보도자료뿐 아니라 받은 메일 전체가 넘어오고, 주소를 먼저 등록하지 않아 오류도 납니다.</li>
+                    <li>칸 아래 “도움말: <strong>필터를 사용</strong>하여 특정 메일을 전달할 수 있습니다”의 파란 <Btn>필터를 사용</Btn>을 누릅니다.</li>
+                    <li><Btn>포함하는 단어</Btn> 칸에 붙여넣기(아래 ③단계의 “필터 단어 복사”) 후 <Btn>필터 만들기</Btn>.</li>
+                    <li><Btn>다음 주소로 전달</Btn>을 체크하고 <Btn>전달 주소 추가</Btn> → 복사한 주소 붙여넣기 → <Btn>다음</Btn> → <Btn>계속</Btn> → <Btn>확인</Btn>.</li>
+                    <li>그다음 위 ②단계(확인 코드 넣기)로 가서 구글 확인 링크를 누르세요. 확인이 끝나면 ③단계 안내대로 필터를 마무리합니다.</li>
+                  </ol>
+                </details>
                 <p className="text-[12.5px] text-muted">PC 인터넷 창에서 해 주세요(휴대폰 지메일 앱에는 이 메뉴가 없습니다). 한 번만 하면 휴대폰으로 받은 메일도 똑같이 들어옵니다.</p>
                 <button type="button" onClick={() => go(2)} className="btn-primary">다 했어요, 다음 →</button>
               </div>
