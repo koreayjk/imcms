@@ -13,6 +13,7 @@ import { hasUnreadReply } from '@/lib/support'
 import { GRACE_DAYS, holdFrom, kstToday } from '@/lib/billing'
 import { formatDate } from '@/lib/format'
 import { isPrepNow } from '@/lib/sites'
+import { stepStates } from '@/lib/onboarding-guide'
 
 // 편집국: 아이폰 사파리는 글씨가 16px보다 작은 입력칸(매체 고르기 등)을 누르면 화면을 확대하고 그대로 둬서 좌우가 잘린다 → 자동 확대를 막는다
 //   (아이폰은 두 손가락 확대는 그대로 된다)
@@ -45,7 +46,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     : Promise.resolve({ count: 0 })
   // 개통 진행 현황 메뉴 (launch-hub.sql 전이면 숫자 0): 고객은 개통(정식 오픈) 전까지, 운영팀은 새 고객 글 수
   const onboardQ = !isStaff && !trial && outletId && isEditorPlus
-    ? supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
+    ? supabase.from('outlets').select('site, created_at').eq('id', outletId).maybeSingle()
     : Promise.resolve({ data: null })
   const staffCommentQ = isStaff
     ? supabase.from('launch_comments').select('id', { count: 'exact', head: true }).eq('from_staff', false).eq('staff_seen', false)
@@ -58,7 +59,17 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes, { data: onboardOutlet }, { count: staffOnboardingCount }, { count: inquiryCount }] = await Promise.all([
     pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'), onboardQ, staffCommentQ, inquiryQ,
   ])
-  const onboarding = isPrepNow((onboardOutlet?.site ?? {}) as { comingSoon?: boolean; openAt?: string })
+  let onboarding = isPrepNow((onboardOutlet?.site ?? {}) as { comingSoon?: boolean; openAt?: string })
+  // 오픈한 뒤에도 마지막 단계(검색 등록·오픈 후 점검)가 끝날 때까지는 고객에게 개통 현황을 보여 준다
+  //   최근 두 달 안에 만든 매체만 확인한다 (예전 고객은 체크리스트를 쓰지 않았다)
+  const createdAt = (onboardOutlet as { created_at?: string } | null)?.created_at
+  if (!onboarding && outletId && createdAt && Date.now() - Date.parse(createdAt) < 60 * 86_400_000) {
+    const { data: doneKeys, error: progErr } = await supabase.rpc('launch_progress', { o: outletId })
+    if (!progErr && Array.isArray(doneKeys) && doneKeys.length) {
+      const doneMap = Object.fromEntries((doneKeys as string[]).map((k) => [k, true]))
+      onboarding = !stepStates(doneMap, true).every((x) => x === 'done')
+    }
+  }
   // 고객: 운영팀이 코멘트를 쓰거나 체크한 새 소식 수 (내가 개통 현황을 연 뒤부터 센다, launch-notice.sql 전이면 0)
   let onboardingCount = 0
   if (onboarding && outletId) {
