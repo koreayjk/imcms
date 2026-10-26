@@ -11,7 +11,7 @@ export default function LogoStrip({ strip, en = false }: { strip: Strip; en?: bo
   const logo = (it: Strip['items'][number], i: number, dup: boolean) => {
     const img = (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={it.img} alt={dup ? '' : it.name} loading="lazy" className="h-full w-full object-contain" />
+      <img src={it.img} alt={dup ? "" : it.name} loading="eager" decoding="async" className="h-full w-full object-contain" />
     )
     return (
       <li key={`${dup ? 'b' : 'a'}${i}`} aria-hidden={dup || undefined} className="h-[64px] w-[140px] shrink-0 rounded border border-rule bg-white p-2">
