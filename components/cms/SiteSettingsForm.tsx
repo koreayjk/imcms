@@ -12,6 +12,7 @@ import { saveSelfSiteSettings } from '@/app/(main)/admin/settings/site-actions'
 import { OPEN_ZONES, formatZoned, isoToZoned, zonedToIso } from '@/lib/zoned-time'
 import SearchRegisterGuide from './SearchRegisterGuide'
 import GovPicker from './GovPicker'
+import GovLogoFinder from './GovLogoFinder'
 import LogoStrip from '@/components/site/LogoStrip'
 import { buildSite, cleanLogoStrip, DEFAULT_COLORS, foreignTopics, openTimePassed, pressFields, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { FOREIGN_TOPICS, PRESS_FIELDS } from '@/lib/press-sources'
@@ -425,6 +426,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             ))}
           </ul>
           {!self && <GovPicker items={stripItems} onChange={putStrip} />}
+          {!self && <GovLogoFinder items={stripItems} onChange={putStrip} outletId={outlet.id} />}
           {(s.logoStrip?.items.length ?? 0) < 40 && (
             <label className="btn-secondary inline-block cursor-pointer px-4 py-2 text-[13px]">
               + 로고 올려 추가 {uploading && '(올리는 중…)'}

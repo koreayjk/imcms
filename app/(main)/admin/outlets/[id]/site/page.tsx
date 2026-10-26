@@ -6,6 +6,9 @@ import SiteSettingsForm from '@/components/cms/SiteSettingsForm'
 import DomainPanel from '@/components/cms/DomainPanel'
 import { domainStatus } from '@/lib/vercel-domains'
 
+// 지자체 로고 찾기(홈페이지를 열고 그림을 내려받음)는 시간이 걸릴 수 있다
+export const maxDuration = 60
+
 export default async function SiteSettingsPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params
   const { supabase, isStaff } = await getCmsContext()
