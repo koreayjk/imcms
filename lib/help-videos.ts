@@ -27,6 +27,7 @@ export const HELP_VIDEOS: HelpVideo[] = [
   { id: 'home', title: '홈 편집으로 첫 화면 배치하기', desc: '헤드라인·톱·주요 기사 자리를 직접 정하는 방법입니다.', youtube: 'TlujxxKRqss', link: { label: '홈편집', href: '/admin/home' } },
   { id: 'sections', title: '섹션(메뉴) 정리하기', desc: '섹션을 만들고 순서를 바꾸고, 하위 섹션을 묶는 방법입니다.', youtube: 'AtQUzJoWYI4', link: { label: '섹션', href: '/admin/categories' } },
   { id: 'ads', title: '첫 화면 광고 올리기와 예약 광고', desc: '배너 광고를 올리고, 기간을 정해 예약 광고를 거는 방법입니다.', youtube: '8RJupy37b2I', link: { label: '광고', href: '/admin/ads' } },
+  { id: 'ads2', title: '광고 새 기능: 자리 설정·순서 끌기·광고문의', desc: '쓰지 않는 광고 자리 끄기, 오른쪽 광고 개수 정하기, 배너를 끌어서 순서·자리 바꾸기, 광고주 문의에 답하는 방법입니다.', link: { label: '광고', href: '/admin/ads' } },
   { id: 'billing', title: '청구서 확인과 카드 등록(자동결제)', desc: '청구서를 보고 결제하고, 카드를 등록해 자동으로 결제되게 하는 방법입니다.', youtube: 'HKvkspHjPXo', link: { label: '결제 정보', href: '/support/billing' } },
   { id: 'newsletter', title: '뉴스레터 보내기', desc: '구독자에게 기사 모음을 메일로 보내는 방법입니다.', youtube: 'S1XK6JAM49o', link: { label: '뉴스레터', href: '/admin/newsletter' } },
   { id: 'support', title: '업무요청과 고객센터 이용하기', desc: '수정이나 문의를 업무요청으로 남기고, 답변과 공지를 확인하는 방법입니다.', youtube: 'HXyETgJWYBE', link: { label: '업무요청', href: '/support/tickets/new' } },
