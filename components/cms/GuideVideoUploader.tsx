@@ -12,7 +12,7 @@ const NAME_RULES: [RegExp, string][] = [
   [/개통안내-0/, 'launch'],
   [/사용법-01-/, 'start'], [/사용법-02-/, 'security'], [/사용법-03-/, 'members'], [/사용법-04-/, 'write'], [/사용법-05-/, 'press'],
   [/사용법-06-/, 'guide'], [/사용법-07-/, 'photos'], [/사용법-08-/, 'approve'], [/사용법-09-/, 'home'], [/사용법-10-/, 'sections'],
-  [/사용법-11-2-/, 'ads2'], [/사용법-11-/, 'ads'], [/사용법-12-/, 'billing'], [/사용법-13-/, 'newsletter'], [/사용법-14-/, 'support'],
+  [/사용법-11-2-/, 'ads2'], [/사용법-11-/, 'ads'], [/사용법-12-/, 'billing'], [/사용법-13-/, 'newsletter'], [/사용법-14-/, 'support'], [/사용법-15-/, 'settings'],
   [/보도자료메일-1-지메일자동받기-자세히/, 'pressmail-gmail-detail'], [/보도자료메일-1-/, 'pressmail-gmail'], [/보도자료메일-2-/, 'pressmail-other'],
 ]
 function slotOf(raw: string, ids: string[]): string | null {
