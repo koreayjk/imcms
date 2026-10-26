@@ -403,25 +403,26 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               </select>
             </Field>
           </div>
-          <ul className="space-y-2">
+          <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {(s.logoStrip?.items ?? []).map((it, i) => (
-              <li key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-line p-2 text-[13px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <span className="grid h-12 w-24 shrink-0 place-items-center rounded border border-line bg-white p-1">{it.img ? <img src={it.img} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[11px] text-muted">없음</span>}</span>
-                <input value={it.name} maxLength={40} onChange={(e) => setStripItem(i, { name: e.target.value })} placeholder="기관 이름" className="field-input w-40 py-1.5" aria-label="기관 이름" />
-                <label className="flex min-w-[12rem] flex-1 items-center gap-1.5">
-                  <span className="shrink-0 text-[12px] font-semibold text-muted">누르면 갈 주소</span>
-                  <input value={it.url ?? ''} maxLength={300} onChange={(e) => setStripItem(i, { url: e.target.value })} inputMode="url" placeholder="https://기관-홈페이지.com" className={`field-input min-w-0 flex-1 py-1.5 ${it.url?.trim() ? '' : 'border-draft'}`} aria-label="연결 주소" />
-                </label>
-                <label className="btn-secondary cursor-pointer px-3 py-1.5 text-[12.5px]">
-                  {it.img ? '로고 바꾸기' : '로고 올리기'}
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { void pickStripLogo(i, e.target.files); e.target.value = '' }} />
-                </label>
-                <span className="flex gap-1">
-                  <button type="button" disabled={i === 0} onClick={() => moveStripItem(i, -1)} className="rounded border border-line px-2 py-1 disabled:opacity-30" aria-label="앞으로">←</button>
-                  <button type="button" disabled={i === (s.logoStrip?.items.length ?? 0) - 1} onClick={() => moveStripItem(i, 1)} className="rounded border border-line px-2 py-1 disabled:opacity-30" aria-label="뒤로">→</button>
-                  <button type="button" onClick={() => set({ logoStrip: { ...(s.logoStrip ?? { items: [] }), items: (s.logoStrip?.items ?? []).filter((_, j) => j !== i) } })} className="rounded border border-line px-2 py-1 text-danger" aria-label="빼기">×</button>
-                </span>
+              <li key={i} className="flex flex-col gap-1.5 rounded-lg border border-line p-2 text-[13px]">
+                <div className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <span className="grid h-10 w-20 shrink-0 place-items-center rounded border border-line bg-white p-1">{it.img ? <img src={it.img} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[11px] text-muted">없음</span>}</span>
+                  <input value={it.name} maxLength={40} onChange={(e) => setStripItem(i, { name: e.target.value })} placeholder="기관 이름" className="field-input min-w-0 flex-1 py-1.5" aria-label="기관 이름" />
+                </div>
+                <input value={it.url ?? ''} maxLength={300} onChange={(e) => setStripItem(i, { url: e.target.value })} inputMode="url" placeholder="누르면 갈 주소  https://기관-홈페이지.com" className={`field-input w-full py-1.5 ${it.url?.trim() ? '' : 'border-draft'}`} aria-label="누르면 갈 주소" />
+                <div className="flex items-center justify-between gap-1">
+                  <label className="btn-secondary cursor-pointer px-2.5 py-1 text-[12px]">
+                    {it.img ? '로고 바꾸기' : '로고 올리기'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { void pickStripLogo(i, e.target.files); e.target.value = '' }} />
+                  </label>
+                  <span className="flex gap-1">
+                    <button type="button" disabled={i === 0} onClick={() => moveStripItem(i, -1)} className="rounded border border-line px-2 py-0.5 disabled:opacity-30" aria-label="앞으로">←</button>
+                    <button type="button" disabled={i === (s.logoStrip?.items.length ?? 0) - 1} onClick={() => moveStripItem(i, 1)} className="rounded border border-line px-2 py-0.5 disabled:opacity-30" aria-label="뒤로">→</button>
+                    <button type="button" onClick={() => set({ logoStrip: { ...(s.logoStrip ?? { items: [] }), items: (s.logoStrip?.items ?? []).filter((_, j) => j !== i) } })} className="rounded border border-line px-2 py-0.5 text-danger" aria-label="빼기">×</button>
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
