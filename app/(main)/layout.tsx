@@ -113,8 +113,8 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   }
   const monthText = (m: string) => `${Number(m.slice(5, 7))}월`
 
+  // 화면 높이 단위(dvh)가 창 크기를 잘못 기억하는 브라우저가 있어, 화면 전체에 붙이는 방식으로 높이를 정한다
   return (
-    {/* 화면 높이 단위(dvh)가 창 크기를 잘못 기억하는 브라우저가 있어, 화면 전체에 붙이는 방식으로 높이를 정한다 */}
     <div className="fixed inset-0 flex overflow-hidden bg-[#F4F5F7] print:static print:block print:h-auto print:overflow-visible print:bg-white">
       <AppServiceWorker />
       <div className="contents print:hidden">
