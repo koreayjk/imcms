@@ -48,6 +48,33 @@ IM VOCA처럼 Xcode에서 바로 만듭니다. 이 폴더의 파일은 웹 서�
 위 5번 표의 **Microphone** 줄을 반드시 넣고, 다시 올릴 때 Build 번호를 올린다 (이번 반려 빌드는 Build 3 → **Build 4**).
 올리기 전에 실제 아이폰이나 아이패드에서 확인: 업무요청 → 파일 선택 → 사진 또는 비디오 촬영 → 비디오 → 마이크 허용 창이 뜨고, 허용하면 촬영되고 앱이 꺼지지 않아야 한다. 기사 쓰기의 영상 올리기(촬영)도 같은 경로다.
 
+## 심사에서 걸린 일 (3.1.1 · 3.1.3(c) 기업용 서비스, 2차 답변)
+
+애플 문구: "기업용 서비스인데 개인·소비자에게도 앱 안 결제 없이 팔릴 수 있다 → 조직·직원 대상으로만 제공하거나, 개인용이면 인앱결제를 쓰라."
+우리 답: **조직 전용으로 고친다.** 앱 안에서 개인이 가입·체험을 시작하거나 결제할 수 없게 했다.
+- 앱 안(User-Agent에 IMNewsroomApp)에서는 로그인 화면의 "회원가입" 링크를 숨기고 "언론사 소속 구성원 전용" 안내를 보인다 (`lib/ios-app.ts`, `app/login/page.tsx`)
+- 앱 안에서 `/signup`, `/trial`(1주일 무료 체험)로 직접 들어가도 가입·체험 양식 대신 같은 안내만 나온다 (서버에서 확인)
+- 결제·자동결제 단추, 구글 로그인은 이미 앱에서 숨김. 가격표·요금제는 앱 안에 없다
+- 계정은 소속 언론사 발행인이 초대 메일로 만든다. 서비스는 언론사와 계약해서 세금계산서·청구서로 정산한다(앱 밖)
+- 앱 안에서 바깥 구매 안내(요금·결제 링크)는 넣지 않는다 (미국 외 스토어에서는 외부 결제 안내 자체가 3.1.1 위반)
+
+다시 올릴 때: 웹(Vercel)은 이미 배포된 것으로 반영된다. 앱 빌드는 바꾸지 않아도 되지만, 답변을 남기고 같은 빌드를 다시 제출한다 (바이너리 변경이 없으면 Resolution Center에 답글만 달고 "Submit"으로 다시 심사 요청).
+
+### App Store Connect 답글 (영어, 그대로 붙여 넣기)
+
+> Thank you for the additional review.
+>
+> IM Newsroom is an enterprise (B2B) editorial system sold only to news organizations (media companies) under a contract and invoiced outside the app. It is not sold to individual consumers or for family use, and the app contains no purchase, subscription or pricing flow.
+>
+> To make this clear in the app, we have updated our service so that, inside the iOS app:
+> 1. Self-registration and the free-trial sign-up are no longer available. The "Sign up" link is hidden on the login screen and the sign-up / trial pages show only a notice that the app is for members of a contracted news organization.
+> 2. Accounts are created only by invitation from the publisher (administrator) of the customer organization. Users are employees and reporters of that organization.
+> 3. Payment buttons, card registration and automatic-payment setup are hidden in the app, as before. Invoices are paid by the organization outside the app.
+>
+> Therefore the app provides its services only to organizations and their employees (Guideline 3.1.3(c)), and In-App Purchase is not required. These changes are live on our web service now; please re-review the same build.
+>
+> Demo account: (심사용 계정은 App Review Information 칸에 이미 적혀 있는 것을 그대로 쓴다)
+
 ## 알아 둘 점
 
 - 청구서의 "PDF로 저장"(인쇄)은 앱 안에서 동작하지 않을 수 있습니다. 청구서는 웹 브라우저에서 저장하면 됩니다.

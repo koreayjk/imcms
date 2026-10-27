@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { headers } from 'next/headers'
+import { IOS_ORG_ONLY_NOTICE, isIosAppUA } from '@/lib/ios-app'
 import { createClient } from '@supabase/supabase-js'
 import AuthShell from '@/components/auth/AuthShell'
 import SignupForm from '@/components/auth/SignupForm'
@@ -23,6 +25,13 @@ async function signupOutlets() {
 }
 
 export default async function SignupPage() {
+  if (isIosAppUA((await headers()).get('user-agent'))) {
+    return (
+      <AuthShell subtitle="언론사 구성원 전용" footer={<Link href="/login" className="font-semibold text-ink underline underline-offset-2">로그인 화면으로</Link>}>
+        <p className="rounded-lg border border-line bg-white px-6 py-7 text-center text-sm leading-relaxed text-muted">{IOS_ORG_ONLY_NOTICE}</p>
+      </AuthShell>
+    )
+  }
   if (await signupReady()) return <SignupForm outlets={await signupOutlets()} />
   return (
     <AuthShell subtitle="회원가입" footer={<Link href="/login" className="font-semibold text-ink underline underline-offset-2">로그인 화면으로</Link>}>

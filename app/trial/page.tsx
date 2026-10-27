@@ -6,6 +6,8 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import TrialSignupForm from '@/components/auth/TrialSignupForm'
 import SignOutButton from '@/components/auth/SignOutButton'
 import { isApproved } from '@/lib/cms'
+import AuthShell from '@/components/auth/AuthShell'
+import { IOS_ORG_ONLY_NOTICE, isIosAppUA } from '@/lib/ios-app'
 
 // 소개 사이트·편집국 주소(imnewsroom.com, app.imnewsroom.com)로 들어온 경우에만 검색에 노출한다
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,6 +37,13 @@ const RULES = [
 ]
 
 export default async function TrialPage() {
+  if (isIosAppUA((await headers()).get('user-agent'))) {
+    return (
+      <AuthShell subtitle="언론사 구성원 전용" footer={<Link href="/login" className="font-semibold text-ink underline underline-offset-2">로그인 화면으로</Link>}>
+        <p className="rounded-lg border border-line bg-white px-6 py-7 text-center text-sm leading-relaxed text-muted">{IOS_ORG_ONLY_NOTICE}</p>
+      </AuthShell>
+    )
+  }
   let loggedIn = false
   // 구글로 들어왔지만 체험 계정 만들기를 마치지 않은 회원 (승인 전 일반 회원)
   let unfinished = false

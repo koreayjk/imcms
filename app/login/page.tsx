@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import AuthShell, { OrDivider } from '@/components/auth/AuthShell'
 import GoogleButton from '@/components/auth/GoogleButton'
+import { IOS_ORG_ONLY_NOTICE } from '@/lib/ios-app'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -64,7 +65,10 @@ export default function LoginPage() {
   return (
     <AuthShell
       subtitle="언론사 기사 관리 시스템"
-      footer={<>계정이 없으신가요? <Link href="/signup" className="font-semibold text-ink underline underline-offset-2">회원가입</Link></>}
+      footer={<>
+        <span className="ios-app-hide">계정이 없으신가요? <Link href="/signup" className="font-semibold text-ink underline underline-offset-2">회원가입</Link></span>
+        <span className="ios-app-only">{IOS_ORG_ONLY_NOTICE}</span>
+      </>}
     >
       <GoogleButton label="구글 계정으로 로그인" />
       <OrDivider />
