@@ -46,7 +46,7 @@ export default async function NewsroomPage(props: Props) {
     scoped(
       supabase
         .from('articles')
-        .select('id, title, status, updated_at, published_at, view_count, reject_reason, author:profiles!articles_author_id_fkey(full_name), category:categories(name)')
+        .select('id, title, status, updated_at, published_at, view_count, reject_reason, byline, author:profiles!articles_author_id_fkey(full_name), category:categories(name)')
     ).eq('status', tab).order(tab === 'published' ? 'published_at' : 'updated_at', { ascending: false }).limit(12),
     isEditorPlus
       ? scoped(supabase.from('articles').select('id, title, updated_at, author:profiles!articles_author_id_fkey(full_name)'))
@@ -152,14 +152,14 @@ export default async function NewsroomPage(props: Props) {
                         {a.title}
                       </p>
                       <p className="mt-0.5 truncate text-[12px] text-muted md:hidden">
-                        {[a.category?.name ?? '섹션 없음', isEditorPlus ? a.author?.full_name : null, a.status === 'published' ? `조회 ${a.view_count ?? 0}` : null, formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)].filter(Boolean).join(' · ')}
+                        {[a.category?.name ?? '섹션 없음', isEditorPlus ? (a.byline?.trim() || a.author?.full_name) : null, a.status === 'published' ? `조회 ${a.view_count ?? 0}` : null, formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)].filter(Boolean).join(' · ')}
                       </p>
                       {a.status === 'rejected' && a.reject_reason && (
                         <p className="mt-0.5 truncate text-[12px] text-danger">반려 사유: {a.reject_reason}</p>
                       )}
                     </div>
                     <span className="hidden w-24 shrink-0 truncate text-[12px] text-muted md:block">{a.category?.name ?? '섹션 없음'}</span>
-                    {isEditorPlus && <span className="hidden w-16 shrink-0 truncate text-[12px] text-muted md:block">{a.author?.full_name}</span>}
+                    {isEditorPlus && <span className="hidden w-16 shrink-0 truncate text-[12px] text-muted md:block">{a.byline?.trim() || a.author?.full_name}</span>}
                     {a.status === 'published' && (
                       <span className="hidden w-14 shrink-0 text-right text-[12px] tabular-nums text-muted md:block">조회 {a.view_count ?? 0}</span>
                     )}

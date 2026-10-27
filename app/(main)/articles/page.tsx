@@ -38,7 +38,7 @@ export default async function ArticlesPage(props: Props) {
   let listQuery = scoped(
     supabase
       .from('articles')
-      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author_id, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', { count: 'exact' })
+      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author_id, byline, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', { count: 'exact' })
   )
   if (status) listQuery = listQuery.eq('status', status)
   if (q) listQuery = listQuery.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
@@ -130,12 +130,12 @@ export default async function ArticlesPage(props: Props) {
                     {a.status === 'published' && <span className="hidden shrink-0 text-[12px] tabular-nums text-muted md:inline">조회 {a.view_count ?? 0}</span>}
                   </div>
                   <p className="mt-0.5 truncate text-[12px] text-muted md:hidden">
-                    {[a.category?.name ?? '섹션 없음', `${a.author?.full_name ?? ''} 기자`, a.status === 'published' ? `조회 ${a.view_count ?? 0}` : null, formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)].filter(Boolean).join(' · ')}
+                    {[a.category?.name ?? '섹션 없음', `${a.byline?.trim() || a.author?.full_name || ''} 기자`, a.status === 'published' ? `조회 ${a.view_count ?? 0}` : null, formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)].filter(Boolean).join(' · ')}
                   </p>
                   {a.status === 'rejected' && a.reject_reason && <p className="mt-0.5 truncate text-[12px] text-danger">반려 사유: {a.reject_reason}</p>}
                 </div>
                 <span className="hidden w-24 shrink-0 truncate text-[12.5px] text-muted md:block">{a.category?.name ?? '섹션 없음'}</span>
-                <span className="hidden w-20 shrink-0 truncate text-[12.5px] text-muted md:block">{a.author?.full_name} 기자</span>
+                <span className="hidden w-20 shrink-0 truncate text-[12.5px] text-muted md:block">{a.byline?.trim() || a.author?.full_name} 기자</span>
                 <time className="hidden w-[118px] shrink-0 text-right text-[12.5px] tabular-nums text-muted md:block">
                   {formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)}
                 </time>
