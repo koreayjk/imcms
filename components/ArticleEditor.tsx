@@ -133,8 +133,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     }
     // syndication.sql 실행 전 DB에는 이 칸이 없으므로, 기존 값이 있거나 매체를 고른 경우에만 보낸다
     if (!isCopy && (article?.syndicate_to !== undefined || syndicateTo.length)) payload.syndicate_to = syndicateTo
-    // 기자명이 회원 이름과 같으면 비워 둔다 (회원 이름을 바꾸면 기사에도 따라 바뀌도록)
-    const customByline = byline.trim() && byline.trim() !== defaultName ? byline.trim() : null
+    // 기자명은 기사에 그대로 적어 둔다 (회원 이름을 나중에 바꿔도 이미 쓴 기사의 기자명은 안 바뀌도록)
+    const customByline = byline.trim() || null
     if (customByline || article?.byline !== undefined) payload.byline = customByline
     // 기자는 보내지 않는다 (DB가 대표 이메일로 채운다)
     if (settingsReady && isEditorPlus) payload.byline_email = bylineEmail.trim() || outletEmail || null
