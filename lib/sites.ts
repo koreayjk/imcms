@@ -103,7 +103,7 @@ export type SiteConfig = {
   iconUrl?: string
   // IM 뉴스룸 체험용 신문 (trial.sql) — 홈페이지 맨 위에 체험판 안내 띠
   trial?: boolean
-  // 요금제 (DB 매체만). 베이직은 뉴스레터 구독 칸을 보이지 않는다
+  // 요금제 (DB 매체만). 베이직도 구독 칸은 보이지만 뉴스레터 발송은 스탠다드부터
   plan?: string | null
   // 홈페이지 언어: ko(기본) / en(영문 매체 — 메뉴·날짜·안내 문구가 영어, lib/site-text.tsx)
   lang?: SiteLang
