@@ -12,7 +12,7 @@ type AuthInfo = { id: string; email: string; provider: string; last_sign_in_at: 
 
 export default async function UsersPage(props: { searchParams: Promise<{ error?: string }> }) {
   const searchParams = await props.searchParams
-  const { supabase, user, isSuper, isGroupAdmin, outletId, trial, profile } = await getCmsContext()
+  const { supabase, user, isSuper, isGroupAdmin, outletId, trial, profile, viewAs, viewGroupId } = await getCmsContext()
   if (!isGroupAdmin) redirect('/articles')
   // 체험 그룹장: 다른 체험자의 정보는 보여주지 않고, 이 화면에서 하는 일만 안내한다
   if (trial) {
@@ -49,7 +49,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
     supabase.from('outlets').select('id, name, publisher_id, publisher:publishers(name)').order('created_at'),
     supabase.from('publishers').select('id, name').order('created_at'),
     supabase.rpc('admin_list_users'),
-    supabase.from('invitations').select('id, email, full_name, role, created_at, outlet:outlets(name)').is('accepted_at', null).order('created_at', { ascending: false }),
+    supabase.from('invitations').select('id, email, full_name, role, created_at, publisher_id, outlet:outlets(name)').is('accepted_at', null).order('created_at', { ascending: false }),
     // 매체별 소속·직급 (outlet-members.sql 전이면 오류 → 예전처럼 매체 하나)
     supabase.from('outlet_members').select('profile_id, outlet_id, role').order('created_at'),
   ])
@@ -86,10 +86,13 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
     ? Object.fromEntries(((seenRes.data ?? []) as { id: string; last_seen: string | null }[]).map((r) => [r.id, r.last_seen]))
     : authError ? null : Object.fromEntries(Array.from(info, ([id, a]) => [id, a.last_sign_in_at]))
 
-  const all = (users ?? []) as Profile[]
-  const pending = all.filter((u) => u.approved === false && u.role !== 'admin' && !u.is_super)
-  const members = all.filter((u) => !pending.includes(u))
+  // 보기 모드: 이 매체가 속한 그룹의 회원·초대만 보인다 (진짜 발행인이 보는 범위)
+  const inView = (groupId: string | null) => !viewAs || (!!viewGroupId && groupId === viewGroupId)
+  const all = ((users ?? []) as Profile[])
+  const invitesShown = ((invites ?? []) as any[]).filter((i) => inView((i.publisher_id as string | null) ?? null))
   const groupIdOf = (u: Profile) => u.publisher_id ?? (u.outlet_id ? outletGroup.get(u.outlet_id) ?? null : null)
+  const pending = all.filter((u) => u.approved === false && u.role !== 'admin' && !u.is_super && inView(groupIdOf(u)))
+  const members = all.filter((u) => u.approved !== false || u.role === 'admin' || u.is_super).filter((u) => inView(groupIdOf(u)))
   const groupOf = Object.fromEntries(members.map((u) => [u.id, groupIdOf(u) ? groupName.get(groupIdOf(u)!) ?? null : null]))
 
   // 총관리자는 그룹별로 나눠 보고, 발행인은 자기 그룹만 본다
@@ -122,11 +125,11 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
 
       <InviteForm outlets={outlets} />
 
-      {(invites ?? []).length > 0 && (
+      {invitesShown.length > 0 && (
         <section>
           <h2 className="mb-2 text-[15px] font-bold">가입을 기다리는 초대</h2>
           <ul className="divide-y divide-line rounded-lg border border-line bg-white">
-            {(invites ?? []).map((i: any) => (
+            {invitesShown.map((i: any) => (
               <li key={i.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-[13.5px]">
                 <span className="min-w-0 break-all font-semibold">{i.email}</span>
                 <span className="text-muted">{i.full_name ?? ''} · {ROLE_LABEL[i.role as UserRole]} · {i.outlet?.name ?? ''} · {formatDateTime(i.created_at)}</span>

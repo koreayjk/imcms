@@ -97,6 +97,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     const assigned = new Set(((mine ?? []) as { outlet_id: string }[]).map((m) => m.outlet_id))
     list = [...list.filter((o) => assigned.has(o.id)), ...list.filter((o) => !assigned.has(o.id))]
   }
+  // 보기 모드: 발행인 화면은 이 매체가 속한 그룹의 매체만, 편집장·기자 화면은 이 매체만 고를 수 있게 한다
+  if (viewAs) {
+    const cur = list.find((o) => o.id === outletId)
+    if (cur) list = viewAs === 'group' ? list.filter((o) => o.group === cur.group) : list.filter((o) => o.id === cur.id)
+  }
   const current = list.find((o) => o.id === outletId) ?? null
 
   // 이용료 미납 (billing-dunning.sql): 제한 중이면 빨간 띠, 납부 기한이 지났으면(유예 중) 노란 띠. 운영팀에게는 안 보인다

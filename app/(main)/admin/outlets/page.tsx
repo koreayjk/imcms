@@ -4,7 +4,7 @@ import { getCmsContext } from '@/lib/cms'
 import GroupOutlets from '@/components/cms/GroupOutlets'
 
 export default async function OutletsPage() {
-  const { supabase, isStaff, isSuper, isGroupAdmin, publisherId, outletId } = await getCmsContext()
+  const { supabase, isStaff, isSuper, isGroupAdmin, publisherId, outletId, viewAs, viewGroupId } = await getCmsContext()
   if (!isGroupAdmin && !isStaff) redirect('/articles')
 
   const [{ data: groups, error }, { data: outlets }, { data: members }] = await Promise.all([
@@ -21,10 +21,12 @@ export default async function OutletsPage() {
   }
 
   // 매체별 회원·기사 수
+  // 보기 모드: 이 매체가 속한 그룹만
+  const shown = viewAs ? (outlets ?? []).filter((o) => (o as any).publisher_id === viewGroupId) : (outlets ?? [])
   const counts = await Promise.all(
-    (outlets ?? []).map((o) => supabase.from('articles').select('id', { count: 'exact', head: true }).eq('outlet_id', o.id))
+    shown.map((o) => supabase.from('articles').select('id', { count: 'exact', head: true }).eq('outlet_id', o.id))
   )
-  const list = (outlets ?? []).map((o, i) => ({
+  const list = shown.map((o, i) => ({
     ...o,
     publisher_id: (o as any).publisher_id ?? null,
     members: (members ?? []).filter((m) => m.outlet_id === o.id).length,
@@ -53,7 +55,7 @@ export default async function OutletsPage() {
           </p>
         )}
       </header>
-      <GroupOutlets groups={(groups ?? []).map((g: any) => ({ id: g.id as string, name: g.name as string, solo: !!g.solo }))} outlets={list} canManage={isStaff} isSuper={isSuper} myGroupId={publisherId} currentOutletId={outletId} />
+      <GroupOutlets groups={(groups ?? []).filter((g: any) => !viewAs || g.id === viewGroupId).map((g: any) => ({ id: g.id as string, name: g.name as string, solo: !!g.solo }))} outlets={list} canManage={isStaff} isSuper={isSuper} myGroupId={publisherId} currentOutletId={outletId} />
     </div>
   )
 }
