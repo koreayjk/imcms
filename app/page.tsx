@@ -109,9 +109,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // 넓은 화면의 오른쪽 여백 광고가 본문보다 길어지면, 그 왼쪽 빈자리에 이어서 채울 기사 (화면에서 빈자리에 들어가는 만큼만 연다)
   const onPage = new Set<string>([...used, ...mostViewed.map((a) => a.id), ...Object.values(bySection).flatMap((l) => l.slice(0, 5).map((a) => a.id))])
   const spare = latest.filter((a) => !onPage.has(a.id))
+  const pool = spare.length >= 6 ? spare : latest.filter((a) => !used.has(a.id))
+  // 종합 섹션이 4칸 단위로 떨어지지 않으면 남는 칸(PC)에 최신 기사를 채운다
+  const gap = general.length % 4 ? 4 - (general.length % 4) : 0
+  const gapItems = pool.slice(0, gap * 5)
   const wingFill = (
     <WingFill title={L === 'en' ? 'More stories' : '기사 더 보기'}>
-      {(spare.length >= 6 ? spare : latest.filter((a) => !used.has(a.id))).slice(0, 40).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
+      {pool.slice(gapItems.length, gapItems.length + 40).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
     </WingFill>
   )
 
@@ -374,6 +378,14 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </section>
           )
         })}
+        {gap > 0 && gapItems.length >= gap * 3 && (
+          <section className="hidden lg:block" style={{ gridColumn: `span ${gap} / span ${gap}` }}>
+            <SectionHeading title={L === 'en' ? 'Latest stories' : '최신 기사'} lang={L} />
+            <div className="grid gap-x-7" style={{ gridTemplateColumns: `repeat(${gap}, minmax(0, 1fr))` }}>
+              {Array.from({ length: gap }, (_, i) => gapItems.slice(i * 5, i * 5 + 5)).map((chunk, i) => <TitleList key={i} items={chunk} />)}
+            </div>
+          </section>
+        )}
       </div>
         </>
       )}
