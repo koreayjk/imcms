@@ -169,7 +169,7 @@ export default function PressEmailSetup({ initial }: { initial: MyInbox | null }
         {(inbox?.dropped_today ?? 0) > 0 && (
           <p role="status" className="mt-1.5 rounded bg-danger/10 px-3 py-2 text-[12.5px] font-semibold text-danger">
             {en
-              ? `${inbox!.dropped_today} ${inbox!.dropped_today === 1 ? 'email was' : 'emails were'} not received because the daily limit was reached. Receiving resumes at midnight (Korea time). Narrow your Gmail filter so that only press releases are forwarded. If you need a higher limit, let us know with a work request.`
+              ? `${inbox!.dropped_today} ${inbox!.dropped_today === 1 ? 'email was' : 'emails were'} not received because the daily limit was reached. Receiving resumes at midnight (Korea time). Narrow your Gmail filter so that only press releases are forwarded. If you need a higher limit, let us know with a Support request.`
               : `오늘 한도를 넘어 받지 못한 메일이 ${inbox!.dropped_today}건 있습니다. 내일 0시부터 다시 받습니다. 지메일 필터를 좁혀 보도자료만 전달되게 해 주세요. 한도를 늘려야 하면 업무요청으로 알려 주세요.`}
           </p>
         )}

@@ -45,7 +45,7 @@ export default function StaffRow({ id, name, email, outlets, assigned, ready }: 
           type="button"
           disabled={pending}
           onClick={() => {
-            if (!window.confirm(t(`${name}님${email ? `(${email})` : ''}을 탈퇴시킬까요?\n\n· 계정이 삭제되어 더 이상 로그인할 수 없습니다.\n· 고객 업무요청에 남긴 답변은 그대로 남습니다.\n· 되돌릴 수 없습니다.`, `Remove ${name}${email ? ` (${email})` : ''} from the service?\n\n· The account will be deleted and can no longer log in.\n· Replies they left on customer work requests will remain.\n· This cannot be undone.`))) return
+            if (!window.confirm(t(`${name}님${email ? `(${email})` : ''}을 탈퇴시킬까요?\n\n· 계정이 삭제되어 더 이상 로그인할 수 없습니다.\n· 고객 업무요청에 남긴 답변은 그대로 남습니다.\n· 되돌릴 수 없습니다.`, `Remove ${name}${email ? ` (${email})` : ''} from the service?\n\n· The account will be deleted and can no longer log in.\n· Replies they left on customer Support requests will remain.\n· This cannot be undone.`))) return
             start(async () => {
               const r = await deleteMember(id)
               setMsg(r)
@@ -93,7 +93,7 @@ export default function StaffRow({ id, name, email, outlets, assigned, ready }: 
             >
               {pending ? t('저장 중…', 'Saving…') : t(`저장 (${picked.length}개 매체)`, `Save (${picked.length} ${picked.length === 1 ? 'outlet' : 'outlets'})`)}
             </button>
-            <span className="text-[12px] text-muted">{t('담당 매체에서 들어오는 업무요청은 이 매니저에게 자동으로 배정됩니다.', 'Work requests coming from assigned outlets are automatically assigned to this manager.')}</span>
+            <span className="text-[12px] text-muted">{t('담당 매체에서 들어오는 업무요청은 이 매니저에게 자동으로 배정됩니다.', 'Support requests coming from assigned outlets are automatically assigned to this manager.')}</span>
           </div>
         </div>
       )}

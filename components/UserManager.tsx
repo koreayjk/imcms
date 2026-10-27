@@ -208,7 +208,7 @@ function MemberRow({ u, email, outlets, isMe, groupName, memberships, canDelete,
         <RowMenu
           disabled={pending}
           items={[
-            viewerIsSuper && !isMe && { label: t('고객센터로 안내 보내기', 'Send a message via the Help Center'), href: `/support/tickets/new?to=${u.id}` },
+            viewerIsSuper && !isMe && { label: t('고객센터로 안내 보내기', 'Send a message via Support'), href: `/support/tickets/new?to=${u.id}` },
             canWatch && { label: t('로그인 기록', 'Login history'), href: `/admin/users/${u.id}/logins` },
             canWatch && { label: t('모든 기기 로그아웃', 'Sign out of all devices'), onClick: () => guard(() => signOutMember(u.id), t(`${u.full_name}님의 로그인을 모든 기기에서 끊을까요?\n\n바로 편집국을 열 수 없게 되고, 다시 로그인해야 합니다.`, `Sign ${u.full_name} out of all devices?\n\nThey will immediately lose access to the newsroom and will need to log in again.`)) },
             canGuard && mfa && { label: t('2단계 인증 초기화', 'Reset two-step verification'), onClick: () => guard(() => resetMemberMfa(u.id), t(`${u.full_name}님의 2단계 인증을 초기화할까요?\n\n휴대폰을 잃어버렸을 때 씁니다. 다음 로그인 때 인증 앱을 새로 등록합니다. 본인이 맞는지 꼭 확인하세요.`, `Reset ${u.full_name}'s two-step verification?\n\nUse this when they have lost their phone. They will register the authenticator app again at their next login. Be sure to confirm it is really them.`)) },

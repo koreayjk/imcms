@@ -25,7 +25,7 @@ const verifyCode = (v: unknown) => { const t = cut(v, 300); const m = t.match(/c
 export async function saveSiteSettings(outletId: string, p: SitePayload): Promise<{ error?: string; ok?: string }> {
   const { supabase, isStaff } = await getCmsContext()
   const { t } = await getT()
-  if (!isStaff) return { error: t('홈페이지 설정은 IM 뉴스룸 운영팀이 합니다. 고객센터 업무요청으로 요청해 주세요.', 'Website settings are handled by the IM Newsroom team. Please send a work request through the Help Center.') }
+  if (!isStaff) return { error: t('홈페이지 설정은 IM 뉴스룸 운영팀이 합니다. 고객센터 업무요청으로 요청해 주세요.', 'Website settings are handled by the IM Newsroom team. Please send a Support request.') }
 
   const name = cut(p.name, 80)
   if (!name) return { error: t('매체 이름을 적어주세요.', 'Enter an outlet name.') }

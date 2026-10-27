@@ -130,8 +130,8 @@ export default async function ExportPage(props: { searchParams: Promise<{ outlet
             <h2 className="font-bold">{t('다른 프로그램으로 옮기실 때', 'When moving to another system')}</h2>
             <ul className="mt-1.5 list-disc space-y-1 pl-5">
               <li>{lang === 'en' ? <>Hand the <strong>all-stories file (JSON)</strong> above and the <strong>yearly photo ZIPs</strong> to the vendor of your new system.</> : <>위 <strong>기사 전체(JSON)</strong>와 <strong>연도별 사진 ZIP</strong>을 새 프로그램 회사에 넘기면 됩니다.</>}</li>
-              <li>{t('도메인은 우리 언론사 것이라 그대로 가져가실 수 있습니다. 연결을 옮길 때 고객센터에 알려 주시면 도와드립니다.', 'The domain belongs to your outlet, so you can take it with you as is. Let the Help Center know when you move the connection and we will help.')}</li>
-              <li>{t('파일을 직접 받기 어려우시면 고객센터에 요청해 주세요. 운영팀이 만들어 드립니다.', 'If you have trouble downloading the files yourself, ask the Help Center and the IM Newsroom team will prepare them for you.')}</li>
+              <li>{t('도메인은 우리 언론사 것이라 그대로 가져가실 수 있습니다. 연결을 옮길 때 고객센터에 알려 주시면 도와드립니다.', 'The domain belongs to your outlet, so you can take it with you as is. Let Support know when you move the connection and we will help.')}</li>
+              <li>{t('파일을 직접 받기 어려우시면 고객센터에 요청해 주세요. 운영팀이 만들어 드립니다.', 'If you have trouble downloading the files yourself, ask Support and the IM Newsroom team will prepare them for you.')}</li>
             </ul>
           </section>
         </>

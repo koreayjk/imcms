@@ -34,7 +34,7 @@ export default async function BillingSuccessPage(
     if (error) return <PaymentResult ok={false} title={t('등록 정보를 저장하지 못했습니다', 'Could not save the registration')} actions={back}>{error.message}</PaymentResult>
     return (
       <PaymentResult ok title={t('자동결제를 등록했습니다', 'Autopay registered')} actions={back}>
-        <p className="font-semibold text-ink">{company} {number}</p>
+        <p className="font-semibold text-ink">{transfer?.bankName ?? b.cardCompany ?? (b.method === '계좌이체' ? t('계좌', 'Account') : t('카드', 'Card'))} {number}</p>
         <p>{b.method === '계좌이체' ? t('앞으로 청구서가 나오면 납부 기한에 이 계좌로 자동 결제됩니다.', 'From now on, invoices will be charged automatically to this account on the due date.') : t('앞으로 청구서가 나오면 납부 기한에 이 카드로 자동 결제됩니다.', 'From now on, invoices will be charged automatically to this card on the due date.')}</p>
       </PaymentResult>
     )

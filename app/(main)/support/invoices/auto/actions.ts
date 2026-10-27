@@ -63,7 +63,7 @@ export async function runBillingNow() {
     if (r.pending) msg += t(` 아직 ${r.pending}곳이 남았습니다. 버튼을 한 번 더 눌러 주세요.`, ` ${r.pending} ${r.pending === 1 ? 'publication is' : 'publications are'} still pending. Press the button once more.`)
     // '이미 있음'은 빼고, 문제가 있는 곳만 (많으면 앞의 5곳만)
     const issues = r.skipped.filter((s) => !s.reason.includes('이미 있음'))
-    if (issues.length) msg += ` (${t('건너뜀', 'Skipped')}: ${issues.slice(0, 5).map((s) => `${s.outlet} – ${s.reason}`).join(', ')}${issues.length > 5 ? t(` 외 ${issues.length - 5}곳`, ` and ${issues.length - 5} more`) : ''})`
+    if (issues.length) msg += ` (${t('건너뜀', 'Skipped')}: ${issues.slice(0, 5).map((s) => `${s.outlet} – ${s.reason === '청구할 항목 없음' ? t('청구할 항목 없음', 'No items to bill') : s.reason}`).join(', ')}${issues.length > 5 ? t(` 외 ${issues.length - 5}곳`, ` and ${issues.length - 5} more`) : ''})`
   } catch (e) {
     back(`${t('만들지 못했습니다', 'Could not create them')}: ${e instanceof Error ? e.message : String(e)}`, 'error')
   }
