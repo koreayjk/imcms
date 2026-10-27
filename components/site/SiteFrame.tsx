@@ -79,14 +79,14 @@ export default function SiteFrame({ site, current, children, home }: Props) {
       <SiteHeader site={site} current={current} />
       <AdArea site={site} slot="header" className="mx-auto max-w-[1200px] px-4 pt-4" />
       {/* 넓은 화면(1840px 이상): 본문 오른쪽 바깥 빈 여백에 오른쪽 광고를 띄우고 스크롤을 따라다니게 한다.
-          광고 칸은 본문 영역 안에만 두어, 따라다니다가 하단 띠·푸터를 덮지 않고 본문 끝에서 멈춘다 */}
-      <div className="relative">
-        <main id="content">{children}</main>
-        <div className="pointer-events-none absolute inset-y-0 left-[calc(50%+616px)] hidden w-[300px] pt-40 min-[1840px]:block">
+          본문과 광고 칸을 같은 격자 칸에 겹쳐 두어, 광고가 본문보다 길면 그 높이만큼 아래 띠·푸터가 밀려 내려간다(덮지 않는다) */}
+      <div className="grid">
+        <main id="content" className="col-start-1 row-start-1 min-w-0">{children}</main>
+        <div className="pointer-events-none col-start-1 row-start-1 ml-[calc(50%+616px)] hidden w-[300px] pt-40 min-[1840px]:block">
           <AdArea site={site} slot="sidebar" wing className="pointer-events-auto" />
         </div>
-        {home && <AdArea site={site} slot="home_bottom" className="mx-auto max-w-[1200px] px-4 py-6" />}
       </div>
+      {home && <AdArea site={site} slot="home_bottom" className="mx-auto max-w-[1200px] px-4 py-6" />}
       {home && site.logoStrip && <LogoStrip strip={site.logoStrip} en={en} />}
       <SiteFooter site={site} />
     </div>
