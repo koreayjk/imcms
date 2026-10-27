@@ -10,6 +10,7 @@ import { aiLevel, aiLimitMessage, getAiStatus, myLimitFull, myLimitMessage } fro
 import { ensureEmailImages, ensureEmailText } from '@/lib/press-attachments'
 import { createArticleFromPress, deleteManualPress } from '../actions'
 import { isForeignSource } from '@/lib/press-sources'
+import BackLink from '@/components/cms/BackLink'
 
 export const preferredRegion = 'icn1'
 // AI 초안은 최대 50초까지 기다린다
@@ -49,7 +50,7 @@ export default async function PressDetailPage(
   return (
     <div className="mx-auto max-w-[900px] px-4 py-5 md:px-8 md:py-8 pb-28 md:pb-28">
       <nav className="mb-5 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label="현재 위치">
-        <Link href="/press" className="hover:text-ink">보도자료함</Link>
+        <BackLink href="/press" className="hover:text-ink">보도자료함</BackLink>
         <span>›</span>
         <span className="min-w-0 max-w-md truncate text-ink">{r.title}</span>
       </nav>
@@ -132,7 +133,7 @@ export default async function PressDetailPage(
               : 'AI 초안은 관리자가 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)를 설정하면 쓸 수 있습니다.'}{' '}
             {!foreign && '사진은 우리 저장소로 옮겨집니다.'}
           </p>
-          <Link href="/press" className="btn-secondary hidden md:inline-flex">목록</Link>
+          <BackLink href="/press" className="btn-secondary hidden md:inline-flex">목록</BackLink>
           {!foreign && (
             <form action={createArticleFromPress.bind(null, r.id, 'raw')} className="flex-1 md:flex-none">
               <PendingButton pending="만드는 중…" className="btn-secondary w-full whitespace-nowrap px-3 md:w-auto">원문 그대로<span className="hidden md:inline"> 기사로</span></PendingButton>

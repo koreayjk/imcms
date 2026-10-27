@@ -9,6 +9,7 @@ import { AiFeedback, AiReplyBody, AiWaiting, DeleteTicketButton, RetryAiButton }
 import { SUPPORT_KIND_LABEL, type SupportKind } from '@/lib/support-ai-links'
 import { setTicketAssignee, setTicketStatus } from '../../actions'
 import BrandMark from '@/components/BrandMark'
+import BackLink from '@/components/cms/BackLink'
 
 // 운영팀의 'AI 답변 지금 만들기'가 AI 응답을 기다린다
 export const maxDuration = 60
@@ -81,7 +82,7 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
   return (
     <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/support/tickets" className="text-[13px] text-muted hover:text-ink">← 업무요청 목록</Link>
+        <BackLink href="/support/tickets" className="text-[13px] text-muted hover:text-ink">← 업무요청 목록</BackLink>
         {(t.requester_id === user.id || isSuper) && <DeleteTicketButton ticketId={t.id} answered={!!replies?.length} />}
       </div>
 

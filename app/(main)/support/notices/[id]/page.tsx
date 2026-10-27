@@ -5,6 +5,7 @@ import { formatDateTime } from '@/lib/format'
 import { NOTICE_CATEGORIES, STAFF_NAME, type NoticeCategory } from '@/lib/support'
 import PendingButton from '@/components/cms/PendingButton'
 import { deleteNotice } from '../../actions'
+import BackLink from '@/components/cms/BackLink'
 
 export default async function NoticePage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params
@@ -14,7 +15,7 @@ export default async function NoticePage(props: { params: Promise<{ id: string }
   const c = NOTICE_CATEGORIES[n.category as NoticeCategory]
   return (
     <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
-      <Link href="/support/notices" className="text-[13px] text-muted hover:text-ink">← 공지 목록</Link>
+      <BackLink href="/support/notices" className="text-[13px] text-muted hover:text-ink">← 공지 목록</BackLink>
       <article className="mt-4 rounded-2xl bg-white p-5 ring-1 sm:p-9 ring-black/5">
         <span className={`rounded px-1.5 py-0.5 text-[12px] font-semibold ${c.className}`}>{c.label}</span>
         <h1 className="mt-3 text-[26px] font-extrabold leading-snug tracking-tight">{n.title}</h1>

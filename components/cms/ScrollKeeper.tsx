@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { rememberSearch, takeRestore } from '@/lib/list-memory'
 
 // 편집국 본문(<main id="app-main">)의 스크롤 자리를 화면마다 기억한다
 //   편집국은 창이 아니라 본문 칸이 스크롤되어 브라우저가 자리를 챙겨 주지 못했다
@@ -55,8 +56,10 @@ export default function ScrollKeeper() {
     const prev = shown.current
     if (prev === url) return
     shown.current = url
+    rememberSearch(pathname, search)
     const byApp = moved
     moved = false
+    const restoring = byApp && takeRestore() // "목록으로" 링크로 돌아온 이동
     markHistory()
     if (!main) return
     stop.current()
@@ -65,7 +68,7 @@ export default function ScrollKeeper() {
     if (prev === null) {
       const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
       if (nav && (nav.type === 'reload' || nav.type === 'back_forward')) target = read(url)
-    } else if (!byApp) {
+    } else if (!byApp || restoring) {
       target = read(url)
     } else if (!location.hash && prev.split('?')[0] === pathname) {
       const page = (u: string) => new URLSearchParams(u.split('?')[1] ?? '').get('page')

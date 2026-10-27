@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import BackLink from './BackLink'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase'
@@ -115,8 +116,9 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
             const n = badge(item.href)
             return (
               <li key={item.href}>
-                <Link
+                <BackLink
                   href={item.href}
+                  when={pathname.startsWith(`${item.href}/`)}
                   aria-current={active ? 'page' : undefined}
                   // 화면 높이에 맞춰 간격을 줄인다 (큰 화면 → 노트북 → 낮은 화면)
                   className={`relative flex flex-col items-center gap-1 py-2.5 text-[11.5px] leading-4 transition-colors [@media(min-height:781px)_and_(max-height:900px)]:gap-0.5 [@media(min-height:781px)_and_(max-height:900px)]:py-1.5 [@media(max-height:780px)]:gap-0.5 [@media(max-height:780px)]:py-1 ${
@@ -132,7 +134,7 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
                       {n}
                     </span>
                   )}
-                </Link>
+                </BackLink>
               </li>
             )
           })}
@@ -157,16 +159,17 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
         {tabs.map((item) => {
           const active = item.match(pathname)
           return (
-            <Link
+            <BackLink
               key={item.href}
               href={item.href}
+              when={pathname.startsWith(`${item.href}/`)}
               aria-current={active ? 'page' : undefined}
               className={`relative flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${active ? 'text-[#F2B544]' : ''}`}
             >
               <LinkPending className="inset-x-3 top-0 h-[3px] rounded-b bg-[#F2B544]" />
               {item.icon}
               {item.label}
-            </Link>
+            </BackLink>
           )
         })}
         <button

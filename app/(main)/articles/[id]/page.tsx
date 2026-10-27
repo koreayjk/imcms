@@ -12,6 +12,7 @@ import RevisionHistory, { type Revision } from '@/components/cms/RevisionHistory
 import LegalReview from '@/components/cms/LegalReview'
 import type { LegalCheck } from '@/lib/legal-types'
 import { deleteArticle } from '../actions'
+import BackLink from '@/components/cms/BackLink'
 
 // 승인하면서 함께 송고할 때 AI로 문장을 바꾸므로 넉넉하게 기다린다
 export const maxDuration = 60
@@ -50,7 +51,7 @@ export default async function ArticleDetailPage(
   return (
     <div className="mx-auto max-w-[860px] px-4 py-5 md:px-8 md:py-8">
       <nav className="mb-5 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label="현재 위치">
-        <Link href="/articles" className="hover:text-ink">기사목록</Link>
+        <BackLink href="/articles" className="hover:text-ink">기사목록</BackLink>
         <span>›</span>
         <span className="max-w-md truncate text-ink">{article.title}</span>
       </nav>
@@ -134,7 +135,7 @@ export default async function ArticleDetailPage(
       />
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <Link href="/articles" className="text-[13px] text-muted hover:text-ink">← 목록으로</Link>
+        <BackLink href="/articles" className="text-[13px] text-muted hover:text-ink">← 목록으로</BackLink>
         {/* 휴대폰: 버튼을 2칸씩 꽉 차게 / PC: 오른쪽에 한 줄로 */}
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto [&>*]:w-full sm:[&>*]:w-auto [&_button]:w-full">
           {article.status === 'published' && (

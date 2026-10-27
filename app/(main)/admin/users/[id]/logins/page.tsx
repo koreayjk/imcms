@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import LoginHistory, { type LoginRow } from '@/components/cms/LoginHistory'
 import { signOutMember } from '../../actions'
+import BackLink from '@/components/cms/BackLink'
 
 // 회원 한 명의 로그인 기록 (발행인은 우리 그룹 기자·편집장, 총관리자는 모두)
 export default async function MemberLoginsPage(props: { params: Promise<{ id: string }> }) {
@@ -19,7 +20,7 @@ export default async function MemberLoginsPage(props: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto max-w-[860px] space-y-5 px-4 py-5 md:px-8 md:py-8">
-      <Link href="/admin/users" className="text-[13px] text-muted hover:text-ink">← 회원 관리</Link>
+      <BackLink href="/admin/users" className="text-[13px] text-muted hover:text-ink">← 회원 관리</BackLink>
       <header>
         <h1 className="text-[22px] font-bold tracking-tight">{name}님의 로그인 기록</h1>
         <p className="mt-1 text-[13px] text-muted">

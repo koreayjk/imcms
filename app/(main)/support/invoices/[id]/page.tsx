@@ -14,6 +14,7 @@ import { payLinkFor } from '@/lib/pay-link'
 import { cmsOrigin } from '@/lib/origin'
 import CopyPayLink from '@/components/cms/CopyPayLink'
 import BillingForm from '@/components/cms/BillingForm'
+import BackLink from '@/components/cms/BackLink'
 
 export default async function InvoicePage(
   props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; sent?: string }> }
@@ -55,7 +56,7 @@ export default async function InvoicePage(
   return (
     <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <Link href="/support/invoices" className="text-[13px] text-muted hover:text-ink">← 청구서 목록</Link>
+        <BackLink href="/support/invoices" className="text-[13px] text-muted hover:text-ink">← 청구서 목록</BackLink>
         <div className="flex flex-wrap gap-2">
           {isSuper && inv.status !== 'paid' && (
             <form action={deleteInvoice.bind(null, inv.id)}>
