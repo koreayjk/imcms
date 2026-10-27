@@ -51,6 +51,18 @@ export async function setMyLang(value: 'default' | 'ko' | 'en'): Promise<{ error
 export async function switchOutlet(outletId: string): Promise<{ error?: string }> {
   const { supabase, user, isGroupAdmin, isStaff, isSuper } = await getCmsContext()
   const { t } = await getT()
+  // 운영팀: "전체 매체"(outletId = 'all') — 매체를 고르지 않고 모든 매체를 관리한다
+  if (outletId === 'all') {
+    if (!isStaff) return { error: t('매체를 바꿀 권한이 없습니다.', 'You do not have permission to switch outlets.') }
+    if (isSuper) {
+      const { error } = await supabase.from('profiles').update({ outlet_id: null }).eq('id', user.id)
+      if (error) return { error: error.message }
+    } else {
+      ;(await cookies()).delete(STAFF_OUTLET_COOKIE)
+    }
+    revalidatePath('/', 'layout')
+    return {}
+  }
   // 매니저: 소속을 바꾸지 않고 작업할 매체만 기억한다 (섹션·홈 편집판·광고·홈페이지 설정)
   if (isStaff && !isSuper) {
     const { data: o } = await supabase.from('outlets').select('id').eq('id', outletId).maybeSingle()

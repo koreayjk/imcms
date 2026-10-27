@@ -38,8 +38,10 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
   const router = useRouter()
   const [switching, setSwitching] = useState(false)
 
-  async function change(id: string) {
-    if (!id || id === currentOutletId) return
+  async function change(raw: string) {
+    // 운영팀은 빈 값 = "전체 매체"
+    const id = raw === '' && isStaff ? 'all' : raw
+    if (!id || id === currentOutletId || (id === 'all' && !currentOutletId)) return
     setSwitching(true)
     const { error } = await switchOutlet(id)
     setSwitching(false)
@@ -73,7 +75,7 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
               className="min-w-0 max-w-full rounded border border-line bg-white py-1.5 pl-2.5 pr-8 text-[14px] font-bold tracking-tight disabled:opacity-60 md:max-w-[260px] md:text-[15px]"
               title={t('작업할 매체 바꾸기', 'Switch outlet')}
             >
-              {!currentOutletId && <option value="">{t('매체 선택', 'Select outlet')}</option>}
+              {isStaff ? <option value="">{t('전체 매체', 'All outlets')}</option> : !currentOutletId && <option value="">{t('매체 선택', 'Select outlet')}</option>}
               {groups.map((g) => (
                 <optgroup key={g} label={g}>
                   {outlets.filter((o) => (o.group ?? noGroup) === g).map((o) => <option key={o.id} value={o.id}>{o.name}{o.role ? ` (${roleLabel(o.role as UserRole, lang)})` : ''}</option>)}
