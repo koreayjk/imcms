@@ -1,6 +1,6 @@
 -- 뉴스폭탄 기자명 점검 (읽기만 한다. 아무것도 바뀌지 않는다)
 -- ① 뉴스폭탄 계정: 지금 이름 (이호현 계정이 이문희로 바뀌었는지 확인)
-select p.full_name, p.email, p.role, p.created_at
+select p.full_name, (select u.email from auth.users u where u.id = p.id) as email, p.role, p.created_at
 from profiles p join outlets o on o.id = p.outlet_id
 where o.name = '뉴스폭탄' order by p.created_at;
 
