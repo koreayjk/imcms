@@ -1,4 +1,5 @@
 import { enDate, enDateTime, enShort, enToday } from './site-text'
+import { isoToZoned, zonedToIso } from './zoned-time'
 const TZ = 'Asia/Seoul'
 
 function parts(iso: string) {
@@ -45,12 +46,15 @@ export function formatToday(lang?: Lang, tz?: string) {
 // ───────── 발행 일시 (한국 시간 기준) ─────────
 const KST = 9 * 3600_000
 // ISO → <input type="datetime-local"> 값 (한국 시간)
-export function toKstInput(iso: string | null | undefined) {
+//   tz: 영문 매체는 그 매체의 시간대(미국 동부·중부 등)로 입력·표시한다 (없으면 한국 시간)
+export function toKstInput(iso: string | null | undefined, tz?: string) {
   if (!iso) return ''
+  if (tz && tz !== 'Asia/Seoul') return isoToZoned(iso, tz)
   return new Date(Date.parse(iso) + KST).toISOString().slice(0, 16)
 }
 // <input type="datetime-local"> 값(한국 시간) → ISO
-export function fromKstInput(v: string) {
+export function fromKstInput(v: string, tz?: string) {
+  if (tz && tz !== 'Asia/Seoul') return zonedToIso(v, tz)
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v) ? new Date(`${v}:00+09:00`).toISOString() : null
 }
 // 발행했지만 공개 시각이 아직 안 된 기사 (예약 발행)

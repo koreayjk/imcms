@@ -20,6 +20,7 @@ import { uploadImage } from '@/components/editor/upload'
 import SiteHeader from '@/components/site/SiteHeader'
 import SiteFooter from '@/components/site/SiteFooter'
 import { useCmsLang, useT } from './CmsLang'
+import DateTimeField from './DateTimeField'
 
 type Section = CategoryRow & { id: string }
 type Props = {
@@ -591,7 +592,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               </select>
             </label>
             <label className="flex items-center gap-1.5"><span className="text-muted">{t('오픈 일시', 'Opening date and time')}</span>
-              <input type="datetime-local" value={openLocal} onChange={(e) => set({ openAt: e.target.value ? zonedToIso(e.target.value, s.openTz ?? 'Asia/Seoul') ?? undefined : undefined, openTz: s.openTz ?? 'Asia/Seoul' })} className="field-input w-56 py-1" />
+              <DateTimeField value={openLocal} onChange={(v) => set({ openAt: v ? zonedToIso(v, s.openTz ?? 'Asia/Seoul') ?? undefined : undefined, openTz: s.openTz ?? 'Asia/Seoul' })} className="field-input w-56 py-1" />
             </label>
             {s.openAt && <button type="button" onClick={() => set({ openAt: undefined })} className="text-[12.5px] text-danger underline">{t('예약 취소', 'Cancel schedule')}</button>}
           </div>

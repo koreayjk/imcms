@@ -9,6 +9,7 @@ import type { T } from '@/lib/cms-i18n'
 import AdSlotMap, { SLOT_COLOR, SLOT_NO, SlotThumb } from './AdSlotMap'
 import { formatDateTime, toKstInput } from '@/lib/format'
 import { uploadImage } from '@/components/editor/upload'
+import DateTimeField from './DateTimeField'
 
 export type ManagedBanner = {
   id: string; slot: AdSlotId; kind: 'image' | 'code'; name: string
@@ -145,12 +146,12 @@ function BannerForm({ initial, outletId, isStaff, onDone }: { initial: AdInput; 
       <div className="grid gap-4 sm:grid-cols-[1fr_1fr_120px]">
         <label className="block text-[13px]">
           <span className="field-label">{t('시작 (한국 시간)', 'Start (Korea time)')}</span>
-          <input type="datetime-local" value={f.starts_at} onChange={(e) => set('starts_at', e.target.value)} className="field-input" />
+          <DateTimeField value={f.starts_at} onChange={(v) => set('starts_at', v)} />
           <span className="mt-1 block text-[12px] text-muted">{t('비우면 바로 시작', 'Leave blank to start right away')}</span>
         </label>
         <label className="block text-[13px]">
           <span className="field-label">{t('끝 (한국 시간)', 'End (Korea time)')}</span>
-          <input type="datetime-local" value={f.ends_at} onChange={(e) => set('ends_at', e.target.value)} className="field-input" />
+          <DateTimeField value={f.ends_at} onChange={(v) => set('ends_at', v)} />
           <span className="mt-1 block text-[12px] text-muted">{t('비우면 끌 때까지 계속', 'Leave blank to run until turned off')}</span>
         </label>
         <label className="block text-[13px]">

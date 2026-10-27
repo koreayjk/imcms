@@ -76,18 +76,18 @@ function Wrap({ children, className = '', fit }: { children: ReactNode; classNam
 }
 
 // ② 시간순 속보 + 많이 본 뉴스
-function BriefBand({ title, href, items, subs, mostViewed, sidebarAd }: BandProps & { mostViewed: PublicArticle[]; sidebarAd?: ReactNode }) {
+function BriefBand({ site, title, href, items, subs, mostViewed, sidebarAd }: BandProps & { mostViewed: PublicArticle[]; sidebarAd?: ReactNode }) {
   if (!items.length) return null
   return (
     <Wrap fit className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div>
-        <SectionHeading title={title} href={href} />
+        <SectionHeading title={title} href={href} lang={site.lang} />
         <div className="mb-3"><SubLinks subs={subs} /></div>
         <FitRows as="ul" min={Math.min(8, items.length)} className="divide-y divide-rule">
           {items.slice(0, 16).map((a) => (
             <li key={a.id}>
               <Link href={`/news/${a.id}`} className="headline-link group grid grid-cols-[56px_1fr] gap-3 py-3 sm:grid-cols-[64px_1fr_auto]">
-                <time dateTime={a.published_at ?? undefined} className="pt-0.5 text-[12.5px] font-semibold tabular-nums text-brand">{formatShort(a.published_at)}</time>
+                <time dateTime={a.published_at ?? undefined} className="pt-0.5 text-[12.5px] font-semibold tabular-nums text-brand">{formatShort(a.published_at, site.lang, site.timeZone)}</time>
                 <div className="min-w-0">
                   <p className="headline-text line-clamp-1 text-[16px] font-semibold leading-[1.45] tracking-[-0.02em]">{a.title}</p>
                   {a.excerpt && <p className="mt-0.5 line-clamp-1 text-[13px] text-sub">{a.excerpt}</p>}
@@ -99,7 +99,7 @@ function BriefBand({ title, href, items, subs, mostViewed, sidebarAd }: BandProp
         </FitRows>
       </div>
       <aside data-fit-side className="space-y-9">
-        <MostViewed items={mostViewed} />
+        <MostViewed items={mostViewed} lang={site.lang} />
         {sidebarAd}
       </aside>
     </Wrap>
@@ -107,12 +107,12 @@ function BriefBand({ title, href, items, subs, mostViewed, sidebarAd }: BandProp
 }
 
 // ③⑤ 큰 기사 하나 + 목록
-function NewsBand({ title, href, items, subs }: BandProps) {
+function NewsBand({ site, title, href, items, subs }: BandProps) {
   if (!items.length) return null
   const [lead, ...rest] = items
   return (
     <Wrap className="border-t border-rule">
-      <SectionHeading title={title} href={href} />
+      <SectionHeading title={title} href={href} lang={site.lang} />
       <div className="mb-4"><SubLinks subs={subs} /></div>
       <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr]">
         <Link href={`/news/${lead.id}`} className="headline-link group block">
@@ -128,7 +128,7 @@ function NewsBand({ title, href, items, subs }: BandProps) {
                 <div className="min-w-0 flex-1">
                   <CategoryLabel article={a} />
                   <p className="headline-text mt-0.5 line-clamp-2 text-[16px] font-bold leading-[1.42] tracking-[-0.02em]">{a.title}</p>
-                  <time dateTime={a.published_at ?? undefined} className="mt-1 block text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at)}</time>
+                  <time dateTime={a.published_at ?? undefined} className="mt-1 block text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at, site.lang, site.timeZone)}</time>
                 </div>
                 {a.thumbnail_url && <Thumb sizes="120px" src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[112px] flex-shrink-0" />}
               </Link>
@@ -141,7 +141,7 @@ function NewsBand({ title, href, items, subs }: BandProps) {
 }
 
 // ④ 교육 브랜드 띠 (대표색 바탕)
-function FeatureBand({ band, title, href, items, subs }: BandProps) {
+function FeatureBand({ site, band, title, href, items, subs }: BandProps) {
   return (
     <section className="bg-brand-dark text-white">
       <div className="mx-auto max-w-[1200px] px-4 py-11">
@@ -167,7 +167,7 @@ function FeatureBand({ band, title, href, items, subs }: BandProps) {
             ))}
           </ul>
         ) : (
-          <p className="mt-7 text-[15px] text-white/75">곧 연재가 시작됩니다.</p>
+          <p className="mt-7 text-[15px] text-white/75">{site.lang === 'en' ? 'Coming soon.' : '곧 연재가 시작됩니다.'}</p>
         )}
       </div>
     </section>
@@ -175,11 +175,11 @@ function FeatureBand({ band, title, href, items, subs }: BandProps) {
 }
 
 // ⑦ 사진 4칸
-function GridBand({ title, href, items, subs }: BandProps) {
+function GridBand({ site, title, href, items, subs }: BandProps) {
   if (!items.length) return null
   return (
     <Wrap className="border-t border-rule">
-      <SectionHeading title={title} href={href} />
+      <SectionHeading title={title} href={href} lang={site.lang} />
       <div className="mb-4"><SubLinks subs={subs} /></div>
       <ul className="grid grid-cols-2 gap-x-5 gap-y-7 lg:grid-cols-4">
         {items.slice(0, 4).map((a) => (
@@ -197,7 +197,7 @@ function GridBand({ title, href, items, subs }: BandProps) {
 }
 
 // ⑥ 영상 (어두운 바탕, 재생 표시)
-function VideoBand({ title, href, items, subs }: BandProps) {
+function VideoBand({ site, title, href, items, subs }: BandProps) {
   if (!items.length) return null
   return (
     <section className="bg-[#111418] text-white">
@@ -242,15 +242,15 @@ function ShopBand({ site, band, title, href, items, subs }: BandProps) {
             {band.tagline && <p className="mt-1 text-[14px] text-sub">{band.tagline}</p>}
           </div>
           {shop
-            ? <a href={shop} className="rounded-full bg-brand px-5 py-2 text-[14px] font-bold text-white hover:bg-brand-dark">쇼핑몰 바로가기</a>
-            : <span className="rounded-full border border-rule bg-white px-4 py-1.5 text-[13px] text-sub">오픈 준비 중</span>}
+            ? <a href={shop} className="rounded-full bg-brand px-5 py-2 text-[14px] font-bold text-white hover:bg-brand-dark">{site.lang === 'en' ? 'Visit the shop' : '쇼핑몰 바로가기'}</a>
+            : <span className="rounded-full border border-rule bg-white px-4 py-1.5 text-[13px] text-sub">{site.lang === 'en' ? 'Coming soon' : '오픈 준비 중'}</span>}
         </div>
         <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {tiles.map((t) => (
             <li key={t.slug}>
               <Link href={shop ?? `/section/${t.slug}`} className="flex h-[92px] flex-col justify-between rounded-lg border border-rule bg-white p-4 transition hover:border-brand hover:shadow-sm">
                 <span className="text-[15.5px] font-bold text-body">{t.name}</span>
-                <span className="text-[12px] text-gold-ink">둘러보기 →</span>
+                <span className="text-[12px] text-gold-ink">{site.lang === 'en' ? 'Browse →' : '둘러보기 →'}</span>
               </Link>
             </li>
           ))}

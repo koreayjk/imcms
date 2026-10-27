@@ -28,6 +28,7 @@ export default async function NewArticlePage() {
         outletId={outletId}
         outletName={outlet?.name ?? null}
         englishOutlet={(outlet as { site?: { lang?: string } | null } | undefined)?.site?.lang === 'en'}
+        timeZone={(outlet as { site?: { timeZone?: string } | null } | undefined)?.site?.timeZone}
         authorName={profile?.full_name ?? ''}
         authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}

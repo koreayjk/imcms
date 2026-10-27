@@ -47,6 +47,7 @@ export default async function EditArticlePage(props: { params: Promise<{ id: str
         outletId={scope}
         outletName={outlet?.name ?? null}
         englishOutlet={(outlet as { site?: { lang?: string } | null } | undefined)?.site?.lang === 'en'}
+        timeZone={(outlet as { site?: { timeZone?: string } | null } | undefined)?.site?.timeZone}
         authorName={profile?.full_name ?? ''}
         authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}

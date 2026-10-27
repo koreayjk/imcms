@@ -26,6 +26,7 @@ import CopyLinkButton from './cms/CopyLinkButton'
 import type { LegalCheck } from '@/lib/legal-types'
 import { canReplaceInEditor, findInText, replaceInEditor, replaceInText } from '@/lib/editor-replace'
 import { PREVIEW_STORE, type ArticlePreviewData } from '@/lib/article-preview'
+import DateTimeField from '@/components/cms/DateTimeField'
 
 type Props = {
   article?: Article
@@ -35,6 +36,8 @@ type Props = {
   outletName: string | null
   // 영문 매체: 본문 첫머리에 "[매체=이름 기자]" 표기를 넣지 않는다 (기사 위 "By 이름 - 매체 - 날짜" 줄이 대신한다)
   englishOutlet?: boolean
+  // 발행 일시를 입력·표시하는 시간대 (영문 매체만. 없으면 영문은 미국 동부, 한국어 매체는 한국 시간)
+  timeZone?: string
   authorName: string
   authorEmail: string | null
   isEditorPlus?: boolean
@@ -63,7 +66,7 @@ function imagesIn(html: string): string[] {
   return Array.from(html.matchAll(IMG_SRC), (m) => m[1])
 }
 
-export default function ArticleEditor({ article, categories, userId, outletId, outletName, englishOutlet = false, authorName, authorEmail, isEditorPlus, moderated = false, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName, outletEmail = null, settingsReady = false }: Props) {
+export default function ArticleEditor({ article, categories, userId, outletId, outletName, englishOutlet = false, timeZone, authorName, authorEmail, isEditorPlus, moderated = false, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName, outletEmail = null, settingsReady = false }: Props) {
   const router = useRouter()
   const t = useT()
   const lang = useCmsLang()
@@ -87,7 +90,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const [metaDesc, setMetaDesc] = useState(article?.meta_description ?? '')
   const [isFeatured, setIsFeatured] = useState(article?.is_featured ?? false)
   // 발행 일시: 비우면 발행하는 순간, 지정하면 그 시각 (지난 시각 = 그 날짜로, 앞으로의 시각 = 예약 발행)
-  const [pubAt, setPubAt] = useState(toKstInput(article?.published_at))
+  const zone = englishOutlet ? (timeZone ?? 'America/New_York') : 'Asia/Seoul'
+  const [pubAt, setPubAt] = useState(toKstInput(article?.published_at, zone))
   const [syndicateTo, setSyndicateTo] = useState<string[]>(article?.syndicate_to ?? [])
   // 함께 송고할 때 매체마다 AI로 문장을 바꿔 올릴지 (기본 켜짐)
   const [rewriteCopies, setRewriteCopies] = useState(true)
@@ -170,7 +174,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       return false
     }
     if (!charCount) { setError(t('본문을 입력해주세요.', 'Please enter the story body.')); return false }
-    if (pubAt && !fromKstInput(pubAt)) { setError(t('발행 일시를 확인해 주세요.', 'Please check the publish date and time.')); return false }
+    if (pubAt && !fromKstInput(pubAt, zone)) { setError(t('발행 일시를 확인해 주세요.', 'Please check the publish date and time.')); return false }
     return true
   }
 
@@ -189,7 +193,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       category: cat ? { name: cat.name, slug: cat.slug } : null,
       author: byline.trim() || defaultName,
       email: settingsReady ? (isEditorPlus ? bylineEmail.trim() || outletEmail : savedEmail ?? outletEmail) || null : null,
-      publishedAt: fromKstInput(pubAt) ?? new Date().toISOString(),
+      publishedAt: fromKstInput(pubAt, zone) ?? new Date().toISOString(),
       tags: tags.split(',').map((x) => x.trim()).filter(Boolean),
       thumbnail: thumbnailUrl || null,
     }
@@ -228,7 +232,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   async function save(mode: Mode) {
     const legalCheck = mode === 'draft' ? null : currentLegal
     if (!validate(mode !== 'draft')) return
-    const chosenAt = fromKstInput(pubAt)
+    const chosenAt = fromKstInput(pubAt, zone)
     // 지금 발행은 미리보기에서 확인했으니 다시 묻지 않고, 예약·지난 날짜만 한 번 더 확인한다
     if (mode === 'publish' && chosenAt) {
       const when = new Date(chosenAt).getTime()
@@ -578,12 +582,11 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               </div>
 
               <div className="flex flex-wrap items-center gap-2 md:ml-auto">
-                <label htmlFor="pub-at" className="text-[13px] font-semibold">{t('발행 일시', 'Publish time')}</label>
-                <input
+                <label htmlFor="pub-at" className="text-[13px] font-semibold">{t('발행 일시', 'Publish time')}{englishOutlet && <span className="ml-1 font-normal text-muted">({({ 'America/New_York': 'ET', 'America/Chicago': 'CT', 'America/Denver': 'MT', 'America/Los_Angeles': 'PT' } as Record<string, string>)[zone] ?? zone})</span>}</label>
+                <DateTimeField
                   id="pub-at"
-                  type="datetime-local"
                   value={pubAt}
-                  onChange={(e) => setPubAt(e.target.value)}
+                  onChange={setPubAt}
                   title={t('비우면 발행하는 순간의 시각으로 정해집니다', 'If left empty, the time of publishing is used')}
                   className="field-input py-1.5"
                   style={{ width: 'auto', maxWidth: 210 }}
@@ -592,7 +595,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               </div>
             </div>
             {(() => {
-              const at = fromKstInput(pubAt)
+              const at = fromKstInput(pubAt, zone)
               if (!at) return null
               const diff = Date.parse(at) - Date.now()
               const msg = diff > 60_000
@@ -805,7 +808,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                 className={`${preview.mode === 'publish' ? 'btn-publish' : 'btn-review'} px-4 md:px-5`}
                 autoFocus
               >
-                {preview.mode === 'publish' ? (status === 'published' ? t('수정 내용 반영', 'Apply changes') : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? t('예약 발행하기', 'Schedule') : t('발행하기', 'Publish')) : t('승인신청하기', 'Submit for review')}
+                {preview.mode === 'publish' ? (status === 'published' ? t('수정 내용 반영', 'Apply changes') : (fromKstInput(pubAt, zone) ?? '') > new Date(Date.now() + 60_000).toISOString() ? t('예약 발행하기', 'Schedule') : t('발행하기', 'Publish')) : t('승인신청하기', 'Submit for review')}
               </button>
             )}
           </div>
@@ -865,7 +868,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             )}
             {isEditorPlus && (
               <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
-                {saving === 'publish' ? t('발행 중…', 'Publishing…') : status === 'published' ? t('수정 내용 반영', 'Apply changes') : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? t('예약 발행', 'Schedule') : t('바로 발행', 'Publish now')}
+                {saving === 'publish' ? t('발행 중…', 'Publishing…') : status === 'published' ? t('수정 내용 반영', 'Apply changes') : (fromKstInput(pubAt, zone) ?? '') > new Date(Date.now() + 60_000).toISOString() ? t('예약 발행', 'Schedule') : t('바로 발행', 'Publish now')}
               </button>
             )}
           </div>
