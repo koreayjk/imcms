@@ -15,14 +15,15 @@ type Row = {
 
 export default async function FeedbackPage(props: { searchParams: Promise<{ status?: string; mine?: string; page?: string }> }) {
   const sp = await props.searchParams
-  const { supabase, user, isStaff } = await getCmsContext()
+  const { supabase, user, isStaff, viewAs } = await getCmsContext()
   const { t, lang } = await getT()
   const status = isFeedbackStatus(sp.status) ? sp.status : undefined
   const mine = sp.mine === '1'
   const page = Math.max(1, Number(sp.page) || 1)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const scoped = (q: any) => (mine ? q.eq('author_id', user.id) : q)
+  //   보기 모드: 운영팀이 아닌 회원처럼 내가 쓴 글만 (feedback.sql 의 feedback_posts_select)
+  const scoped = (q: any) => (mine || viewAs ? q.eq('author_id', user.id) : q)
   let list = scoped(supabase.from('feedback_posts').select('id, title, category, status, author_id, author_name, comment_count, created_at, updated_at, outlet:outlets(name)', { count: 'exact' }))
   if (status) list = list.eq('status', status)
   const [{ data, count, error }, ...tabCounts] = await Promise.all([

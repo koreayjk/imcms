@@ -11,14 +11,14 @@ type Comment = { id: string; author_id: string; author_name: string | null; is_s
 
 export default async function FeedbackDetail(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
-  const { supabase, user, isStaff, isSuper } = await getCmsContext()
+  const { supabase, user, isStaff, isSuper, viewAs } = await getCmsContext()
   const { t, lang } = await getT()
 
   const [{ data: p }, { data: cs }] = await Promise.all([
     supabase.from('feedback_posts').select('*, outlet:outlets(name)').eq('id', id).maybeSingle(),
     supabase.from('feedback_comments').select('id, author_id, author_name, is_staff, body, created_at, edited_at').eq('post_id', id).order('created_at'),
   ])
-  if (!p) notFound()
+  if (!p || (viewAs && p.author_id !== user.id)) notFound()
   const comments = (cs ?? []) as Comment[]
   const status = p.status as FeedbackStatus
   const mine = p.author_id === user.id

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
+import { ticketScope, viewGroupOutletIds } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { formatShort } from '@/lib/format'
 import { TICKET_STATUS, hasUnreadReply, type TicketStatus } from '@/lib/support'
@@ -9,13 +10,15 @@ type Props = { searchParams: Promise<{ tab?: string }> }
 
 export default async function TicketsPage(props: Props) {
   const searchParams = await props.searchParams
-  const { supabase, user, isStaff } = await getCmsContext()
+  const ctx = await getCmsContext()
+  const { supabase, user, isStaff } = ctx
   const { t, lang } = await getT()
   const tab = ['open', 'unread', 'mine'].includes(searchParams.tab ?? '') ? searchParams.tab : 'all'
 
-  const { data } = await supabase
+  // 보기 모드: 그 역할이 실제로 보는 매체의 요청만
+  const { data } = await ticketScope(supabase
     .from('support_tickets')
-    .select('*, requester:profiles!support_tickets_requester_id_fkey(full_name), outlet:outlets(name)')
+    .select('*, requester:profiles!support_tickets_requester_id_fkey(full_name), outlet:outlets(name)'), ctx, user.id, await viewGroupOutletIds(supabase, ctx))
     .order('created_at', { ascending: false })
     .limit(300)
   const all = (data ?? []) as any[]

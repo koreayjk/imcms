@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { pressVisible } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, ensureFullBody, type PressRelease } from '@/lib/press'
 import { sanitizeBody } from '@/lib/article-html'
@@ -22,11 +23,12 @@ export default async function PressDetailPage(
 ) {
   const searchParams = await props.searchParams
   const params = await props.params
-  const { supabase, user, outletId } = await getCmsContext()
+  const ctx = await getCmsContext()
+  const { supabase, user, outletId } = ctx
   const { t, lang } = await getT()
 
   const { data } = await supabase.from('press_releases').select('*').eq('id', params.id).maybeSingle()
-  if (!data) notFound()
+  if (!data || !pressVisible(data as { publisher_id?: string | null }, ctx)) notFound()
   const withImages = await ensureEmailImages(supabase, await ensureFullBody(supabase, data as PressRelease), outletId)
   const attachments = withImages.attachments
   // 메일 첨부 문서의 글자를 본문에 넣는다 (메일 자동 수신 부가 서비스를 쓰거나 체험 중인 매체에만 메일이 들어오므로 따로 구분하지 않는다)

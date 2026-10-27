@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { outletHomeUrl } from '@/lib/product'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { ticketScope } from '@/lib/view-scope'
 import { formatDateTime, isScheduled } from '@/lib/format'
 import { statusLabel, type ArticleStatus } from '@/lib/types'
 import { getT } from '@/lib/cms-t'
@@ -37,7 +38,8 @@ export default async function NewsroomPage(props: Props) {
   const { t, lang } = await getT()
   const num = (n: number) => n.toLocaleString(lang === 'en' ? 'en-US' : 'ko-KR')
   const aiMessage = (s: Parameters<typeof aiLimitMessage>[0]) => (lang === 'en' ? aiLimitMessageEn(s) : aiLimitMessage(s))
-  const { supabase, user, outletId, isEditorPlus, isStaff, isSuper, trial } = await getCmsContext()
+  const ctx = await getCmsContext()
+  const { supabase, user, outletId, isEditorPlus, isStaff, isSuper, trial } = ctx
   // 매체에 속하지 않은 매니저는 대시보드가 첫 화면
   if (isStaff && !isSuper && !outletId) redirect('/admin/dashboard')
   const tab = (CARDS.find((c) => c.status === searchParams.tab)?.status ?? 'draft') as ArticleStatus
@@ -74,7 +76,7 @@ export default async function NewsroomPage(props: Props) {
       .eq('status', 'published').lte('published_at', new Date().toISOString()).order('view_count', { ascending: false }).limit(5),
     // 고객센터 소식 (support.sql 전이면 비어 있다)
     supabase.from('support_notices').select('id, title, category, created_at').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
-    supabase.from('support_tickets').select('id, title, status, last_staff_reply_at, requester_read_at').eq('requester_id', user.id).order('updated_at', { ascending: false }).limit(3),
+    ticketScope(supabase.from('support_tickets').select('id, title, status, last_staff_reply_at, requester_read_at').eq('requester_id', user.id), ctx, user.id).order('updated_at', { ascending: false }).limit(3),
     getAiStatus(supabase, outletId),
     isEditorPlus && outletId && !trial
       ? supabase.from('ad_contracts').select('advertiser, starts_on, ends_on, supply_amount, vat_amount, paid_amount').eq('outlet_id', outletId).lte('starts_on', kstToday).limit(500)

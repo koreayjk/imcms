@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { after } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
+import { pressScope } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
 import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, usableKeywords } from '@/lib/press-sources'
@@ -25,7 +26,8 @@ function kstMidnightIso() {
 
 export default async function PressPage(props: Props) {
   const searchParams = await props.searchParams
-  const { supabase, outletId } = await getCmsContext()
+  const ctx = await getCmsContext()
+  const { supabase, outletId } = ctx
   const { t, lang } = await getT()
 
   // 저장 공간 확인과 매체 설정은 함께 묻는다
@@ -69,6 +71,8 @@ export default async function PressPage(props: Props) {
     .from('press_releases')
     .select('id, source_key, source_name, title, summary, link, published_at', { count: 'exact' })
     .order('published_at', { ascending: false, nullsFirst: false })
+  // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
+  query = pressScope(query, ctx)
   if (src) query = query.eq('source_key', src)
   for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) query = query.not('source_key', 'like', `${ft.prefix}%`)
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)

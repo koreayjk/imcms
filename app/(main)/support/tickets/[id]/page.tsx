@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { ticketVisible, viewGroupOutletIds } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { formatDateTime } from '@/lib/format'
 import { type TicketStatus } from '@/lib/support'
@@ -51,7 +52,8 @@ function Files({ files, urls }: { files: FileRow[]; urls: Map<string, string> })
 
 export default async function TicketPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params
-  const { supabase, user, isStaff, isSuper } = await getCmsContext()
+  const ctx = await getCmsContext()
+  const { supabase, user, isStaff, isSuper } = ctx
   const { t, lang } = await getT()
 
   const { data: tk } = await supabase
@@ -59,7 +61,7 @@ export default async function TicketPage(props: { params: Promise<{ id: string }
     .select('*, requester:profiles!support_tickets_requester_id_fkey(full_name), outlet:outlets(name)')
     .eq('id', params.id)
     .maybeSingle()
-  if (!tk) notFound()
+  if (!tk || !ticketVisible(tk, ctx, user.id, await viewGroupOutletIds(supabase, ctx))) notFound()
 
   const [{ data: replies }, { data: files }] = await Promise.all([
     supabase.from('support_replies').select('*, author:profiles!support_replies_author_id_fkey(full_name)').eq('ticket_id', tk.id).order('created_at'),
