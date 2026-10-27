@@ -23,7 +23,8 @@ export default function LogoStrip({ strip, en = false }: { strip: Strip; en?: bo
     <section aria-label={strip.title || (en ? 'Partners' : '협력 기관')} className="border-t border-rule bg-[#FAFAFA] py-5">
       <style>{`@keyframes ls-run{from{transform:translateX(0)}to{transform:translateX(-50%)}}.ls-track:hover{animation-play-state:paused}@media (prefers-reduced-motion:reduce){.ls-track{animation:none!important;flex-wrap:wrap;width:auto!important}}`}</style>
       {strip.title && <h2 className="mx-auto mb-3 max-w-[1200px] px-4 text-[13px] font-bold text-sub">{strip.title}</h2>}
-      <div className="overflow-hidden">
+      {/* 본문과 같은 폭(1200px) 안에서만 흐른다: 화면 전체로 퍼지지 않고, 양옆 광고와도 겹치지 않는다 */}
+      <div className="mx-auto max-w-[1200px] overflow-hidden px-4" style={{ maskImage: 'linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 24px), transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 24px), transparent)' }}>
         <ul className="ls-track flex w-max gap-3" style={{ animation: `ls-run ${seconds}s linear infinite` }}>
           {group.map((it, i) => logo(it, i, false))}
           {group.map((it, i) => logo(it, i, true))}
