@@ -78,7 +78,8 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
   }
 
   const outletRows = (outletsRes.data ?? []) as any[]
-  const outlets: OutletOption[] = outletRows.map((o) => ({ id: o.id, name: o.name, group: o.publisher?.name ?? null }))
+  // 보기 모드: 초대·매체 고르기에는 이 매체가 속한 그룹의 매체만
+  const outlets: OutletOption[] = outletRows.filter((o) => !viewAs || (!!viewGroupId && o.publisher_id === viewGroupId)).map((o) => ({ id: o.id, name: o.name, group: o.publisher?.name ?? null }))
   const groupName = new Map((groups ?? []).map((g) => [g.id as string, g.name as string]))
   const outletGroup = new Map(outletRows.map((o) => [o.id as string, (o.publisher_id as string | null) ?? null]))
   const info = new Map(((authUsers ?? []) as AuthInfo[]).map((u) => [u.id, u]))

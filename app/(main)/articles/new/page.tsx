@@ -6,13 +6,13 @@ import { outletEmailOf } from '@/lib/outlet-email'
 export const maxDuration = 60
 
 export default async function NewArticlePage() {
-  const { supabase, user, profile, outletId, isEditorPlus, trial } = await getCmsContext()
+  const { supabase, user, profile, outletId, isEditorPlus, trial, viewAs, viewGroupId } = await getCmsContext()
 
   const [{ data: categories }, { data: outlets }] = await Promise.all([
     outletId
       ? supabase.from('categories').select('*').eq('outlet_id', outletId).order('sort_order')
       : supabase.from('categories').select('*').order('sort_order'),
-    supabase.from('outlets').select('id, name').order('created_at'),
+    viewAs && viewGroupId ? supabase.from('outlets').select('id, name').eq('publisher_id', viewGroupId).order('created_at') : supabase.from('outlets').select('id, name').order('created_at'),
   ])
   const outlet = outlets?.find((o) => o.id === outletId)
   const contact = await outletEmailOf(supabase, outletId)

@@ -9,7 +9,7 @@ export const maxDuration = 60
 
 export default async function EditArticlePage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params
-  const { supabase, user, profile, outletId, isEditorPlus, trial } = await getCmsContext()
+  const { supabase, user, profile, outletId, isEditorPlus, trial, viewAs, viewGroupId } = await getCmsContext()
 
   const { data: article } = await supabase.from('articles').select('*').eq('id', params.id).single()
   if (!article) notFound()
@@ -22,7 +22,7 @@ export default async function EditArticlePage(props: { params: Promise<{ id: str
     scope
       ? supabase.from('categories').select('*').eq('outlet_id', scope).order('sort_order')
       : supabase.from('categories').select('*').order('sort_order'),
-    supabase.from('outlets').select('id, name').order('created_at'),
+    viewAs && viewGroupId ? supabase.from('outlets').select('id, name').eq('publisher_id', viewGroupId).order('created_at') : supabase.from('outlets').select('id, name').order('created_at'),
     supabase.from('articles').select('outlet_id').eq('source_article_id', article.id),
     article.source_article_id
       ? supabase.from('articles').select('outlet:outlets(name)').eq('id', article.source_article_id).single()

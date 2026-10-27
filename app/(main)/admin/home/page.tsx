@@ -9,10 +9,12 @@ import HomeBoard, { type BoardArticle } from '@/components/cms/HomeBoard'
 const FIELDS = 'id, title, thumbnail_url, published_at, category:categories(name)'
 
 export default async function HomeEditPage() {
-  const { supabase, outletId, canEditSite, isStaff, isSuper } = await getCmsContext()
+  const { supabase, outletId, canEditSite, isStaff, isSuper, viewAs, viewGroupId } = await getCmsContext()
   if (!canEditSite) redirect('/newsroom')
 
-  const { data: outlets } = await supabase.from('outlets').select('id, name, domain, site').order('created_at')
+  const { data: outlets } = viewAs && viewGroupId
+    ? await supabase.from('outlets').select('id, name, domain, site').eq('publisher_id', viewGroupId).order('created_at')
+    : await supabase.from('outlets').select('id, name, domain, site').order('created_at')
   // 매니저는 상단에서 고른 고객사 매체만 (고르기 전이면 안내)
   const outlet = outlets?.find((o) => o.id === outletId) ?? (isStaff && !isSuper ? undefined : outlets?.[0])
   if (!outlet && isStaff && !isSuper) {
