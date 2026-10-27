@@ -112,10 +112,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const pool = spare.length >= 6 ? spare : latest.filter((a) => !used.has(a.id))
   // 종합 섹션이 4칸 단위로 떨어지지 않으면 남는 칸(PC)에 최신 기사를 채운다
   const gap = general.length % 4 ? 4 - (general.length % 4) : 0
-  const gapItems = pool.slice(0, gap * 5)
+  // 남는 칸마다 사진 있는 기사 1건 + 제목 3건 (다른 섹션 칸과 같은 모양)
+  const gapLeads = pool.filter(hasImage).slice(0, gap)
+  const gapTitles = pool.filter((a) => !gapLeads.includes(a)).slice(0, gap * 3)
+  const gapUsed = new Set([...gapLeads, ...gapTitles].map((a) => a.id))
   const wingFill = (
     <WingFill title={L === 'en' ? 'More stories' : '기사 더 보기'}>
-      {pool.slice(gapItems.length, gapItems.length + 40).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
+      {pool.filter((a) => !gapUsed.has(a.id)).slice(0, 40).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
     </WingFill>
   )
 
@@ -378,14 +381,16 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </section>
           )
         })}
-        {gap > 0 && gapItems.length >= gap * 3 && (
-          <section className="hidden lg:block" style={{ gridColumn: `span ${gap} / span ${gap}` }}>
-            <SectionHeading title={L === 'en' ? 'Latest stories' : '최신 기사'} lang={L} />
-            <div className="grid gap-x-7" style={{ gridTemplateColumns: `repeat(${gap}, minmax(0, 1fr))` }}>
-              {Array.from({ length: gap }, (_, i) => gapItems.slice(i * 5, i * 5 + 5)).map((chunk, i) => <TitleList key={i} items={chunk} />)}
-            </div>
+        {gap > 0 && gapLeads.length === gap && gapTitles.length === gap * 3 && gapLeads.map((lead, i) => (
+          <section key={lead.id} className="hidden lg:block">
+            <SectionHeading title={(L === 'en' ? ['Latest stories', 'Also in the news', 'More to read'] : ['최신 기사', '주목 기사', '더 읽을거리'])[i] ?? ''} lang={L} />
+            <Link href={`/news/${lead.id}`} className="headline-link group block">
+              <Thumb sizes="300px" src={lead.thumbnail_url} alt={lead.title} ratio="3 / 2" />
+              <p className="headline-text mt-3 line-clamp-2 text-[15.5px] font-bold leading-[1.42]">{lead.title}</p>
+            </Link>
+            <TitleList items={gapTitles.slice(i * 3, i * 3 + 3)} className="mt-4" />
           </section>
-        )}
+        ))}
       </div>
         </>
       )}
