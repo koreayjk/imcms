@@ -409,6 +409,20 @@ async function loadReporterArticles(site: SiteConfig, name: string, page: number
 }
 export const getReporterArticles = outletCached('reporter', loadReporterArticles)
 
+// 작성자 소개 (영문 홈페이지의 기자 화면): 사진·소개·공개 이메일. author-profile.sql 전이면 null
+export type AuthorProfile = { name: string; bio: string | null; photo: string | null; email: string | null }
+async function loadAuthorProfile(site: SiteConfig, name: string): Promise<AuthorProfile | null> {
+  const who = name.trim().slice(0, 40)
+  if (!who || isDemo) return null
+  const scope = await outletScope(site)
+  if (!scope) return null
+  const { data, error } = await scope.supabase.from('profiles').select('full_name, bio, photo_url, public_email, outlet_id').eq('full_name', who).limit(10)
+  if (error || !data?.length) return null
+  const row = (data.find((r) => r.outlet_id === site.outletId) ?? data[0]) as { full_name: string; bio: string | null; photo_url: string | null; public_email: string | null }
+  return { name: row.full_name, bio: row.bio?.trim() || null, photo: row.photo_url?.trim() || null, email: row.public_email?.trim() || null }
+}
+export const getAuthorProfile = outletCached('author', loadAuthorProfile)
+
 // 기사 화면 오른쪽 (많이 본 기사·최신 기사). 기사 미리보기가 쓴다
 export async function getArticleSidebar(site: SiteConfig) {
   if (isDemo) {

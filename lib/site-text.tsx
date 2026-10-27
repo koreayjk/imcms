@@ -197,6 +197,11 @@ function etParts(iso: string, tz: string = ET) {
 }
 export const enDate = (iso: string, tz?: string) => { const t = etParts(iso, tz); return `${AP_MONTH[t.m - 1]} ${t.d}, ${t.y}` }
 export const enTime = (iso: string, tz?: string) => { const t = etParts(iso, tz); return `${t.h}:${t.mm} ${t.ap}` }
+// "Thursday, October 22, 2026" (기사 위 "By 이름 - 매체 - 날짜" 줄)
+export const enLongDate = (iso: string, tz: string = ET) => {
+  const t = etParts(iso, tz)
+  return `${t.wd}, ${new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'long' }).format(new Date(iso))} ${t.d}, ${t.y}`
+}
 export const enDateTime = (iso: string, tz: string = ET) => `${enDate(iso, tz)}, ${enTime(iso, tz)} ${zoneAbbr(tz)}`
 export const enShort = (iso: string, tz?: string) => {
   const t = etParts(iso, tz), n = etParts(new Date().toISOString(), tz)

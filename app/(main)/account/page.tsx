@@ -3,6 +3,7 @@ import { getT } from '@/lib/cms-t'
 import { roleLabel, type UserRole } from '@/lib/types'
 import NameForm from '@/components/cms/NameForm'
 import LanguageForm from '@/components/cms/LanguageForm'
+import ProfileForm from '@/components/cms/ProfileForm'
 import EmailNotifyToggle from '@/components/cms/EmailNotifyToggle'
 import MfaSettings from '@/components/cms/MfaSettings'
 import LoginHistory, { type LoginRow } from '@/components/cms/LoginHistory'
@@ -32,6 +33,7 @@ export default async function AccountPage() {
       <div className="space-y-6 rounded-lg border border-line bg-white p-4 sm:p-7">
         <NameForm name={profile?.full_name ?? ''} />
         <LanguageForm value={(profile as { cms_lang?: string | null } | null)?.cms_lang === 'en' ? 'en' : (profile as { cms_lang?: string | null } | null)?.cms_lang === 'ko' ? 'ko' : null} outletDefault={(outlet?.site as { cmsLang?: string } | null)?.cmsLang === 'en' ? 'en' : 'ko'} />
+        <ProfileForm bio={(profile as { bio?: string | null } | null)?.bio ?? ''} photoUrl={(profile as { photo_url?: string | null } | null)?.photo_url ?? ''} publicEmail={(profile as { public_email?: string | null } | null)?.public_email ?? ''} outletId={outletId} />
         <dl className="grid grid-cols-[80px_1fr] gap-y-2.5 border-t border-line pt-5 text-[13.5px]">
           <dt className="text-muted">{t('이메일', 'Email')}</dt><dd className="min-w-0 break-all">{user.email}</dd>
           <dt className="text-muted">{t('역할', 'Role')}</dt><dd>{profile?.role ? roleLabel(profile.role as UserRole, lang) : '-'}</dd>

@@ -24,7 +24,7 @@ export default async function EditArticlePage(props: { params: Promise<{ id: str
     scope
       ? supabase.from('categories').select('*').eq('outlet_id', scope).order('sort_order')
       : supabase.from('categories').select('*').order('sort_order'),
-    viewAs && viewGroupId ? supabase.from('outlets').select('id, name').eq('publisher_id', viewGroupId).order('created_at') : supabase.from('outlets').select('id, name').order('created_at'),
+    viewAs && viewGroupId ? supabase.from('outlets').select('id, name, site').eq('publisher_id', viewGroupId).order('created_at') : supabase.from('outlets').select('id, name, site').order('created_at'),
     supabase.from('articles').select('outlet_id').eq('source_article_id', article.id),
     article.source_article_id
       ? supabase.from('articles').select('outlet:outlets(name)').eq('id', article.source_article_id).single()
@@ -46,6 +46,7 @@ export default async function EditArticlePage(props: { params: Promise<{ id: str
         userId={user.id}
         outletId={scope}
         outletName={outlet?.name ?? null}
+        englishOutlet={(outlet as { site?: { lang?: string } | null } | undefined)?.site?.lang === 'en'}
         authorName={profile?.full_name ?? ''}
         authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}

@@ -20,6 +20,22 @@ export async function updateMyName(_prev: NameState, form: FormData): Promise<Na
   return { ok: true }
 }
 
+// 내 작성자 소개 (영문 홈페이지의 기자 화면: 사진·소개·공개 이메일, author-profile.sql)
+export type ProfileState = { ok?: boolean; error?: string }
+export async function updateMyProfile(_prev: ProfileState, form: FormData): Promise<ProfileState> {
+  const { supabase, user, lang } = await getCmsContext()
+  const en = lang === 'en'
+  const bio = String(form.get('bio') ?? '').trim().slice(0, 1500)
+  const photo = String(form.get('photo_url') ?? '').trim()
+  const email = String(form.get('public_email') ?? '').trim().toLowerCase()
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: en ? 'Please check the email address.' : '이메일 주소를 확인해 주세요.' }
+  if (photo && !photo.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`)) return { error: en ? 'Use a photo uploaded on this screen.' : '이 화면에서 올린 사진만 쓸 수 있습니다.' }
+  const { error } = await supabase.from('profiles').update({ bio: bio || null, photo_url: photo || null, public_email: email || null }).eq('id', user.id)
+  if (error) return { error: /bio|photo_url|public_email|column/i.test(error.message) ? (en ? 'The operations team needs to run supabase/author-profile.sql first.' : '운영팀이 Supabase에서 author-profile.sql을 먼저 실행해야 합니다.') : (en ? `Could not save: ${error.message}` : `저장하지 못했습니다: ${error.message}`) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
 // 내 편집국 언어 (비우면 매체 기본 언어를 따른다, cms-lang.sql)
 export async function setMyLang(value: 'default' | 'ko' | 'en'): Promise<{ error?: string }> {
   const { supabase, user, lang } = await getCmsContext()

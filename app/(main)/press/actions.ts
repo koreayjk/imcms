@@ -123,8 +123,12 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   const { data: outlet } = outletId
     ? await supabase.from('outlets').select('name, site').eq('id', outletId).single()
     : { data: null }
-  const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${profile?.full_name ?? ''} 기자]&nbsp;`
-  body = body.startsWith('<p>') ? body.replace(/^<p>/, `<p>${byline}`) : `<p>${byline}</p>${body}`
+  // 영문 매체는 본문 첫머리 바이라인을 넣지 않는다 (기사 위 "By 이름 - 매체 - 날짜" 줄이 대신한다)
+  const englishOutlet = (outlet as { site?: { lang?: string } | null } | null)?.site?.lang === 'en'
+  if (!englishOutlet) {
+    const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${profile?.full_name ?? ''} 기자]&nbsp;`
+    body = body.startsWith('<p>') ? body.replace(/^<p>/, `<p>${byline}`) : `<p>${byline}</p>${body}`
+  }
   // AI 활용 표시 (기사 작성 가이드 · 네이버 운영평가 D항): 매체 설정이 켜져 있으면 본문 끝에 붙이고, 아니면 메모로 알린다
   if (usedAi) {
     const notice = aiNoticeText((outlet as { site?: OutletSiteSettings | null } | null)?.site)

@@ -9,7 +9,7 @@ import OptImg from './OptImg'
 import { optimizeBodyImages } from '@/lib/image-url'
 import ShareButton from './ShareButton'
 import type { SiteLang } from '@/lib/sites'
-import { siteText } from '@/lib/site-text'
+import { enLongDate, siteText } from '@/lib/site-text'
 
 // 홈페이지 기사 본문 (제목·부제·기자·본문·관련기사·태그·기자 정보·섹션 다른 기사). 실제 기사 화면과 기사쓰기 미리보기가 같이 쓴다
 // bodyHtml은 이미 정리(sanitizeBody)한 HTML
@@ -44,18 +44,26 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
           <p className="mt-4 whitespace-pre-line border-l-[3px] border-gold pl-4 text-[15.5px] leading-[1.7] text-sub lg:text-[17px]">{a.excerpt}</p>
         )}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-[13px] text-sub">
-          <p className="tabular-nums">
-            {a.author_name && <span className="font-semibold text-body">{t.reporter(a.author_name)}</span>}
-            {a.author_email && <a href={`mailto:${a.author_email}`} className="ml-1.5 text-sub hover:text-brand">{a.author_email}</a>}
-            <span className="mx-2 text-rule" aria-hidden>|</span>
-            <span>{t.published} {formatDateTime(a.published_at, lang, tz)}</span>
-            {a.view_count > 0 && (
-              <>
-                <span className="mx-2 text-rule" aria-hidden>|</span>
-                <span>{t.views} {a.view_count.toLocaleString(lang === 'en' ? 'en-US' : 'ko-KR')}</span>
-              </>
-            )}
-          </p>
+          {lang === 'en' ? (
+            <p className="italic">
+              {a.author_name && <>By <Link href={reporterHref(a.author_name)} className="font-semibold not-italic text-brand hover:underline">{a.author_name}</Link> - </>}
+              {siteName}{a.published_at && <> - {enLongDate(a.published_at, tz)}</>}
+              {a.view_count > 0 && <span className="not-italic tabular-nums"> · {a.view_count.toLocaleString('en-US')} {t.views.toLowerCase()}</span>}
+            </p>
+          ) : (
+            <p className="tabular-nums">
+              {a.author_name && <span className="font-semibold text-body">{t.reporter(a.author_name)}</span>}
+              {a.author_email && <a href={`mailto:${a.author_email}`} className="ml-1.5 text-sub hover:text-brand">{a.author_email}</a>}
+              <span className="mx-2 text-rule" aria-hidden>|</span>
+              <span>{t.published} {formatDateTime(a.published_at, lang, tz)}</span>
+              {a.view_count > 0 && (
+                <>
+                  <span className="mx-2 text-rule" aria-hidden>|</span>
+                  <span>{t.views} {a.view_count.toLocaleString('ko-KR')}</span>
+                </>
+              )}
+            </p>
+          )}
           <ShareButton title={a.title} lang={lang} size="sm" />
         </div>
       </header>

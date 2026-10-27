@@ -33,6 +33,8 @@ type Props = {
   userId: string
   outletId: string | null
   outletName: string | null
+  // 영문 매체: 본문 첫머리에 "[매체=이름 기자]" 표기를 넣지 않는다 (기사 위 "By 이름 - 매체 - 날짜" 줄이 대신한다)
+  englishOutlet?: boolean
   authorName: string
   authorEmail: string | null
   isEditorPlus?: boolean
@@ -61,14 +63,14 @@ function imagesIn(html: string): string[] {
   return Array.from(html.matchAll(IMG_SRC), (m) => m[1])
 }
 
-export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, moderated = false, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName, outletEmail = null, settingsReady = false }: Props) {
+export default function ArticleEditor({ article, categories, userId, outletId, outletName, englishOutlet = false, authorName, authorEmail, isEditorPlus, moderated = false, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName, outletEmail = null, settingsReady = false }: Props) {
   const router = useRouter()
   const t = useT()
   const lang = useCmsLang()
   const editorRef = useRef<Editor | null>(null)
 
   const [initialHtml] = useState(() =>
-    article ? toHtml(article.body) : `<p>[${outletName ? `${outletName}=` : ''}${authorName} 기자]&nbsp;</p>`
+    article ? toHtml(article.body) : englishOutlet ? '<p></p>' : `<p>[${outletName ? `${outletName}=` : ''}${authorName} 기자]&nbsp;</p>`
   )
   const [title, setTitle] = useState(article?.title ?? '')
   const [subtitle, setSubtitle] = useState(article?.excerpt ?? '')

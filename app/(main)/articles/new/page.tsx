@@ -14,7 +14,7 @@ export default async function NewArticlePage() {
     outletId
       ? supabase.from('categories').select('*').eq('outlet_id', outletId).order('sort_order')
       : supabase.from('categories').select('*').order('sort_order'),
-    viewAs && viewGroupId ? supabase.from('outlets').select('id, name').eq('publisher_id', viewGroupId).order('created_at') : supabase.from('outlets').select('id, name').order('created_at'),
+    viewAs && viewGroupId ? supabase.from('outlets').select('id, name, site').eq('publisher_id', viewGroupId).order('created_at') : supabase.from('outlets').select('id, name, site').order('created_at'),
   ])
   const outlet = outlets?.find((o) => o.id === outletId)
   const contact = await outletEmailOf(supabase, outletId)
@@ -27,6 +27,7 @@ export default async function NewArticlePage() {
         userId={user.id}
         outletId={outletId}
         outletName={outlet?.name ?? null}
+        englishOutlet={(outlet as { site?: { lang?: string } | null } | undefined)?.site?.lang === 'en'}
         authorName={profile?.full_name ?? ''}
         authorEmail={user.email ?? null}
         isEditorPlus={isEditorPlus}
