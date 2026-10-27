@@ -194,13 +194,19 @@ export function newswireBody(page: string) {
 //   다시 읽은 뒤 사진이 없으면 image_url을 ''로 두어 다음부터는 다시 읽지 않는다
 export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease): Promise<PressRelease> {
   if (isForeignSource(r.source_key)) {
+    const us = isUsSource(r.source_key)
     // 해외 언론: 본문 글만 (사진은 그 언론사 저작물이라 가져오지 않는다)
-    if (r.body_html) return r
+    //   미국 출처(보도자료·기관 소식)는 언론에 쓰라고 낸 자료라 함께 실린 사진을 가져온다 (아직 사진이 없으면 다시 읽는다)
+    if (r.body_html && !(us && !/<img\b/.test(r.body_html))) return r
     try {
-      const html = foreignBody(await fetchText(r.link, 8000))
+      const page = await fetchText(r.link, 8000)
+      const text = foreignBody(page)
+      const photos = us ? usPhotos(page, findPressSource(r.source_key)?.outlet ?? r.source_name) : ''
+      const html = text ? photos + text : r.body_html
       if (!html) return r
-      await supabase.from('press_releases').update({ body_html: html, image_url: '' }).eq('id', r.id)
-      return { ...r, body_html: html, image_url: '' }
+      const image = us ? (/<img[^>]+src="([^"]+)"/.exec(photos)?.[1] ?? '') : ''
+      await supabase.from('press_releases').update({ body_html: html, image_url: image }).eq('id', r.id)
+      return { ...r, body_html: html, image_url: image }
     } catch {
       return r
     }
@@ -217,6 +223,20 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease):
   } catch {
     return r
   }
+}
+
+// 미국 출처 기사 페이지의 대표 사진(og:image)과 보도자료에 실린 사진(PR Newswire 멀티미디어) 최대 3장 → 사진 블록 HTML
+export function usPhotos(page: string, credit: string) {
+  const urls: string[] = []
+  const add = (u: string | undefined) => {
+    if (!u) return
+    const url = decode(u).replace(/&amp;/g, '&').trim()
+    if (!/^https:\/\//.test(url) || /logo|icon|sprite|avatar|pixel|1x1/i.test(url)) return
+    if (!urls.some((x) => x.split('?')[0] === url.split('?')[0])) urls.push(url)
+  }
+  add(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(page)?.[1] ?? /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i.exec(page)?.[1])
+  for (const m of page.matchAll(/<img[^>]+src=["'](https:\/\/mmx\.prnewswire\.com\/media\/[^"']+)["']/gi)) add(m[1])
+  return urls.slice(0, 3).map((u) => `<img src="${escapeHtml(u)}" alt=""><p><em>▲ Photo provided by ${escapeHtml(credit)}</em></p>`).join('')
 }
 
 // 해외 언론 기사 페이지에서 본문 글만: 구조화 데이터(JSON-LD)의 articleBody → 없으면 긴 <p> 문단
