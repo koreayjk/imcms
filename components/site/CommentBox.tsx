@@ -1,19 +1,19 @@
 'use client'
 
 import { useActionState, useEffect, useState, useTransition } from 'react'
-import { listComments, postComment, readerLogout, reportComment, startEmailLogin, type PublicComment, type ReaderState } from '@/app/reader/actions'
+import { listComments, postComment, readerLogout, reportComment, startEmailLogin, subscribeReaderNewsletter, type PublicComment, type ReaderState } from '@/app/reader/actions'
 import type { SiteLang } from '@/lib/sites'
 
 // 기사 아래 댓글: 독자는 구글 또는 이메일 링크로 로그인하고, 쓴 댓글은 편집국이 승인해야 보인다 (comments.sql)
 export default function CommentBox({ articleId, lang, next }: { articleId: string; lang: SiteLang; next: string }) {
   const en = lang === 'en'
-  const [data, setData] = useState<{ comments: PublicComment[]; reader: { name: string } | null; google: boolean } | null>(null)
+  const [data, setData] = useState<{ comments: PublicComment[]; reader: { name: string } | null; google: boolean; newsletter: boolean } | null>(null)
   const [body, setBody] = useState('')
   const [msg, setMsg] = useState<{ ok?: string; error?: string }>({})
   const [pending, start] = useTransition()
   const [login, loginAction] = useActionState<ReaderState, FormData>(startEmailLogin, {})
 
-  const load = () => listComments(articleId).then((d) => { if (d.on) setData({ comments: d.comments, reader: d.reader, google: d.google }) })
+  const load = () => listComments(articleId).then((d) => { if (d.on) setData({ comments: d.comments, reader: d.reader, google: d.google, newsletter: d.newsletter }) })
   useEffect(() => { void load() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [articleId])
   if (!data) return null
 
@@ -22,7 +22,8 @@ export default function CommentBox({ articleId, lang, next }: { articleId: strin
     const r = await postComment(articleId, body)
     if (r.error) return setMsg({ error: r.error })
     setBody('')
-    setMsg({ ok: en ? 'Thanks! Your comment will appear after our editors approve it.' : '댓글을 받았습니다. 편집국이 승인하면 보입니다.' })
+    if (r.live) { setMsg({ ok: en ? 'Your comment has been posted.' : '댓글이 등록되었습니다.' }); void load() }
+    else setMsg({ ok: en ? 'Thanks! Your comment will appear after our editors review it.' : '댓글을 받았습니다. 편집국이 검토하면 보입니다.' })
   })
 
   return (
@@ -54,11 +55,17 @@ export default function CommentBox({ articleId, lang, next }: { articleId: strin
           <div className="space-y-2">
             <p className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-sub">
               <span>{en ? 'Signed in as' : '로그인:'} <strong className="text-body">{data.reader.name}</strong></span>
+              {data.newsletter && (
+                <button type="button" className="mr-3 underline-offset-2 hover:text-body hover:underline" onClick={() => start(async () => {
+                  const r = await subscribeReaderNewsletter()
+                  window.alert(r.error ?? (en ? 'Check your email and click the link to start the newsletter.' : '메일을 확인해 링크를 누르면 뉴스레터 구독이 시작됩니다.'))
+                })}>{en ? 'Get the newsletter' : '뉴스레터 받기'}</button>
+              )}
               <button type="button" className="underline-offset-2 hover:text-body hover:underline" onClick={() => start(async () => { await readerLogout(); setData({ ...data, reader: null }); setMsg({}) })}>{en ? 'Sign out' : '로그아웃'}</button>
             </p>
             <label htmlFor="comment-body" className="sr-only">{en ? 'Your comment' : '댓글 내용'}</label>
             <textarea id="comment-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={1000} rows={4}
-              placeholder={en ? 'Join the conversation. Please be respectful; comments are reviewed before they appear.' : '의견을 남겨 주세요. 서로 존중해 주세요. 댓글은 검토 뒤에 보입니다.'}
+              placeholder={en ? 'Join the conversation. Please be respectful; comments may be reviewed by our editors.' : '의견을 남겨 주세요. 서로 존중해 주세요. 댓글은 편집국이 검토할 수 있습니다.'}
               className="w-full rounded border border-rule bg-white px-3 py-2 text-[15px]" />
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" disabled={pending || !body.trim()} onClick={submit} className="rounded bg-brand px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-50">{en ? 'Post comment' : '댓글 등록'}</button>
@@ -76,7 +83,7 @@ export default function CommentBox({ articleId, lang, next }: { articleId: strin
               </a>
             )}
             {login.ok ? (
-              <p role="status" className="text-[13.5px] text-brand">{en ? 'Check your email. We sent you a sign-in link (valid for 30 minutes).' : '메일을 확인하세요. 로그인 링크를 보냈습니다(30분 동안 사용 가능).'}</p>
+              <p role="status" className="text-[13.5px] text-brand">{en ? 'Check your email. We sent you a sign-in link (valid for 30 minutes).' : '메일을 확인하세요. 로그인 링크를 보냈습니다(30분 동안 사용 가능).'}{login.newsletter ? (en ? ' A second email will ask you to confirm the newsletter.' : ' 뉴스레터 구독 확인 메일도 따로 갑니다.') : ''}</p>
             ) : (
               <form action={loginAction} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                 <input type="hidden" name="next" value={next} />
@@ -86,6 +93,9 @@ export default function CommentBox({ articleId, lang, next }: { articleId: strin
                 <label className="sr-only" htmlFor="rd-email">Email</label>
                 <input id="rd-email" name="email" type="email" required maxLength={200} placeholder={en ? 'Email address' : '이메일 주소'} className="rounded border border-rule bg-white px-3 py-2 text-[14px]" autoComplete="email" />
                 <button type="submit" className="rounded bg-brand px-4 py-2 text-[14px] font-semibold text-white">{en ? 'Email me a link' : '로그인 링크 받기'}</button>
+                {data.newsletter && (
+                  <label className="flex items-start gap-2 text-[12.5px] text-sub sm:col-span-3"><input type="checkbox" name="newsletter" className="mt-0.5" /><span>{en ? 'Also email me the newsletter (we will send a separate confirmation email; you can unsubscribe anytime).' : '뉴스레터도 받겠습니다 (구독 확인 메일을 따로 보냅니다. 언제든 수신거부할 수 있습니다).'}</span></label>
+                )}
                 {login.error && <p role="alert" className="text-[13px] text-[#C0392B] sm:col-span-3">{login.error}</p>}
               </form>
             )}

@@ -1,6 +1,7 @@
 -- 기사 댓글 1단계 (Supabase SQL 에디터에서 실행, mail.sql(payment_secret_ok) 다음. 여러 번 실행해도 된다)
 --   · 독자는 구글·이메일 링크로 로그인해야 댓글을 쓸 수 있다 (독자 계정은 편집국 회원(profiles)과 완전히 별개다)
---   · 새 댓글은 모두 "승인 대기": 편집국(편집장 이상)이 승인해야 홈페이지에 보인다
+--   · 새 댓글 처리는 매체 설정(site.commentsMode)으로 고른다: 'review' = 승인 후 공개(기본), 'open' = 먼저 공개하고 나중에 검토
+--     'open' 이어도 자동 검사(링크·욕설·연락처·고함·도배)에 걸린 댓글은 승인 대기로 잡아 둔다 (hold_reason)
 --   · 신고가 3건 쌓이면 자동으로 다시 "승인 대기"로 돌려 숨긴다
 --   · 댓글 켜기·끄기는 홈페이지 설정(site.commentsOn)에서. 기본은 꺼짐
 --   · 독자 쪽 쓰기·읽기는 우리 서버만 비밀값(payment_db_secret)으로 부른다. 표는 직접 읽고 쓸 수 없다
@@ -23,11 +24,13 @@ create table if not exists comments (
   reader_id uuid not null references readers(id) on delete cascade,
   body text not null check (char_length(body) between 1 and 1000),
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  hold_reason text,
   report_count integer not null default 0,
   created_at timestamptz not null default now(),
   decided_at timestamptz,
   decided_by uuid references profiles(id) on delete set null
 );
+alter table comments add column if not exists hold_reason text;
 create index if not exists comments_article on comments (article_id, status, created_at);
 create index if not exists comments_outlet on comments (outlet_id, status, created_at desc);
 alter table comments enable row level security;
@@ -91,24 +94,39 @@ end $$;
 revoke all on function public.comments_public(text, uuid) from public;
 grant execute on function public.comments_public(text, uuid) to anon, authenticated;
 
--- 댓글 쓰기: 항상 승인 대기. 돌려주는 값: 'ok' / 'banned' / 'rate' (1분 안에 3개 넘음) / 'dup' (같은 글 반복) / 'off' (이 매체 댓글 꺼짐) / 'closed' (없는 기사)
-create or replace function public.comment_add(secret text, rid uuid, p_article uuid, p_body text) returns text
+-- 댓글 쓰기. p_hold: 자동 검사에 걸린 이유(없으면 null) — 걸리면 어느 설정이든 승인 대기.
+--   돌려주는 값: 'ok' (승인 대기로 받음) / 'live' (바로 공개됨, 먼저 공개 설정) / 'banned' / 'rate' (1분 안에 3개 넘음) / 'dup' (같은 글 반복) / 'off' (이 매체 댓글 꺼짐) / 'closed' (없는 기사)
+drop function if exists public.comment_add(text, uuid, uuid, text);
+create or replace function public.comment_add(secret text, rid uuid, p_article uuid, p_body text, p_hold text default null) returns text
 language plpgsql security definer set search_path = public as $$
-declare o uuid; on_flag text; b text := btrim(p_body);
+declare o uuid; on_flag text; mode text; b text := btrim(p_body); st text;
 begin
   if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
   if exists (select 1 from readers where id = rid and banned) then return 'banned'; end if;
   select a.outlet_id into o from articles a where a.id = p_article and a.status = 'published';
   if o is null then return 'closed'; end if;
-  select coalesce(site->>'commentsOn', 'false') into on_flag from outlets where id = o;
+  select coalesce(site->>'commentsOn', 'false'), coalesce(site->>'commentsMode', 'review') into on_flag, mode from outlets where id = o;
   if on_flag <> 'true' then return 'off'; end if;
   if (select count(*) from comments where reader_id = rid and created_at > now() - interval '1 minute') >= 3 then return 'rate'; end if;
   if exists (select 1 from comments where reader_id = rid and article_id = p_article and body = b and created_at > now() - interval '1 day') then return 'dup'; end if;
-  insert into comments (outlet_id, article_id, reader_id, body) values (o, p_article, rid, left(b, 1000));
-  return 'ok';
+  st := case when p_hold is null and mode = 'open' then 'approved' else 'pending' end;
+  insert into comments (outlet_id, article_id, reader_id, body, status, hold_reason) values (o, p_article, rid, left(b, 1000), st, nullif(left(p_hold, 40), ''));
+  return case when st = 'approved' then 'live' else 'ok' end;
 end $$;
-revoke all on function public.comment_add(text, uuid, uuid, text) from public;
-grant execute on function public.comment_add(text, uuid, uuid, text) to anon, authenticated;
+revoke all on function public.comment_add(text, uuid, uuid, text, text) from public;
+grant execute on function public.comment_add(text, uuid, uuid, text, text) to anon, authenticated;
+
+-- 로그인한 독자의 이메일 (뉴스레터 구독 신청에 쓴다. 차단된 독자는 null)
+create or replace function public.reader_email(secret text, rid uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare e text;
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  select email into e from readers where id = rid and not banned;
+  return e;
+end $$;
+revoke all on function public.reader_email(text, uuid) from public;
+grant execute on function public.reader_email(text, uuid) to anon, authenticated;
 
 -- 신고 (독자마다 댓글 하나에 한 번). 3건이면 승인 대기로 돌려 숨긴다
 create or replace function public.comment_report(secret text, rid uuid, p_comment uuid) returns void

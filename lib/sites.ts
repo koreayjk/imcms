@@ -253,6 +253,8 @@ export type OutletSiteSettings = {
   // 영문 홈페이지의 날짜·시각 시간대 (IANA 이름, 없으면 미국 동부)
   timeZone?: string
   commentsOn?: boolean
+  // 새 댓글 처리: review(승인 후 공개, 기본) / open(먼저 공개하고 나중에 검토. 자동 검사에 걸린 것은 승인 대기)
+  commentsMode?: 'review' | 'open'
   // 편집국(관리 화면) 기본 언어: 개인이 내 정보에서 고르지 않았을 때 쓴다 (없으면 한국어)
   cmsLang?: 'ko' | 'en'
   statsBoard?: StatsBoard

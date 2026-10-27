@@ -5,9 +5,10 @@ import { getT } from '@/lib/cms-t'
 import { formatDateTime } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
 import { banReader, decideComment, deleteComment } from './actions'
+import { HOLD_LABEL } from '@/lib/comment-screen'
 
 type Row = {
-  id: string; body: string; status: 'pending' | 'approved' | 'rejected'; report_count: number; created_at: string
+  id: string; body: string; status: 'pending' | 'approved' | 'rejected'; report_count: number; created_at: string; hold_reason: string | null
   article: { id: string; title: string } | null
   reader: { id: string; name: string | null; email: string; banned: boolean } | null
   outlet: { name: string } | null
@@ -23,7 +24,7 @@ export default async function CommentsPage(props: { searchParams: Promise<{ s?: 
 
   let q = supabase
     .from('comments')
-    .select('id, body, status, report_count, created_at, article:articles(id, title), reader:readers(id, name, email, banned), outlet:outlets(name)')
+    .select('id, body, status, report_count, created_at, hold_reason, article:articles(id, title), reader:readers(id, name, email, banned), outlet:outlets(name)')
     .eq('status', tab)
     .order('created_at', { ascending: tab === 'pending' })
     .limit(100)
@@ -48,7 +49,7 @@ export default async function CommentsPage(props: { searchParams: Promise<{ s?: 
       <header className="mb-5">
         <h1 className="text-[22px] font-bold tracking-tight">{t('댓글', 'Comments')}</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
-          {t('독자가 쓴 댓글은 여기서 승인해야 홈페이지에 보입니다. 신고가 3건 쌓인 댓글은 자동으로 승인 대기로 돌아옵니다. 댓글은 홈페이지 설정에서 “기사 댓글 받기”를 켠 매체에만 달립니다.', 'Reader comments appear on the website only after you approve them here. A comment that gets 3 reports goes back to Pending automatically. Comments are available only for outlets that turned on "Accept comments on stories" in their homepage settings.')}
+          {t('새 댓글을 어떻게 받을지는 홈페이지 설정에서 고릅니다: 승인 후 공개, 또는 먼저 공개하고 나중에 검토. 먼저 공개로 해도 링크·연락처·욕설·고함·도배로 보이는 댓글은 자동으로 이 화면의 승인 대기에 잡힙니다. 신고가 3건 쌓인 댓글도 승인 대기로 돌아옵니다. “공개 중” 탭에서 문제 있는 댓글을 숨기거나 독자를 차단하세요.', 'Choose in your homepage settings how new comments are handled: approve before they show, or publish first and review afterward. Even in publish-first mode, comments that look like links, contact details, abuse, shouting or spam are held in Pending automatically. A comment with 3 reports also goes back to Pending. Use the Approved tab to hide problem comments or ban readers.')}
         </p>
       </header>
 
@@ -74,6 +75,7 @@ export default async function CommentsPage(props: { searchParams: Promise<{ s?: 
                 <span className="break-all">{c.reader?.email}</span>
                 <span>· {formatDateTime(c.created_at, lang)}</span>
                 {!outletId && c.outlet?.name && <span>· {c.outlet.name}</span>}
+                {c.hold_reason && HOLD_LABEL[c.hold_reason] && <span className="rounded bg-draft/20 px-1.5 text-ink">{t(`자동 검사: ${HOLD_LABEL[c.hold_reason][0]}`, `Auto screen: ${HOLD_LABEL[c.hold_reason][1]}`)}</span>}
                 {c.report_count > 0 && <span className="rounded bg-danger/10 px-1.5 text-danger">{t(`신고 ${c.report_count}건`, `${c.report_count} report${c.report_count === 1 ? '' : 's'}`)}</span>}
                 {c.reader?.banned && <span className="rounded bg-danger/10 px-1.5 text-danger">{t('차단된 독자', 'Banned')}</span>}
               </p>
