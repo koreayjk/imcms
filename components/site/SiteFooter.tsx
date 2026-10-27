@@ -63,6 +63,15 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
           <p className="text-[12px] text-[#8A918C]">© {year} {site.name}. All rights reserved.</p>
         </div>
       </div>
+      {/* 어느 프로그램으로 만든 홈페이지인지 표시 (누르면 IM 뉴스룸 소개로) */}
+      <div className="mx-auto flex max-w-[1200px] justify-end px-4 pb-5">
+        <a href="https://imnewsroom.com" target="_blank" rel="noopener" aria-label="Powered by IM Newsroom" className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9AA09B] hover:text-body">
+          Powered by
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/im-newsroom.svg" alt="" width={16} height={16} className="rounded-[3px]" />
+          <span className="text-[11px] tracking-normal text-body">IM Newsroom</span>
+        </a>
+      </div>
     </footer>
   )
 }
