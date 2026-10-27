@@ -13,7 +13,7 @@ import { enLongDate, siteText } from '@/lib/site-text'
 
 // 홈페이지 기사 본문 (제목·부제·기자·본문·관련기사·태그·기자 정보·섹션 다른 기사). 실제 기사 화면과 기사쓰기 미리보기가 같이 쓴다
 // bodyHtml은 이미 정리(sanitizeBody)한 HTML
-export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, topAd, lang, tz }: {
+export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, topAd, lang, tz, comments }: {
   a: PublicArticle
   bodyHtml: string
   sectionName?: string
@@ -26,6 +26,8 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
   topAd?: ReactNode
   lang?: SiteLang
   tz?: string
+  // 기사 아래 댓글 상자 (매체가 댓글을 켠 경우)
+  comments?: ReactNode
 }) {
   const t = siteText(lang)
   return (
@@ -139,6 +141,8 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
           <>{t.copyright(siteName)}</>
         )}
       </p>
+
+      {comments}
 
       {related.length > 0 && (
         <section className="mt-10">

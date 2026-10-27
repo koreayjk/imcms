@@ -93,6 +93,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
   site.ogImage = ogImage || undefined
   if (prevSite.trial) site.trial = prevSite.trial
   site.lang = s.lang === 'en' ? 'en' : s.lang === 'ko' ? 'ko' : prevSite.lang
+  site.commentsOn = s.commentsOn === undefined ? prevSite.commentsOn : s.commentsOn === true ? true : undefined
   site.cmsLang = s.cmsLang === 'en' ? 'en' : s.cmsLang === 'ko' ? 'ko' : prevSite.cmsLang
   site.timeZone = s.timeZone === undefined ? prevSite.timeZone : isOpenZone(s.timeZone) ? s.timeZone : undefined
   site.statsBoard = s.statsBoard !== undefined ? cleanStats(s.statsBoard) : prevSite.statsBoard

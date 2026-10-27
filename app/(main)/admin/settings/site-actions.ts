@@ -10,7 +10,7 @@ import { cleanLogoStrip, foreignTopics, type LogoMode, type OutletSiteSettings, 
 //   도메인·검색 노출·AI 봇·오픈 준비 중·홈 배치 같은 항목은 여기서 받지 않는다 (운영팀 홈페이지 설정에서만)
 export type SelfSitePayload = {
   name: string
-  site: Pick<OutletSiteSettings, 'nameEn' | 'slogan' | 'sloganEn' | 'description' | 'logoUrl' | 'logoMode' | 'logoSize' | 'colors' | 'legal' | 'aiNotice' | 'pressForeignTopics' | 'pressForeign' | 'logoStrip' | 'iconUrl' | 'ogImage' | 'cmsLang'>
+  site: Pick<OutletSiteSettings, 'nameEn' | 'slogan' | 'sloganEn' | 'description' | 'logoUrl' | 'logoMode' | 'logoSize' | 'colors' | 'legal' | 'aiNotice' | 'pressForeignTopics' | 'pressForeign' | 'logoStrip' | 'iconUrl' | 'ogImage' | 'cmsLang' | 'commentsOn'>
   sections: { id: string; specialty: boolean; description: string }[]
 }
 
@@ -60,6 +60,7 @@ export async function saveSelfSiteSettings(outletId: string, p: SelfSitePayload)
     pressForeignTopics: topics,
     pressForeign: topics.length > 0,
     logoStrip: cleanLogoStrip(s.logoStrip),
+    commentsOn: s.commentsOn === true ? true : undefined,
     cmsLang: s.cmsLang === 'en' ? 'en' : s.cmsLang === 'ko' ? 'ko' : undefined,
   }
   const { error } = await supabase.rpc('outlet_site_self_save', { o: outletId, p_name: name, p_patch: JSON.parse(JSON.stringify(patch)) })

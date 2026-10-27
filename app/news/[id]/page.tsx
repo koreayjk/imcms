@@ -11,6 +11,7 @@ import AdArea from '@/components/site/AdArea'
 import ArticleMain from '@/components/site/ArticleMain'
 import ArticleAside from '@/components/site/ArticleAside'
 import { siteText } from '@/lib/site-text'
+import CommentBox from '@/components/site/CommentBox'
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
 
@@ -85,6 +86,7 @@ export default async function ArticlePage(props: Props) {
           siteName={site.name}
           lang={site.lang}
           tz={site.timeZone}
+          comments={site.commentsOn ? <CommentBox articleId={a.id} lang={site.lang ?? 'ko'} next={`/news/${a.id}`} /> : undefined}
           source={source}
           related={related}
           relatedLinks={relatedLinks}

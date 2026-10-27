@@ -12,6 +12,10 @@ import { useT } from './CmsLang'
 
 type Item = { href: string; label: [ko: string, en: string]; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
 
+const ChatIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 5h16v11H9l-5 4V5Z" /><path d="M8 9h8M8 12h5" /></svg>
+)
+
 const ITEMS: Item[] = [
   { href: '/admin/dashboard', label: ['대시보드', 'Dashboard'], icon: <ChartIcon />, match: (p) => p.startsWith('/admin/dashboard'), minRole: 'staff' },
   { href: '/newsroom', label: ['뉴스룸', 'Newsroom'], icon: <NewsroomIcon />, match: (p) => p === '/newsroom' },
@@ -22,6 +26,7 @@ const ITEMS: Item[] = [
   { href: '/admin/home', label: ['홈편집', 'Front Page'], icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'site' },
   { href: '/admin/categories', label: ['섹션', 'Sections'], icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'site' },
   { href: '/admin/ads', label: ['광고', 'Ads'], icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'site' },
+  { href: '/admin/comments', label: ['댓글', 'Comments'], icon: <ChatIcon />, match: (p) => p.startsWith('/admin/comments'), minRole: 'editor' },
   { href: '/admin/newsletter', label: ['뉴스레터', 'Newsletter'], icon: <MailIcon />, match: (p) => p.startsWith('/admin/newsletter'), minRole: 'editor' },
   { href: '/admin/users', label: ['회원', 'Members'], icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
   { href: '/admin/outlets', label: ['매체', 'Outlets'], icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },

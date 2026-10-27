@@ -217,7 +217,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -257,6 +257,10 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <option value="en">English</option>
             </select>
           </Field>
+          <label className="flex items-start gap-2 text-[13.5px] sm:col-span-2">
+            <input type="checkbox" checked={!!s.commentsOn} onChange={(e) => set({ commentsOn: e.target.checked })} className="mt-1" />
+            <span><strong>{t('기사 댓글 받기', 'Accept comments on stories')}</strong> <span className="block text-[12px] text-muted">{t('독자가 구글 또는 이메일로 로그인해 기사 아래에 댓글을 씁니다. 모든 댓글은 편집국이 승인해야 보입니다 (편집국 → 댓글). 이 기능을 쓰려면 운영팀이 Supabase에서 comments.sql을 먼저 실행해야 합니다.', 'Readers sign in with Google or email and comment under stories. Every comment must be approved in the newsroom (Comments) before it shows. The operations team must run comments.sql in Supabase first.')}</span></span>
+          </label>
           <Field label={t('슬로건', 'Slogan')} hint={t('메뉴·하단에 표시', 'Shown in the menu and footer')}><input value={s.slogan ?? ''} onChange={(e) => set({ slogan: e.target.value })} maxLength={80} className="field-input" /></Field>
           <Field label={t('영문 슬로건', 'English slogan')}><input value={s.sloganEn ?? ''} onChange={(e) => set({ sloganEn: e.target.value })} maxLength={80} className="field-input" /></Field>
           <div className="space-y-4 sm:col-span-2">
