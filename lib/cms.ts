@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from './supabase-server'
 import type { UserRole } from './types'
 import { hasVerifiedFactor, mfaExpired, mfaSession, tokenClaims } from './mfa'
 import { VERIFIED_USER_HEADER, readVerifiedUser } from './verified-user'
+import { parseCmsLang, type CmsLang } from './cms-i18n'
 
 // 한 번의 요청 안에서는 레이아웃과 페이지가 같은 결과를 나눠 쓴다 (로그인 확인·회원 정보 조회를 두 번 하지 않도록)
 export const getCmsContext = cache(async function getCmsContext() {
@@ -45,6 +46,13 @@ export const getCmsContext = cache(async function getCmsContext() {
     ? staffPick
     : ((profile?.outlet_id as string | null) ?? null)
 
+  // 편집국 언어: 내 정보에서 고른 것(cms-lang.sql) → 매체의 편집국 언어(site.cmsLang) → 한국어
+  let lang: CmsLang | null = parseCmsLang((profile as { cms_lang?: string | null } | null)?.cms_lang)
+  if (!lang && outletId) {
+    const { data: lo } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
+    lang = parseCmsLang((lo?.site as { cmsLang?: string } | null)?.cmsLang)
+  }
+
   // 2단계 인증 (account-security.sql): 코드를 넣은 지 오래됐으면 다시 묻고, 필수인데 아직 안 켰으면 등록 화면으로
   //   필수 = 총관리자·매니저, 발행인이 필수로 정한 그룹의 발행인·편집장 (SQL 실행 전이면 아무것도 바뀌지 않는다)
   if (!trial) {
@@ -82,6 +90,8 @@ export const getCmsContext = cache(async function getCmsContext() {
   return {
     supabase,
     user,
+    // 편집국(관리 화면) 언어
+    lang: lang ?? ('ko' as CmsLang),
     profile: viewAs && profile ? { ...profile, role: eff.role, is_super: false, is_staff: false } : profile,
     outletId,
     // 총관리자: 모든 그룹 / 발행인: 자기 그룹 / 편집장: 자기 매체

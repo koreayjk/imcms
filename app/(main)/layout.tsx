@@ -1,3 +1,4 @@
+import { CmsLangProvider } from '@/components/cms/CmsLang'
 import type { Viewport } from 'next'
 import { APP_METADATA } from '@/lib/brand'
 import { Suspense } from 'react'
@@ -21,7 +22,7 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, maxi
 export const metadata = APP_METADATA
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin, isEditorPlus, trial, viewAs, canViewAs, real } = await getCmsContext()
+  const { supabase, user, profile, outletId, isSuper, isStaff, isGroupAdmin, isEditorPlus, trial, viewAs, canViewAs, real, lang } = await getCmsContext()
 
   // 알림 숫자와 매체 목록은 한꺼번에 가져온다 (하나씩 기다리면 그만큼 느려진다)
   // 승인 대기 가입자: 총관리자는 전체, 발행인은 우리 그룹 매체로 신청한 사람 (DB 권한이 보이는 만큼만 센다)
@@ -120,6 +121,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   // 화면 높이 단위(dvh)가 창 크기를 잘못 기억하는 브라우저가 있어, 화면 전체에 붙이는 방식으로 높이를 정한다
   return (
+    <CmsLangProvider lang={lang}>
     <div className="fixed inset-0 flex overflow-hidden bg-[#F4F5F7] print:static print:block print:h-auto print:overflow-visible print:bg-white">
       <AppServiceWorker />
       <div className="contents print:hidden">
@@ -159,5 +161,6 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         <Suspense fallback={null}><ScrollKeeper /></Suspense>
       </div>
     </div>
+    </CmsLangProvider>
   )
 }

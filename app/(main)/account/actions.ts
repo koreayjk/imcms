@@ -18,6 +18,17 @@ export async function updateMyName(_prev: NameState, form: FormData): Promise<Na
   return { ok: true }
 }
 
+// 내 편집국 언어 (비우면 매체 기본 언어를 따른다, cms-lang.sql)
+export async function setMyLang(value: 'default' | 'ko' | 'en'): Promise<{ error?: string }> {
+  const { supabase, user, lang } = await getCmsContext()
+  const en = lang === 'en'
+  const cms_lang = value === 'ko' || value === 'en' ? value : null
+  const { error } = await supabase.from('profiles').update({ cms_lang }).eq('id', user.id)
+  if (error) return { error: /cms_lang|column/i.test(error.message) ? (en ? 'The operations team needs to run supabase/cms-lang.sql first.' : '운영팀이 Supabase에서 cms-lang.sql을 먼저 실행해야 합니다.') : (en ? `Could not change it: ${error.message}` : `바꾸지 못했습니다: ${error.message}`) }
+  revalidatePath('/', 'layout')
+  return {}
+}
+
 // 발행인·총관리자: 작업할 매체 바꾸기 (DB가 자기 그룹 매체인지 확인한다)
 export async function switchOutlet(outletId: string): Promise<{ error?: string }> {
   const { supabase, user, isGroupAdmin, isStaff, isSuper } = await getCmsContext()

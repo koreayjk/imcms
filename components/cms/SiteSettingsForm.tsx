@@ -173,7 +173,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -207,6 +207,12 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="매체 이름 (제호)"><input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} className="field-input" /></Field>
           <Field label="영문 이름" hint="로고 아래 작은 글자 (비워도 됨)"><input value={s.nameEn ?? ''} onChange={(e) => set({ nameEn: e.target.value })} maxLength={60} placeholder="예: THE CARE TIMES" className="field-input" /></Field>
+          <Field label="편집국 언어 / Newsroom language" hint="이 매체 구성원이 보는 편집국 화면 언어 (개인은 내 정보에서 따로 고를 수 있음)">
+            <select value={s.cmsLang ?? 'ko'} onChange={(e) => set({ cmsLang: e.target.value === 'en' ? 'en' : 'ko' })} className="field-input">
+              <option value="ko">한국어</option>
+              <option value="en">English</option>
+            </select>
+          </Field>
           <Field label="슬로건" hint="메뉴·하단에 표시"><input value={s.slogan ?? ''} onChange={(e) => set({ slogan: e.target.value })} maxLength={80} className="field-input" /></Field>
           <Field label="영문 슬로건"><input value={s.sloganEn ?? ''} onChange={(e) => set({ sloganEn: e.target.value })} maxLength={80} className="field-input" /></Field>
           <div className="space-y-4 sm:col-span-2">

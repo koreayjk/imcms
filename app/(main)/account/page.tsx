@@ -1,6 +1,7 @@
 import { getCmsContext } from '@/lib/cms'
 import { ROLE_LABEL, type UserRole } from '@/lib/types'
 import NameForm from '@/components/cms/NameForm'
+import LanguageForm from '@/components/cms/LanguageForm'
 import EmailNotifyToggle from '@/components/cms/EmailNotifyToggle'
 import MfaSettings from '@/components/cms/MfaSettings'
 import LoginHistory, { type LoginRow } from '@/components/cms/LoginHistory'
@@ -10,7 +11,7 @@ import { PolicyLinks } from '@/components/auth/AuthShell'
 
 export default async function AccountPage() {
   const { supabase, user, profile, outletId, isGroupAdmin, isSuper, publisherId, trial } = await getCmsContext()
-  const { data: outlet } = outletId ? await supabase.from('outlets').select('name').eq('id', outletId).single() : { data: null }
+  const { data: outlet } = outletId ? await supabase.from('outlets').select('name, site').eq('id', outletId).single() : { data: null }
   // 2단계 인증 (account-security.sql 전이면 필수 여부·그룹 설정은 숨긴다)
   const factors = (user.factors ?? []).filter((f) => f.status === 'verified' && f.factor_type === 'totp')
     .map((f) => ({ id: f.id, name: f.friendly_name || '인증 앱', createdAt: f.created_at }))
@@ -28,6 +29,7 @@ export default async function AccountPage() {
       <h1 className="mb-6 text-[22px] font-bold tracking-tight">내 정보</h1>
       <div className="space-y-6 rounded-lg border border-line bg-white p-4 sm:p-7">
         <NameForm name={profile?.full_name ?? ''} />
+        <LanguageForm value={(profile as { cms_lang?: string | null } | null)?.cms_lang === 'en' ? 'en' : (profile as { cms_lang?: string | null } | null)?.cms_lang === 'ko' ? 'ko' : null} outletDefault={(outlet?.site as { cmsLang?: string } | null)?.cmsLang === 'en' ? 'en' : 'ko'} />
         <dl className="grid grid-cols-[80px_1fr] gap-y-2.5 border-t border-line pt-5 text-[13.5px]">
           <dt className="text-muted">이메일</dt><dd className="min-w-0 break-all">{user.email}</dd>
           <dt className="text-muted">역할</dt><dd>{profile?.role ? ROLE_LABEL[profile.role as UserRole] : '-'}</dd>
