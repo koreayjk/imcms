@@ -4,23 +4,26 @@ import { currentSite } from '@/lib/public-data'
 import { mailReady, noticeMail, sendMails } from '@/lib/mail'
 import { siteOrigin } from '@/lib/origin'
 import { paymentDbSecret } from '@/lib/toss'
-import { anonClient, clearReaderCookie, getReader, googleReady, safeNext, signToken } from '@/lib/reader'
+import { anonClient, clearReaderCookie, getReader, googleReady, readToken, safeNext, signToken } from '@/lib/reader'
 import { screenComment } from '@/lib/comment-screen'
 import { subscribeNewsletter } from '@/app/newsletter/actions'
+import { checkGuestPw, guestIpHash, hashGuestPw, makeCaptcha } from '@/lib/guest-comment'
 
 // 홈페이지 독자 댓글 (comments.sql). 독자 로그인은 구글 또는 이메일 확인 링크
-export type PublicComment = { id: string; name: string; body: string; created_at: string }
+export type PublicComment = { id: string; name: string; body: string; created_at: string; guest: boolean }
+export type CommentKind = 'guest' | 'login'
 
-export async function listComments(articleId: string): Promise<{ comments: PublicComment[]; reader: { name: string } | null; google: boolean; on: boolean; newsletter: boolean }> {
+export async function listComments(articleId: string): Promise<{ comments: PublicComment[]; reader: { name: string } | null; google: boolean; on: boolean; newsletter: boolean; kind: CommentKind }> {
   const site = await currentSite()
   const on = !!site.commentsOn
   const newsletter = !!site.outletId && mailReady()
-  if (!on || !/^[0-9a-f-]{36}$/.test(articleId)) return { comments: [], reader: null, google: false, on, newsletter }
+  const kind: CommentKind = site.commentsKind === 'guest' ? 'guest' : 'login'
+  if (!on || !/^[0-9a-f-]{36}$/.test(articleId)) return { comments: [], reader: null, google: false, on, newsletter, kind }
   const [{ data }, reader] = await Promise.all([
     anonClient().rpc('comments_public', { secret: paymentDbSecret(), p_article: articleId }),
-    getReader(),
+    kind === 'login' ? getReader() : Promise.resolve(null),
   ])
-  return { comments: (data ?? []) as PublicComment[], reader: reader ? { name: reader.name } : null, google: googleReady(), on, newsletter }
+  return { comments: (data ?? []) as PublicComment[], reader: reader ? { name: reader.name } : null, google: googleReady(), on, newsletter, kind }
 }
 
 export type ReaderState = { ok?: boolean; error?: string; newsletter?: boolean }
@@ -83,13 +86,61 @@ export async function postComment(articleId: string, body: string): Promise<{ ok
   return { ok: true, live: data === 'live' }
 }
 
+// 신고: 로그인 독자는 독자 번호, 비회원은 접속 표시값으로 한 댓글에 한 번씩
 export async function reportComment(commentId: string): Promise<{ ok?: boolean; error?: string }> {
   const site = await currentSite()
   const en = site.lang === 'en'
-  const reader = await getReader()
-  if (!reader) return { error: en ? 'Please sign in to report a comment.' : '신고하려면 로그인해 주세요.' }
-  const { error } = await anonClient().rpc('comment_report', { secret: paymentDbSecret(), rid: reader.id, p_comment: commentId })
+  let key: string
+  if (site.commentsKind === 'guest') key = `ip:${await guestIpHash()}`
+  else {
+    const reader = await getReader()
+    if (!reader) return { error: en ? 'Please sign in to report a comment.' : '신고하려면 로그인해 주세요.' }
+    key = reader.id
+  }
+  const { error } = await anonClient().rpc('comment_report', { secret: paymentDbSecret(), p_key: key, p_comment: commentId })
   return error ? { error: en ? 'Could not report. Please try again.' : '신고하지 못했습니다. 다시 시도해 주세요.' } : { ok: true }
+}
+
+// ───────── 비회원(닉네임·비밀번호) 댓글 ─────────
+export async function newCaptcha(): Promise<{ image: string; token: string }> {
+  const { code, image } = makeCaptcha()
+  return { image, token: signToken('captcha', { c: code }, 10 * 60) }
+}
+
+export async function postGuestComment(articleId: string, f: { name: string; password: string; body: string; captchaToken: string; captcha: string }): Promise<{ ok?: boolean; live?: boolean; error?: string }> {
+  const site = await currentSite()
+  const en = site.lang === 'en'
+  if (!site.commentsOn || site.commentsKind !== 'guest') return { error: en ? 'Comments are not available.' : '댓글을 받지 않습니다.' }
+  const name = f.name.trim()
+  const text = f.body.trim()
+  if (!name) return { error: en ? 'Please enter a nickname.' : '닉네임을 적어 주세요.' }
+  if (name.length > 20) return { error: en ? 'Nicknames can be up to 20 characters.' : '닉네임은 20자까지 쓸 수 있습니다.' }
+  if (f.password.length < 4 || f.password.length > 30) return { error: en ? 'Password must be 4–30 characters.' : '비밀번호는 4자 이상 30자 이하로 적어 주세요.' }
+  if (!text) return { error: en ? 'Please write a comment.' : '댓글 내용을 적어 주세요.' }
+  if (text.length > 500) return { error: en ? 'Comments can be up to 500 characters.' : '댓글은 500자까지 쓸 수 있습니다.' }
+  const cap = readToken('captcha', f.captchaToken)
+  if (!cap || cap.c !== f.captcha.trim().toUpperCase()) return { error: en ? 'The characters do not match. Please try again.' : '그림 속 문자가 맞지 않습니다. 다시 입력해 주세요.' }
+  const { data, error } = await anonClient().rpc('comment_add_guest', {
+    secret: paymentDbSecret(), p_article: articleId, p_name: name, p_pw: hashGuestPw(f.password), p_body: text,
+    p_hold: screenComment(text), p_ip: await guestIpHash(),
+  })
+  if (error) return { error: en ? 'We could not save your comment. Please try again.' : '댓글을 저장하지 못했습니다. 다시 시도해 주세요.' }
+  const map: Record<string, string> = en
+    ? { banned: 'You can no longer post comments.', rate: 'You are posting too fast. Please wait a while.', dup: 'You already posted this comment.', off: 'Comments are turned off.', mode: 'Comments are not available.', closed: 'This story is not open for comments.' }
+    : { banned: '더 이상 댓글을 쓸 수 없습니다.', rate: '너무 빨리 쓰고 있습니다. 잠시 뒤 다시 시도해 주세요.', dup: '이미 같은 댓글을 올렸습니다.', off: '댓글이 꺼져 있습니다.', mode: '댓글을 받지 않습니다.', closed: '댓글을 받지 않는 기사입니다.' }
+  if (data !== 'ok' && data !== 'live') return { error: map[String(data)] ?? (en ? 'Could not post.' : '올리지 못했습니다.') }
+  return { ok: true, live: data === 'live' }
+}
+
+// 비회원이 쓴 댓글은 비밀번호를 알면 지울 수 있다
+export async function deleteGuestComment(commentId: string, password: string): Promise<{ ok?: boolean; error?: string }> {
+  const site = await currentSite()
+  const en = site.lang === 'en'
+  const db = anonClient()
+  const { data } = await db.rpc('comment_guest_hash', { secret: paymentDbSecret(), p_comment: commentId })
+  if (typeof data !== 'string' || !checkGuestPw(password, data)) return { error: en ? 'The password does not match.' : '비밀번호가 맞지 않습니다.' }
+  const { error } = await db.rpc('comment_guest_delete', { secret: paymentDbSecret(), p_comment: commentId })
+  return error ? { error: en ? 'Could not delete. Please try again.' : '지우지 못했습니다. 다시 시도해 주세요.' } : { ok: true }
 }
 
 // 로그인한 독자가 뉴스레터도 받겠다고 할 때 (구독 확인 메일을 보낸다. 링크를 눌러야 구독 시작)

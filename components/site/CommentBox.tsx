@@ -1,25 +1,36 @@
 'use client'
 
 import { useActionState, useEffect, useState, useTransition } from 'react'
-import { listComments, postComment, readerLogout, reportComment, startEmailLogin, subscribeReaderNewsletter, type PublicComment, type ReaderState } from '@/app/reader/actions'
+import { deleteGuestComment, listComments, newCaptcha, postComment, postGuestComment, readerLogout, reportComment, startEmailLogin, subscribeReaderNewsletter, type CommentKind, type PublicComment, type ReaderState } from '@/app/reader/actions'
 import type { SiteLang } from '@/lib/sites'
 
-// 기사 아래 댓글: 독자는 구글 또는 이메일 링크로 로그인하고, 쓴 댓글은 편집국이 승인해야 보인다 (comments.sql)
+// 기사 아래 댓글 (comments.sql). 매체 설정에 따라 두 가지:
+//   guest: 닉네임·비밀번호·그림 문자만 넣고 바로 쓴다 (본인 댓글은 비밀번호로 삭제)
+//   login: 구글 또는 이메일 링크로 로그인해서 쓴다
+// 쓴 댓글은 매체 설정에 따라 편집국이 승인해야 보이거나, 먼저 보이고 자동 검사에 걸린 것만 승인을 기다린다
 export default function CommentBox({ articleId, lang, next }: { articleId: string; lang: SiteLang; next: string }) {
   const en = lang === 'en'
-  const [data, setData] = useState<{ comments: PublicComment[]; reader: { name: string } | null; google: boolean; newsletter: boolean } | null>(null)
+  const [data, setData] = useState<{ comments: PublicComment[]; reader: { name: string } | null; google: boolean; newsletter: boolean; kind: CommentKind } | null>(null)
   const [body, setBody] = useState('')
   const [msg, setMsg] = useState<{ ok?: string; error?: string }>({})
   const [pending, start] = useTransition()
   const [login, loginAction] = useActionState<ReaderState, FormData>(startEmailLogin, {})
+  const [g, setG] = useState({ name: '', pw: '', cap: '' })
+  const [cap, setCap] = useState<{ image: string; token: string } | null>(null)
+  const refreshCap = () => newCaptcha().then(setCap)
 
-  const load = () => listComments(articleId).then((d) => { if (d.on) setData({ comments: d.comments, reader: d.reader, google: d.google, newsletter: d.newsletter }) })
+  const load = () => listComments(articleId).then((d) => { if (d.on) setData({ comments: d.comments, reader: d.reader, google: d.google, newsletter: d.newsletter, kind: d.kind }) })
   useEffect(() => { void load() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [articleId])
+  const guestMode = data?.kind === 'guest'
+  useEffect(() => { if (guestMode) void refreshCap() }, [guestMode])
   if (!data) return null
 
   const fmt = (iso: string) => new Intl.DateTimeFormat(en ? 'en-US' : 'ko-KR', { dateStyle: 'medium' }).format(new Date(iso))
   const submit = () => start(async () => {
-    const r = await postComment(articleId, body)
+    const r = guestMode
+      ? await postGuestComment(articleId, { name: g.name, password: g.pw, body, captchaToken: cap?.token ?? '', captcha: g.cap })
+      : await postComment(articleId, body)
+    if (guestMode) { setG((x) => ({ ...x, cap: '' })); void refreshCap() }
     if (r.error) return setMsg({ error: r.error })
     setBody('')
     if (r.live) { setMsg({ ok: en ? 'Your comment has been posted.' : '댓글이 등록되었습니다.' }); void load() }
@@ -36,12 +47,23 @@ export default function CommentBox({ articleId, lang, next }: { articleId: strin
             <li key={c.id} className="py-3.5">
               <p className="text-[13px] text-sub"><strong className="font-semibold text-body">{c.name}</strong> · {fmt(c.created_at)}</p>
               <p className="mt-1 whitespace-pre-line break-words text-[15px] leading-[1.7] text-body">{c.body}</p>
-              {data.reader && (
-                <button type="button" className="mt-1 text-[12px] text-sub underline-offset-2 hover:text-body hover:underline" onClick={() => start(async () => {
-                  if (!window.confirm(en ? 'Report this comment to the editors?' : '이 댓글을 신고할까요?')) return
-                  const r = await reportComment(c.id)
-                  window.alert(r.error ?? (en ? 'Thank you. We will review it.' : '신고했습니다. 확인하겠습니다.'))
-                })}>{en ? 'Report' : '신고'}</button>
+              {(data.reader || guestMode) && (
+                <p className="mt-1 flex gap-3 text-[12px] text-sub">
+                  <button type="button" className="underline-offset-2 hover:text-body hover:underline" onClick={() => start(async () => {
+                    if (!window.confirm(en ? 'Report this comment to the editors?' : '이 댓글을 신고할까요?')) return
+                    const r = await reportComment(c.id)
+                    window.alert(r.error ?? (en ? 'Thank you. We will review it.' : '신고했습니다. 확인하겠습니다.'))
+                  })}>{en ? 'Report' : '신고'}</button>
+                  {guestMode && c.guest && (
+                    <button type="button" className="underline-offset-2 hover:text-body hover:underline" onClick={() => start(async () => {
+                      const pw = window.prompt(en ? 'Enter the password you used when posting.' : '댓글을 쓸 때 정한 비밀번호를 입력하세요.')
+                      if (!pw) return
+                      const r = await deleteGuestComment(c.id, pw)
+                      if (r.error) return window.alert(r.error)
+                      void load()
+                    })}>{en ? 'Delete' : '삭제'}</button>
+                  )}
+                </p>
               )}
             </li>
           ))}
@@ -51,7 +73,33 @@ export default function CommentBox({ articleId, lang, next }: { articleId: strin
       )}
 
       <div className="mt-5 rounded border border-rule bg-soft p-4">
-        {data.reader ? (
+        {guestMode ? (
+          <div className="space-y-2">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="sr-only" htmlFor="gc-name">{en ? 'Nickname' : '닉네임'}</label>
+              <input id="gc-name" value={g.name} onChange={(e) => setG({ ...g, name: e.target.value })} maxLength={20} placeholder={en ? 'Nickname' : '닉네임'} autoComplete="nickname" className="rounded border border-rule bg-white px-3 py-2 text-[14px]" />
+              <label className="sr-only" htmlFor="gc-pw">{en ? 'Password' : '비밀번호'}</label>
+              <input id="gc-pw" type="password" value={g.pw} onChange={(e) => setG({ ...g, pw: e.target.value })} maxLength={30} placeholder={en ? 'Password (to delete your comment later)' : '비밀번호 (나중에 삭제할 때 필요)'} autoComplete="new-password" className="rounded border border-rule bg-white px-3 py-2 text-[14px]" />
+            </div>
+            <label htmlFor="comment-body" className="sr-only">{en ? 'Your comment' : '댓글 내용'}</label>
+            <textarea id="comment-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={500} rows={4}
+              placeholder={en ? 'Join the conversation. Please be respectful; comments may be reviewed by our editors.' : '의견을 남겨 주세요. 서로 존중해 주세요. 댓글은 편집국이 검토할 수 있습니다.'}
+              className="w-full rounded border border-rule bg-white px-3 py-2 text-[15px]" />
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => void refreshCap()} title={en ? 'Refresh' : '다른 그림으로 바꾸기'} className="shrink-0 rounded border border-rule bg-white p-0.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {cap ? <img src={cap.image} alt={en ? 'Characters to type' : '입력할 문자'} width={124} height={40} /> : <span className="block h-10 w-[124px]" />}
+              </button>
+              <label className="sr-only" htmlFor="gc-cap">{en ? 'Type the characters' : '그림 속 문자'}</label>
+              <input id="gc-cap" value={g.cap} onChange={(e) => setG({ ...g, cap: e.target.value })} maxLength={4} autoComplete="off" placeholder={en ? 'Type the characters' : '그림 속 문자 입력'} className="w-36 rounded border border-rule bg-white px-3 py-2 text-[14px] uppercase" />
+              <span className="ml-auto text-[12px] text-sub">{body.length}/500</span>
+              <button type="button" disabled={pending || !body.trim() || !g.name.trim() || !g.pw || !g.cap.trim()} onClick={submit} className="rounded bg-brand px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-50">{en ? 'Post comment' : '댓글 등록'}</button>
+            </div>
+            {msg.ok && <p role="status" className="text-[13px] text-brand">{msg.ok}</p>}
+            {msg.error && <p role="alert" className="text-[13px] text-[#C0392B]">{msg.error}</p>}
+            <p className="text-[12px] text-sub">{en ? 'Your nickname is shown with the comment. Your password is stored only in encrypted form, and a scrambled form of your connection address is kept to prevent abuse.' : '닉네임이 댓글에 표시됩니다. 비밀번호는 암호화해 저장하고, 도배 방지를 위해 접속 주소를 알아볼 수 없는 값으로 바꿔 보관합니다.'}</p>
+          </div>
+        ) : data.reader ? (
           <div className="space-y-2">
             <p className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-sub">
               <span>{en ? 'Signed in as' : '로그인:'} <strong className="text-body">{data.reader.name}</strong></span>

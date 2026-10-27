@@ -31,3 +31,11 @@ export async function banReader(readerId: string) {
   await supabase.from('comments').update({ status: 'rejected', decided_at: new Date().toISOString(), decided_by: user.id }).eq('reader_id', readerId).neq('status', 'rejected')
   revalidatePath('/admin/comments')
 }
+
+// 비회원 차단: 같은 접속 표시값(ip_hash)에서 오는 댓글을 막고, 이미 쓴 댓글은 반려로 돌린다
+export async function banGuest(outletId: string, ipHash: string) {
+  const { supabase, user } = await ctx()
+  await supabase.from('comment_blocked_ips').upsert({ outlet_id: outletId, ip_hash: ipHash })
+  await supabase.from('comments').update({ status: 'rejected', decided_at: new Date().toISOString(), decided_by: user.id }).eq('outlet_id', outletId).eq('ip_hash', ipHash).neq('status', 'rejected')
+  revalidatePath('/admin/comments')
+}

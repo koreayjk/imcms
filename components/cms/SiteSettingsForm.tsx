@@ -217,7 +217,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -257,10 +257,13 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <option value="en">English</option>
             </select>
           </Field>
-          <label className="flex items-start gap-2 text-[13.5px] sm:col-span-2">
-            <input type="checkbox" checked={!!s.commentsOn} onChange={(e) => set({ commentsOn: e.target.checked })} className="mt-1" />
-            <span><strong>{t('기사 댓글 받기', 'Accept comments on stories')}</strong> <span className="block text-[12px] text-muted">{t('독자가 구글 또는 이메일로 로그인해 기사 아래에 댓글을 씁니다. 모든 댓글은 편집국이 승인해야 보입니다 (편집국 → 댓글).', 'Readers sign in with Google or email and comment under stories. Every comment must be approved in the newsroom (Comments) before it shows.')}</span></span>
-          </label>
+          <Field label={t('기사 댓글', 'Story comments')} hint={t('댓글을 받는 방식을 고릅니다. 독자 댓글은 편집국 → 댓글에서 관리합니다.', 'Choose how readers can comment. Manage comments under Comments in the newsroom.')}>
+            <select value={!s.commentsOn ? 'none' : s.commentsKind === 'guest' ? 'guest' : 'login'} onChange={(e) => set(e.target.value === 'none' ? { commentsOn: false } : { commentsOn: true, commentsKind: e.target.value === 'guest' ? 'guest' : 'login' })} className="field-input">
+              <option value="none">{t('댓글 없음', 'No comments')}</option>
+              <option value="guest">{t('간단히 닉네임·비밀번호 넣고 쓰기 (그림 문자 입력, 500자)', 'Quick: nickname + password + captcha (500 characters)')}</option>
+              <option value="login">{t('독자가 로그인(구글·이메일)해서 쓰기', 'Readers sign in with Google or email')}</option>
+            </select>
+          </Field>
           {s.commentsOn && (
             <Field label={t('새 댓글 처리', 'New comments')} hint={t('먼저 공개로 해도 링크·연락처·욕설·고함·도배로 보이는 댓글은 승인 대기에 잡힙니다', 'Even when publishing first, comments that look like links, contact details, abuse, shouting or spam are held for review')}>
               <select value={s.commentsMode === 'open' ? 'open' : 'review'} onChange={(e) => set({ commentsMode: e.target.value === 'open' ? 'open' : 'review' })} className="field-input">

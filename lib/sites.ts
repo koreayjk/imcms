@@ -112,6 +112,8 @@ export type SiteConfig = {
   timeZone?: string
   // 기사 댓글 (독자 로그인 + 승인 후 공개, comments.sql). 기본 꺼짐
   commentsOn?: boolean
+  // 댓글 방식: login(독자 로그인, 기본) / guest(닉네임·비밀번호·그림 문자)
+  commentsKind?: 'guest' | 'login'
   statsBoard?: StatsBoard
   // AI 활용 표시: 켜면 AI 초안 기사 본문 끝에 문구를 붙인다 (lib/ai-notice.ts)
   aiNotice?: { on: boolean; text?: string }
@@ -255,6 +257,7 @@ export type OutletSiteSettings = {
   commentsOn?: boolean
   // 새 댓글 처리: review(승인 후 공개, 기본) / open(먼저 공개하고 나중에 검토. 자동 검사에 걸린 것은 승인 대기)
   commentsMode?: 'review' | 'open'
+  commentsKind?: 'guest' | 'login'
   // 편집국(관리 화면) 기본 언어: 개인이 내 정보에서 고르지 않았을 때 쓴다 (없으면 한국어)
   cmsLang?: 'ko' | 'en'
   statsBoard?: StatsBoard
@@ -367,6 +370,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     lang: s.lang === 'en' ? 'en' : 'ko',
     timeZone: isOpenZone(s.timeZone) ? s.timeZone : undefined,
     commentsOn: s.commentsOn === true,
+    commentsKind: s.commentsKind === 'guest' ? 'guest' : 'login',
     statsBoard: cleanStats(s.statsBoard),
     aiBots: parseAiBotMode(s.aiBots),
   }

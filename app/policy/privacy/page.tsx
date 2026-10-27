@@ -23,7 +23,7 @@ export default async function PrivacyPage() {
 
       <section>
         <h2>1. 처리하는 개인정보와 목적</h2>
-        <p>신문사 홈페이지는 독자 회원가입 없이 이용할 수 있으며(기사 댓글을 쓰려는 경우에만 이메일 또는 구글 계정으로 로그인), 다음의 경우에만 최소한의 개인정보를 처리합니다.</p>
+        <p>신문사 홈페이지는 독자 회원가입 없이 이용할 수 있으며(기사 댓글을 쓰려는 경우에만 이메일 또는 구글 계정으로 로그인하거나, 닉네임·비밀번호를 입력), 다음의 경우에만 최소한의 개인정보를 처리합니다.</p>
         <table className="table-cards">
           <thead><tr><th>구분</th><th>항목</th><th>목적</th><th>보유 기간</th></tr></thead>
           <tbody>
@@ -31,6 +31,7 @@ export default async function PrivacyPage() {
             <tr><td className="tc-full">편집국 회원 (기자·편집인)</td><td data-label="항목">이름, 이메일 주소, 소속 매체, 로그인 기록</td><td data-label="목적">기사 작성·편집·발행, 본인 확인</td><td data-label="보유 기간">탈퇴 시까지 (기사의 기자명은 기사와 함께 보존)</td></tr>
             <tr><td className="tc-full">뉴스레터 구독 (신청한 분만)</td><td data-label="항목">이메일 주소, (선택) 이름, 구독 확인·수신거부 일시</td><td data-label="목적">뉴스레터 발송, 구독 확인</td><td data-label="보유 기간">수신거부할 때까지 (메일마다 수신거부 링크)</td></tr>
             <tr><td className="tc-full">기사 댓글 (댓글 기능을 켠 매체에서 로그인해 댓글을 쓰는 분만)</td><td data-label="항목">이메일 주소, 댓글에 표시할 이름, (구글 로그인 시) 구글 계정의 이름, 댓글 내용·신고 기록, 로그인 일시</td><td data-label="목적">로그인 확인, 댓글 게시와 검토, 악성 댓글 대응, 신고 처리</td><td data-label="보유 기간">댓글은 삭제를 요청하거나 기사가 삭제될 때까지, 독자 정보는 삭제를 요청할 때까지 (요청하면 바로 삭제)</td></tr>
+            <tr><td className="tc-full">기사 댓글 — 닉네임·비밀번호 방식 (댓글 기능을 켠 매체에서 비회원으로 댓글을 쓰는 분만)</td><td data-label="항목">닉네임, 비밀번호(암호화해 저장), 접속 주소를 알아볼 수 없게 바꾼 값, 댓글 내용·신고 기록</td><td data-label="목적">본인 댓글 삭제 확인, 도배·악성 댓글 방지와 차단, 신고 처리</td><td data-label="보유 기간">댓글은 삭제를 요청하거나 기사가 삭제될 때까지 (본인이 비밀번호로 직접 삭제할 수 있음)</td></tr>
             <tr><td className="tc-full">홈페이지 이용 (자동 수집)</td><td data-label="항목">접속 IP, 브라우저 종류, 접속 일시</td><td data-label="목적">서비스 안정 운영, 부정 이용 방지</td><td data-label="보유 기간">최대 1년</td></tr>
           </tbody>
         </table>
@@ -107,7 +108,7 @@ function PrivacyEn({ site, o }: { site: SiteConfig; o: { name: string; contact: 
 
       <section>
         <h2>1. Information we process and why</h2>
-        <p>You can read {site.name} without creating an account (you sign in with your email or Google account only if you want to comment on stories). We process only the minimum information needed in the following cases.</p>
+        <p>You can read {site.name} without creating an account (you sign in with your email or Google account, or enter a nickname and password, only if you want to comment on stories). We process only the minimum information needed in the following cases.</p>
         <table className="table-cards">
           <thead><tr><th>Purpose</th><th>Information</th><th>Use</th><th>Retention</th></tr></thead>
           <tbody>
@@ -115,6 +116,7 @@ function PrivacyEn({ site, o }: { site: SiteConfig; o: { name: string; contact: 
             <tr><td className="tc-full">Newsroom accounts (reporters and editors)</td><td data-label="Information">Name, email address, outlet, sign-in records</td><td data-label="Use">Writing, editing and publishing stories; identity verification</td><td data-label="Retention">Until the account is closed (bylines remain with published stories)</td></tr>
             <tr><td className="tc-full">Newsletter (subscribers only)</td><td data-label="Information">Email address, optional name, confirmation and unsubscribe dates</td><td data-label="Use">Sending the newsletter, confirming subscriptions</td><td data-label="Retention">Until you unsubscribe (every email has an unsubscribe link)</td></tr>
             <tr><td className="tc-full">Story comments (only readers who sign in to comment, on outlets that turn comments on)</td><td data-label="Information">Email address, the name shown with comments, (when using Google sign-in) the name on your Google account, comment text and reports, sign-in dates</td><td data-label="Use">Verifying sign-in, publishing and reviewing comments, handling abuse and reports</td><td data-label="Retention">Comments until you ask us to delete them or the story is removed; reader details until you ask us to delete them (deleted promptly on request)</td></tr>
+            <tr><td className="tc-full">Story comments — nickname and password (only readers who comment as guests, on outlets that turn comments on)</td><td data-label="Information">Nickname, password (stored encrypted), a scrambled form of the connection address that cannot be turned back into the address, comment text and reports</td><td data-label="Use">Confirming you may delete your own comment, preventing spam and abuse and blocking abusers, handling reports</td><td data-label="Retention">Comments until you ask us to delete them or the story is removed (you can also delete your own comment with your password)</td></tr>
             <tr><td className="tc-full">Website use (collected automatically)</td><td data-label="Information">IP address, browser type, time of access</td><td data-label="Use">Keeping the service secure and stable, preventing abuse</td><td data-label="Retention">Up to one year</td></tr>
           </tbody>
         </table>

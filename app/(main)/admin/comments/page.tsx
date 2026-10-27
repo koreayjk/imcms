@@ -4,11 +4,11 @@ import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
 import { formatDateTime } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
-import { banReader, decideComment, deleteComment } from './actions'
+import { banGuest, banReader, decideComment, deleteComment } from './actions'
 import { HOLD_LABEL } from '@/lib/comment-screen'
 
 type Row = {
-  id: string; body: string; status: 'pending' | 'approved' | 'rejected'; report_count: number; created_at: string; hold_reason: string | null
+  id: string; body: string; status: 'pending' | 'approved' | 'rejected'; report_count: number; created_at: string; hold_reason: string | null; guest_name: string | null; ip_hash: string | null; outlet_id: string
   article: { id: string; title: string } | null
   reader: { id: string; name: string | null; email: string; banned: boolean } | null
   outlet: { name: string } | null
@@ -24,7 +24,7 @@ export default async function CommentsPage(props: { searchParams: Promise<{ s?: 
 
   let q = supabase
     .from('comments')
-    .select('id, body, status, report_count, created_at, hold_reason, article:articles(id, title), reader:readers(id, name, email, banned), outlet:outlets(name)')
+    .select('id, body, status, report_count, created_at, hold_reason, guest_name, ip_hash, outlet_id, article:articles(id, title), reader:readers(id, name, email, banned), outlet:outlets(name)')
     .eq('status', tab)
     .order('created_at', { ascending: tab === 'pending' })
     .limit(100)
@@ -71,8 +71,8 @@ export default async function CommentsPage(props: { searchParams: Promise<{ s?: 
           {rows.map((c) => (
             <li key={c.id} className="rounded-lg border border-line bg-white p-4">
               <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted">
-                <strong className="text-ink">{c.reader?.name || c.reader?.email.split('@')[0]}</strong>
-                <span className="break-all">{c.reader?.email}</span>
+                <strong className="text-ink">{c.reader ? c.reader.name || c.reader.email.split('@')[0] : c.guest_name}</strong>
+                {c.reader ? <span className="break-all">{c.reader.email}</span> : <span className="rounded bg-soft px-1.5">{t('비회원', 'Guest')}{c.ip_hash ? ` · ${c.ip_hash.slice(0, 6)}` : ''}</span>}
                 <span>· {formatDateTime(c.created_at, lang)}</span>
                 {!outletId && c.outlet?.name && <span>· {c.outlet.name}</span>}
                 {c.hold_reason && HOLD_LABEL[c.hold_reason] && <span className="rounded bg-draft/20 px-1.5 text-ink">{t(`자동 검사: ${HOLD_LABEL[c.hold_reason][0]}`, `Auto screen: ${HOLD_LABEL[c.hold_reason][1]}`)}</span>}
@@ -89,6 +89,9 @@ export default async function CommentsPage(props: { searchParams: Promise<{ s?: 
                   <form action={decideComment.bind(null, c.id, 'rejected')}><PendingButton pending="…" className="btn-secondary px-3 py-1.5 text-[12.5px]">{c.status === 'approved' ? t('숨기기', 'Hide') : t('반려', 'Reject')}</PendingButton></form>
                 )}
                 <form action={deleteComment.bind(null, c.id)}><PendingButton pending="…" confirm={t('이 댓글을 지울까요?', 'Delete this comment?')} className="rounded border border-line px-3 py-1.5 text-[12.5px] text-danger">{t('삭제', 'Delete')}</PendingButton></form>
+                {!c.reader && c.ip_hash && (
+                  <form action={banGuest.bind(null, c.outlet_id, c.ip_hash)} className="ml-auto"><PendingButton pending="…" confirm={t('이 비회원(같은 접속)을 차단할까요? 쓴 댓글은 모두 반려되고 더 쓸 수 없습니다.', 'Block this guest (same connection)? All of their comments will be rejected and they cannot post again.')} className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger">{t('이 비회원 차단', 'Block guest')}</PendingButton></form>
+                )}
                 {c.reader && !c.reader.banned && (
                   <form action={banReader.bind(null, c.reader.id)} className="ml-auto"><PendingButton pending="…" confirm={t('이 독자를 차단할까요? 쓴 댓글은 모두 반려됩니다.', 'Ban this reader? All of their comments will be rejected.')} className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger">{t('독자 차단', 'Ban reader')}</PendingButton></form>
                 )}

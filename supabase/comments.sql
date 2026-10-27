@@ -1,5 +1,6 @@
 -- 기사 댓글 1단계 (Supabase SQL 에디터에서 실행, mail.sql(payment_secret_ok) 다음. 여러 번 실행해도 된다)
---   · 독자는 구글·이메일 링크로 로그인해야 댓글을 쓸 수 있다 (독자 계정은 편집국 회원(profiles)과 완전히 별개다)
+--   · 댓글 방식은 매체 설정(site.commentsOn / site.commentsKind)으로 고른다: 없음 / 'guest' = 닉네임·비밀번호·그림 문자 입력 / 'login' = 독자 로그인(구글·이메일 링크)
+--     독자 로그인 계정은 편집국 회원(profiles)과 완전히 별개다
 --   · 새 댓글 처리는 매체 설정(site.commentsMode)으로 고른다: 'review' = 승인 후 공개(기본), 'open' = 먼저 공개하고 나중에 검토
 --     'open' 이어도 자동 검사(링크·욕설·연락처·고함·도배)에 걸린 댓글은 승인 대기로 잡아 둔다 (hold_reason)
 --   · 신고가 3건 쌓이면 자동으로 다시 "승인 대기"로 돌려 숨긴다
@@ -140,5 +141,103 @@ begin
 end $$;
 revoke all on function public.comment_report(text, uuid, uuid) from public;
 grant execute on function public.comment_report(text, uuid, uuid) to anon, authenticated;
+
+-- ───────── 비회원(닉네임·비밀번호) 댓글 ─────────
+alter table comments alter column reader_id drop not null;
+alter table comments add column if not exists guest_name text check (guest_name is null or char_length(guest_name) <= 30);
+alter table comments add column if not exists guest_pw text;       -- scrypt 해시 (salt:hash). 본인 댓글 지우기용
+alter table comments add column if not exists ip_hash text;        -- 접속 주소를 비밀값과 섞어 한쪽으로만 바꾼 값 (도배·차단용, 원래 주소는 저장하지 않는다)
+create index if not exists comments_ip on comments (ip_hash, created_at);
+
+-- 차단한 비회원 (매체별)
+create table if not exists comment_blocked_ips (
+  outlet_id uuid not null references outlets(id) on delete cascade,
+  ip_hash text not null,
+  created_at timestamptz not null default now(),
+  primary key (outlet_id, ip_hash)
+);
+alter table comment_blocked_ips enable row level security;
+drop policy if exists "blocked_ips_manage" on comment_blocked_ips;
+create policy "blocked_ips_manage" on comment_blocked_ips for all to authenticated
+  using (coalesce(public.can_manage_outlet(outlet_id), false) or coalesce(public.is_staff(), false))
+  with check (coalesce(public.can_manage_outlet(outlet_id), false) or coalesce(public.is_staff(), false));
+
+-- 신고: 로그인 독자는 독자 번호, 비회원은 ip 표시로 한 번씩
+alter table comment_reports add column if not exists reporter_key text;
+update comment_reports set reporter_key = reader_id::text where reporter_key is null;
+alter table comment_reports alter column reader_id drop not null;
+alter table comment_reports drop constraint if exists comment_reports_pkey;
+create unique index if not exists comment_reports_key on comment_reports (comment_id, reporter_key);
+drop function if exists public.comment_report(text, uuid, uuid);
+create or replace function public.comment_report(secret text, p_key text, p_comment uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  insert into comment_reports (comment_id, reporter_key) values (p_comment, left(p_key, 80)) on conflict do nothing;
+  select count(*) into n from comment_reports where comment_id = p_comment;
+  update comments set report_count = n, status = case when n >= 3 and status = 'approved' then 'pending' else status end where id = p_comment;
+end $$;
+revoke all on function public.comment_report(text, text, uuid) from public;
+grant execute on function public.comment_report(text, text, uuid) to anon, authenticated;
+
+-- 승인된 댓글 (로그인 독자·비회원 모두). can_delete: 비회원이 쓴 댓글이면 비밀번호로 지울 수 있다
+drop function if exists public.comments_public(text, uuid);
+create or replace function public.comments_public(secret text, p_article uuid) returns table (id uuid, name text, body text, created_at timestamptz, guest boolean)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  return query
+    select c.id, coalesce(r.name, c.guest_name, left(split_part(r.email, '@', 1), 3) || '***'), c.body, c.created_at, (c.reader_id is null)
+    from comments c left join readers r on r.id = c.reader_id
+    where c.article_id = p_article and c.status = 'approved'
+    order by c.created_at limit 200;
+end $$;
+revoke all on function public.comments_public(text, uuid) from public;
+grant execute on function public.comments_public(text, uuid) to anon, authenticated;
+
+-- 비회원 댓글 쓰기. p_pw: 해시(salt:hash), p_hold: 자동 검사 이유, p_ip: 접속 표시값
+--   돌려주는 값: 'ok' / 'live' / 'banned' / 'rate' / 'dup' / 'off' / 'mode' (이 매체는 비회원 댓글을 받지 않음) / 'closed'
+create or replace function public.comment_add_guest(secret text, p_article uuid, p_name text, p_pw text, p_body text, p_hold text, p_ip text) returns text
+language plpgsql security definer set search_path = public as $$
+declare o uuid; on_flag text; kind text; mode text; b text := btrim(p_body); st text;
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  select a.outlet_id into o from articles a where a.id = p_article and a.status = 'published';
+  if o is null then return 'closed'; end if;
+  select coalesce(site->>'commentsOn', 'false'), coalesce(site->>'commentsKind', 'login'), coalesce(site->>'commentsMode', 'review') into on_flag, kind, mode from outlets where id = o;
+  if on_flag <> 'true' then return 'off'; end if;
+  if kind <> 'guest' then return 'mode'; end if;
+  if exists (select 1 from comment_blocked_ips where outlet_id = o and ip_hash = p_ip) then return 'banned'; end if;
+  if (select count(*) from comments where ip_hash = p_ip and created_at > now() - interval '1 minute') >= 3 then return 'rate'; end if;
+  if (select count(*) from comments where ip_hash = p_ip and created_at > now() - interval '1 hour') >= 20 then return 'rate'; end if;
+  if exists (select 1 from comments where ip_hash = p_ip and article_id = p_article and body = b and created_at > now() - interval '1 day') then return 'dup'; end if;
+  st := case when p_hold is null and mode = 'open' then 'approved' else 'pending' end;
+  insert into comments (outlet_id, article_id, reader_id, guest_name, guest_pw, ip_hash, body, status, hold_reason)
+  values (o, p_article, null, left(btrim(p_name), 30), p_pw, p_ip, left(b, 500), st, nullif(left(p_hold, 40), ''));
+  return case when st = 'approved' then 'live' else 'ok' end;
+end $$;
+revoke all on function public.comment_add_guest(text, uuid, text, text, text, text, text) from public;
+grant execute on function public.comment_add_guest(text, uuid, text, text, text, text, text) to anon, authenticated;
+
+-- 비회원 댓글을 지울 때: 저장된 비밀번호 해시를 서버가 받아 비교하고, 맞으면 지운다
+create or replace function public.comment_guest_hash(secret text, p_comment uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare h text;
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  select guest_pw into h from comments where id = p_comment and reader_id is null;
+  return h;
+end $$;
+revoke all on function public.comment_guest_hash(text, uuid) from public;
+grant execute on function public.comment_guest_hash(text, uuid) to anon, authenticated;
+create or replace function public.comment_guest_delete(secret text, p_comment uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
+  delete from comments where id = p_comment and reader_id is null;
+end $$;
+revoke all on function public.comment_guest_delete(text, uuid) from public;
+grant execute on function public.comment_guest_delete(text, uuid) to anon, authenticated;
 
 select 'comments' as 표, count(*) as 건수 from comments union all select 'readers', count(*) from readers;
