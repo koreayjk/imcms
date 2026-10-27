@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
+import { ticketScope, viewGroupOutletIds } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { formatShort } from '@/lib/format'
 import { NOTICE_CATEGORIES, TICKET_STATUS, hasUnreadReply, type NoticeCategory, type TicketStatus } from '@/lib/support'
@@ -20,13 +21,16 @@ const TILES = [
 ]
 
 export default async function SupportHome() {
-  const { supabase, isStaff, isEditorPlus, trial } = await getCmsContext()
+  const ctx = await getCmsContext()
+  const { supabase, user, isStaff, isEditorPlus, trial } = ctx
+  // 보기 모드: 그 역할이 실제로 보는 매체의 요청만
+  const groupOutlets = await viewGroupOutletIds(supabase, ctx)
   const { t, lang } = await getT()
 
   const [{ data: tickets }, { data: notices }, { count: openCount }] = await Promise.all([
-    supabase.from('support_tickets').select('id, title, status, category, created_at, last_staff_reply_at, requester_read_at, outlet:outlets(name)').order('updated_at', { ascending: false }).limit(8),
+    ticketScope(supabase.from('support_tickets').select('id, title, status, category, created_at, last_staff_reply_at, requester_read_at, outlet:outlets(name)'), ctx, user.id, groupOutlets).order('updated_at', { ascending: false }).limit(8),
     supabase.from('support_notices').select('id, title, category, pinned, created_at').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(5),
-    supabase.from('support_tickets').select('id', { count: 'exact', head: true }).neq('status', 'done'),
+    ticketScope(supabase.from('support_tickets').select('id', { count: 'exact', head: true }), ctx, user.id, groupOutlets).neq('status', 'done'),
   ])
 
   return (

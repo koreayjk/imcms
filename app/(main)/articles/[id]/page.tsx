@@ -23,7 +23,7 @@ export default async function ArticleDetailPage(
 ) {
   const searchParams = await props.searchParams
   const params = await props.params
-  const { supabase, user, isEditorPlus, trial } = await getCmsContext()
+  const { supabase, user, isEditorPlus, trial, viewAs, outletId } = await getCmsContext()
   const { t, lang } = await getT()
 
   const [{ data: article }, { data: revs }] = await Promise.all([
@@ -40,7 +40,8 @@ export default async function ArticleDetailPage(
       .order('changed_at', { ascending: false })
       .limit(50),
   ])
-  if (!article) notFound()
+  // 보기 모드: 보는 매체의 기사만 연다 (그 매체 사람은 다른 매체 기사를 볼 수 없다)
+  if (!article || (viewAs && article.outlet_id !== outletId)) notFound()
 
   // 체험용 샘플 기사(trial.sql)는 누구도 고치거나 지울 수 없다. 체험 계정은 본인 기사만 지운다
   const sample = !!article.is_sample
