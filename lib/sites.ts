@@ -15,6 +15,7 @@ export type HomeBandStyle = 'news' | 'brief' | 'feature' | 'grid' | 'video' | 's
 export type HomeBand = { slug: string; style: HomeBandStyle; title?: string; tagline?: string }
 
 import { parseAiBotMode, type AiBotMode } from '@/lib/ai-crawlers'
+import { isOpenZone } from '@/lib/zoned-time'
 import { parseHomeLayout, type HomeLayout } from '@/lib/home-layouts'
 export type LogoMode = 'mark' | 'full' | 'text'
 // 로고 크기: 이미지에 여백이 많아 작아 보일 때 키운다
@@ -107,6 +108,8 @@ export type SiteConfig = {
   plan?: string | null
   // 홈페이지 언어: ko(기본) / en(영문 매체 — 메뉴·날짜·안내 문구가 영어, lib/site-text.tsx)
   lang?: SiteLang
+  // 영문 홈페이지의 날짜·시각 시간대 (IANA 이름, 없으면 미국 동부)
+  timeZone?: string
   statsBoard?: StatsBoard
   // AI 활용 표시: 켜면 AI 초안 기사 본문 끝에 문구를 붙인다 (lib/ai-notice.ts)
   aiNotice?: { on: boolean; text?: string }
@@ -245,6 +248,8 @@ export type OutletSiteSettings = {
   iconUrl?: string
   trial?: boolean
   lang?: SiteLang
+  // 영문 홈페이지의 날짜·시각 시간대 (IANA 이름, 없으면 미국 동부)
+  timeZone?: string
   statsBoard?: StatsBoard
   // AI 활용 표시: 켜면 AI 초안 기사 본문 끝에 문구를 붙인다 (lib/ai-notice.ts)
   aiNotice?: { on: boolean; text?: string }
@@ -353,6 +358,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     iconUrl: (typeof s.iconUrl === 'string' && s.iconUrl) || undefined,
     trial: s.trial === true,
     lang: s.lang === 'en' ? 'en' : 'ko',
+    timeZone: isOpenZone(s.timeZone) ? s.timeZone : undefined,
     statsBoard: cleanStats(s.statsBoard),
     aiBots: parseAiBotMode(s.aiBots),
   }

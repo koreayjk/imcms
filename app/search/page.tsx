@@ -43,7 +43,7 @@ export default async function SearchPage(props: Props) {
             </p>
             {results.length ? (
               <ul className="divide-y divide-rule">
-                {results.map((a) => <ArticleRow key={a.id} article={a} showCategory lang={site.lang} />)}
+                {results.map((a) => <ArticleRow key={a.id} article={a} showCategory lang={site.lang} tz={site.timeZone} />)}
               </ul>
             ) : (
               <p className="py-16 text-center text-[15px] text-sub">{t.searchNone}</p>

@@ -84,6 +84,7 @@ export default async function ArticlePage(props: Props) {
           sectionName={section?.name}
           siteName={site.name}
           lang={site.lang}
+          tz={site.timeZone}
           source={source}
           related={related}
           relatedLinks={relatedLinks}

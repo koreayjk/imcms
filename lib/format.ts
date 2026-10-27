@@ -10,33 +10,33 @@ function parts(iso: string) {
   return { y: p.year, m: p.month, d: p.day, hh: p.hour, mm: p.minute }
 }
 
-// lang: 영문 매체('en')는 미국 동부 시간·AP 표기 (lib/site-text.tsx)
+// lang: 영문 매체('en')는 AP 표기, 시간대는 tz(없으면 미국 동부) (lib/site-text.tsx)
 type Lang = 'ko' | 'en' | undefined
 
-export function formatDate(iso: string | null | undefined, lang?: Lang) {
+export function formatDate(iso: string | null | undefined, lang?: Lang, tz?: string) {
   if (!iso) return ''
-  if (lang === 'en') return enDate(iso)
+  if (lang === 'en') return enDate(iso, tz)
   const { y, m, d } = parts(iso)
   return `${y}.${m}.${d}`
 }
 
-export function formatDateTime(iso: string | null | undefined, lang?: Lang) {
+export function formatDateTime(iso: string | null | undefined, lang?: Lang, tz?: string) {
   if (!iso) return ''
-  if (lang === 'en') return enDateTime(iso)
+  if (lang === 'en') return enDateTime(iso, tz)
   const { y, m, d, hh, mm } = parts(iso)
   return `${y}.${m}.${d} ${hh}:${mm}`
 }
 
-export function formatShort(iso: string | null | undefined, lang?: Lang) {
+export function formatShort(iso: string | null | undefined, lang?: Lang, tz?: string) {
   if (!iso) return ''
-  if (lang === 'en') return enShort(iso)
+  if (lang === 'en') return enShort(iso, tz)
   const t = parts(iso)
   const now = parts(new Date().toISOString())
   return t.y === now.y && t.m === now.m && t.d === now.d ? `${t.hh}:${t.mm}` : `${t.m}.${t.d}`
 }
 
-export function formatToday(lang?: Lang) {
-  if (lang === 'en') return enToday()
+export function formatToday(lang?: Lang, tz?: string) {
+  if (lang === 'en') return enToday(tz)
   return new Date().toLocaleDateString('ko-KR', {
     timeZone: TZ, year: 'numeric', month: 'long', day: 'numeric', weekday: 'short',
   })

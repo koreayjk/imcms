@@ -31,7 +31,7 @@ function Chip({ a, light = false }: { a: PublicArticle; light?: boolean }) {
   )
 }
 
-function Card({ a, lang, excerpt = false }: { a: PublicArticle; lang: SiteConfig['lang']; excerpt?: boolean }) {
+function Card({ a, lang, tz, excerpt = false }: { a: PublicArticle; lang: SiteConfig['lang']; tz?: string; excerpt?: boolean }) {
   return (
     <Link href={`/news/${a.id}`} className="headline-link group block">
       <Thumb sizes="(max-width: 1023px) 80vw, 380px" src={a.thumbnail_url} alt="" ratio="16 / 10" className="rounded-xl" />
@@ -39,7 +39,7 @@ function Card({ a, lang, excerpt = false }: { a: PublicArticle; lang: SiteConfig
         <Chip a={a} />
         <h3 className="headline-text mt-2 line-clamp-3 text-[18px] font-bold leading-[1.4] tracking-[-0.02em]">{a.title}</h3>
         {excerpt && a.excerpt && <p className="mt-1.5 line-clamp-2 text-[14px] leading-[1.6] text-sub">{a.excerpt}</p>}
-        <time dateTime={a.published_at ?? undefined} className="mt-2 block text-[12.5px] text-[#8A918C]">{formatDate(a.published_at, lang)}</time>
+        <time dateTime={a.published_at ?? undefined} className="mt-2 block text-[12.5px] text-[#8A918C]">{formatDate(a.published_at, lang, tz)}</time>
       </div>
     </Link>
   )
@@ -78,7 +78,7 @@ export default function HomeCards({ site, headline, subTops, underHeadline, majo
       {topCards.length > 0 && (
         <section className="pt-10 lg:pt-12">
           <ul className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-7 sm:gap-y-9 sm:overflow-visible sm:px-0 lg:grid-cols-3">
-            {topCards.map((a) => <li key={a.id} className="w-[78%] flex-shrink-0 snap-start sm:w-auto"><Card a={a} lang={L} excerpt /></li>)}
+            {topCards.map((a) => <li key={a.id} className="w-[78%] flex-shrink-0 snap-start sm:w-auto"><Card a={a} lang={L} tz={site.timeZone} excerpt /></li>)}
           </ul>
         </section>
       )}
@@ -120,7 +120,7 @@ export default function HomeCards({ site, headline, subTops, underHeadline, majo
           <RowHead title={row.name} href={row.href} more={t.more} />
           <ul className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:overflow-visible sm:px-0 lg:grid-cols-4">
             {row.items.map((a) => (
-              <li key={a.id} className="w-[72%] flex-shrink-0 snap-start sm:w-auto"><Card a={a} lang={L} /></li>
+              <li key={a.id} className="w-[72%] flex-shrink-0 snap-start sm:w-auto"><Card a={a} lang={L} tz={site.timeZone} /></li>
             ))}
           </ul>
         </section>

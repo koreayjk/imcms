@@ -44,7 +44,7 @@ export default function HomePortal({ site, headline, subTops, underHeadline, bre
               {breaking.map((a) => (
                 <li key={a.id} className="flex-shrink-0">
                   <Link href={`/news/${a.id}`} className="hover:underline underline-offset-2">
-                    <time dateTime={a.published_at ?? undefined} className="mr-1.5 text-[12px] font-semibold tabular-nums text-brand">{formatShort(a.published_at, L)}</time>
+                    <time dateTime={a.published_at ?? undefined} className="mr-1.5 text-[12px] font-semibold tabular-nums text-brand">{formatShort(a.published_at, L, site.timeZone)}</time>
                     {a.title}
                   </Link>
                 </li>
@@ -86,7 +86,7 @@ export default function HomePortal({ site, headline, subTops, underHeadline, bre
                   <Link href={`/news/${a.id}`} className="group flex items-baseline gap-2.5 py-2.5">
                     <span className="h-1 w-1 flex-shrink-0 translate-y-[-2px] rounded-full bg-gold" aria-hidden />
                     <span className="line-clamp-1 flex-1 text-[15px] leading-[1.45] group-hover:underline underline-offset-2">{a.title}</span>
-                    <time dateTime={a.published_at ?? undefined} className="flex-shrink-0 text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at, L)}</time>
+                    <time dateTime={a.published_at ?? undefined} className="flex-shrink-0 text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at, L, site.timeZone)}</time>
                   </Link>
                 </li>
               ))}
@@ -126,7 +126,7 @@ export default function HomePortal({ site, headline, subTops, underHeadline, bre
                         <Thumb sizes="120px" src={a.thumbnail_url} alt="" ratio="4 / 3" className="w-[104px] flex-shrink-0" />
                         <div className="min-w-0 flex-1">
                           <h3 className="headline-text line-clamp-2 text-[15.5px] font-bold leading-[1.42] tracking-[-0.02em]">{a.title}</h3>
-                          <time dateTime={a.published_at ?? undefined} className="mt-1 block text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at, L)}</time>
+                          <time dateTime={a.published_at ?? undefined} className="mt-1 block text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at, L, site.timeZone)}</time>
                         </div>
                       </Link>
                     </li>

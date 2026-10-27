@@ -91,6 +91,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
   site.ogImage = ogImage || undefined
   if (prevSite.trial) site.trial = prevSite.trial
   site.lang = s.lang === 'en' ? 'en' : s.lang === 'ko' ? 'ko' : prevSite.lang
+  site.timeZone = s.timeZone === undefined ? prevSite.timeZone : isOpenZone(s.timeZone) ? s.timeZone : undefined
   site.statsBoard = s.statsBoard !== undefined ? cleanStats(s.statsBoard) : prevSite.statsBoard
   if (s.aiNotice?.on && cut(s.aiNotice.text, 150) && !mentionsAi(cut(s.aiNotice.text, 150))) return { error: 'AI 활용 표시 문구에 "AI" 또는 "인공지능"을 넣어 주세요.' }
   site.aiNotice = s.aiNotice !== undefined

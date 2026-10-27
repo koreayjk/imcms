@@ -64,7 +64,7 @@ export default async function ReporterPage(props: Props) {
           </p>
           {articles.length ? (
             <ul className="divide-y divide-rule">
-              {articles.map((a) => <ArticleRow key={a.id} article={a} lang={site.lang} />)}
+              {articles.map((a) => <ArticleRow key={a.id} article={a} lang={site.lang} tz={site.timeZone} />)}
             </ul>
           ) : (
             <p className="py-20 text-center text-[15px] text-sub">{t.reporterNone(name)}</p>

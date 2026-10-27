@@ -49,7 +49,7 @@ export default function HomeEditorial({ site, headline, subTops, underHeadline, 
             <Kicker a={headline} />
             <h2 className="headline-text mt-1 text-balance text-[27px] font-extrabold leading-[1.28] tracking-[-0.02em] lg:text-[34px]">{headline.title}</h2>
             {headline.excerpt && <p className="mt-3 line-clamp-3 text-[16px] leading-[1.65] text-sub">{headline.excerpt}</p>}
-            <p className="mt-3 text-[12.5px] text-[#8A918C]">{headline.author_name ? `${headline.author_name} · ` : ''}{formatDate(headline.published_at, L)}</p>
+            <p className="mt-3 text-[12.5px] text-[#8A918C]">{headline.author_name ? `${headline.author_name} · ` : ''}{formatDate(headline.published_at, L, site.timeZone)}</p>
           </div>
         </Link>
         {underHeadline.length > 0 && (
@@ -88,7 +88,7 @@ export default function HomeEditorial({ site, headline, subTops, underHeadline, 
               {realtime.slice(0, 3).map((a) => (
                 <li key={a.id}>
                   <Link href={`/news/${a.id}`} className="group block py-2.5">
-                    <time dateTime={a.published_at ?? undefined} className="text-[11.5px] font-semibold tabular-nums text-brand">{formatShort(a.published_at, L)}</time>
+                    <time dateTime={a.published_at ?? undefined} className="text-[11.5px] font-semibold tabular-nums text-brand">{formatShort(a.published_at, L, site.timeZone)}</time>
                     <p className="line-clamp-2 text-[14px] leading-[1.45] group-hover:underline underline-offset-2">{a.title}</p>
                   </Link>
                 </li>
@@ -144,7 +144,7 @@ export default function HomeEditorial({ site, headline, subTops, underHeadline, 
                   <Thumb sizes="(max-width: 1023px) 50vw, 280px" src={a.thumbnail_url} alt="" ratio="3 / 2" />
                   <Kicker a={a} />
                   <h3 className="headline-text mt-1 line-clamp-3 text-[17px] font-bold leading-[1.4] tracking-[-0.015em]">{a.title}</h3>
-                  <time dateTime={a.published_at ?? undefined} className="mt-1.5 block text-[12px] text-[#8A918C]">{formatDate(a.published_at, L)}</time>
+                  <time dateTime={a.published_at ?? undefined} className="mt-1.5 block text-[12px] text-[#8A918C]">{formatDate(a.published_at, L, site.timeZone)}</time>
                 </Link>
               </li>
             ))}

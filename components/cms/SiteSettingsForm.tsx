@@ -247,6 +247,15 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <input type="checkbox" checked={s.lang === 'en'} onChange={(e) => set({ lang: e.target.checked ? 'en' : 'ko' })} className="mt-1" />
               <span><strong>영문 홈페이지</strong> (메뉴·날짜·안내 문구·개인정보처리방침을 영어로) <span className="block text-[12px] text-muted">기사는 쓴 언어 그대로 나갑니다. 해외 독자를 위한 영문 매체에 켜세요.</span></span>
             </label>
+            {s.lang === 'en' && (
+              <label className="flex flex-wrap items-center gap-2 pl-6 text-[13px]">
+                날짜·시각 시간대
+                <select value={s.timeZone ?? 'America/New_York'} onChange={(e) => set({ timeZone: e.target.value })} className="field-input w-56 py-1">
+                  {OPEN_ZONES.filter((z) => z.tz.startsWith('America/') || z.tz === 'Pacific/Honolulu' || z.tz === 'Europe/London' || z.tz === 'UTC').map((z) => <option key={z.tz} value={z.tz}>{z.label}</option>)}
+                </select>
+                <span className="text-[12px] text-muted">기사 날짜 옆 ET·CT 같은 표시가 이 시간대로 나옵니다.</span>
+              </label>
+            )}
               </>
             )}
             <div className="space-y-1.5 rounded-lg border border-line p-3 text-[13.5px]">

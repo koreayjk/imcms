@@ -22,7 +22,7 @@ export default function SiteHeader({ site, current }: Props) {
       {/* PC */}
       <div className="hidden border-b border-rule bg-soft lg:block">
         <div className="mx-auto flex h-9 max-w-[1200px] items-center justify-between px-4 text-[12px] text-sub">
-          <span>{formatToday(site.lang)}</span>
+          <span>{formatToday(site.lang, site.timeZone)}</span>
           <nav className="flex items-center gap-4" aria-label={t.utilNav}>
             <a href={`${mail}?subject=${encodeURIComponent(t.tipSubject)}`} className="hover:text-brand">{t.tip}</a>
             <a href={adsHref} className="hover:text-brand">{t.ads}</a>

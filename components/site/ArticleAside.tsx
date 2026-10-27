@@ -21,7 +21,7 @@ export default function ArticleAside({ site, mostViewed, latest }: { site: SiteC
             {latest.map((r) => (
               <li key={r.id}>
                 <Link href={`/news/${r.id}`} className="group block py-3 first:pt-0">
-                  <time className="text-[12px] font-semibold text-brand tabular-nums">{formatShort(r.published_at, site.lang)}</time>
+                  <time className="text-[12px] font-semibold text-brand tabular-nums">{formatShort(r.published_at, site.lang, site.timeZone)}</time>
                   <p className="mt-0.5 line-clamp-2 text-[14.5px] leading-[1.45] group-hover:underline underline-offset-2">{r.title}</p>
                 </Link>
               </li>

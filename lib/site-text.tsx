@@ -185,21 +185,24 @@ export function siteText(site: { lang?: SiteLang } | SiteLang | undefined | null
 
 // ───────── 날짜 (한국어: 한국 시간 2026.10.14 / 영어: 미국 동부 시간, AP 표기 Oct. 14, 2026) ─────────
 const ET = 'America/New_York'
-function etParts(iso: string) {
+// 영문 매체의 시간대 (없으면 미국 동부). 이름표는 AP 식 ET·CT·MT·PT
+const ZONE_ABBR: Record<string, string> = { 'America/New_York': 'ET', 'America/Chicago': 'CT', 'America/Denver': 'MT', 'America/Los_Angeles': 'PT', 'Pacific/Honolulu': 'HT', UTC: 'UTC' }
+const zoneAbbr = (tz: string) => ZONE_ABBR[tz] ?? tz.split('/').pop()?.replace(/_/g, ' ') ?? tz
+function etParts(iso: string, tz: string = ET) {
   const p = Object.fromEntries(
-    new Intl.DateTimeFormat('en-US', { timeZone: ET, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, weekday: 'long' })
+    new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, weekday: 'long' })
       .formatToParts(new Date(iso)).map((x) => [x.type, x.value]),
   )
   return { y: p.year, m: Number(p.month), d: p.day, h: p.hour, mm: p.minute, ap: (p.dayPeriod ?? '').toLowerCase() === 'pm' ? 'p.m.' : 'a.m.', wd: p.weekday }
 }
-export const enDate = (iso: string) => { const t = etParts(iso); return `${AP_MONTH[t.m - 1]} ${t.d}, ${t.y}` }
-export const enTime = (iso: string) => { const t = etParts(iso); return `${t.h}:${t.mm} ${t.ap}` }
-export const enDateTime = (iso: string) => `${enDate(iso)}, ${enTime(iso)} ET`
-export const enShort = (iso: string) => {
-  const t = etParts(iso), n = etParts(new Date().toISOString())
-  return t.y === n.y && t.m === n.m && t.d === n.d ? enTime(iso) : `${AP_MONTH[t.m - 1]} ${t.d}`
+export const enDate = (iso: string, tz?: string) => { const t = etParts(iso, tz); return `${AP_MONTH[t.m - 1]} ${t.d}, ${t.y}` }
+export const enTime = (iso: string, tz?: string) => { const t = etParts(iso, tz); return `${t.h}:${t.mm} ${t.ap}` }
+export const enDateTime = (iso: string, tz: string = ET) => `${enDate(iso, tz)}, ${enTime(iso, tz)} ${zoneAbbr(tz)}`
+export const enShort = (iso: string, tz?: string) => {
+  const t = etParts(iso, tz), n = etParts(new Date().toISOString(), tz)
+  return t.y === n.y && t.m === n.m && t.d === n.d ? enTime(iso, tz) : `${AP_MONTH[t.m - 1]} ${t.d}`
 }
-export const enToday = () => {
-  const now = new Date().toISOString(), t = etParts(now)
-  return `${t.wd}, ${new Intl.DateTimeFormat('en-US', { timeZone: ET, month: 'long' }).format(new Date(now))} ${t.d}, ${t.y}`
+export const enToday = (tz: string = ET) => {
+  const now = new Date().toISOString(), t = etParts(now, tz)
+  return `${t.wd}, ${new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'long' }).format(new Date(now))} ${t.d}, ${t.y}`
 }

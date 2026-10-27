@@ -13,7 +13,7 @@ import { siteText } from '@/lib/site-text'
 
 // 홈페이지 기사 본문 (제목·부제·기자·본문·관련기사·태그·기자 정보·섹션 다른 기사). 실제 기사 화면과 기사쓰기 미리보기가 같이 쓴다
 // bodyHtml은 이미 정리(sanitizeBody)한 HTML
-export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, topAd, lang }: {
+export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, topAd, lang, tz }: {
   a: PublicArticle
   bodyHtml: string
   sectionName?: string
@@ -25,6 +25,7 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
   bottomAd?: ReactNode
   topAd?: ReactNode
   lang?: SiteLang
+  tz?: string
 }) {
   const t = siteText(lang)
   return (
@@ -47,7 +48,7 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
             {a.author_name && <span className="font-semibold text-body">{t.reporter(a.author_name)}</span>}
             {a.author_email && <a href={`mailto:${a.author_email}`} className="ml-1.5 text-sub hover:text-brand">{a.author_email}</a>}
             <span className="mx-2 text-rule" aria-hidden>|</span>
-            <span>{t.published} {formatDateTime(a.published_at, lang)}</span>
+            <span>{t.published} {formatDateTime(a.published_at, lang, tz)}</span>
             {a.view_count > 0 && (
               <>
                 <span className="mx-2 text-rule" aria-hidden>|</span>

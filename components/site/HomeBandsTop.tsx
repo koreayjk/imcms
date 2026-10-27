@@ -18,7 +18,7 @@ export default function HomeBandsTop({ site, headline, items }: { site: SiteConf
           <CategoryLabel article={headline} />
           <h2 className="headline-text mt-2 line-clamp-4 text-balance text-[23px] font-extrabold leading-[1.3] lg:text-[34px] tracking-[-0.035em] text-body">{headline.title}</h2>
           {headline.excerpt && <p className="mt-3 line-clamp-3 text-[15.5px] lg:mt-4 leading-[1.65] text-sub">{headline.excerpt}</p>}
-          <p className="mt-5 text-[12.5px] text-[#8A918C]">{headline.author_name ? `${headline.author_name} · ` : ''}{formatDate(headline.published_at, L)}</p>
+          <p className="mt-5 text-[12.5px] text-[#8A918C]">{headline.author_name ? `${headline.author_name} · ` : ''}{formatDate(headline.published_at, L, site.timeZone)}</p>
         </div>
         <Thumb sizes="(max-width: 1023px) 100vw, 720px" src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" className="order-first lg:order-last" />
       </Link>
@@ -30,7 +30,7 @@ export default function HomeBandsTop({ site, headline, items }: { site: SiteConf
                 <Thumb sizes="300px" src={a.thumbnail_url} alt="" ratio="3 / 2" />
                 <CategoryLabel article={a} className="mt-2.5" />
                 <h3 className="headline-text mt-0.5 line-clamp-2 text-[16px] font-bold leading-[1.42] tracking-[-0.02em]">{a.title}</h3>
-                <time dateTime={a.published_at ?? undefined} className="mt-1 block text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at, L)}</time>
+                <time dateTime={a.published_at ?? undefined} className="mt-1 block text-[12px] tabular-nums text-[#8A918C]">{formatShort(a.published_at, L, site.timeZone)}</time>
               </Link>
             </li>
           ))}
