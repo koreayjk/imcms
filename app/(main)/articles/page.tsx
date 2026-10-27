@@ -38,18 +38,26 @@ export default async function ArticlesPage(props: Props) {
   let listQuery = scoped(
     supabase
       .from('articles')
-      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author_id, byline, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', { count: 'exact' })
+      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author_id, byline, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', q ? { count: 'exact' } : undefined)
   )
   if (status) listQuery = listQuery.eq('status', status)
   if (q) listQuery = listQuery.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
 
-  const [{ data, count }, ...tabCounts] = await Promise.all([
+  // 탭 숫자(전체·작성중·승인신청…)는 한 번에 센다 (speed-rls.sql 전이면 예전처럼 탭마다 센다)
+  //   제목 검색 중에는 검색 결과 건수가 따로 필요해 목록 조회에서 센다
+  const [{ data, count: searchCount }, countsRes] = await Promise.all([
     listQuery.order('updated_at', { ascending: false }).range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
-    ...TABS.map((t) => {
-      const c = scoped(supabase.from('articles').select('id', { count: 'exact', head: true }))
-      return t === 'all' ? c : c.eq('status', t)
-    }),
+    supabase.rpc('article_status_counts', { o: outletId ?? null, mine: mineOnly }),
   ])
+  let byStatus: Record<string, number>
+  if (!countsRes.error) {
+    byStatus = Object.fromEntries(((countsRes.data ?? []) as { status: string; n: number | string }[]).map((r) => [r.status, Number(r.n)]))
+  } else {
+    const olds = await Promise.all(TABS.filter((t) => t !== 'all').map((t) => scoped(supabase.from('articles').select('id', { count: 'exact', head: true })).eq('status', t)))
+    byStatus = Object.fromEntries(TABS.filter((t) => t !== 'all').map((t, i) => [t, olds[i].count ?? 0]))
+  }
+  const tabCounts = TABS.map((t) => ({ count: t === 'all' ? Object.values(byStatus).reduce((a, b) => a + b, 0) : byStatus[t] ?? 0 }))
+  const count = q ? searchCount : status ? byStatus[status] ?? 0 : tabCounts[0].count
 
   const rows = (data ?? []) as any[]
   // 골라서 한꺼번에: 승인·반려(편집장 이상, 승인신청 기사) · 삭제(본인 기사 또는 편집장 이상)
