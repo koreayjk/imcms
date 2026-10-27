@@ -92,7 +92,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const underHeadline = take(4)
   const major = fill(pinned.major, hasImage)
   // 오른쪽 광고가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 높이에 맞춰 연다)
-  const majorMore = site.homeLayout === 'bands' ? [] : take(12)
+  const majorMore = site.homeLayout === 'bands' ? [] : take(30)
   const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
