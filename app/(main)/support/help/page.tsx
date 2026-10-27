@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { ISSUER, PRODUCT } from '@/lib/product'
-import { readyVideos, posterOf } from '@/lib/help-videos'
+import { HELP_VIDEOS_NOTE_EN, readyVideos, posterOf } from '@/lib/help-videos'
 import { listGuideVideos, guideVideoUrls } from '@/lib/guide-videos'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import HelpVideoCard from '@/components/cms/HelpVideoCard'
 
 const GUIDES = [
@@ -29,28 +30,55 @@ const FAQ = [
   { q: '업무요청에 비밀번호를 적어도 되나요?', a: '적지 마세요. 계정 정보가 꼭 필요하면 요청에 “전화로 알려드리겠다”고 남겨 주시면 연락드립니다.' },
 ]
 
+const GUIDES_EN = [
+  { title: 'Story writing guide', body: 'Principles for bylines, the press release section, duplicate stories, headlines and photo credits that match the Naver News partnership evaluation criteria, plus a pre-publication checklist. Reaching 10 cumulative points over 24 months leads to a recommendation to terminate the partnership, so please read it.', href: '/support/guide', cta: 'View guide' },
+  { title: 'Writing and publishing a story', body: 'Write a story → save (draft) → submit for review → the Editor-in-Chief reviews and publishes. Editors-in-Chief can also “Publish now”.', href: '/articles/new', cta: 'Write a story' },
+  { title: 'Turning a press release into a story', body: 'Open a press release in the Press releases inbox and press “As is” or “AI draft” to create a story draft. Always check it against the original before publishing.', href: '/press', cta: 'Press releases' },
+  { title: 'Receiving press releases from your email', body: 'Use a Gmail filter to forward only press releases to a dedicated address and they arrive in the Press releases inbox automatically. Included with Premium; an add-on for Basic and Standard (KRW 39,000/month, first 3 emails free to try).', href: '/press/email', cta: 'Email intake setup' },
+  { title: 'Arranging the home page', body: 'Editors-in-Chief choose the headline, top story and featured story slots themselves in Edit Home.', href: '/admin/home', cta: 'Edit Home' },
+  { title: 'Bylines and changing your name', body: 'You can enter a different byline on each story, and change your member name under My account.', href: '/account', cta: 'My account' },
+  { title: 'Publishing to several publications', body: 'Choose the publications to “Also publish to” below the story editor and publish; the story is posted to the other publications too.', href: '/articles', cta: 'Stories' },
+]
+
+const FAQ_EN = [
+  { q: 'When will my request be handled?', a: 'We review support requests in order, on business days. Errors and outages come first. When a reply is posted, “New reply” appears on the Support home and in your request list.' },
+  { q: 'How do I add reporter accounts?', a: 'A new reporter signs up on the login screen (a Google account works). Once an administrator approves them, they can start using the newsroom right away.' },
+  { q: 'Where do I see invoices and how do I pay?', a: 'Accounts at Editor-in-Chief level or above can view invoices by month under Support → Invoices and save them as PDF. Press “Pay” on an invoice to pay with a Korean domestic card (Shinhan, Hyundai, Samsung, etc.), KakaoPay, Naver Pay or Google Pay, and a receipt is kept. If you register a payment method under Billing info, future invoices are paid automatically.' },
+  { q: 'Can I get a tax invoice?', a: 'IM Newsroom is operated by a U.S. company, so Korean tax invoices are not issued. You can expense the fee with your card or digital-wallet receipt; please confirm the details with your tax accountant.' },
+  { q: 'I forgot my password.', a: 'On the login screen, press “Forgot password” to the right of the password field and enter the email you signed up with, and a reset email will arrive. Press the button in the email and set a new password to go straight into the newsroom (the link works once and expires in 1 hour). If you turned on two-step verification, you also need the 6-digit code from your authenticator app. If you signed up with Google, just use Google login; no password is needed.' },
+  { q: 'What do I need to do to get our stories into Naver and Google search?', a: 'Nothing. When the IM Newsroom team launches your site, we register your site address in Naver Search Advisor and Google Search Console from our operating accounts, and handle ownership verification and sitemap/RSS submission for you (included in the setup fee). After registration, it usually takes a few days to two weeks for pages to show up in search results.' },
+  { q: 'Can I see our outlet’s search performance (queries and clicks) myself?', a: 'Yes. For Google Search Console, we add your Google account (or the account of anyone you choose) as an “owner”. Put the Google email address to add in a support request. If you need Naver Search Advisor records, ask in a support request and we will check them for you or show you how to view them with your own Naver ID.' },
+  { q: 'Why is the site registered under the team’s account instead of the outlet’s?', a: 'Registration is separate work for every outlet, and the team can only get error alerts right away and fix problems quickly if it manages them from one account. It only confirms who runs the website, so ownership of your stories and domain does not change, and it gives no access to your outlet’s data.' },
+  { q: 'Will our stories also appear in the Naver “News” tab?', a: 'Search Advisor registration covers Naver web documents and integrated search only. To appear as a news outlet in the News tab, the outlet must apply for and pass the Naver (and Kakao) news search partnership review itself. The technical preparation the review needs, such as the news sitemap and story markup, is already in place; if you want to know how to prepare the application documents, ask us in a support request.' },
+  { q: 'What happens to our search registration if we cancel or change domains?', a: 'If you change domains, the team registers the new address again and redirects the old address to the new one. If you cancel, your Google account is already an owner, so you can keep using it as is, and we will show you how to register again with your own ID for Naver. The domain belongs to the outlet.' },
+  { q: 'Can I put a password in a support request?', a: 'Please do not. If account details are really needed, write in the request that you will share them by phone and we will contact you.' },
+]
+
 export default async function HelpPage() {
   const [{ isStaff }, uploaded] = await Promise.all([getCmsContext(), listGuideVideos()])
-  const videos = readyVideos(new Set(uploaded.map((u) => u.id)))
+  const { t, lang } = await getT()
+  const videos = readyVideos(new Set(uploaded.map((u) => u.id)), lang)
+  const guides = lang === 'en' ? GUIDES_EN : GUIDES
+  const faq = lang === 'en' ? FAQ_EN : FAQ
   const urls = await guideVideoUrls(videos.filter((v) => v.own).map((v) => v.id))
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-6 md:px-8 md:py-10">
-      <h1 className="text-[22px] font-extrabold tracking-tight">이용안내</h1>
+      <h1 className="text-[22px] font-extrabold tracking-tight">{t('이용안내', 'Help & guides')}</h1>
       {(videos.length > 0 || isStaff) && (
         <section id="videos" className="mt-6 scroll-mt-6">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-[18px] font-extrabold">영상으로 배우기</h2>
-            {isStaff && <Link href="/admin/guide-videos" className="rounded-full border border-line px-3 py-0.5 text-[12px] text-muted hover:border-ink hover:text-ink">영상 올리기·바꾸기 (운영팀)</Link>}
+            <h2 className="text-[18px] font-extrabold">{t('영상으로 배우기', 'Learn by video')}</h2>
+            {isStaff && <Link href="/admin/guide-videos" className="rounded-full border border-line px-3 py-0.5 text-[12px] text-muted hover:border-ink hover:text-ink">{t('영상 올리기·바꾸기 (운영팀)', 'Upload or replace videos (team)')}</Link>}
           </div>
-          <p className="mt-1 text-[13.5px] text-muted">처음 쓰시는 분은 위에서부터 차례로 보세요. 영상마다 1~5분입니다.</p>
+          <p className="mt-1 text-[13.5px] text-muted">{t('처음 쓰시는 분은 위에서부터 차례로 보세요. 영상마다 1~5분입니다.', 'If you are new, watch them in order from the top. Each video is 1 to 5 minutes.')}{lang === 'en' && ` ${HELP_VIDEOS_NOTE_EN}`}</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((v, i) => <HelpVideoCard key={v.id} n={i + 1} title={v.title} desc={v.desc} videoId={v.videoId} src={v.own ? urls[v.id] : undefined} poster={posterOf(v.id)} link={v.link} />)}
           </div>
         </section>
       )}
-      <h2 className="mt-12 text-[18px] font-extrabold">글로 보는 안내</h2>
+      <h2 className="mt-12 text-[18px] font-extrabold">{t('글로 보는 안내', 'Written guides')}</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        {GUIDES.map((g) => (
+        {guides.map((g) => (
           <div key={g.title} className="flex flex-col rounded-2xl bg-white p-6 ring-1 ring-black/5">
             <p className="text-[16px] font-bold">{g.title}</p>
             <p className="mt-2 flex-1 text-[14px] leading-relaxed text-[#3B4048]">{g.body}</p>
@@ -59,9 +87,9 @@ export default async function HelpPage() {
         ))}
       </div>
 
-      <h2 className="mt-12 text-[18px] font-extrabold">자주 묻는 질문</h2>
+      <h2 className="mt-12 text-[18px] font-extrabold">{t('자주 묻는 질문', 'Frequently asked questions')}</h2>
       <div className="mt-4 space-y-2">
-        {FAQ.map((f) => (
+        {faq.map((f) => (
           <details key={f.q} className="group rounded-xl bg-white px-5 py-4 ring-1 ring-black/5">
             <summary className="flex cursor-pointer list-none items-center justify-between text-[15px] font-semibold [&::-webkit-details-marker]:hidden">
               <span><span className="mr-2 text-[#E5483A]">Q.</span>{f.q}</span>
@@ -73,15 +101,15 @@ export default async function HelpPage() {
       </div>
 
       <section id="contact" className="mt-12 scroll-mt-6 rounded-2xl bg-[#0B1020] p-5 text-white sm:p-8">
-        <h2 className="text-[18px] font-extrabold">{PRODUCT.name} 운영팀 연락처</h2>
+        <h2 className="text-[18px] font-extrabold">{lang === 'en' ? `${PRODUCT.nameEn} team contact` : `${PRODUCT.name} 운영팀 연락처`}</h2>
         <div className="mt-4 grid gap-4 text-[14px] sm:grid-cols-2">
           <div>
-            <p className="text-white/60">가장 빠른 방법</p>
-            <Link href="/support/tickets/new" className="mt-1 inline-block rounded-full bg-[#2F6BF0] px-5 py-2 font-bold">업무요청 쓰기</Link>
+            <p className="text-white/60">{t('가장 빠른 방법', 'Fastest way')}</p>
+            <Link href="/support/tickets/new" className="mt-1 inline-block rounded-full bg-[#2F6BF0] px-5 py-2 font-bold">{t('업무요청 쓰기', 'New support request')}</Link>
           </div>
           <div>
-            <p className="text-white/60">전화 · 이메일</p>
-            <p className="mt-1">{ISSUER.contact ?? '운영팀 연락처는 곧 안내합니다.'}</p>
+            <p className="text-white/60">{t('전화 · 이메일', 'Phone · Email')}</p>
+            <p className="mt-1">{ISSUER.contact ?? t('운영팀 연락처는 곧 안내합니다.', 'Team contact details are coming soon.')}</p>
           </div>
         </div>
       </section>

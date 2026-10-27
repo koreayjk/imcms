@@ -3,16 +3,18 @@
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react'
 import { useRef, useState } from 'react'
 import type { ImageAlign } from './extensions'
+import { useT } from '@/components/cms/CmsLang'
 
 const SIZES = ['25%', '50%', '75%', '100%']
-const ALIGNS: { key: ImageAlign; label: string }[] = [
-  { key: 'left', label: '왼쪽' },
-  { key: 'center', label: '가운데' },
-  { key: 'right', label: '오른쪽' },
+const ALIGNS: { key: ImageAlign; ko: string; en: string }[] = [
+  { key: 'left', ko: '왼쪽', en: 'Left' },
+  { key: 'center', ko: '가운데', en: 'Center' },
+  { key: 'right', ko: '오른쪽', en: 'Right' },
 ]
 
 // 편집 화면의 사진: 누르면 크기·배치 도구가 뜨고, 오른쪽 아래 모서리를 끌어 크기를 바꾼다
 export default function ImageView({ node, updateAttributes, selected, deleteNode, editor }: NodeViewProps) {
+  const t = useT()
   const imgRef = useRef<HTMLImageElement>(null)
   const [dragWidth, setDragWidth] = useState<string | null>(null)
   const width = (node.attrs.width as string | null) ?? '100%'
@@ -80,21 +82,21 @@ export default function ImageView({ node, updateAttributes, selected, deleteNode
               <span className="mx-1 h-4 w-px bg-white/25" />
               {ALIGNS.map((a) => (
                 <button key={a.key} type="button" onClick={() => updateAttributes({ align: a.key })} className={`rounded px-2 py-1 ${align === a.key ? 'bg-[#F2B544] text-[#1C1F26]' : 'hover:bg-white/15'}`}>
-                  {a.label}
+                  {t(a.ko, a.en)}
                 </button>
               ))}
               <span className="mx-1 h-4 w-px bg-white/25" />
               <button
                 type="button"
                 onClick={() => {
-                  const alt = window.prompt('사진 설명(대체 텍스트)을 입력하세요', node.attrs.alt ?? '')
+                  const alt = window.prompt(t('사진 설명(대체 텍스트)을 입력하세요', 'Enter a photo description (alt text)'), node.attrs.alt ?? '')
                   if (alt !== null) updateAttributes({ alt })
                 }}
                 className="rounded px-2 py-1 hover:bg-white/15"
               >
-                설명
+                {t('설명', 'Alt text')}
               </button>
-              <button type="button" onClick={deleteNode} className="rounded px-2 py-1 text-[#FF8A80] hover:bg-white/15">삭제</button>
+              <button type="button" onClick={deleteNode} className="rounded px-2 py-1 text-[#FF8A80] hover:bg-white/15">{t('삭제', 'Delete')}</button>
             </div>
           </>
         )}

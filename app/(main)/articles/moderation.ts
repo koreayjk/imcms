@@ -1,6 +1,7 @@
 'use server'
 
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { htmlToText } from '@/lib/press'
 import { moderateArticle, MODERATION_LABEL } from '@/lib/ai-moderation'
 
@@ -14,11 +15,12 @@ export type TrialPublishResult =
 //   기사쓰기의 발행·편집장 승인에서 체험 계정일 때 부른다 (기사는 먼저 승인대기로 저장되어 있어야 한다)
 export async function trialPublish(articleId: string, publishedAt: string | null): Promise<TrialPublishResult> {
   const { supabase, user, trial } = await getCmsContext()
-  if (!trial) return { ok: false, error: '체험 계정만 쓰는 기능입니다.' }
+  const { t } = await getT()
+  if (!trial) return { ok: false, error: t('체험 계정만 쓰는 기능입니다.', 'This feature is for trial accounts only.') }
 
   const { data: a, error } = await supabase.from('articles').select('*').eq('id', articleId).maybeSingle()
-  if (error || !a) return { ok: false, error: '기사를 찾지 못했습니다.' }
-  if (a.moderation_hold) return { ok: false, held: true, note: a.moderation_note ?? '총관리자 확인을 기다리고 있습니다.' }
+  if (error || !a) return { ok: false, error: t('기사를 찾지 못했습니다.', 'Story not found.') }
+  if (a.moderation_hold) return { ok: false, held: true, note: a.moderation_note ?? t('총관리자 확인을 기다리고 있습니다.', 'Waiting for Super Admin review.') }
 
   const hold = async (note: string): Promise<TrialPublishResult> => {
     await supabase.from('articles').update({ status: 'in_review', moderation_hold: true, moderation_note: note }).eq('id', articleId)
@@ -50,6 +52,6 @@ export async function trialPublish(articleId: string, publishedAt: string | null
   }).eq('id', articleId).select('status, moderation_hold, moderation_note').maybeSingle()
   if (err) return { ok: false, error: err.message }
   // DB가 다시 본 결과 (그사이 내용이 바뀌었으면 보류된다)
-  if (after?.moderation_hold) return { ok: false, held: true, note: after.moderation_note ?? '총관리자 확인을 기다리고 있습니다.' }
+  if (after?.moderation_hold) return { ok: false, held: true, note: after.moderation_note ?? t('총관리자 확인을 기다리고 있습니다.', 'Waiting for Super Admin review.') }
   return { ok: true }
 }

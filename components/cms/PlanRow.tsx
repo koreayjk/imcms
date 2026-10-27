@@ -4,6 +4,9 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { setOutletPlan, type PlanState } from '@/app/(main)/admin/ai-usage/actions'
 import { PLANS } from '@/lib/pricing'
+import { useT, useCmsLang } from './CmsLang'
+
+const PLAN_NAME_EN: Record<string, string> = { basic: 'Basic', standard: 'Standard', premium: 'Premium', enterprise: 'Enterprise' }
 
 export type PlanRowData = {
   id: string; name: string; group: string | null
@@ -13,6 +16,9 @@ export type PlanRowData = {
 
 // 매체 한 줄: 요금제·한도·추가 사용을 고르고, 이번 달 사용량을 막대로 보여준다
 export default function PlanRow({ row }: { row: PlanRowData }) {
+  const t = useT()
+  const lang = useCmsLang()
+  const loc = lang === 'en' ? 'en-US' : 'ko-KR'
   const router = useRouter()
   const [plan, setPlan] = useState(row.plan ?? '')
   const [limit, setLimit] = useState(row.customLimit == null ? '' : String(row.customLimit))
@@ -32,28 +38,30 @@ export default function PlanRow({ row }: { row: PlanRowData }) {
 
       <div>
         <div className="flex flex-wrap items-baseline justify-between gap-x-2 text-[12.5px] tabular-nums">
-          <span><strong className="text-[15px]">{row.used.toLocaleString()}</strong>{row.limit != null ? ` / ${row.limit.toLocaleString()}건` : '건 · 한도 없음'}</span>
-          {row.overCount > 0 && <span className="font-semibold text-danger">추가 {row.overCount.toLocaleString()}건</span>}
+          <span><strong className="text-[15px]">{row.used.toLocaleString(loc)}</strong>{row.limit != null ? ` / ${row.limit.toLocaleString(loc)}${lang === 'en' ? '' : '건'}` : lang === 'en' ? ' · No limit' : '건 · 한도 없음'}</span>
+          {row.overCount > 0 && <span className="font-semibold text-danger">{lang === 'en' ? `${row.overCount.toLocaleString(loc)} over` : `추가 ${row.overCount.toLocaleString()}건`}</span>}
         </div>
         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line/70" aria-hidden><div className={`h-full ${tone}`} style={{ width: `${row.limit == null ? 0 : pct}%` }} /></div>
         <p className="mt-1 text-[11.5px] tabular-nums text-muted">
-          AI 원가 약 {row.costWon.toLocaleString()}원{row.extraWon > 0 && <> · 추가 청구 {row.extraWon.toLocaleString()}원</>}
+          {lang === 'en'
+            ? <>AI cost approx. KRW {row.costWon.toLocaleString(loc)}{row.extraWon > 0 && <> · Extra charge KRW {row.extraWon.toLocaleString(loc)}</>}</>
+            : <>AI 원가 약 {row.costWon.toLocaleString()}원{row.extraWon > 0 && <> · 추가 청구 {row.extraWon.toLocaleString()}원</>}</>}
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-[13px]">
-        <label className="sr-only" htmlFor={`plan-${row.id}`}>{row.name} 요금제</label>
+        <label className="sr-only" htmlFor={`plan-${row.id}`}>{lang === 'en' ? `${row.name} plan` : `${row.name} 요금제`}</label>
         <select id={`plan-${row.id}`} value={plan} onChange={(e) => setPlan(e.target.value)} className="field-input py-1.5" style={{ width: 'auto', maxWidth: 200 }}>
-          <option value="">요금제 없음 (한도 없음)</option>
-          {PLANS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          <option value="">{t('요금제 없음 (한도 없음)', 'No plan (no limit)')}</option>
+          {PLANS.map((p) => <option key={p.id} value={p.id}>{lang === 'en' ? PLAN_NAME_EN[p.id] ?? p.name : p.name}</option>)}
         </select>
         <label className="flex items-center gap-1.5">
-          <span className="whitespace-nowrap text-muted">한도</span>
-          <input value={limit} onChange={(e) => setLimit(e.target.value.replace(/[^\d]/g, ''))} inputMode="numeric" placeholder="기본값" className="field-input py-1.5 text-right tabular-nums" style={{ width: 84 }} aria-label={`${row.name} 월 한도 (비우면 요금제 기본값)`} />
+          <span className="whitespace-nowrap text-muted">{t('한도', 'Limit')}</span>
+          <input value={limit} onChange={(e) => setLimit(e.target.value.replace(/[^\d]/g, ''))} inputMode="numeric" placeholder={t('기본값', 'Default')} className="field-input py-1.5 text-right tabular-nums" style={{ width: 84 }} aria-label={t(`${row.name} 월 한도 (비우면 요금제 기본값)`, `${row.name} monthly limit (leave blank for the plan default)`)} />
         </label>
         <label className="flex cursor-pointer items-center gap-1.5">
           <input type="checkbox" checked={overage} onChange={(e) => setOverage(e.target.checked)} className="h-4 w-4" />
-          <span>넘어도 계속(추가 청구)</span>
+          <span>{t('넘어도 계속(추가 청구)', 'Continue past limit (extra charge)')}</span>
         </label>
       </div>
 
@@ -65,7 +73,7 @@ export default function PlanRow({ row }: { row: PlanRowData }) {
           onClick={() => start(async () => { const r = await setOutletPlan(row.id, { plan, limit, overage }); setMsg(r); if (!r.error) router.refresh() })}
           className="btn-primary px-4 py-1.5 text-[13px] disabled:opacity-40"
         >
-          {pending ? '저장 중…' : '저장'}
+          {pending ? t('저장 중…', 'Saving…') : t('저장', 'Save')}
         </button>
       </div>
     </li>

@@ -1,14 +1,16 @@
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import CategoryManager from '@/components/CategoryManager'
 import { outletHomeUrl } from '@/lib/product'
 
 // 섹션 관리: 편집장 이상은 자기 매체, 매니저는 상단에서 고른 고객사 매체
 export default async function CategoriesPage() {
   const { supabase, outletId, canEditSite } = await getCmsContext()
+  const { t } = await getT()
   if (!canEditSite) redirect('/articles')
   if (!outletId) {
-    return <p className="px-4 py-10 md:px-8 md:py-16 text-center text-muted">위쪽 매체 선택에서 섹션을 고칠 매체를 먼저 골라 주세요.</p>
+    return <p className="px-4 py-10 md:px-8 md:py-16 text-center text-muted">{t('위쪽 매체 선택에서 섹션을 고칠 매체를 먼저 골라 주세요.', 'Choose an outlet at the top first to edit its sections.')}</p>
   }
 
   const [{ data: categories }, { data: outlet }] = await Promise.all([
@@ -19,8 +21,8 @@ export default async function CategoriesPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-5 sm:px-6 sm:py-8">
       <header className="mb-6">
-        <h1 className="text-lg font-semibold">카테고리 관리</h1>
-        <p className="text-sm text-muted mt-0.5">기사 분류에 사용할 카테고리를 관리합니다</p>
+        <h1 className="text-lg font-semibold">{t('카테고리 관리', 'Manage categories')}</h1>
+        <p className="text-sm text-muted mt-0.5">{t('기사 분류에 사용할 카테고리를 관리합니다', 'Manage the categories used to sort stories')}</p>
       </header>
       <CategoryManager categories={categories ?? []} outletId={outletId} siteUrl={outletHomeUrl({ id: outletId, domain: (outlet as { domain: string | null } | null)?.domain ?? null })} />
     </div>

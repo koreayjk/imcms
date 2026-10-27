@@ -1,22 +1,24 @@
 // 나라(시간대)별 날짜·시각 ↔ 절대 시각(ISO). 예약 오픈처럼 "그 나라 시간으로 몇 시"를 정할 때 쓴다 (서버·브라우저 어디서나 동작)
 
-export const OPEN_ZONES: { tz: string; label: string }[] = [
-  { tz: 'Asia/Seoul', label: '한국 (서울)' },
-  { tz: 'Asia/Tokyo', label: '일본 (도쿄)' },
-  { tz: 'Asia/Shanghai', label: '중국 (상하이)' },
-  { tz: 'Asia/Bangkok', label: '태국·베트남 (방콕)' },
-  { tz: 'Asia/Manila', label: '필리핀 (마닐라)' },
-  { tz: 'Asia/Singapore', label: '싱가포르' },
-  { tz: 'Australia/Sydney', label: '호주 (시드니)' },
-  { tz: 'Europe/London', label: '영국 (런던)' },
-  { tz: 'Europe/Paris', label: '프랑스·독일 (파리)' },
-  { tz: 'America/New_York', label: '미국 동부 (뉴욕)' },
-  { tz: 'America/Chicago', label: '미국 중부 (시카고·텍사스)' },
-  { tz: 'America/Denver', label: '미국 산악 (덴버)' },
-  { tz: 'America/Los_Angeles', label: '미국 서부 (로스앤젤레스)' },
-  { tz: 'Pacific/Honolulu', label: '하와이' },
-  { tz: 'UTC', label: '협정 세계시 (UTC)' },
+export const OPEN_ZONES: { tz: string; label: string; en: string }[] = [
+  { tz: 'Asia/Seoul', label: '한국 (서울)', en: 'South Korea (Seoul)' },
+  { tz: 'Asia/Tokyo', label: '일본 (도쿄)', en: 'Japan (Tokyo)' },
+  { tz: 'Asia/Shanghai', label: '중국 (상하이)', en: 'China (Shanghai)' },
+  { tz: 'Asia/Bangkok', label: '태국·베트남 (방콕)', en: 'Thailand / Vietnam (Bangkok)' },
+  { tz: 'Asia/Manila', label: '필리핀 (마닐라)', en: 'Philippines (Manila)' },
+  { tz: 'Asia/Singapore', label: '싱가포르', en: 'Singapore' },
+  { tz: 'Australia/Sydney', label: '호주 (시드니)', en: 'Australia (Sydney)' },
+  { tz: 'Europe/London', label: '영국 (런던)', en: 'United Kingdom (London)' },
+  { tz: 'Europe/Paris', label: '프랑스·독일 (파리)', en: 'France / Germany (Paris)' },
+  { tz: 'America/New_York', label: '미국 동부 (뉴욕)', en: 'US Eastern (New York)' },
+  { tz: 'America/Chicago', label: '미국 중부 (시카고·텍사스)', en: 'US Central (Chicago / Texas)' },
+  { tz: 'America/Denver', label: '미국 산악 (덴버)', en: 'US Mountain (Denver)' },
+  { tz: 'America/Los_Angeles', label: '미국 서부 (로스앤젤레스)', en: 'US Pacific (Los Angeles)' },
+  { tz: 'Pacific/Honolulu', label: '하와이', en: 'Hawaii' },
+  { tz: 'UTC', label: '협정 세계시 (UTC)', en: 'Coordinated Universal Time (UTC)' },
 ]
+// 화면에 보이는 이름 (영어 화면이면 영어)
+export const zoneLabel = (z: { label: string; en: string }, lang: 'ko' | 'en' = 'ko') => (lang === 'en' ? z.en : z.label)
 export const isOpenZone = (tz: unknown): tz is string => typeof tz === 'string' && OPEN_ZONES.some((z) => z.tz === tz)
 
 // 그 시각(UTC ms)에 이 시간대가 UTC보다 몇 ms 앞서는가

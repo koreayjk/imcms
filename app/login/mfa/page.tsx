@@ -7,6 +7,7 @@ import AuthShell from '@/components/auth/AuthShell'
 import SignOutButton from '@/components/auth/SignOutButton'
 import { MFA_DAYS, MFA_DAYS_STAFF } from '@/lib/mfa'
 import { syncSessionAndGo } from '@/lib/session-sync'
+import { useCmsLang, useT } from '@/components/cms/CmsLang'
 
 type Factor = { id: string; friendly_name?: string | null; created_at: string }
 
@@ -17,6 +18,8 @@ function safeNext(raw: string | null) {
 
 // 로그인 뒤 2단계 인증: 인증 앱의 6자리 코드
 export default function MfaPage() {
+  const t = useT()
+  const en = useCmsLang() === 'en'
   const router = useRouter()
   const [factors, setFactors] = useState<Factor[] | null>(null)
   const [factorId, setFactorId] = useState('')
@@ -51,7 +54,7 @@ export default function MfaPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     const digits = code.replace(/\D/g, '')
-    if (digits.length !== 6) return setError('인증 앱에 보이는 6자리 숫자를 넣어 주세요.')
+    if (digits.length !== 6) return setError(t('인증 앱에 보이는 6자리 숫자를 넣어 주세요.', 'Enter the 6-digit number shown in your authenticator app.'))
     setBusy(true)
     setError('')
     const { error: err } = await createClient().auth.mfa.challengeAndVerify({ factorId, code: digits })
@@ -60,44 +63,55 @@ export default function MfaPage() {
       setCode('')
       input.current?.focus()
       return setError(/invalid|expired/i.test(err.message)
-        ? '코드가 맞지 않습니다. 앱에 지금 보이는 숫자를 넣어 주세요. (숫자는 30초마다 바뀝니다)'
-        : /rate|too many/i.test(err.message) ? '시도가 너무 많습니다. 잠시 뒤 다시 해 주세요.' : `확인하지 못했습니다: ${err.message}`)
+        ? t('코드가 맞지 않습니다. 앱에 지금 보이는 숫자를 넣어 주세요. (숫자는 30초마다 바뀝니다)', 'That code is incorrect. Enter the number currently shown in the app. (It changes every 30 seconds.)')
+        : /rate|too many/i.test(err.message) ? t('시도가 너무 많습니다. 잠시 뒤 다시 해 주세요.', 'Too many attempts. Please try again in a moment.') : `${t('확인하지 못했습니다', 'Could not verify')}: ${err.message}`)
     }
     // 아이폰 앱에서도 새 로그인 정보로 넘어가도록 서버 쿠키를 맞추고 화면을 새로 연다
     await syncSessionAndGo(next.current)
   }
 
   return (
-    <AuthShell subtitle="2단계 인증">
+    <AuthShell subtitle={t('2단계 인증', 'Two-step verification')}>
       <div className="rounded-lg border border-line bg-white px-6 py-7">
-        <p className="text-[15px] font-semibold">{again ? '보안을 위해 코드를 한 번 더 확인합니다' : '인증 앱의 6자리 코드를 넣어 주세요'}</p>
+        <p className="text-[15px] font-semibold">{again ? t('보안을 위해 코드를 한 번 더 확인합니다', 'For your security, please confirm your code once more') : t('인증 앱의 6자리 코드를 넣어 주세요', 'Enter the 6-digit code from your authenticator app')}</p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
-          휴대폰의 인증 앱(Google Authenticator 등)에서 <strong className="text-ink">IM Newsroom</strong> 항목의 숫자를 넣으세요.
-          이 기기에서 로그아웃하지 않으면 {MFA_DAYS}일(총관리자·매니저는 {MFA_DAYS_STAFF}일) 동안 다시 묻지 않습니다.
+          {en ? <>
+            Enter the number for the <strong className="text-ink">IM Newsroom</strong> entry in your phone’s authenticator app (such as Google Authenticator).
+            Unless you sign out on this device, you won’t be asked again for {MFA_DAYS} days ({MFA_DAYS_STAFF} days for Super Admins and Managers).
+          </> : <>
+            휴대폰의 인증 앱(Google Authenticator 등)에서 <strong className="text-ink">IM Newsroom</strong> 항목의 숫자를 넣으세요.
+            이 기기에서 로그아웃하지 않으면 {MFA_DAYS}일(총관리자·매니저는 {MFA_DAYS_STAFF}일) 동안 다시 묻지 않습니다.
+          </>}
         </p>
         <details className="mt-3 rounded-md bg-paper px-3.5 py-2.5 text-[12.5px] leading-relaxed text-muted">
-          <summary className="cursor-pointer font-semibold text-ink">6자리 코드는 어디서 보나요?</summary>
+          <summary className="cursor-pointer font-semibold text-ink">{t('6자리 코드는 어디서 보나요?', 'Where do I find the 6-digit code?')}</summary>
           <ol className="mt-2 list-decimal space-y-1 pl-4">
-            <li>휴대폰에서 <strong className="text-ink">인증 앱</strong>을 엽니다. 2단계 인증을 켤 때 QR 코드를 찍은 앱입니다 (Google Authenticator, Microsoft Authenticator 등).</li>
-            <li>목록에서 <strong className="text-ink">IM Newsroom</strong> (내 이메일)을 찾습니다.</li>
-            <li>그 아래 큰 숫자 6자리를 여기에 넣습니다. 숫자는 30초마다 바뀌니, 바뀌었으면 새 숫자를 넣으세요.</li>
+            {en ? <>
+              <li>Open the <strong className="text-ink">authenticator app</strong> on your phone. It is the app you scanned the QR code with when you turned on two-step verification (Google Authenticator, Microsoft Authenticator, etc.).</li>
+              <li>Find <strong className="text-ink">IM Newsroom</strong> (your email) in the list.</li>
+              <li>Enter the large 6-digit number below it here. The number changes every 30 seconds, so enter the new one if it has changed.</li>
+            </> : <>
+              <li>휴대폰에서 <strong className="text-ink">인증 앱</strong>을 엽니다. 2단계 인증을 켤 때 QR 코드를 찍은 앱입니다 (Google Authenticator, Microsoft Authenticator 등).</li>
+              <li>목록에서 <strong className="text-ink">IM Newsroom</strong> (내 이메일)을 찾습니다.</li>
+              <li>그 아래 큰 숫자 6자리를 여기에 넣습니다. 숫자는 30초마다 바뀌니, 바뀌었으면 새 숫자를 넣으세요.</li>
+            </>}
           </ol>
-          <p className="mt-2">코드가 계속 틀리면 휴대폰 설정에서 <strong className="text-ink">날짜·시간 자동 설정</strong>이 켜져 있는지 확인하세요. 인증 앱은 휴대폰 시계로 숫자를 만듭니다.</p>
+          <p className="mt-2">{en ? <>If the code keeps failing, check that <strong className="text-ink">automatic date &amp; time</strong> is turned on in your phone’s settings. The authenticator app generates numbers from your phone’s clock.</> : <>코드가 계속 틀리면 휴대폰 설정에서 <strong className="text-ink">날짜·시간 자동 설정</strong>이 켜져 있는지 확인하세요. 인증 앱은 휴대폰 시계로 숫자를 만듭니다.</>}</p>
         </details>
         {factors === null ? (
-          <p className="mt-6 text-center text-[13px] text-muted">확인하는 중…</p>
+          <p className="mt-6 text-center text-[13px] text-muted">{t('확인하는 중…', 'Checking…')}</p>
         ) : (
           <form onSubmit={submit} className="mt-5 space-y-4">
             {factors.length > 1 && (
               <div>
-                <label htmlFor="factor" className="field-label">인증 앱</label>
+                <label htmlFor="factor" className="field-label">{t('인증 앱', 'Authenticator app')}</label>
                 <select id="factor" value={factorId} onChange={(e) => setFactorId(e.target.value)} className="field-input">
-                  {factors.map((f) => <option key={f.id} value={f.id}>{f.friendly_name || '인증 앱'}</option>)}
+                  {factors.map((f) => <option key={f.id} value={f.id}>{f.friendly_name || t('인증 앱', 'Authenticator app')}</option>)}
                 </select>
               </div>
             )}
             <div>
-              <label htmlFor="code" className="field-label">6자리 코드</label>
+              <label htmlFor="code" className="field-label">{t('6자리 코드', '6-digit code')}</label>
               <input
                 id="code" ref={input} value={code} onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, '').slice(0, 7))}
                 inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]*" placeholder="123456"
@@ -105,11 +119,15 @@ export default function MfaPage() {
               />
             </div>
             {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-            <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? '확인 중…' : '확인'}</button>
+            <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? t('확인 중…', 'Verifying…') : t('확인', 'Verify')}</button>
           </form>
         )}
         <p className="mt-5 border-t border-line pt-4 text-[12.5px] leading-relaxed text-muted">
-          휴대폰을 바꿨거나 잃어버렸다면 우리 언론사 발행인(또는 IM 뉴스룸 고객센터 contact@imnewsroom.com)에게 <strong className="text-ink">2단계 인증 초기화</strong>를 요청하세요. 초기화한 뒤 로그인하면 인증 앱을 새로 등록합니다.
+          {en ? <>
+            If you changed or lost your phone, ask your newsroom’s publisher (or IM Newsroom support at contact@imnewsroom.com) to <strong className="text-ink">reset your two-step verification</strong>. After the reset, sign in and register your authenticator app again.
+          </> : <>
+            휴대폰을 바꿨거나 잃어버렸다면 우리 언론사 발행인(또는 IM 뉴스룸 고객센터 contact@imnewsroom.com)에게 <strong className="text-ink">2단계 인증 초기화</strong>를 요청하세요. 초기화한 뒤 로그인하면 인증 앱을 새로 등록합니다.
+          </>}
         </p>
         <div className="mt-4 flex justify-center"><SignOutButton /></div>
       </div>

@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { formatDateTime } from '@/lib/format'
-import { ROLE_LABEL, type Profile, type UserRole } from '@/lib/types'
+import { roleLabel, type Profile, type UserRole } from '@/lib/types'
 import UserManager, { DormantMembers, InviteForm, type OutletOption } from '@/components/UserManager'
 import { isDormant } from '@/lib/device'
 import PendingButton from '@/components/cms/PendingButton'
@@ -14,31 +15,32 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
   const searchParams = await props.searchParams
   const { supabase, user, isSuper, isGroupAdmin, outletId, trial, profile, viewAs, viewGroupId } = await getCmsContext()
   if (!isGroupAdmin) redirect('/articles')
+  const { t, lang } = await getT()
   // 체험 그룹장: 다른 체험자의 정보는 보여주지 않고, 이 화면에서 하는 일만 안내한다
   if (trial) {
     return (
       <div className="mx-auto max-w-[860px] px-4 py-6 md:px-8 md:py-10">
-        <h1 className="text-[22px] font-extrabold tracking-tight">회원 관리</h1>
+        <h1 className="text-[22px] font-extrabold tracking-tight">{t('회원 관리', 'Members')}</h1>
         <div className="mt-5 rounded-lg border border-[#1F3A5F]/25 bg-[#EEF3F9] px-5 py-4 text-[14px] leading-[1.75] text-[#1F3A5F]">
-          <p className="font-bold">체험 중에는 회원 관리 화면을 미리 보기만 할 수 있어요.</p>
-          <p className="mt-1">다른 체험자의 정보를 보호하려고 목록에는 내 계정만 보입니다.</p>
+          <p className="font-bold">{t('체험 중에는 회원 관리 화면을 미리 보기만 할 수 있어요.', 'During the trial you can only preview the Members screen.')}</p>
+          <p className="mt-1">{t('다른 체험자의 정보를 보호하려고 목록에는 내 계정만 보입니다.', 'To protect other trial users\' information, the list shows only your own account.')}</p>
         </div>
         <ul className="mt-6 grid gap-3 sm:grid-cols-2">
           {[
-            ['가입 승인', '우리 매체로 가입 신청한 기자를 확인하고 승인하거나 거절합니다.'],
-            ['기자 초대', '이메일로 기자를 초대하면 가입과 동시에 우리 매체 소속이 됩니다.'],
-            ['역할 지정', '기자 · 편집장을 정하고, 매체마다 다른 역할을 줄 수 있습니다.'],
-            ['기자별 AI 한도', '기자마다 한 달 AI 사용 횟수를 정해 비용을 관리합니다.'],
-          ].map(([t, d]) => (
-            <li key={t} className="rounded-lg border border-line bg-white p-4">
-              <p className="font-bold">{t}</p>
+            [t('가입 승인', 'Sign-up approval'), t('우리 매체로 가입 신청한 기자를 확인하고 승인하거나 거절합니다.', 'Review reporters who applied to join your outlet and approve or decline them.')],
+            [t('기자 초대', 'Invite reporters'), t('이메일로 기자를 초대하면 가입과 동시에 우리 매체 소속이 됩니다.', 'Invite a reporter by email and they join your outlet as soon as they sign up.')],
+            [t('역할 지정', 'Assign roles'), t('기자 · 편집장을 정하고, 매체마다 다른 역할을 줄 수 있습니다.', 'Choose Reporter or Editor-in-Chief, and give a different role for each outlet.')],
+            [t('기자별 AI 한도', 'AI limit per reporter'), t('기자마다 한 달 AI 사용 횟수를 정해 비용을 관리합니다.', 'Set each reporter\'s monthly AI usage to manage costs.')],
+          ].map(([title, d]) => (
+            <li key={title} className="rounded-lg border border-line bg-white p-4">
+              <p className="font-bold">{title}</p>
               <p className="mt-1 text-[13px] leading-[1.7] text-muted">{d}</p>
             </li>
           ))}
         </ul>
         <div className="mt-6 rounded-lg border border-line bg-white px-5 py-4">
           <p className="font-semibold">{profile?.full_name ?? user.email}</p>
-          <p className="mt-0.5 break-all text-[12.5px] text-muted">{user.email} · 그룹장(체험)</p>
+          <p className="mt-0.5 break-all text-[12.5px] text-muted">{user.email} · {t('그룹장(체험)', 'Group admin (trial)')}</p>
         </div>
       </div>
     )
@@ -72,7 +74,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
   if (outletsRes.error) {
     return (
       <div className="mx-auto max-w-[900px] px-4 py-10 md:px-8 md:py-16">
-        <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">그룹별 회원 관리를 쓰려면 Supabase에서 <code>supabase/groups.sql</code>을 실행해 주세요.</p>
+        <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">{lang === 'en' ? <>To use group-based member management, run <code>supabase/groups.sql</code> in Supabase.</> : <>그룹별 회원 관리를 쓰려면 Supabase에서 <code>supabase/groups.sql</code>을 실행해 주세요.</>}</p>
       </div>
     )
   }
@@ -106,36 +108,46 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
     : []
   const sections = isSuper
     ? [...(groups ?? []).map((g) => ({ key: g.id as string, title: g.name as string, list: groupMembers.filter((u) => groupIdOf(u) === g.id) })),
-       { key: 'none', title: '그룹 없음 (총관리자 등)', list: groupMembers.filter((u) => !groupIdOf(u)) }].filter((s) => s.list.length)
-    : [{ key: 'mine', title: '우리 그룹 회원', list: groupMembers }]
+       { key: 'none', title: t('그룹 없음 (총관리자 등)', 'No group (Super Admin, etc.)'), list: groupMembers.filter((u) => !groupIdOf(u)) }].filter((s) => s.list.length)
+    : [{ key: 'mine', title: t('우리 그룹 회원', 'Our group\'s members'), list: groupMembers }]
 
   return (
     <div className="mx-auto max-w-[1000px] space-y-8 px-4 py-5 md:px-8 md:py-8">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight">회원 관리</h1>
+        <h1 className="text-[22px] font-bold tracking-tight">{t('회원 관리', 'Members')}</h1>
         <p className="mt-1 text-[13px] text-muted">
-          {isSuper ? '모든 그룹의 회원과 가입 신청을 관리합니다.' : '우리 그룹 회원의 역할과 매체를 정하고, 새 기자를 초대합니다.'}
-          {' '}기자 = 자기 기사 · 편집장 = 자기 매체 · 발행인 = 그룹의 모든 매체. 기자·편집장은 그룹 안 여러 매체에 소속되고 매체마다 직급을 따로 가질 수 있습니다.
-          {' '}퇴사한 사람은 <strong>출입 정지</strong>로 바로 막을 수 있고(쓴 기사는 남음), 휴대폰을 잃어버린 회원은 <strong>2단계 초기화</strong>로 인증 앱을 새로 등록하게 합니다.
-          {' '}<strong>로그인 기록</strong>에서 언제·어느 기기로 들어왔는지 보고, 의심스러우면 <strong>모든 기기 로그아웃</strong>으로 바로 끊습니다.
+          {isSuper ? t('모든 그룹의 회원과 가입 신청을 관리합니다.', 'Manage members and sign-up requests for all groups.') : t('우리 그룹 회원의 역할과 매체를 정하고, 새 기자를 초대합니다.', 'Set the roles and outlets of your group\'s members and invite new reporters.')}
+          {lang === 'en' ? (
+            <>
+              {' '}Reporter = their own stories · Editor-in-Chief = their own outlet · Publisher = all outlets in the group. Reporters and Editors-in-Chief can belong to several outlets in the group and hold a different role at each one.
+              {' '}Someone who has left can be blocked right away with <strong>Suspend access</strong> (their stories remain), and a member who lost their phone can register a new authenticator app after a <strong>Reset two-step</strong>.
+              {' '}See when and from which device someone signed in under <strong>Login history</strong>, and if anything looks suspicious, cut them off right away with <strong>Sign out of all devices</strong>.
+            </>
+          ) : (
+            <>
+              {' '}기자 = 자기 기사 · 편집장 = 자기 매체 · 발행인 = 그룹의 모든 매체. 기자·편집장은 그룹 안 여러 매체에 소속되고 매체마다 직급을 따로 가질 수 있습니다.
+              {' '}퇴사한 사람은 <strong>출입 정지</strong>로 바로 막을 수 있고(쓴 기사는 남음), 휴대폰을 잃어버린 회원은 <strong>2단계 초기화</strong>로 인증 앱을 새로 등록하게 합니다.
+              {' '}<strong>로그인 기록</strong>에서 언제·어느 기기로 들어왔는지 보고, 의심스러우면 <strong>모든 기기 로그아웃</strong>으로 바로 끊습니다.
+            </>
+          )}
         </p>
       </header>
 
       {searchParams.error && <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">{searchParams.error}</p>}
-      {authError && <p className="rounded-lg border border-draft/40 bg-draft/10 px-4 py-3 text-sm">이메일을 보려면 <code>supabase/groups.sql</code>을 실행해 주세요.</p>}
+      {authError && <p className="rounded-lg border border-draft/40 bg-draft/10 px-4 py-3 text-sm">{lang === 'en' ? <>To see email addresses, run <code>supabase/groups.sql</code>.</> : <>이메일을 보려면 <code>supabase/groups.sql</code>을 실행해 주세요.</>}</p>}
 
       <InviteForm outlets={outlets} />
 
       {invitesShown.length > 0 && (
         <section>
-          <h2 className="mb-2 text-[15px] font-bold">가입을 기다리는 초대</h2>
+          <h2 className="mb-2 text-[15px] font-bold">{t('가입을 기다리는 초대', 'Invitations awaiting sign-up')}</h2>
           <ul className="divide-y divide-line rounded-lg border border-line bg-white">
             {invitesShown.map((i: any) => (
               <li key={i.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-[13.5px]">
                 <span className="min-w-0 break-all font-semibold">{i.email}</span>
-                <span className="text-muted">{i.full_name ?? ''} · {ROLE_LABEL[i.role as UserRole]} · {i.outlet?.name ?? ''} · {formatDateTime(i.created_at)}</span>
+                <span className="text-muted">{i.full_name ?? ''} · {roleLabel(i.role as UserRole, lang)} · {i.outlet?.name ?? ''} · {formatDateTime(i.created_at, lang)}</span>
                 <form action={cancelInvite.bind(null, i.id)} className="ml-auto">
-                  <PendingButton pending="…" confirm="이 초대를 취소할까요?" className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger">취소</PendingButton>
+                  <PendingButton pending="…" confirm={t('이 초대를 취소할까요?', 'Cancel this invitation?')} className="text-[12.5px] text-muted underline underline-offset-2 hover:text-danger">{t('취소', 'Cancel')}</PendingButton>
                 </form>
               </li>
             ))}
@@ -146,7 +158,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
       {(isSuper || pending.length > 0) && (
         <section>
           <h2 className="mb-2 flex items-center gap-2 text-[15px] font-bold">
-            가입 승인 대기
+            {t('가입 승인 대기', 'Pending sign-up approvals')}
             <span className={`rounded-full px-2 text-[12px] tabular-nums ${pending.length ? 'bg-danger text-white' : 'bg-line text-muted'}`}>{pending.length}</span>
           </h2>
           {pending.length ? (
@@ -157,55 +169,55 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
                   <li key={u.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4">
                     <div className="min-w-[200px] flex-1">
                       <p className="font-semibold">{u.full_name}</p>
-                      <p className="mt-0.5 break-words text-[12.5px] text-muted">{a?.email ?? '이메일 확인 불가'} · {a?.provider === 'google' ? '구글 가입' : '이메일 가입'} · {formatDateTime(u.created_at)}</p>
+                      <p className="mt-0.5 break-words text-[12.5px] text-muted">{a?.email ?? t('이메일 확인 불가', 'Email unavailable')} · {a?.provider === 'google' ? t('구글 가입', 'Signed up with Google') : t('이메일 가입', 'Signed up with email')} · {formatDateTime(u.created_at, lang)}</p>
                       <p className="mt-1 text-[12.5px]">
-                        신청 매체:{' '}
+                        {t('신청 매체:', 'Requested outlet:')}{' '}
                         {u.requested_outlet_id
-                          ? <strong>{outlets.find((o) => o.id === u.requested_outlet_id)?.name ?? '다른 그룹 매체'}</strong>
-                          : <span className="text-muted">정하지 않음</span>}
+                          ? <strong>{outlets.find((o) => o.id === u.requested_outlet_id)?.name ?? t('다른 그룹 매체', 'Outlet in another group')}</strong>
+                          : <span className="text-muted">{t('정하지 않음', 'Not specified')}</span>}
                       </p>
                     </div>
                     <form action={approveUser.bind(null, u.id)} className="flex max-w-full flex-wrap items-center gap-2">
-                      <select name="role" defaultValue="reporter" aria-label="역할" className="rounded border border-line px-2 py-1.5 text-[13px]">
-                        <option value="reporter">기자</option><option value="editor">편집장</option><option value="admin">발행인</option>
-                        {isSuper && <option value="staff">IM 뉴스룸 매니저</option>}
+                      <select name="role" defaultValue="reporter" aria-label={t('역할', 'Role')} className="rounded border border-line px-2 py-1.5 text-[13px]">
+                        <option value="reporter">{roleLabel('reporter', lang)}</option><option value="editor">{roleLabel('editor', lang)}</option><option value="admin">{roleLabel('admin', lang)}</option>
+                        {isSuper && <option value="staff">{t('IM 뉴스룸 매니저', 'IM Newsroom Manager')}</option>}
                       </select>
-                      <select name="outlet_id" defaultValue={(u.requested_outlet_id && outlets.some((o) => o.id === u.requested_outlet_id) ? u.requested_outlet_id : outletId) ?? ''} aria-label="매체" className="min-w-0 max-w-full rounded border border-line px-2 py-1.5 text-[13px]">
-                        <option value="">매체 선택</option>
+                      <select name="outlet_id" defaultValue={(u.requested_outlet_id && outlets.some((o) => o.id === u.requested_outlet_id) ? u.requested_outlet_id : outletId) ?? ''} aria-label={t('매체', 'Outlet')} className="min-w-0 max-w-full rounded border border-line px-2 py-1.5 text-[13px]">
+                        <option value="">{t('매체 선택', 'Choose an outlet')}</option>
                         {outlets.map((o) => <option key={o.id} value={o.id}>{o.group ? `${o.group} · ` : ''}{o.name}</option>)}
                       </select>
-                      <PendingButton pending="승인 중…" className="btn-publish px-3 py-1.5 text-[13px]">승인</PendingButton>
+                      <PendingButton pending={t('승인 중…', 'Approving…')} className="btn-publish px-3 py-1.5 text-[13px]">{t('승인', 'Approve')}</PendingButton>
                     </form>
                     <form action={rejectUser.bind(null, u.id)}>
-                      <PendingButton pending="거절 중…" confirm={`${u.full_name}님의 가입을 거절하고 계정을 삭제할까요?`} className="btn-secondary px-3 py-1.5 text-[13px] text-danger">거절</PendingButton>
+                      <PendingButton pending={t('거절 중…', 'Declining…')} confirm={t(`${u.full_name}님의 가입을 거절하고 계정을 삭제할까요?`, `Decline ${u.full_name}'s sign-up and delete the account?`)} className="btn-secondary px-3 py-1.5 text-[13px] text-danger">{t('거절', 'Decline')}</PendingButton>
                     </form>
                   </li>
                 )
               })}
             </ul>
           ) : (
-            <p className="rounded-lg border border-line bg-white px-5 py-5 text-center text-sm text-muted">승인을 기다리는 가입 신청이 없습니다. 초대한 사람은 가입하면 바로 승인됩니다.</p>
+            <p className="rounded-lg border border-line bg-white px-5 py-5 text-center text-sm text-muted">{t('승인을 기다리는 가입 신청이 없습니다. 초대한 사람은 가입하면 바로 승인됩니다.', 'No sign-up requests are waiting for approval. Invited people are approved as soon as they sign up.')}</p>
           )}
         </section>
       )}
 
       {isSuper && (
         <section className="rounded-lg border border-[#2F6BF0]/30 bg-[#2F6BF0]/5 p-5">
-          <h2 className="text-[15px] font-bold">IM 뉴스룸 매니저 <span className="text-[12.5px] font-normal text-muted">상담 신청·업무요청 처리, 공지, 고객사 개설, 대시보드·청구서 보기</span></h2>
-          <p className="mt-1 text-[12.5px] text-muted">매니저는 매체에 소속되지 않고 직급도 없습니다. 담당 매체만 정하면, 그 매체의 업무요청이 자동으로 배정됩니다.</p>
-          {!staffReady && <p className="mt-2 text-[12.5px] text-draft">담당 매체를 정하려면 <code>supabase/staff-outlets.sql</code>을 실행해 주세요.</p>}
+          <h2 className="text-[15px] font-bold">{t('IM 뉴스룸 매니저', 'IM Newsroom Managers')} <span className="text-[12.5px] font-normal text-muted">{t('상담 신청·업무요청 처리, 공지, 고객사 개설, 대시보드·청구서 보기', 'Handle consultation requests and work requests, announcements, create customer accounts, view dashboards and invoices')}</span></h2>
+          <p className="mt-1 text-[12.5px] text-muted">{t('매니저는 매체에 소속되지 않고 직급도 없습니다. 담당 매체만 정하면, 그 매체의 업무요청이 자동으로 배정됩니다.', 'Managers do not belong to an outlet and have no rank. Just assign outlets, and work requests from those outlets are assigned to them automatically.')}</p>
+          {!staffReady && <p className="mt-2 text-[12.5px] text-draft">{lang === 'en' ? <>To assign outlets, run <code>supabase/staff-outlets.sql</code>.</> : <>담당 매체를 정하려면 <code>supabase/staff-outlets.sql</code>을 실행해 주세요.</>}</p>}
           <ul className="mt-3 space-y-2">
             {members.filter((u) => u.is_staff && !u.is_super).map((u) => (
               <StaffRow key={u.id} id={u.id} name={u.full_name} email={info.get(u.id)?.email} outlets={outlets} assigned={staffOutlets[u.id] ?? []} ready={staffReady} />
             ))}
-            {!members.some((u) => u.is_staff && !u.is_super) && <li className="text-[13px] text-muted">아직 매니저가 없습니다. 매니저가 가입하면 승인 대기에서 “IM 뉴스룸 매니저”로 승인하거나, 아래에서 지정하세요.</li>}
+            {!members.some((u) => u.is_staff && !u.is_super) && <li className="text-[13px] text-muted">{t('아직 매니저가 없습니다. 매니저가 가입하면 승인 대기에서 “IM 뉴스룸 매니저”로 승인하거나, 아래에서 지정하세요.', 'There are no Managers yet. When a Manager signs up, approve them as “IM Newsroom Manager” under pending approvals, or appoint one below.')}</li>}
           </ul>
           <form action={appointStaff} className="mt-3 flex flex-wrap gap-2">
-            <select name="user_id" defaultValue="" aria-label="매니저로 지정할 회원" className="min-w-0 max-w-full rounded border border-line bg-white px-2 py-1.5 text-[13px]">
-              <option value="">회원 선택</option>
+            <select name="user_id" defaultValue="" aria-label={t('매니저로 지정할 회원', 'Member to appoint as Manager')} className="min-w-0 max-w-full rounded border border-line bg-white px-2 py-1.5 text-[13px]">
+              <option value="">{t('회원 선택', 'Choose a member')}</option>
               {members.filter((u) => !u.is_staff && !u.is_super).map((u) => <option key={u.id} value={u.id}>{u.full_name} {info.get(u.id)?.email ? `(${info.get(u.id)?.email})` : ''}</option>)}
             </select>
-            <PendingButton pending="지정 중…" className="btn-secondary bg-white">매니저로 지정</PendingButton>
+            <PendingButton pending={t('지정 중…', 'Appointing…')} className="btn-secondary bg-white">{t('매니저로 지정', 'Appoint as Manager')}</PendingButton>
           </form>
         </section>
       )}
@@ -219,7 +231,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ error?:
 
       {sections.map((s) => (
         <section key={s.key}>
-          <h2 className="mb-2 text-[15px] font-bold">{s.title} <span className="text-[12.5px] font-normal text-muted">{s.list.length}명</span></h2>
+          <h2 className="mb-2 text-[15px] font-bold">{s.title} <span className="text-[12.5px] font-normal text-muted">{t(`${s.list.length}명`, `${s.list.length} ${s.list.length === 1 ? 'person' : 'people'}`)}</span></h2>
           <UserManager users={s.list} outlets={outlets} currentUserId={user.id} emails={Object.fromEntries(Array.from(info, ([id, a]) => [id, a.email]))} groupOf={groupOf} memberships={membershipsReady ? memberships : null} canDelete={isSuper} mfa={mfa} viewerIsSuper={isSuper} lastSeen={lastSeen} loginsReady={loginsReady} />
         </section>
       ))}

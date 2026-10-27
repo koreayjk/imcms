@@ -2,11 +2,15 @@
 
 import { useEffect, useState, useTransition, useActionState } from 'react'
 import { invoiceDraft, outletBillingStatus, saveInvoice, sendInvoicePreview, type FormState } from '@/app/(main)/support/actions'
-import { TAX_NOTE, invoiceTotals, won, type InvoiceItem } from '@/lib/support'
+import { invoiceTotals, type InvoiceItem } from '@/lib/support'
+import { taxNote, wonL } from '@/lib/support-i18n'
+import { useCmsLang, useT } from '@/components/cms/CmsLang'
 import { SETUP_FEE, SETUP_WAIVER_NOTE } from '@/lib/pricing'
 import PendingButton from './PendingButton'
 
 export default function InvoiceForm({ outlets }: { outlets: { id: string; name: string }[] }) {
+  const t = useT()
+  const lang = useCmsLang()
   const [state, action] = useActionState<FormState, FormData>(saveInvoice, {})
   const [items, setItems] = useState<InvoiceItem[]>([{ name: 'IM 뉴스룸 이용료', qty: 1, unit_price: 0 }])
   const now = new Date()
@@ -52,7 +56,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
     setPreview({ text: '' })
     startSend(async () => {
       const r = await sendInvoicePreview(data)
-      setPreview(r.ok ? { text: `${r.to} 로 미리보기를 보냈습니다. ${r.note ?? ''}` } : { text: r.error ?? '보내지 못했습니다.', error: true })
+      setPreview(r.ok ? { text: t(`${r.to} 로 미리보기를 보냈습니다. ${r.note ?? ''}`, `Preview sent to ${r.to}. ${r.note ?? ''}`) } : { text: r.error ?? t('보내지 못했습니다.', 'Could not send it.'), error: true })
     })
   }
   const free = (() => {
@@ -75,7 +79,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
     ...(waive ? [{ name: '세팅비 (처음 개통할 때 한 번)', qty: 1, unit_price: SETUP_FEE }, { name: '베타 세팅비 무료 (개통 후 3개월 이상 이용 조건)', qty: 1, unit_price: -SETUP_FEE }] : []),
     ...(free ? [{ name: free.name, qty: 1, unit_price: 0 }] : []),
   ]
-  const t = invoiceTotals([...items, ...autoLines])
+  const tot = invoiceTotals([...items, ...autoLines])
   const memoAll = [free?.notice, waive ? SETUP_WAIVER_NOTE : '', userMemo.trim()].filter(Boolean).join('\n')
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
@@ -83,39 +87,48 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
     <form action={action} className="space-y-5 rounded-2xl bg-white p-4 ring-1 sm:p-7 ring-black/5">
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <label htmlFor="i-outlet" className="field-label">매체</label>
+          <label htmlFor="i-outlet" className="field-label">{t('매체', 'Publication')}</label>
           <select id="i-outlet" name="outlet_id" required value={outletId} onChange={(e) => setOutletId(e.target.value)} className="field-input">
-            <option value="" disabled>매체 선택</option>
+            <option value="" disabled>{t('매체 선택', 'Choose a publication')}</option>
             {outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="i-month" className="field-label">청구 월</label>
+          <label htmlFor="i-month" className="field-label">{t('청구 월', 'Billing month')}</label>
           <input id="i-month" name="month" type="month" required value={month} onChange={(e) => setMonth(e.target.value)} className="field-input" />
         </div>
         <div>
-          <label htmlFor="i-due" className="field-label">납부 기한</label>
+          <label htmlFor="i-due" className="field-label">{t('납부 기한', 'Due date')}</label>
           <input id="i-due" name="due_date" type="date" defaultValue={new Date(Date.now() + 9 * 3600_000 + 14 * 864e5).toISOString().slice(0, 10)} className="field-input" />
-          <p className="mt-1 text-[11.5px] text-muted">자동결제를 등록한 매체는 발행 7일 뒤부터, 납부 기한에 자동으로 결제됩니다.</p>
+          <p className="mt-1 text-[11.5px] text-muted">{t('자동결제를 등록한 매체는 발행 7일 뒤부터, 납부 기한에 자동으로 결제됩니다.', 'Publications with autopay registered are charged automatically on the due date, starting 7 days after the invoice is issued.')}</p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-line px-4 py-2.5 text-[13.5px]">
         <label className="flex items-center gap-2 font-semibold">
           <input type="checkbox" checked={beta} onChange={(e) => pick(e.target.checked, start || month)} disabled={!outletId} />
-          베타 반값 (첫 청구 월부터 3개월)
+          {t('베타 반값 (첫 청구 월부터 3개월)', 'Beta half price (3 months from the first billing month)')}
         </label>
         <label className="flex items-center gap-2">
-          <span className="text-muted">첫 청구 월</span>
+          <span className="text-muted">{t('첫 청구 월', 'First billing month')}</span>
           <input type="month" value={start} onChange={(e) => pick(beta, e.target.value)} disabled={!outletId || !beta} className="field-input w-40 py-1" />
         </label>
-        <span className="text-[12px] text-muted">이번 청구서 계산에만 쓰입니다. 다음 달 자동 청구에도 반값을 이어 가려면 자동 청구 설정에 같은 값을 저장해 두세요.</span>
+        <span className="text-[12px] text-muted">{t('이번 청구서 계산에만 쓰입니다. 다음 달 자동 청구에도 반값을 이어 가려면 자동 청구 설정에 같은 값을 저장해 두세요.', 'Used only to calculate this invoice. To keep the half price on next month\'s automatic billing, save the same values in the auto-billing settings.')}</span>
       </div>
 
       {outletId && billingInfo && (!billingInfo.company || !billingInfo.email) && (
         <p role="status" className="rounded-lg border border-draft/50 bg-draft/10 px-4 py-2.5 text-[13px] leading-relaxed">
-          이 매체의 <strong>결제 정보(공급받는 자 상호·사업자번호·대표자·담당자 이메일)</strong>가 비어 있습니다{!billingInfo.email ? ' — 담당자 이메일이 없으면 청구서 메일이 발행인 계정으로 갑니다' : ''}.
-          발행한 뒤 청구서 화면 아래의 &ldquo;공급받는 자·담당자 정보 입력&rdquo;에서 바로 채울 수 있습니다.
+          {lang === 'en' ? (
+            <>
+              This publication&apos;s <strong>billing info (company name, business registration no., representative, contact email)</strong> is empty{!billingInfo.email ? ' — without a contact email, the invoice email goes to the publisher account' : ''}.
+              After issuing, you can fill it in right away under &ldquo;Enter bill-to and contact info&rdquo; at the bottom of the invoice page.
+            </>
+          ) : (
+            <>
+              이 매체의 <strong>결제 정보(공급받는 자 상호·사업자번호·대표자·담당자 이메일)</strong>가 비어 있습니다{!billingInfo.email ? ' — 담당자 이메일이 없으면 청구서 메일이 발행인 계정으로 갑니다' : ''}.
+              발행한 뒤 청구서 화면 아래의 &ldquo;공급받는 자·담당자 정보 입력&rdquo;에서 바로 채울 수 있습니다.
+            </>
+          )}
         </p>
       )}
       <input type="hidden" name="beta_on" value={beta ? 'on' : ''} />
@@ -123,39 +136,45 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       {outletId && !auto && (
         <label className="flex items-start gap-2 rounded-lg border border-[#2F6BF0]/40 bg-[#2F6BF0]/5 px-4 py-3 text-[13.5px] leading-relaxed">
           <input type="checkbox" name="enable_auto" checked={enableAuto} onChange={(e) => setEnableAuto(e.target.checked)} className="mt-1" />
-          <span><strong>이 매체를 매달 자동 청구로 설정</strong> — 발행하면 다음 달부터 매월 1일에 이용료 청구서가 자동으로 발행되고(지난달 AI 추가 사용분 포함), 카드를 등록해 두면 자동으로 결제됩니다. 위의 베타 반값·첫 청구 월이 그대로 저장됩니다.</span>
+          {lang === 'en'
+            ? <span><strong>Set this publication to automatic monthly billing</strong> — once issued, a fee invoice is issued automatically on the 1st of every month starting next month (including last month&apos;s extra AI usage), and it is charged automatically if a card is registered. The beta half price and first billing month above are saved as they are.</span>
+            : <span><strong>이 매체를 매달 자동 청구로 설정</strong> — 발행하면 다음 달부터 매월 1일에 이용료 청구서가 자동으로 발행되고(지난달 AI 추가 사용분 포함), 카드를 등록해 두면 자동으로 결제됩니다. 위의 베타 반값·첫 청구 월이 그대로 저장됩니다.</span>}
         </label>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#F4F6FA] px-4 py-2.5 text-[12.5px] text-muted">
-        <span>{filling ? '요금표로 계산하는 중…' : note || (outletId ? '요금표와 이 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·세팅비)으로 채웠습니다. 고쳐서 발행해도 됩니다.' : '매체를 고르면 요금표대로 항목이 채워집니다.')}</span>
-        {outletId && <button type="button" onClick={() => fill()} disabled={filling} className="shrink-0 whitespace-nowrap font-semibold text-[#2F6BF0] disabled:opacity-50">요금표대로 다시 채우기</button>}
+        <span>{filling ? t('요금표로 계산하는 중…', 'Calculating from the price list…') : note || (outletId ? t('요금표와 이 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·세팅비)으로 채웠습니다. 고쳐서 발행해도 됩니다.', 'Filled in from the price list and this publication\'s auto-billing settings (plan, beta half price, additional publications, setup fee). You can edit before issuing.') : t('매체를 고르면 요금표대로 항목이 채워집니다.', 'Choose a publication to fill in the line items from the price list.'))}</span>
+        {outletId && <button type="button" onClick={() => fill()} disabled={filling} className="shrink-0 whitespace-nowrap font-semibold text-[#2F6BF0] disabled:opacity-50">{t('요금표대로 다시 채우기', 'Refill from price list')}</button>}
       </div>
 
       <div className="rounded-lg border border-line px-4 py-3 text-[13.5px]">
         <label className="flex items-center gap-2 font-semibold">
           <input type="checkbox" checked={waive} disabled={hasSetupLine} onChange={(e) => setWaivePick(e.target.checked)} />
-          세팅비 {SETUP_FEE.toLocaleString('ko-KR')}원 면제 표시 넣기 (정가 줄 + 면제 줄)
+          {t(`세팅비 ${SETUP_FEE.toLocaleString('ko-KR')}원 면제 표시 넣기 (정가 줄 + 면제 줄)`, `Show setup fee waiver (KRW ${SETUP_FEE.toLocaleString('en-US')}): list price line + waiver line`)}
         </label>
         <p className="mb-3 mt-1 text-[12.5px] leading-relaxed text-muted">
-          {hasSetupLine ? '이 청구서에는 세팅비가 실제로 청구되는 줄이 이미 있어 면제 표시를 넣지 않습니다.'
-            : waive ? <>청구서에 &ldquo;세팅비 {SETUP_FEE.toLocaleString('ko-KR')}원&rdquo; 줄과 &ldquo;베타 세팅비 무료 -{SETUP_FEE.toLocaleString('ko-KR')}원&rdquo; 줄이 들어가고, 안내에 3개월 이상 이용 조건이 적힙니다. 베타 반값을 고르면 기본으로 켜집니다.</>
-            : '꺼 두었습니다. 세팅비 줄이 청구서에 나오지 않습니다.'}
+          {hasSetupLine ? t('이 청구서에는 세팅비가 실제로 청구되는 줄이 이미 있어 면제 표시를 넣지 않습니다.', 'This invoice already has a line that actually charges the setup fee, so no waiver is added.')
+            : waive ? (lang === 'en'
+              ? <>The invoice gets a &ldquo;세팅비 (처음 개통할 때 한 번)&rdquo; line (KRW {SETUP_FEE.toLocaleString('en-US')}) and a &ldquo;베타 세팅비 무료&rdquo; line (-KRW {SETUP_FEE.toLocaleString('en-US')}), and the notice states the 3-month minimum use condition. It is on by default when you choose beta half price. (Invoice text stays in Korean.)</>
+              : <>청구서에 &ldquo;세팅비 {SETUP_FEE.toLocaleString('ko-KR')}원&rdquo; 줄과 &ldquo;베타 세팅비 무료 -{SETUP_FEE.toLocaleString('ko-KR')}원&rdquo; 줄이 들어가고, 안내에 3개월 이상 이용 조건이 적힙니다. 베타 반값을 고르면 기본으로 켜집니다.</>)
+            : t('꺼 두었습니다. 세팅비 줄이 청구서에 나오지 않습니다.', 'Turned off. No setup fee line appears on the invoice.')}
         </p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <label className="flex items-center gap-2 font-semibold">
             <input type="checkbox" checked={freeOn} onChange={(e) => setFreeOn(e.target.checked)} />
-            개통 전 무료 기간 안내 넣기
+            {t('개통 전 무료 기간 안내 넣기', 'Add a free-period notice before launch')}
           </label>
           <label className="flex items-center gap-2">
-            <span className="text-muted">개통일(오픈일)</span>
+            <span className="text-muted">{t('개통일(오픈일)', 'Launch date')}</span>
             <input type="date" value={openDate} onChange={(e) => setOpenDate(e.target.value)} disabled={!freeOn} className="field-input w-44 py-1" />
           </label>
         </div>
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
-          {!freeOn ? '꺼 두었습니다. 무료 기간 줄과 안내 문구는 청구서에 들어가지 않습니다.'
-            : free ? <>청구서에 <strong className="text-ink">&ldquo;{free.name}&rdquo; 0원 줄</strong>과 안내 &ldquo;{free.notice}&rdquo;가 자동으로 들어갑니다. 고객에게 보내는 메일에도 보입니다.</>
-            : '개통일을 고르면 개통일부터 청구 월 전달 말일까지 무료인 기간과 안내 문구가 자동으로 만들어집니다. (개통일이 청구 월 1일 이후면 넣지 않습니다.)'}
+          {!freeOn ? t('꺼 두었습니다. 무료 기간 줄과 안내 문구는 청구서에 들어가지 않습니다.', 'Turned off. The free-period line and notice are not added to the invoice.')
+            : free ? (lang === 'en'
+              ? <>The invoice automatically gets a <strong className="text-ink">&ldquo;{free.name}&rdquo; KRW 0 line</strong> and the notice &ldquo;{free.notice}&rdquo;. They also appear in the email sent to the customer. (Invoice text stays in Korean.)</>
+              : <>청구서에 <strong className="text-ink">&ldquo;{free.name}&rdquo; 0원 줄</strong>과 안내 &ldquo;{free.notice}&rdquo;가 자동으로 들어갑니다. 고객에게 보내는 메일에도 보입니다.</>)
+            : t('개통일을 고르면 개통일부터 청구 월 전달 말일까지 무료인 기간과 안내 문구가 자동으로 만들어집니다. (개통일이 청구 월 1일 이후면 넣지 않습니다.)', 'Choose a launch date and the free period (from the launch date to the end of the month before the billing month) and its notice are created automatically. (Nothing is added if the launch date is on or after the 1st of the billing month.)')}
         </p>
       </div>
       <input type="hidden" name="memo" value={memoAll} />
@@ -164,35 +183,35 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       <table className="table-cards w-full text-[14px] md:min-w-[560px]">
         <thead>
           <tr className="border-b border-line text-left text-[12.5px] text-muted">
-            <th className="py-2 font-medium">항목</th><th className="w-20 py-2 font-medium">수량</th><th className="w-36 py-2 font-medium">단가(원)</th><th className="w-32 py-2 text-right font-medium">금액</th><th className="w-8" />
+            <th className="py-2 font-medium">{t('항목', 'Item')}</th><th className="w-20 py-2 font-medium">{t('수량', 'Qty')}</th><th className="w-36 py-2 font-medium">{t('단가(원)', 'Unit price (KRW)')}</th><th className="w-32 py-2 text-right font-medium">{t('금액', 'Amount')}</th><th className="w-8" />
           </tr>
         </thead>
         <tbody>
           {items.map((it, i) => (
             <tr key={i} className="border-b border-line/60 max-md:!px-0">
-              <td className="tc-full py-2 pr-2"><input name="item_name" value={it.name} onChange={(e) => set(i, { name: e.target.value })} aria-label="항목" className="field-input py-1.5" /></td>
-              <td data-label="수량" className="w-20 py-2 pr-2 md:w-auto"><input name="item_qty" type="number" min={0} value={it.qty} onChange={(e) => set(i, { qty: Number(e.target.value) })} aria-label="수량" className="field-input py-1.5" /></td>
-              <td data-label="단가(원)" className="w-36 py-2 pr-2 md:w-auto"><input name="item_price" type="number" step={100} value={it.unit_price} onChange={(e) => set(i, { unit_price: Number(e.target.value) })} aria-label="단가" className="field-input py-1.5" /></td>
-              <td data-label="금액" className="py-2 text-right tabular-nums">{won(it.qty * it.unit_price)}</td>
-              <td className="ml-auto py-2 text-right"><button type="button" onClick={() => { setEdited(true); setItems(items.filter((_, j) => j !== i)) }} aria-label="줄 빼기" className="text-muted hover:text-danger">×</button></td>
+              <td className="tc-full py-2 pr-2"><input name="item_name" value={it.name} onChange={(e) => set(i, { name: e.target.value })} aria-label={t('항목', 'Item')} className="field-input py-1.5" /></td>
+              <td data-label={t('수량', 'Qty')} className="w-20 py-2 pr-2 md:w-auto"><input name="item_qty" type="number" min={0} value={it.qty} onChange={(e) => set(i, { qty: Number(e.target.value) })} aria-label={t('수량', 'Qty')} className="field-input py-1.5" /></td>
+              <td data-label={t('단가(원)', 'Unit price (KRW)')} className="w-36 py-2 pr-2 md:w-auto"><input name="item_price" type="number" step={100} value={it.unit_price} onChange={(e) => set(i, { unit_price: Number(e.target.value) })} aria-label={t('단가', 'Unit price')} className="field-input py-1.5" /></td>
+              <td data-label={t('금액', 'Amount')} className="py-2 text-right tabular-nums">{wonL(it.qty * it.unit_price, lang)}</td>
+              <td className="ml-auto py-2 text-right"><button type="button" onClick={() => { setEdited(true); setItems(items.filter((_, j) => j !== i)) }} aria-label={t('줄 빼기', 'Remove line')} className="text-muted hover:text-danger">×</button></td>
             </tr>
           ))}
           {autoLines.map((it, i) => (
             <tr key={`auto-${i}`} className="border-b border-line/60 bg-[#F4F6FA] max-md:!px-0">
-              <td className="tc-full py-2.5 pl-3 pr-2 text-[14px]"><span className="mr-2 rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11px] font-bold text-[#2F6BF0]">자동</span>{it.name}</td>
-              <td data-label="수량" className="py-2.5 pr-2">{it.qty}</td>
-              <td data-label="단가(원)" className="py-2.5 pr-2 tabular-nums">{it.unit_price}</td>
-              <td data-label="금액" className="py-2.5 text-right tabular-nums">{it.unit_price === 0 ? '무료' : won(it.qty * it.unit_price)}</td>
+              <td className="tc-full py-2.5 pl-3 pr-2 text-[14px]"><span className="mr-2 rounded bg-[#2F6BF0]/10 px-1.5 py-0.5 text-[11px] font-bold text-[#2F6BF0]">{t('자동', 'Auto')}</span>{it.name}</td>
+              <td data-label={t('수량', 'Qty')} className="py-2.5 pr-2">{it.qty}</td>
+              <td data-label={t('단가(원)', 'Unit price (KRW)')} className="py-2.5 pr-2 tabular-nums">{it.unit_price}</td>
+              <td data-label={t('금액', 'Amount')} className="py-2.5 text-right tabular-nums">{it.unit_price === 0 ? t('무료', 'Free') : wonL(it.qty * it.unit_price, lang)}</td>
               <td />
             </tr>
           ))}
           {freeOn && !free && (
-            <tr className="border-b border-line/60 bg-[#F4F6FA]"><td colSpan={5} className="px-3 py-2.5 text-[12.5px] text-muted">개통일을 고르면 무료 기간 줄(개통일~전달 말일)이 여기에 자동으로 들어갑니다.</td></tr>
+            <tr className="border-b border-line/60 bg-[#F4F6FA]"><td colSpan={5} className="px-3 py-2.5 text-[12.5px] text-muted">{t('개통일을 고르면 무료 기간 줄(개통일~전달 말일)이 여기에 자동으로 들어갑니다.', 'Choose a launch date and the free-period line (launch date to the end of the previous month) is added here automatically.')}</td></tr>
           )}
         </tbody>
       </table>
       </div>
-      <button type="button" onClick={() => { setEdited(true); setItems([...items, { name: '', qty: 1, unit_price: 0 }]) }} className="text-[13px] font-semibold text-[#2F6BF0]">+ 항목 추가</button>
+      <button type="button" onClick={() => { setEdited(true); setItems([...items, { name: '', qty: 1, unit_price: 0 }]) }} className="text-[13px] font-semibold text-[#2F6BF0]">{t('+ 항목 추가', '+ Add line item')}</button>
       {waive && <>
         <input type="hidden" name="item_name" value="세팅비 (처음 개통할 때 한 번)" /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value={SETUP_FEE} />
         <input type="hidden" name="item_name" value="베타 세팅비 무료 (개통 후 3개월 이상 이용 조건)" /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value={-SETUP_FEE} />
@@ -200,20 +219,20 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       {free && <><input type="hidden" name="item_name" value={free.name} /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value="0" /></>}
 
       <dl className="ml-auto w-full space-y-1 sm:w-64 text-[14px] tabular-nums">
-        <div className="flex justify-between text-[16px] font-bold"><dt>합계</dt><dd>{won(t.total)}</dd></div>
-        <p className="text-right text-[12px] text-muted">{TAX_NOTE}</p>
+        <div className="flex justify-between text-[16px] font-bold"><dt>{t('합계', 'Total')}</dt><dd>{wonL(tot.total, lang)}</dd></div>
+        <p className="text-right text-[12px] text-muted">{taxNote(lang)}</p>
       </dl>
 
       <div>
-        <label htmlFor="i-memo" className="field-label">안내 (입금 계좌 등)</label>
-        <textarea id="i-memo" value={userMemo} onChange={(e) => setUserMemo(e.target.value)} rows={3} className="field-input" placeholder="예) 입금 계좌: ○○은행 000-0000-0000 (예금주 ○○○)" />
+        <label htmlFor="i-memo" className="field-label">{t('안내 (입금 계좌 등)', 'Notes (bank account, etc.)')}</label>
+        <textarea id="i-memo" value={userMemo} onChange={(e) => setUserMemo(e.target.value)} rows={3} className="field-input" placeholder={t('예) 입금 계좌: ○○은행 000-0000-0000 (예금주 ○○○)', 'e.g. Bank account: ○○ Bank 000-0000-0000 (account holder ○○○)')} />
       </div>
-      <p className="text-[12.5px] text-muted">같은 매체·같은 월 청구서가 이미 있으면 새 내용으로 바뀝니다.</p>
+      <p className="text-[12.5px] text-muted">{t('같은 매체·같은 월 청구서가 이미 있으면 새 내용으로 바뀝니다.', 'If an invoice for the same publication and month already exists, it is replaced with the new content.')}</p>
       {state.error && <p role="alert" className="text-[13.5px] text-danger">{state.error}</p>}
       {preview.text && <p role={preview.error ? 'alert' : 'status'} className={`text-right text-[13px] ${preview.error ? 'text-danger' : 'text-published'}`}>{preview.text}</p>}
       <div className="flex flex-wrap items-center justify-end gap-3">
-        <button type="button" onClick={(e) => sendToMe(e.currentTarget.form!)} disabled={sending || !outletId} className="rounded-full border border-[#2F6BF0] bg-white px-6 py-2.5 text-[14.5px] font-bold text-[#2F6BF0] hover:bg-[#2F6BF0]/5 disabled:opacity-50">{sending ? '보내는 중…' : '나에게 보내기'}</button>
-        <PendingButton pending="저장 중…" className="rounded-full bg-[#2F6BF0] px-8 py-2.5 text-[14.5px] font-bold text-white">청구서 발행</PendingButton>
+        <button type="button" onClick={(e) => sendToMe(e.currentTarget.form!)} disabled={sending || !outletId} className="rounded-full border border-[#2F6BF0] bg-white px-6 py-2.5 text-[14.5px] font-bold text-[#2F6BF0] hover:bg-[#2F6BF0]/5 disabled:opacity-50">{sending ? t('보내는 중…', 'Sending…') : t('나에게 보내기', 'Send to me')}</button>
+        <PendingButton pending={t('저장 중…', 'Saving…')} className="rounded-full bg-[#2F6BF0] px-8 py-2.5 text-[14.5px] font-bold text-white">{t('청구서 발행', 'Issue invoice')}</PendingButton>
       </div>
     </form>
   )

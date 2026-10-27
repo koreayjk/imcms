@@ -1,11 +1,13 @@
 import ArticleEditor from '@/components/ArticleEditor'
 import { getCmsContext } from '@/lib/cms'
 import { outletEmailOf } from '@/lib/outlet-email'
+import { getT } from '@/lib/cms-t'
 
 // 승인신청·발행할 때 AI 법적 검수를 기다린다
 export const maxDuration = 60
 
 export default async function NewArticlePage() {
+  const { t } = await getT()
   const { supabase, user, profile, outletId, isEditorPlus, trial, viewAs, viewGroupId } = await getCmsContext()
 
   const [{ data: categories }, { data: outlets }] = await Promise.all([
@@ -19,7 +21,7 @@ export default async function NewArticlePage() {
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
-      <h1 className="mb-6 text-[22px] font-bold tracking-tight">기사쓰기</h1>
+      <h1 className="mb-6 text-[22px] font-bold tracking-tight">{t('기사쓰기', 'Write')}</h1>
       <ArticleEditor
         categories={categories ?? []}
         userId={user.id}

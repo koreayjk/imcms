@@ -1,17 +1,20 @@
 import Link from 'next/link'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { formatShort } from '@/lib/format'
 import { NOTICE_CATEGORIES, type NoticeCategory } from '@/lib/support'
+import { noticeCategoryLabel } from '@/lib/support-i18n'
 
 export default async function NoticesPage() {
   const { supabase, isStaff } = await getCmsContext()
+  const { t, lang } = await getT()
   const { data } = await supabase.from('support_notices').select('id, title, category, pinned, created_at')
     .order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(200)
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-6 md:px-8 md:py-10">
       <div className="flex items-center justify-between border-b-2 border-ink pb-4">
-        <h1 className="text-[22px] font-extrabold tracking-tight">공지</h1>
-        {isStaff && <Link href="/support/notices/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[14px] font-bold text-white hover:opacity-90">+ 공지 쓰기</Link>}
+        <h1 className="text-[22px] font-extrabold tracking-tight">{t('공지', 'Notices')}</h1>
+        {isStaff && <Link href="/support/notices/new" className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[14px] font-bold text-white hover:opacity-90">{t('+ 공지 쓰기', '+ New notice')}</Link>}
       </div>
       <ul className="divide-y divide-line">
         {(data ?? []).map((n) => {
@@ -19,15 +22,15 @@ export default async function NoticesPage() {
           return (
             <li key={n.id}>
               <Link href={`/support/notices/${n.id}`} className={`flex items-center gap-3 px-2 py-4 hover:bg-white ${n.pinned ? 'bg-[#FFF8E6]' : ''}`}>
-                <span className={`w-16 shrink-0 rounded px-1.5 py-0.5 text-center text-[11.5px] font-semibold ${c.className}`}>{c.label}</span>
-                {n.pinned && <span aria-label="고정">📌</span>}
+                <span className={`w-16 shrink-0 rounded px-1.5 py-0.5 text-center text-[11.5px] font-semibold ${c.className}`}>{noticeCategoryLabel(n.category, lang)}</span>
+                {n.pinned && <span aria-label={t('고정', 'Pinned')}>📌</span>}
                 <span className="min-w-0 flex-1 truncate text-[15px]">{n.title}</span>
-                <time className="shrink-0 text-[12.5px] tabular-nums text-muted">{formatShort(n.created_at)}</time>
+                <time className="shrink-0 text-[12.5px] tabular-nums text-muted">{formatShort(n.created_at, lang)}</time>
               </Link>
             </li>
           )
         })}
-        {!data?.length && <li className="py-16 text-center text-muted">공지가 없습니다.</li>}
+        {!data?.length && <li className="py-16 text-center text-muted">{t('공지가 없습니다.', 'No notices.')}</li>}
       </ul>
     </div>
   )

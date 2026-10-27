@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, ensureFullBody, type PressRelease } from '@/lib/press'
 import { sanitizeBody } from '@/lib/article-html'
 import { formatDateTime } from '@/lib/format'
@@ -22,6 +23,7 @@ export default async function PressDetailPage(
   const searchParams = await props.searchParams
   const params = await props.params
   const { supabase, user, outletId } = await getCmsContext()
+  const { t, lang } = await getT()
 
   const { data } = await supabase.from('press_releases').select('*').eq('id', params.id).maybeSingle()
   if (!data) notFound()
@@ -46,11 +48,12 @@ export default async function PressDetailPage(
   const emailed = r.source_key === 'email'
   // 해외 언론: 원문 그대로는 막고, AI가 출처를 밝힌 한국어 기사로 새로 쓴다
   const foreign = isForeignSource(r.source_key)
+  const aiHelp = t('AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.', 'AI draft: rewrites the release in news style and leaves a note of points to check. As-is: copies the press release text unchanged.')
 
   return (
     <div className="mx-auto max-w-[900px] px-4 py-5 md:px-8 md:py-8 pb-28 md:pb-28">
-      <nav className="mb-5 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label="현재 위치">
-        <BackLink href="/press" className="hover:text-ink">보도자료함</BackLink>
+      <nav className="mb-5 flex items-center gap-1.5 text-[12.5px] text-muted" aria-label={t('현재 위치', 'Breadcrumb')}>
+        <BackLink href="/press" className="hover:text-ink">{t('보도자료함', 'Press releases')}</BackLink>
         <span>›</span>
         <span className="min-w-0 max-w-md truncate text-ink">{r.title}</span>
       </nav>
@@ -61,7 +64,7 @@ export default async function PressDetailPage(
 
       {made && made.length > 0 && (
         <div className="mb-5 rounded-lg border border-published/30 bg-published/5 px-5 py-3.5 text-[13.5px]">
-          <strong className="text-published">이미 기사로 만든 보도자료입니다.</strong>{' '}
+          <strong className="text-published">{t('이미 기사로 만든 보도자료입니다.', 'A story has already been created from this press release.')}</strong>{' '}
           {made.map((a) => (
             <Link key={a.id} href={`/articles/${a.id}/edit`} className="ml-1 underline underline-offset-2">{a.title}</Link>
           ))}
@@ -70,14 +73,14 @@ export default async function PressDetailPage(
 
       <article className="rounded-lg border border-line bg-white px-5 py-6 md:px-10 md:py-9">
         <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
-          {manual && <span className="rounded bg-ink px-1.5 py-0.5 text-white">직접 등록</span>}
-          {emailed && <span className="rounded bg-review px-1.5 py-0.5 text-white">메일로 받음</span>}
+          {manual && <span className="rounded bg-ink px-1.5 py-0.5 text-white">{t('직접 등록', 'Added manually')}</span>}
+          {emailed && <span className="rounded bg-review px-1.5 py-0.5 text-white">{t('메일로 받음', 'Received by email')}</span>}
           <span className="rounded bg-line/70 px-1.5 py-0.5">{r.source_name}</span>
-          <span className="tabular-nums">{formatDateTime(r.published_at)}</span>
-          {r.link && <a href={r.link} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">원문 보기 ↗</a>}
+          <span className="tabular-nums">{formatDateTime(r.published_at, lang)}</span>
+          {r.link && <a href={r.link} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">{t('원문 보기 ↗', 'View original ↗')}</a>}
           {(manual || emailed) && r.created_by === user.id && !made?.length && (
             <form action={deleteManualPress.bind(null, r.id)} className="ml-auto">
-              <PendingButton pending="삭제 중…" className="text-[12px] text-danger underline underline-offset-2">삭제</PendingButton>
+              <PendingButton pending={t('삭제 중…', 'Deleting…')} className="text-[12px] text-danger underline underline-offset-2">{t('삭제', 'Delete')}</PendingButton>
             </form>
           )}
         </p>
@@ -87,12 +90,12 @@ export default async function PressDetailPage(
         ) : (
           <div className="mt-7 space-y-3 text-[15px] leading-relaxed">
             <p>{r.summary}</p>
-            <p className="rounded bg-draft/10 px-3 py-2 text-[13px] text-draft">전문을 가져오지 못했습니다. 기사로 만들면 요약만 들어가니 원문을 확인해 보완해 주세요.</p>
+            <p className="rounded bg-draft/10 px-3 py-2 text-[13px] text-draft">{t('전문을 가져오지 못했습니다. 기사로 만들면 요약만 들어가니 원문을 확인해 보완해 주세요.', 'Could not retrieve the full text. A story created from this will contain only the summary, so please check the original and fill in the rest.')}</p>
           </div>
         )}
         {files.length > 0 && (
           <div className="mt-8 border-t border-line pt-5">
-            <p className="text-[13px] font-bold">첨부파일</p>
+            <p className="text-[13px] font-bold">{t('첨부파일', 'Attachments')}</p>
             <ul className="mt-2 flex flex-wrap gap-2">
               {files.map((f) => (
                 <li key={f.id}>
@@ -104,14 +107,14 @@ export default async function PressDetailPage(
             </ul>
             {readNotes.map((n) => <p key={n} className="mt-2 text-[12px] text-draft">{n}</p>)}
             <p className="mt-2 text-[12px] text-muted">
-              한글·워드·PDF·텍스트 파일의 글자는 위 본문 아래에 자동으로 옮겨 두었습니다. 표·그림 속 글자나 문서 안의 사진은 빠질 수 있으니 파일도 함께 확인해 주세요.
+              {t('한글·워드·PDF·텍스트 파일의 글자는 위 본문 아래에 자동으로 옮겨 두었습니다. 표·그림 속 글자나 문서 안의 사진은 빠질 수 있으니 파일도 함께 확인해 주세요.', 'Text from Hangul (HWP), Word, PDF, and text files has been copied below the body above. Text inside tables or images and photos embedded in documents may be missing, so please check the files as well.')}
             </p>
           </div>
         )}
       </article>
 
       <p className="mt-4 text-[12px] leading-relaxed text-muted md:hidden">
-        {ai ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.' : aiBlocked ? '이번 달 AI 사용 한도를 다 썼습니다.' : 'AI 초안은 관리자가 AI 키를 설정하면 쓸 수 있습니다.'}
+        {ai ? aiHelp : aiBlocked ? t('이번 달 AI 사용 한도를 다 썼습니다.', 'You have used up this month\'s AI limit.') : t('AI 초안은 관리자가 AI 키를 설정하면 쓸 수 있습니다.', 'AI drafts become available once an admin sets up an AI key.')}
       </p>
 
       {usage && (level || usage.mine_limit != null) && (
@@ -127,20 +130,20 @@ export default async function PressDetailPage(
       <div className="cms-actionbar border-t border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[900px] items-center gap-3 px-4 py-2.5 md:px-8 md:py-3">
           <p className="hidden flex-1 text-[12.5px] leading-relaxed text-muted md:block">
-            {foreign ? '해외 언론 기사입니다. AI가 번역이 아니라 출처를 밝힌 한국어 기사로 새로 쓰고, 원문 주소는 확인 메모에 남깁니다. 원문 사진은 쓰지 않습니다.' : ai
-              ? 'AI 초안: 기사체로 다시 쓰고 확인할 점을 메모로 남깁니다. 원문 그대로: 보도자료 문장을 그대로 옮깁니다.'
-              : aiBlocked ? '이번 달 AI 사용 한도를 다 썼습니다. 원문 그대로 기사 만들기는 쓸 수 있습니다.'
-              : 'AI 초안은 관리자가 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)를 설정하면 쓸 수 있습니다.'}{' '}
-            {!foreign && '사진은 우리 저장소로 옮겨집니다.'}
+            {foreign ? t('해외 언론 기사입니다. AI가 번역이 아니라 출처를 밝힌 한국어 기사로 새로 쓰고, 원문 주소는 확인 메모에 남깁니다. 원문 사진은 쓰지 않습니다.', 'This is a story from a foreign news outlet. Rather than translating it, the AI writes a new Korean-language story that credits the source, and leaves the original URL in the review notes. Photos from the original are not used.') : ai
+              ? aiHelp
+              : aiBlocked ? t('이번 달 AI 사용 한도를 다 썼습니다. 원문 그대로 기사 만들기는 쓸 수 있습니다.', 'You have used up this month\'s AI limit. You can still create a story from the original text as-is.')
+              : t('AI 초안은 관리자가 AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)를 설정하면 쓸 수 있습니다.', 'AI drafts become available once an admin sets an AI key (ANTHROPIC_API_KEY or GEMINI_API_KEY).')}{' '}
+            {!foreign && t('사진은 우리 저장소로 옮겨집니다.', 'Photos are copied to our storage.')}
           </p>
-          <BackLink href="/press" className="btn-secondary hidden md:inline-flex">목록</BackLink>
+          <BackLink href="/press" className="btn-secondary hidden md:inline-flex">{t('목록', 'List')}</BackLink>
           {!foreign && (
             <form action={createArticleFromPress.bind(null, r.id, 'raw')} className="flex-1 md:flex-none">
-              <PendingButton pending="만드는 중…" className="btn-secondary w-full whitespace-nowrap px-3 md:w-auto">원문 그대로<span className="hidden md:inline"> 기사로</span></PendingButton>
+              <PendingButton pending={t('만드는 중…', 'Creating…')} className="btn-secondary w-full whitespace-nowrap px-3 md:w-auto">{t('원문 그대로', 'Use original')}<span className="hidden md:inline">{t(' 기사로', ' as story')}</span></PendingButton>
             </form>
           )}
           <form action={createArticleFromPress.bind(null, r.id, 'ai')} className="flex-[1.4] md:flex-none">
-            <PendingButton pending="AI가 쓰는 중…" className="btn-publish w-full whitespace-nowrap px-3 md:w-auto md:px-5" disabled={!ai}>AI 초안<span className="hidden md:inline">으로 기사</span> 만들기</PendingButton>
+            <PendingButton pending={t('AI가 쓰는 중…', 'AI is writing…')} className="btn-publish w-full whitespace-nowrap px-3 md:w-auto md:px-5" disabled={!ai}>{lang === 'en' ? <>Create<span className="hidden md:inline"> story from</span> AI draft</> : <>AI 초안<span className="hidden md:inline">으로 기사</span> 만들기</>}</PendingButton>
           </form>
         </div>
       </div>

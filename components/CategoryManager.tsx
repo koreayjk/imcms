@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 import type { Category } from '@/lib/types'
 import { isSlug, toSlug } from '@/lib/slug'
 import { refreshSiteMenu } from '@/app/(main)/admin/categories/actions'
+import { useT, useCmsLang } from '@/components/cms/CmsLang'
 
 type Cat = Category & { specialty?: boolean | null; divider_before?: boolean | null }
 // 고치는 동안의 목록: 카테고리와 구분선이 섞여 있다. "변경 저장"을 눌러야 DB에 들어간다
@@ -44,6 +45,8 @@ function initialRows(cats: Cat[]): Row[] {
 const snapshot = (rows: Row[]) => JSON.stringify(rows.map((r) => (r.kind === 'div' ? '|' : [r.id ?? r.key, r.name, r.slug, r.parent_slug])))
 
 export default function CategoryManager({ categories, outletId, siteUrl }: { categories: Category[]; outletId: string | null; siteUrl?: string }) {
+  const t = useT()
+  const lang = useCmsLang()
   const [base, setBase] = useState(() => initialRows(categories as Cat[]))
   const [rows, setRows] = useState(base)
   const [name, setName] = useState('')
@@ -68,8 +71,8 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
   }, [dirty])
 
   function slugError(v: string, key: string) {
-    if (!isSlug(v)) return '영문 주소는 영어 소문자·숫자·하이픈(-)만 쓸 수 있습니다. 예: education'
-    if (cats.some((c) => c.slug === v && c.key !== key)) return `“${v}” 주소를 두 카테고리가 같이 쓰고 있습니다.`
+    if (!isSlug(v)) return t('영문 주소는 영어 소문자·숫자·하이픈(-)만 쓸 수 있습니다. 예: education', 'The URL slug can use only lowercase letters, numbers and hyphens (-). Example: education')
+    if (cats.some((c) => c.slug === v && c.key !== key)) return t(`“${v}” 주소를 두 카테고리가 같이 쓰고 있습니다.`, `Two categories are using the slug “${v}”.`)
     return ''
   }
 
@@ -161,7 +164,7 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
   // ── 변경 저장: 지운 것 → 순서·이름·주소·구분선 → 새로 넣은 것 순서대로 DB에 넣고 홈페이지 메뉴를 새로 읽힌다 ──
   async function save() {
     for (const c of cats) {
-      if (!c.name.trim()) { setMsg({ error: '이름이 빈 카테고리가 있습니다.' }); setEditKey(c.key); return }
+      if (!c.name.trim()) { setMsg({ error: t('이름이 빈 카테고리가 있습니다.', 'A category has no name.') }); setEditKey(c.key); return }
       const bad = slugError(c.slug, c.key)
       if (bad) { setMsg({ error: `${c.name}: ${bad}` }); setEditKey(c.key); return }
     }
@@ -200,13 +203,13 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
       setBase(saved)
       setRows(saved)
       setEditKey(null)
-      const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+      const time = new Date().toLocaleTimeString(lang === 'en' ? 'en-US' : 'ko-KR', { hour: '2-digit', minute: '2-digit' })
       setMsg(dividerOk || !rows.some((r) => r.kind === 'div')
-        ? { ok: `${time}에 저장했습니다. 홈페이지 메뉴에 바로 반영됩니다.` }
-        : { ok: `${time}에 저장했습니다.`, error: '구분선은 아직 저장되지 않았습니다. 운영팀이 category-dividers.sql을 실행하면 쓸 수 있습니다.' })
+        ? { ok: t(`${time}에 저장했습니다. 홈페이지 메뉴에 바로 반영됩니다.`, `Saved at ${time}. The change shows in your homepage menu right away.`) }
+        : { ok: t(`${time}에 저장했습니다.`, `Saved at ${time}.`), error: t('구분선은 아직 저장되지 않았습니다. 운영팀이 category-dividers.sql을 실행하면 쓸 수 있습니다.', 'Dividers have not been saved yet. They will work once the IM Newsroom team runs category-dividers.sql.') })
       router.refresh()
     } catch (e) {
-      setMsg({ error: `저장하지 못했습니다: ${(e as { message?: string }).message ?? '오류'} — 다시 눌러 주세요.` })
+      setMsg({ error: `${t('저장하지 못했습니다', 'Could not save')}: ${(e as { message?: string }).message ?? t('오류', 'error')} — ${t('다시 눌러 주세요.', 'please try again.')}` })
     } finally {
       setSaving(false)
     }
@@ -219,34 +222,34 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
     for (const r of rows) {
       if (r.kind === 'div') { pending = true; continue }
       if (r.parent_slug) continue
-      out.push({ key: r.key, label: r.name || '(이름 없음)', divider: pending, subs: rows.filter((x): x is CatRow => x.kind === 'cat' && x.parent_slug === r.slug && !!r.slug).map((x) => x.name || '(이름 없음)') })
+      out.push({ key: r.key, label: r.name || t('(이름 없음)', '(no name)'), divider: pending, subs: rows.filter((x): x is CatRow => x.kind === 'cat' && x.parent_slug === r.slug && !!r.slug).map((x) => x.name || t('(이름 없음)', '(no name)')) })
       pending = false
     }
     return out
-  }, [rows])
+  }, [rows, t])
 
   return (
     <div className="space-y-6 pb-6">
       {/* 추가 */}
       <div className="rounded-lg border border-line bg-white p-4">
-        <h2 className="mb-3 text-sm font-medium">새 카테고리 추가</h2>
+        <h2 className="mb-3 text-sm font-medium">{t('새 카테고리 추가', 'Add a category')}</h2>
         <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-          <input type="text" value={name} onChange={(e) => { setName(e.target.value); setSlug(toSlug(e.target.value)) }} onKeyDown={(e) => e.key === 'Enter' && addCat()} placeholder="카테고리명 (예: 사회, 경제, 문화)" aria-label="카테고리 이름" className="field-input min-w-full flex-1 sm:min-w-0" />
-          <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} onKeyDown={(e) => e.key === 'Enter' && addCat()} placeholder="영문 주소 (자동)" aria-label="영문 주소" className="field-input min-w-0 flex-1 font-mono text-muted sm:w-40 sm:flex-none" />
-          <select value={newParent} onChange={(e) => setNewParent(e.target.value)} aria-label="상위 메뉴" className="field-input min-w-[9rem] sm:w-auto">
-            <option value="">1차 메뉴로</option>
-            {cats.filter((c) => !c.parent_slug && c.slug).map((c) => <option key={c.key} value={c.slug}>{c.name} 아래 2차 메뉴로</option>)}
+          <input type="text" value={name} onChange={(e) => { setName(e.target.value); setSlug(toSlug(e.target.value)) }} onKeyDown={(e) => e.key === 'Enter' && addCat()} placeholder={t('카테고리명 (예: 사회, 경제, 문화)', 'Category name (e.g. Society, Economy, Culture)')} aria-label={t('카테고리 이름', 'Category name')} className="field-input min-w-full flex-1 sm:min-w-0" />
+          <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} onKeyDown={(e) => e.key === 'Enter' && addCat()} placeholder={t('영문 주소 (자동)', 'URL slug (auto)')} aria-label={t('영문 주소', 'URL slug')} className="field-input min-w-0 flex-1 font-mono text-muted sm:w-40 sm:flex-none" />
+          <select value={newParent} onChange={(e) => setNewParent(e.target.value)} aria-label={t('상위 메뉴', 'Parent menu')} className="field-input min-w-[9rem] sm:w-auto">
+            <option value="">{t('1차 메뉴로', 'As a main menu')}</option>
+            {cats.filter((c) => !c.parent_slug && c.slug).map((c) => <option key={c.key} value={c.slug}>{t(`${c.name} 아래 2차 메뉴로`, `As a submenu under ${c.name}`)}</option>)}
           </select>
-          <button type="button" onClick={addCat} disabled={!name.trim()} className="btn-secondary pn-press">목록에 넣기</button>
+          <button type="button" onClick={addCat} disabled={!name.trim()} className="btn-secondary pn-press">{t('목록에 넣기', 'Add to list')}</button>
         </div>
-        <p className="mt-2 text-[12px] leading-relaxed text-muted">영문 주소는 홈페이지 메뉴 주소(예: /section/education)가 됩니다. 한글 이름이면 로마자로 자동으로 채워지고, 고쳐 써도 됩니다.</p>
+        <p className="mt-2 text-[12px] leading-relaxed text-muted">{t('영문 주소는 홈페이지 메뉴 주소(예: /section/education)가 됩니다. 한글 이름이면 로마자로 자동으로 채워지고, 고쳐 써도 됩니다.', 'The slug becomes the homepage menu address (e.g. /section/education). For a Korean name it is filled in automatically in Roman letters, and you can edit it.')}</p>
       </div>
 
       {/* 홈페이지 메뉴 미리보기 */}
       <div className="rounded-lg border border-line bg-white px-4 py-3">
-        <p className="text-[12px] font-semibold text-muted">홈페이지 메뉴 미리보기{dirty && <span className="ml-1.5 text-review">· 저장 전</span>}</p>
+        <p className="text-[12px] font-semibold text-muted">{t('홈페이지 메뉴 미리보기', 'Homepage menu preview')}{dirty && <span className="ml-1.5 text-review">· {t('저장 전', 'not saved yet')}</span>}</p>
         <div className="mt-2 flex flex-wrap items-center gap-y-1.5 text-[13.5px] font-semibold">
-          <span className="px-2">전체기사</span>
+          <span className="px-2">{t('전체기사', 'All stories')}</span>
           {preview.map((p) => (
             <span key={p.key} className={`px-2 ${p.divider ? 'ml-1 border-l border-ink/25 pl-3' : ''}`}>
               {p.label}
@@ -259,8 +262,8 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
       {/* 목록 */}
       <div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-muted">왼쪽 <span aria-hidden>⠿</span> 손잡이를 잡고 끌어서 순서를 바꿉니다. 구분선도 끌어서 원하는 자리에 놓으세요.</p>
-          <button type="button" onClick={addDivider} className="pn-press rounded-full border border-dashed border-ink/30 px-3 py-1 text-[12.5px] font-semibold hover:border-ink">+ 구분선 넣기</button>
+          <p className="text-xs text-muted">{t('왼쪽', 'Grab the')} <span aria-hidden>⠿</span> {t('손잡이를 잡고 끌어서 순서를 바꿉니다. 구분선도 끌어서 원하는 자리에 놓으세요.', 'handle on the left and drag to reorder. Drag dividers into place the same way.')}</p>
+          <button type="button" onClick={addDivider} className="pn-press rounded-full border border-dashed border-ink/30 px-3 py-1 text-[12.5px] font-semibold hover:border-ink">{t('+ 구분선 넣기', '+ Add divider')}</button>
         </div>
         <ul ref={listRef} className="space-y-1">
           {rows.map((r, i) => {
@@ -271,7 +274,7 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
             <li key={r.key} style={rowStyle(i, r.key)} className={`flex items-center gap-2 rounded-lg border px-2 py-2 ${r.kind === 'div' ? 'border-dashed border-ink/25 bg-white' : child ? 'ml-5 border-line border-l-[3px] border-l-[#9DB0D4] bg-[#F8FAFD] sm:ml-8' : 'border-line bg-white'}`}>
               <button
                 type="button"
-                aria-label={`${r.kind === 'div' ? '구분선' : r.name} 옮기기 (위·아래 화살표 키로도 옮길 수 있습니다)`}
+                aria-label={t(`${r.kind === 'div' ? '구분선' : r.name} 옮기기 (위·아래 화살표 키로도 옮길 수 있습니다)`, `Move ${r.kind === 'div' ? 'divider' : r.name} (you can also use the up and down arrow keys)`)}
                 onPointerDown={(e) => onGrab(e, i)}
                 onPointerMove={onDrag}
                 onPointerUp={onDrop}
@@ -283,44 +286,44 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
               </button>
               {r.kind === 'div' ? (
                 <>
-                  <span className="flex flex-1 items-center gap-2 text-[12.5px] text-muted"><span className="h-px flex-1 bg-ink/20" />메뉴 구분선<span className="h-px flex-1 bg-ink/20" /></span>
-                  <button type="button" onClick={() => removeRow(r.key)} className="shrink-0 px-2 text-xs text-muted hover:text-danger">빼기</button>
+                  <span className="flex flex-1 items-center gap-2 text-[12.5px] text-muted"><span className="h-px flex-1 bg-ink/20" />{t('메뉴 구분선', 'Menu divider')}<span className="h-px flex-1 bg-ink/20" /></span>
+                  <button type="button" onClick={() => removeRow(r.key)} className="shrink-0 px-2 text-xs text-muted hover:text-danger">{t('빼기', 'Remove')}</button>
                 </>
               ) : editKey === r.key ? (
                 <>
                   <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-                    <input type="text" value={r.name} onChange={(e) => patch(r.key, { name: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && setEditKey(null)} aria-label="카테고리 이름" className="field-input min-w-[8rem] flex-1 py-1" autoFocus />
-                    <input type="text" value={r.slug} onChange={(e) => patch(r.key, { slug: e.target.value.toLowerCase() })} onKeyDown={(e) => e.key === 'Enter' && setEditKey(null)} aria-label="영문 주소" placeholder="영문 주소 (예: education)" className="field-input min-w-[8rem] flex-1 py-1 font-mono text-muted sm:w-40 sm:flex-none" />
-                    <select value={r.parent_slug ?? ''} onChange={(e) => setParent(r.key, e.target.value || null)} disabled={cats.some((c) => c.parent_slug === r.slug && !!r.slug)} aria-label="상위 메뉴" title="2차 메뉴를 가진 메뉴는 다른 메뉴 아래로 넣을 수 없습니다" className="field-input w-full sm:w-auto sm:min-w-[9rem]">
-                      <option value="">1차 메뉴</option>
-                      {cats.filter((c) => !c.parent_slug && c.key !== r.key && c.slug).map((c) => <option key={c.key} value={c.slug}>{c.name} 아래 2차 메뉴</option>)}
+                    <input type="text" value={r.name} onChange={(e) => patch(r.key, { name: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && setEditKey(null)} aria-label={t('카테고리 이름', 'Category name')} className="field-input min-w-[8rem] flex-1 py-1" autoFocus />
+                    <input type="text" value={r.slug} onChange={(e) => patch(r.key, { slug: e.target.value.toLowerCase() })} onKeyDown={(e) => e.key === 'Enter' && setEditKey(null)} aria-label={t('영문 주소', 'URL slug')} placeholder={t('영문 주소 (예: education)', 'URL slug (e.g. education)')} className="field-input min-w-[8rem] flex-1 py-1 font-mono text-muted sm:w-40 sm:flex-none" />
+                    <select value={r.parent_slug ?? ''} onChange={(e) => setParent(r.key, e.target.value || null)} disabled={cats.some((c) => c.parent_slug === r.slug && !!r.slug)} aria-label={t('상위 메뉴', 'Parent menu')} title={t('2차 메뉴를 가진 메뉴는 다른 메뉴 아래로 넣을 수 없습니다', 'A menu that has submenus cannot be placed under another menu')} className="field-input w-full sm:w-auto sm:min-w-[9rem]">
+                      <option value="">{t('1차 메뉴', 'Main menu')}</option>
+                      {cats.filter((c) => !c.parent_slug && c.key !== r.key && c.slug).map((c) => <option key={c.key} value={c.slug}>{t(`${c.name} 아래 2차 메뉴`, `Submenu under ${c.name}`)}</option>)}
                   </select>
                   </div>
-                  <button type="button" onClick={() => setEditKey(null)} className="shrink-0 px-2 text-xs font-semibold text-published">완료</button>
+                  <button type="button" onClick={() => setEditKey(null)} className="shrink-0 px-2 text-xs font-semibold text-published">{t('완료', 'Done')}</button>
                 </>
               ) : (
                 <>
                   <div className="min-w-0 flex-1">
                     <span className={`text-sm ${child ? 'font-medium' : 'font-bold'}`}>
-                      {child && <span className="mr-1.5 rounded bg-[#E6ECF7] px-1.5 py-0.5 text-[11px] font-semibold text-[#3B5688]" title="2차 메뉴">{parentName} ›</span>}
+                      {child && <span className="mr-1.5 rounded bg-[#E6ECF7] px-1.5 py-0.5 text-[11px] font-semibold text-[#3B5688]" title={t('2차 메뉴', 'Submenu')}>{parentName} ›</span>}
                       {r.name}
-                      {subCount > 0 && <span className="ml-2 text-[11.5px] font-normal text-muted">2차 메뉴 {subCount}개</span>}
-                      {!r.id && <span className="ml-1.5 rounded bg-review/10 px-1.5 py-0.5 text-[11px] font-semibold text-review">새로 추가</span>}
+                      {subCount > 0 && <span className="ml-2 text-[11.5px] font-normal text-muted">{t(`2차 메뉴 ${subCount}개`, `${subCount} ${subCount === 1 ? 'submenu' : 'submenus'}`)}</span>}
+                      {!r.id && <span className="ml-1.5 rounded bg-review/10 px-1.5 py-0.5 text-[11px] font-semibold text-review">{t('새로 추가', 'New')}</span>}
                     </span>
                     {isSlug(r.slug)
                       ? <span className="ml-2 break-all font-mono text-xs text-muted">{r.slug}</span>
-                      : <span className="ml-2 rounded bg-danger/10 px-1.5 py-0.5 text-[11.5px] font-semibold text-danger">영문 주소 없음 · “수정”에서 넣어 주세요</span>}
+                      : <span className="ml-2 rounded bg-danger/10 px-1.5 py-0.5 text-[11.5px] font-semibold text-danger">{t('영문 주소 없음 · “수정”에서 넣어 주세요', 'No URL slug · add one under “Edit”')}</span>}
                   </div>
                   <div className="flex shrink-0 gap-2 pr-1">
-                    <button type="button" onClick={() => { setEditKey(r.key); if (!isSlug(r.slug)) patch(r.key, { slug: toSlug(r.name) }) }} className="text-xs text-muted hover:text-ink">수정</button>
-                    <button type="button" onClick={() => { if (!r.id || window.confirm(`“${r.name}”을(를) 목록에서 뺄까요?\n“변경 저장”을 누르면 지워지고, 이 카테고리의 기사는 "카테고리 없음"이 됩니다.`)) removeRow(r.key) }} className="text-xs text-muted hover:text-danger">삭제</button>
+                    <button type="button" onClick={() => { setEditKey(r.key); if (!isSlug(r.slug)) patch(r.key, { slug: toSlug(r.name) }) }} className="text-xs text-muted hover:text-ink">{t('수정', 'Edit')}</button>
+                    <button type="button" onClick={() => { if (!r.id || window.confirm(t(`“${r.name}”을(를) 목록에서 뺄까요?\n“변경 저장”을 누르면 지워지고, 이 카테고리의 기사는 "카테고리 없음"이 됩니다.`, `Remove “${r.name}” from the list?\nIt will be deleted when you press “Save changes”, and stories in this category will become "Uncategorized".`))) removeRow(r.key) }} className="text-xs text-muted hover:text-danger">{t('삭제', 'Delete')}</button>
                   </div>
                 </>
               )}
             </li>
             )
           })}
-          {rows.length === 0 && <li className="py-10 text-center text-sm text-muted">카테고리가 없습니다. 위에서 추가하세요.</li>}
+          {rows.length === 0 && <li className="py-10 text-center text-sm text-muted">{t('카테고리가 없습니다. 위에서 추가하세요.', 'There are no categories. Add one above.')}</li>}
         </ul>
       </div>
 
@@ -330,14 +333,14 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-white/90 px-4 py-3 shadow-[0_18px_40px_-18px_rgba(16,24,40,0.45),inset_0_0_0_1px_rgba(15,17,21,0.08)] backdrop-blur-md">
             <p role={msg.error ? 'alert' : 'status'} className="min-w-[12rem] flex-1 text-[13px]">
               {msg.error && <span className="block text-danger">{msg.error}</span>}
-              {dirty ? <span className="font-semibold text-review">저장하지 않은 변경이 있습니다.</span>
+              {dirty ? <span className="font-semibold text-review">{t('저장하지 않은 변경이 있습니다.', 'You have unsaved changes.')}</span>
                 : msg.ok ? <span className="font-semibold text-published">✓ {msg.ok}</span> : null}
             </p>
-            {!dirty && msg.ok && siteUrl && <a href={siteUrl} target="_blank" rel="noopener" className="whitespace-nowrap text-[13px] font-semibold text-[#2F6BF0] hover:underline">홈페이지에서 보기 ↗</a>}
+            {!dirty && msg.ok && siteUrl && <a href={siteUrl} target="_blank" rel="noopener" className="whitespace-nowrap text-[13px] font-semibold text-[#2F6BF0] hover:underline">{t('홈페이지에서 보기 ↗', 'View on homepage ↗')}</a>}
             {dirty && (
               <>
-                <button type="button" onClick={() => { setRows(base); setEditKey(null); setMsg({}) }} disabled={saving} className="whitespace-nowrap px-2 text-[13px] text-muted hover:text-ink">변경 취소</button>
-                <button type="button" onClick={save} disabled={saving} className="btn-primary pn-press">{saving ? '저장 중…' : '변경 저장'}</button>
+                <button type="button" onClick={() => { setRows(base); setEditKey(null); setMsg({}) }} disabled={saving} className="whitespace-nowrap px-2 text-[13px] text-muted hover:text-ink">{t('변경 취소', 'Discard changes')}</button>
+                <button type="button" onClick={save} disabled={saving} className="btn-primary pn-press">{saving ? t('저장 중…', 'Saving…') : t('변경 저장', 'Save changes')}</button>
               </>
             )}
           </div>

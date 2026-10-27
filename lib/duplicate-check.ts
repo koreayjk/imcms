@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { makeT, type CmsLang } from './cms-i18n'
 
 // 중복 기사 확인 (기사 작성 가이드: 최근 1개월 안에 같은 내용의 기사를 다시 내보내지 않는다 — 네이버 운영평가 J항)
 //   같은 보도자료로 만든 기사, 제목이 많이 겹치는 기사를 찾아 "확인할 점" 메모 문장으로 돌려준다
@@ -23,8 +24,11 @@ export function titleSimilarity(a: string, b: string) {
 }
 
 const STATUS: Record<string, string> = { draft: '작성중', in_review: '승인대기', published: '발행', rejected: '반려' }
+const STATUS_EN: Record<string, string> = { draft: 'Draft', in_review: 'Pending approval', published: 'Published', rejected: 'Rejected' }
 
-export async function duplicateNotes(supabase: SupabaseClient, outletId: string | null, title: string, pressId?: string | null): Promise<string[]> {
+export async function duplicateNotes(supabase: SupabaseClient, outletId: string | null, title: string, pressId?: string | null, lang: CmsLang = 'ko'): Promise<string[]> {
+  const t = makeT(lang)
+  const status = (s: string) => (lang === 'en' ? STATUS_EN : STATUS)[s] ?? s
   if (!outletId || !title.trim()) return []
   const since = new Date(Date.now() - 31 * 864e5).toISOString()
   const { data } = await supabase
@@ -43,8 +47,8 @@ export async function duplicateNotes(supabase: SupabaseClient, outletId: string 
     if (seen.has(a.id)) continue
     seen.add(a.id)
     notes.push(same
-      ? `같은 보도자료로 만든 기사가 이미 있습니다: 「${a.title}」(${STATUS[a.status] ?? a.status}). 같은 내용을 다시 내보내지 마세요(네이버 운영평가 J항).`
-      : `최근 1개월 안에 비슷한 제목의 기사가 있습니다: 「${a.title}」(${STATUS[a.status] ?? a.status}). 같은 내용이면 내보내지 마세요(네이버 운영평가 J항).`)
+      ? t(`같은 보도자료로 만든 기사가 이미 있습니다: 「${a.title}」(${STATUS[a.status] ?? a.status}). 같은 내용을 다시 내보내지 마세요(네이버 운영평가 J항).`, `A story made from the same press release already exists: “${a.title}” (${status(a.status)}). Do not publish the same content again (Naver operations evaluation, item J).`)
+      : t(`최근 1개월 안에 비슷한 제목의 기사가 있습니다: 「${a.title}」(${STATUS[a.status] ?? a.status}). 같은 내용이면 내보내지 마세요(네이버 운영평가 J항).`, `A story with a similar headline exists from the past month: “${a.title}” (${status(a.status)}). If it covers the same content, do not publish it (Naver operations evaluation, item J).`))
   }
   return notes
 }

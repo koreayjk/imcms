@@ -1,5 +1,6 @@
 import * as tus from 'tus-js-client'
 import { createClient } from '@/lib/supabase'
+import { makeT, type CmsLang, type T } from '@/lib/cms-i18n'
 
 const MAX_EDGE = 1600
 const MAX_BYTES = 10 * 1024 * 1024
@@ -37,12 +38,14 @@ export async function shrink(file: File, watermark?: string | null): Promise<Blo
 }
 
 // 사진을 줄여서(긴 변 1600px) 저장소에 올리고 공개 주소를 돌려준다. watermark 글자를 주면 오른쪽 아래에 넣는다
-export async function uploadImage(file: File, outletId: string | null, watermark?: string | null) {
-  if (!file.type.startsWith('image/')) throw new Error('사진 파일(JPG, PNG, WEBP, GIF)만 올릴 수 있습니다.')
-  if (file.size > MAX_BYTES * 3) throw new Error('사진 용량이 너무 큽니다. 30MB 이하 파일을 올려주세요.')
+//   lang: 오류 문구 언어 (편집국 언어, 안 주면 한국어)
+export async function uploadImage(file: File, outletId: string | null, watermark?: string | null, lang: CmsLang = 'ko') {
+  const t = makeT(lang)
+  if (!file.type.startsWith('image/')) throw new Error(t('사진 파일(JPG, PNG, WEBP, GIF)만 올릴 수 있습니다.', 'Only image files (JPG, PNG, WEBP, GIF) can be uploaded.'))
+  if (file.size > MAX_BYTES * 3) throw new Error(t('사진 용량이 너무 큽니다. 30MB 이하 파일을 올려주세요.', 'The photo is too large. Please upload a file of 30 MB or less.'))
 
   const blob = await shrink(file, watermark?.trim() || null)
-  if (blob.size > MAX_BYTES) throw new Error('줄인 뒤에도 10MB를 넘습니다. 더 작은 사진을 올려주세요.')
+  if (blob.size > MAX_BYTES) throw new Error(t('줄인 뒤에도 10MB를 넘습니다. 더 작은 사진을 올려주세요.', 'It is still over 10 MB after resizing. Please upload a smaller photo.'))
 
   const ext = blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'image/gif' ? 'gif' : blob.type === 'image/png' ? 'png' : 'webp'
   const now = new Date()
@@ -50,7 +53,7 @@ export async function uploadImage(file: File, outletId: string | null, watermark
 
   const supabase = createClient()
   const { error } = await supabase.storage.from('media').upload(path, blob, { contentType: blob.type, cacheControl: '31536000' })
-  if (error) throw new Error(`사진 업로드 실패: ${error.message}`)
+  if (error) throw new Error(`${t('사진 업로드 실패', 'Photo upload failed')}: ${error.message}`)
   return supabase.storage.from('media').getPublicUrl(path).data.publicUrl
 }
 
@@ -68,7 +71,7 @@ export function videoKind(file: File) {
 }
 
 // 첫 장면에서 대표 이미지를 뽑는다. 이 브라우저가 영상을 못 열면 올리기 전에 알려 준다
-function videoPoster(file: File): Promise<Blob | null> {
+function videoPoster(file: File, t: T): Promise<Blob | null> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const v = document.createElement('video')
@@ -77,7 +80,7 @@ function videoPoster(file: File): Promise<Blob | null> {
     v.preload = 'auto'
     const done = (fn: () => void) => { clearTimeout(timer); URL.revokeObjectURL(url); v.removeAttribute('src'); v.load(); fn() }
     const timer = setTimeout(() => done(() => resolve(null)), 15000)
-    v.onerror = () => done(() => reject(new Error('이 영상은 이 브라우저에서 열리지 않습니다. 휴대폰 기본 형식(HEVC)일 수 있습니다. MP4(H.264)로 저장하거나 변환해서 올려 주세요.')))
+    v.onerror = () => done(() => reject(new Error(t('이 영상은 이 브라우저에서 열리지 않습니다. 휴대폰 기본 형식(HEVC)일 수 있습니다. MP4(H.264)로 저장하거나 변환해서 올려 주세요.', 'This browser cannot open this video. It may be in the phone default format (HEVC). Please save or convert it as MP4 (H.264) and upload again.'))))
     v.onloadedmetadata = () => { v.currentTime = Math.min(1, (v.duration || 2) / 2) }
     v.onseeked = () => {
       try {
@@ -101,28 +104,29 @@ function storageHost() {
   return base.replace(/^(https:\/\/[a-z0-9]+)\.supabase\.co$/, '$1.storage.supabase.co')
 }
 
-function videoError(message: string, size = 0) {
-  if (/bucket not found/i.test(message)) return '영상 저장소가 아직 준비되지 않았습니다. 운영팀이 설정을 마쳐야 합니다.'
+function videoError(message: string, size: number, t: T) {
+  if (/bucket not found/i.test(message)) return t('영상 저장소가 아직 준비되지 않았습니다. 운영팀이 설정을 마쳐야 합니다.', 'The video storage is not ready yet. The IM Newsroom team needs to finish the setup.')
   if (/exceeded|too large|payload too large|maximum allowed size|response code: 413/i.test(message)) {
     // 우리 한도(1GB)보다 작은데 막히면 Supabase 프로젝트 전체 한도가 낮은 것이다
     return size && size < VIDEO_MAX_BYTES
-      ? `저장소의 업로드 한도가 이 영상(${Math.round(size / 1024 / 1024)}MB)보다 작게 설정되어 있습니다. 운영팀이 Supabase Storage 설정의 "Upload file size limit"을 1GB 이상으로 올려야 합니다. (서버 응답: ${message.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').slice(0, 160)})`
-      : '영상이 허용 용량을 넘습니다. 1GB 이하로 줄여 올려 주세요.'
+      ? t(`저장소의 업로드 한도가 이 영상(${Math.round(size / 1024 / 1024)}MB)보다 작게 설정되어 있습니다. 운영팀이 Supabase Storage 설정의 "Upload file size limit"을 1GB 이상으로 올려야 합니다. (서버 응답: ${message.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').slice(0, 160)})`, `The storage upload limit is set lower than this video (${Math.round(size / 1024 / 1024)} MB). The IM Newsroom team needs to raise "Upload file size limit" in the Supabase Storage settings to 1 GB or more. (Server response: ${message.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').slice(0, 160)})`)
+      : t('영상이 허용 용량을 넘습니다. 1GB 이하로 줄여 올려 주세요.', 'The video exceeds the allowed size. Please reduce it to 1 GB or less and upload again.')
   }
-  if (/row-level security|unauthori|403|401/i.test(message)) return '영상을 올릴 권한이 없습니다. 다시 로그인해 보시고, 계속되면 운영팀에 알려 주세요.'
-  return `영상 업로드 실패: ${message.slice(0, 200)}`
+  if (/row-level security|unauthori|403|401/i.test(message)) return t('영상을 올릴 권한이 없습니다. 다시 로그인해 보시고, 계속되면 운영팀에 알려 주세요.', 'You do not have permission to upload videos. Try signing in again, and contact the IM Newsroom team if it continues.')
+  return `${t('영상 업로드 실패', 'Video upload failed')}: ${message.slice(0, 200)}`
 }
 
 export type UploadedVideo = { url: string; poster: string | null; bytes: number }
 
 // 영상을 올리고 공개 주소(+첫 장면 이미지 주소)를 돌려준다. onProgress: 0~100
-export async function uploadVideo(file: File, outletId: string | null, onProgress: (pct: number) => void): Promise<UploadedVideo> {
+export async function uploadVideo(file: File, outletId: string | null, onProgress: (pct: number) => void, lang: CmsLang = 'ko'): Promise<UploadedVideo> {
+  const t = makeT(lang)
   const kind = videoKind(file)
-  if (!kind) throw new Error('영상 파일(MP4, MOV, WEBM)만 올릴 수 있습니다.')
-  if (file.size > VIDEO_MAX_BYTES) throw new Error('영상이 1GB를 넘습니다. 화질을 낮추거나 잘라서 올려 주세요.')
+  if (!kind) throw new Error(t('영상 파일(MP4, MOV, WEBM)만 올릴 수 있습니다.', 'Only video files (MP4, MOV, WEBM) can be uploaded.'))
+  if (file.size > VIDEO_MAX_BYTES) throw new Error(t('영상이 1GB를 넘습니다. 화질을 낮추거나 잘라서 올려 주세요.', 'The video is over 1 GB. Please lower the quality or trim it and upload again.'))
 
   // 이 브라우저에서 열리는 영상인지 먼저 확인하고 대표 이미지를 뽑는다
-  const posterBlob = await videoPoster(file)
+  const posterBlob = await videoPoster(file, t)
 
   const now = new Date()
   const path = `${outletId ?? 'common'}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${crypto.randomUUID()}.${kind.ext}`
@@ -131,10 +135,10 @@ export async function uploadVideo(file: File, outletId: string | null, onProgres
   if (file.size <= 6 * 1024 * 1024) {
     onProgress(10)
     const { error } = await supabase.storage.from('videos').upload(path, file, { contentType: kind.type, cacheControl: '31536000' })
-    if (error) throw new Error(videoError(error.message, file.size))
+    if (error) throw new Error(videoError(error.message, file.size, t))
   } else {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) throw new Error('로그인이 끝났습니다. 다시 로그인해 주세요.')
+    if (!session) throw new Error(t('로그인이 끝났습니다. 다시 로그인해 주세요.', 'Your session has ended. Please sign in again.'))
     await new Promise<void>((resolve, reject) => {
       const up = new tus.Upload(file, {
         endpoint: `${storageHost()}/storage/v1/upload/resumable`,
@@ -146,7 +150,7 @@ export async function uploadVideo(file: File, outletId: string | null, onProgres
         removeFingerprintOnSuccess: true,
         metadata: { bucketName: 'videos', objectName: path, contentType: kind.type, cacheControl: '31536000' },
         chunkSize: 6 * 1024 * 1024,
-        onError: (err) => reject(new Error(videoError(String(err?.message ?? err), file.size))),
+        onError: (err) => reject(new Error(videoError(String(err?.message ?? err), file.size, t))),
         onProgress: (sent, total) => onProgress(Math.min(99, Math.round((sent / total) * 100))),
         onSuccess: () => resolve(),
       })
@@ -158,7 +162,7 @@ export async function uploadVideo(file: File, outletId: string | null, onProgres
   let poster: string | null = null
   if (posterBlob) {
     try {
-      poster = await uploadImage(new File([posterBlob], 'poster.jpg', { type: 'image/jpeg' }), outletId, null)
+      poster = await uploadImage(new File([posterBlob], 'poster.jpg', { type: 'image/jpeg' }), outletId, null, lang)
     } catch {
       poster = null
     }

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useT } from './CmsLang'
 
 export type MenuItem = { label: string; href?: string; newTab?: boolean; onClick?: () => void; tone?: 'danger' | 'strong' }
 
 // 표 한 줄 오른쪽 "관리 ⋯" 메뉴 (회원 관리·광고 계약) (버튼을 여러 줄로 늘어놓지 않는다). 표가 옆으로 스크롤돼도 잘리지 않게 화면 기준으로 띄운다
 export default function RowMenu({ items, disabled }: { items: (MenuItem | false | null | undefined)[]; disabled?: boolean }) {
+  const t = useT()
   const list = items.filter(Boolean) as MenuItem[]
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function RowMenu({ items, disabled }: { items: (MenuItem | false 
         }}
         className="whitespace-nowrap rounded border border-line px-2.5 py-1 text-[12.5px] text-muted hover:border-ink hover:text-ink disabled:opacity-50"
       >
-        관리 ⋯
+        {t('관리 ⋯', 'Manage ⋯')}
       </button>
       {pos && (
         <>

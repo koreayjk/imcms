@@ -80,3 +80,23 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   editor: '편집장',
   admin: '발행인',
 }
+
+// 영어판 라벨 (편집국 영어 화면용). 한국어는 위 STATUS_LABEL·ROLE_LABEL 그대로.
+export const STATUS_LABEL_EN: Record<ArticleStatus, string> = {
+  draft: 'Draft',
+  in_review: 'In review',
+  published: 'Published',
+  rejected: 'Rejected',
+}
+
+export const ROLE_LABEL_EN: Record<UserRole, string> = {
+  reporter: 'Reporter',
+  editor: 'Editor-in-Chief',
+  admin: 'Publisher',
+}
+
+export const statusLabel = (status: ArticleStatus, lang?: 'ko' | 'en'): string =>
+  (lang === 'en' ? STATUS_LABEL_EN : STATUS_LABEL)[status] ?? status
+
+export const roleLabel = (role: UserRole, lang?: 'ko' | 'en'): string =>
+  (lang === 'en' ? ROLE_LABEL_EN : ROLE_LABEL)[role] ?? role

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { foreignTopicOf, isForeignSource } from '@/lib/press-sources'
 import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, pressTextForAi, refreshPress, sourceLabel, textToParagraphs, type PressRelease } from '@/lib/press'
 import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
@@ -57,13 +58,14 @@ function photoBlocks(html: string) {
 
 export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   const { supabase, user, profile, outletId } = await getCmsContext()
+  const { t } = await getT()
 
   const { data } = await supabase.from('press_releases').select('*').eq('id', id).single()
-  if (!data) throw new Error('보도자료를 찾을 수 없습니다.')
+  if (!data) throw new Error(t('보도자료를 찾을 수 없습니다.', 'Press release not found.'))
   const r = await ensureFullBody(supabase, data as PressRelease)
   // 해외 언론 기사는 그 언론사 저작물이라 원문 그대로 올리지 않는다 (AI가 출처를 밝힌 한국어 기사로 새로 쓴다)
   const foreign = isForeignSource(r.source_key)
-  if (foreign && mode === 'raw') redirect(`/press/${id}?error=${encodeURIComponent('해외 언론 기사는 원문 그대로 올릴 수 없습니다. AI 기사로 만들어 주세요.')}`)
+  if (foreign && mode === 'raw') redirect(`/press/${id}?error=${encodeURIComponent(t('해외 언론 기사는 원문 그대로 올릴 수 없습니다. AI 기사로 만들어 주세요.', 'Stories from foreign news outlets cannot be published as-is. Please create an AI draft instead.'))}`)
   const original = r.body_html?.trim() || `<p>${escapeHtml(r.summary ?? '')}</p>`
 
   let title = r.title
@@ -78,7 +80,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
     const slot = await reserveAi(supabase, outletId)
     if (!slot.ok) {
       const msg = slot.scope === 'member'
-        ? `이번 달 내 AI 사용 한도(${slot.limit}회)를 다 썼습니다. 더 필요하면 편집장에게 한도를 늘려 달라고 요청해 주세요. 원문 그대로 기사 만들기는 쓸 수 있습니다.`
+        ? t(`이번 달 내 AI 사용 한도(${slot.limit}회)를 다 썼습니다. 더 필요하면 편집장에게 한도를 늘려 달라고 요청해 주세요. 원문 그대로 기사 만들기는 쓸 수 있습니다.`, `You have used all of your AI drafts for this month (limit: ${slot.limit}). If you need more, ask your Editor-in-Chief to raise your limit. You can still create a story from the original text as-is.`)
         : aiLimitMessage({ used: slot.used, limit: slot.limit, overage: false })
       redirect(`/press/${id}?error=${encodeURIComponent(msg)}`)
     }
@@ -95,7 +97,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       keywords = draft.keywords ?? []
       usedAi = true
       // 해외 언론: 확인용 원문 주소를 메모에 남긴다 (본문에는 넣지 않는다)
-      if (foreign) aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• 원문(${sourceLabel(r)}): ${r.link}`
+      if (foreign) aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• ${t('원문', 'Original')}(${sourceLabel(r)}): ${r.link}`
     } catch (e) {
       // AI가 실패하면 잡아 둔 한 건을 돌려준다 (한도에서 빠진다)
       await releaseAi(supabase, slot.id)
@@ -128,8 +130,8 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
     const notice = aiNoticeText((outlet as { site?: OutletSiteSettings | null } | null)?.site)
     if (notice) body = withAiNotice(body, notice)
     const memo = notice
-      ? '본문 끝에 AI 활용 표시 문구를 넣었습니다(매체 설정). 기사를 거의 새로 썼다면 지워도 됩니다.'
-      : 'AI 초안입니다. 거의 그대로 내보낸다면 본문에 AI 활용 사실을 밝혀 주세요(네이버 운영평가 D항). 매체 홈페이지 설정에서 자동 표시를 켤 수 있습니다.'
+      ? t('본문 끝에 AI 활용 표시 문구를 넣었습니다(매체 설정). 기사를 거의 새로 썼다면 지워도 됩니다.', 'An AI-use disclosure was added at the end of the story body (outlet setting). You can delete it if you substantially rewrote the story.')
+      : t('AI 초안입니다. 거의 그대로 내보낸다면 본문에 AI 활용 사실을 밝혀 주세요(네이버 운영평가 D항). 매체 홈페이지 설정에서 자동 표시를 켤 수 있습니다.', 'This is an AI draft. If you publish it largely as-is, disclose the use of AI in the story body (Naver evaluation item D). You can turn on automatic disclosure in your outlet homepage settings.')
     aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• ${memo}`
   }
 
@@ -153,7 +155,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
     delete row.ai_notes
     ;({ data: article, error } = await supabase.from('articles').insert(row).select('id').single())
   }
-  if (error || !article) redirect(`/press/${id}?error=${encodeURIComponent(`기사를 만들지 못했습니다: ${error?.message ?? ''}`)}`)
+  if (error || !article) redirect(`/press/${id}?error=${encodeURIComponent(`${t('기사를 만들지 못했습니다', 'Could not create the story')}: ${error?.message ?? ''}`)}`)
 
   redirect(`/articles/${article.id}/edit`)
 }
@@ -163,15 +165,16 @@ export type ManualPressState = { error?: string }
 // 이메일 등으로 받은 보도자료를 기자가 붙여넣어 보도자료함에 올린다
 export async function createManualPress(_prev: ManualPressState, form: FormData): Promise<ManualPressState> {
   const { supabase } = await getCmsContext()
+  const { t } = await getT()
   const get = (k: string) => String(form.get(k) ?? '').trim()
 
   const sourceName = get('source_name').slice(0, 80)
   const title = get('title').slice(0, 300)
   const paras = textToParagraphs(get('body').slice(0, 50_000))
   let link = get('link').slice(0, 1000)
-  if (!sourceName) return { error: '보낸 곳(기관·회사명)을 적어주세요.' }
-  if (!title) return { error: '제목을 적어주세요.' }
-  if (!paras.length) return { error: '본문을 붙여넣어 주세요.' }
+  if (!sourceName) return { error: t('보낸 곳(기관·회사명)을 적어주세요.', 'Enter the sender (organization or company name).') }
+  if (!title) return { error: t('제목을 적어주세요.', 'Enter a title.') }
+  if (!paras.length) return { error: t('본문을 붙여넣어 주세요.', 'Paste the body text.') }
   if (link && !/^https?:\/\//i.test(link)) link = `https://${link}`
 
   // 사진은 이 화면에서 우리 저장소에 먼저 올린 것만 받는다
@@ -202,7 +205,7 @@ export async function createManualPress(_prev: ManualPressState, form: FormData)
     })
     .select('id')
     .single()
-  if (error || !data) return { error: `등록하지 못했습니다: ${error?.message ?? ''}` }
+  if (error || !data) return { error: `${t('등록하지 못했습니다', 'Could not add the press release')}: ${error?.message ?? ''}` }
 
   revalidatePath('/press')
   redirect(`/press/${data.id}`)
@@ -210,9 +213,10 @@ export async function createManualPress(_prev: ManualPressState, form: FormData)
 
 export async function deleteManualPress(id: string) {
   const { supabase } = await getCmsContext()
+  const { t } = await getT()
   // 직접 등록하거나 메일로 받은 자료만, 올린 본인이 지울 수 있다 (DB 규칙도 같다)
   const { data, error } = await supabase.from('press_releases').delete().eq('id', id).in('source_key', [MANUAL_SOURCE, 'email']).select('source_key')
-  if (error || !data?.length) redirect(`/press/${id}?error=${encodeURIComponent(`삭제하지 못했습니다: ${error?.message ?? '권한이 없습니다.'}`)}`)
+  if (error || !data?.length) redirect(`/press/${id}?error=${encodeURIComponent(`${t('삭제하지 못했습니다', 'Could not delete')}: ${error?.message ?? t('권한이 없습니다.', 'You do not have permission.')}`)}`)
   revalidatePath('/press')
   redirect(`/press?src=${data[0].source_key}`)
 }

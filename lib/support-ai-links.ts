@@ -15,3 +15,16 @@ export const SUPPORT_LINKS: Record<string, string> = {
   '/support/tickets/new': '업무요청 쓰기', '/support/notices': '공지', '/support/help': '이용안내', '/support/invoices': '청구서',
   '/support/billing': '결제 정보', '/feedback': '개선 요청',
 }
+
+// 영어 화면용 이름 (SUPPORT_KIND_LABEL / SUPPORT_LINKS 와 같은 키). AI 프롬프트는 한국어 맵을 그대로 쓴다
+export const SUPPORT_KIND_LABEL_EN: Record<SupportKind, string> = {
+  howto: 'How-to', design: 'Design / site', bug: 'Bug', billing: 'Pricing / billing', account: 'Account', feature: 'New feature', other: 'Other',
+}
+export const SUPPORT_LINKS_EN: Record<string, string> = {
+  '/newsroom': 'Newsroom', '/articles/new': 'Write', '/articles': 'Stories', '/press': 'Press Releases', '/press/new': 'Add Press Release',
+  '/press/email': 'Receive Press Releases by Email', '/admin/home': 'Edit Home', '/admin/categories': 'Sections', '/admin/ads': 'Ad Banners',
+  '/admin/ads/contracts': 'Ad Contracts', '/admin/newsletter': 'Newsletter', '/admin/users': 'Members', '/admin/outlets': 'Outlets',
+  '/admin/export': 'Export Data', '/admin/settings': 'Settings', '/account': 'My Account', '/support': 'Customer Support',
+  '/support/tickets/new': 'New Request', '/support/notices': 'Notices', '/support/help': 'Help', '/support/invoices': 'Invoices',
+  '/support/billing': 'Billing Info', '/feedback': 'Feedback',
+}

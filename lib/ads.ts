@@ -18,7 +18,19 @@ export const SLOT_SHAPE: Record<AdSlotId, 'wide' | 'box' | 'popup'> = {
   header: 'wide', home_middle: 'wide', home_bottom: 'wide', article_top: 'wide', article_bottom: 'wide', sidebar: 'box', popup: 'popup',
 }
 
-export const slotOf = (id: string) => AD_SLOTS.find((s) => s.id === id)
+// 영어 화면용 (편집국 영어판)
+const AD_SLOTS_EN: Record<AdSlotId, { label: string; where: string; size: string }> = {
+  header: { label: 'Top strip', where: 'Below the menu on every page', size: 'Desktop 1200×100 · Mobile 640×160' },
+  sidebar: { label: 'Right rail', where: 'Right side of home, story and section pages (on wide screens it follows along in the margin beside the text; on phones it sits below the text)', size: '300×250 (up to 10, shown in order)' },
+  home_middle: { label: 'Home middle', where: 'Below the top stories on the front page', size: 'Desktop 1200×150 · Mobile 640×200' },
+  home_bottom: { label: 'Home bottom', where: 'Very bottom of the front page (above the logo strip and footer info)', size: 'Desktop 1200×150 · Mobile 640×200' },
+  article_top: { label: 'Above story', where: 'Above the story headline', size: '760×150 · Mobile 640×200' },
+  article_bottom: { label: 'Below story', where: 'End of the story body', size: '760×150 · Mobile 640×200' },
+  popup: { label: 'Front-page popup', where: 'A window that opens on the front page (“Don’t show again today”)', size: '400×500' },
+}
+// 언어에 맞는 광고 자리 목록 (한국어는 AD_SLOTS 그대로)
+export const adSlots = (lang: 'ko' | 'en' = 'ko') => (lang === 'en' ? AD_SLOTS.map((s) => ({ ...s, ...AD_SLOTS_EN[s.id] })) : AD_SLOTS)
+export const slotOf = (id: string, lang: 'ko' | 'en' = 'ko') => adSlots(lang).find((s) => s.id === id)
 
 export type AdBanner = {
   id: string

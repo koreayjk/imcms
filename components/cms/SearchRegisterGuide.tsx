@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useT, useCmsLang } from '@/components/cms/CmsLang'
 import { checkSearchSetup, type SearchCheck } from '@/app/(main)/admin/outlets/[id]/site/actions'
 
 // 홈페이지 설정 → 검색 노출: 담당 매니저가 혼자 네이버·구글 검색 등록을 끝낼 수 있게 순서·복사할 주소·점검 버튼
 export default function SearchRegisterGuide({ outletId, domain }: { outletId: string; domain: string | null }) {
+  const t = useT()
+  const en = useCmsLang() === 'en'
   const base = domain ? `https://${domain}` : null
   const [checks, setChecks] = useState<SearchCheck[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -22,23 +25,23 @@ export default function SearchRegisterGuide({ outletId, domain }: { outletId: st
     <div className="mt-4 space-y-3">
       {/* 복사해서 쓰는 주소 */}
       <div className="rounded bg-[#F8F9FA] px-4 py-3 text-[13px]">
-        <p className="font-semibold">등록할 때 쓰는 주소</p>
+        <p className="font-semibold">{t('등록할 때 쓰는 주소', 'Addresses to register')}</p>
         {base ? (
           <ul className="mt-2 space-y-1.5">
-            <Copy label="매체 주소 (네이버·구글에 등록)" value={base} />
-            <Copy label="사이트맵 (네이버·구글)" value={`${base}/sitemap.xml`} />
-            <Copy label="뉴스 사이트맵 (구글)" value={`${base}/news-sitemap.xml`} />
-            <Copy label="RSS (네이버)" value={`${base}/rss.xml`} />
+            <Copy label={t('매체 주소 (네이버·구글에 등록)', 'Site address (register with Naver and Google)')} value={base} />
+            <Copy label={t('사이트맵 (네이버·구글)', 'Sitemap (Naver and Google)')} value={`${base}/sitemap.xml`} />
+            <Copy label={t('뉴스 사이트맵 (구글)', 'News sitemap (Google)')} value={`${base}/news-sitemap.xml`} />
+            <Copy label={t('RSS (네이버)', 'RSS (Naver)')} value={`${base}/rss.xml`} />
           </ul>
         ) : (
-          <p className="mt-1 text-muted">위 “도메인” 칸에 매체 주소를 저장하면 여기에 등록할 주소가 나옵니다. 도메인 연결 전에는 검색 등록을 하지 마세요.</p>
+          <p className="mt-1 text-muted">{t('위 “도메인” 칸에 매체 주소를 저장하면 여기에 등록할 주소가 나옵니다. 도메인 연결 전에는 검색 등록을 하지 마세요.', 'Save your site address in the "Domain" field above and the addresses to register will appear here. Do not register with search engines before the domain is connected.')}</p>
         )}
       </div>
 
       {/* 점검 버튼 */}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={check} disabled={pending || !base} className="btn-secondary">{pending ? '확인 중…' : '검색 등록 점검하기'}</button>
-        <span className="text-[12.5px] text-muted">저장한 뒤 누르면 매체 홈페이지에 코드·사이트맵이 실제로 보이는지 확인합니다.</span>
+        <button type="button" onClick={check} disabled={pending || !base} className="btn-secondary">{pending ? t('확인 중…', 'Checking…') : t('검색 등록 점검하기', 'Check search registration')}</button>
+        <span className="text-[12.5px] text-muted">{t('저장한 뒤 누르면 매체 홈페이지에 코드·사이트맵이 실제로 보이는지 확인합니다.', 'After saving, click to verify that the verification codes and sitemaps are actually visible on the site.')}</span>
       </div>
       {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
       {checks && (
@@ -53,7 +56,75 @@ export default function SearchRegisterGuide({ outletId, domain }: { outletId: st
       )}
 
       {/* 순서 */}
+      {en ? (
       <details className="rounded bg-[#F8F9FA] px-4 py-3 text-[13px] leading-relaxed">
+        <summary className="cursor-pointer font-semibold">How to register with Naver and Google Search (for the account manager)</summary>
+        <div className="mt-3 space-y-4">
+          <p className="rounded bg-white px-3 py-2 text-[12.5px] ring-1 ring-black/5">
+            <strong>Be sure to sign in with the IM Newsroom team account</strong> (the team Google account and Naver ID). If you use a personal account, alerts go to a personal inbox and other managers cannot manage the site.
+            Before you start, check that (1) the domain is connected, (2) "Show in Google and Naver search" above is turned on, and (3) test stories have been deleted.
+          </p>
+
+          <section>
+            <h4 className="font-bold">1. Naver: get the code</h4>
+            <ol className="mt-1 list-decimal space-y-1 pl-5">
+              <li><a href="https://searchadvisor.naver.com/console/board" target="_blank" rel="noopener" className="text-review underline underline-offset-2">Naver Search Advisor ↗</a> → top right <b>Webmaster Tools</b></li>
+              <li>Paste the <b>site address</b> above into the site registration field → Register</li>
+              <li>Under ownership verification, choose <b>HTML tag</b> → copy the entire line shown</li>
+              <li><b>Do not click the verify button yet.</b></li>
+            </ol>
+          </section>
+
+          <section>
+            <h4 className="font-bold">2. Google: get the code</h4>
+            <ol className="mt-1 list-decimal space-y-1 pl-5">
+              <li><a href="https://search.google.com/search-console" target="_blank" rel="noopener" className="text-review underline underline-offset-2">Google Search Console ↗</a> → property selector at top left → <b>Add property</b> → <b>Add website</b></li>
+              <li>Of the two options, enter the <b>site address</b> above under <b>URL prefix</b> → Continue (do not use the "Domain" option)</li>
+              <li>Under other verification methods, choose <b>HTML tag</b> → copy the entire line</li>
+              <li><b>Leave this window open.</b></li>
+            </ol>
+          </section>
+
+          <section>
+            <h4 className="font-bold">3. Paste here, save, then check</h4>
+            <ol className="mt-1 list-decimal space-y-1 pl-5">
+              <li>Paste each copied line, in full, into the <b>Naver verification code</b> and <b>Google verification code</b> fields above</li>
+              <li>Click <b>[Save]</b> at the bottom of the page (no deployment is needed)</li>
+              <li>Click <b>[Check search registration]</b> and confirm that all five lines show a green ✓</li>
+            </ol>
+          </section>
+
+          <section>
+            <h4 className="font-bold">4. Verify ownership, then submit sitemaps</h4>
+            <ul className="mt-1 list-disc space-y-1 pl-5">
+              <li><b>Naver</b>: <b>Verify ownership</b> → click the site address in your site list → in the left menu, under <b>Request → Submit sitemap</b>, enter the <b>sitemap</b> address → Confirm → under <b>Request → Submit RSS</b>, enter the <b>RSS</b> address → Confirm</li>
+              <li><b>Google</b>: in the window you left open, click <b>Verify</b> → go to the property → under <b>Sitemaps</b> in the left menu, submit <code>sitemap.xml</code> and <code>news-sitemap.xml</code></li>
+              <li><b>Google</b>: enter the site address in <b>URL inspection</b> in the left menu → <b>Request indexing</b> (this gets the home page listed sooner)</li>
+            </ul>
+          </section>
+
+          <section>
+            <h4 className="font-bold">5. Wrap up</h4>
+            <ul className="mt-1 list-disc space-y-1 pl-5">
+              <li>In Google Search Console, go to <b>Settings → Users and permissions → Add user</b> and add the publisher's Google account as an <b>Owner</b> (so the publisher can see search performance directly)</li>
+              <li>Tell the publisher: it takes a few days to 2 weeks for search results to update, and to appear in Naver's <b>"News" tab</b> the outlet must apply for Naver's news search partnership review itself</li>
+              <li>Also tick the <b>launch checklist</b> on this customer's card in Customer Support</li>
+            </ul>
+          </section>
+
+          <section>
+            <h4 className="font-bold">If you get stuck</h4>
+            <ul className="mt-1 list-disc space-y-1 pl-5">
+              <li><b>Ownership verification fails</b>: check that you saved and that the code shows ✓ under [Check search registration], then try verifying again after a minute</li>
+              <li><b>Google sitemap shows "Couldn't fetch"</b>: this is common right after submitting. It usually changes to "Success" after a day. If it persists, delete the sitemap and submit it again</li>
+              <li><b>The news sitemap is empty</b>: it only includes stories published in the last 48 hours. It fills in once you publish a story</li>
+              <li><b>You changed the domain</b>: start over from step 1 with the new address and replace the codes</li>
+            </ul>
+          </section>
+        </div>
+      </details>
+      ) : (
+            <details className="rounded bg-[#F8F9FA] px-4 py-3 text-[13px] leading-relaxed">
         <summary className="cursor-pointer font-semibold">네이버·구글 검색 등록하는 방법 (담당 매니저용)</summary>
         <div className="mt-3 space-y-4">
           <p className="rounded bg-white px-3 py-2 text-[12.5px] ring-1 ring-black/5">
@@ -119,18 +190,20 @@ export default function SearchRegisterGuide({ outletId, domain }: { outletId: st
           </section>
         </div>
       </details>
+      )}
     </div>
   )
 }
 
 function Copy({ label, value }: { label: string; value: string }) {
+  const t = useT()
   const [done, setDone] = useState(false)
   return (
     <li className="flex flex-wrap items-center gap-2">
       <span className="w-[190px] shrink-0 text-muted">{label}</span>
       <code className="min-w-0 break-all rounded bg-white px-2 py-0.5 ring-1 ring-black/5">{value}</code>
       <button type="button" onClick={() => navigator.clipboard?.writeText(value).then(() => { setDone(true); setTimeout(() => setDone(false), 1500) })} className="text-[12px] font-semibold text-review hover:underline">
-        {done ? '복사됨' : '복사'}
+        {done ? t('복사됨', 'Copied') : t('복사', 'Copy')}
       </button>
     </li>
   )

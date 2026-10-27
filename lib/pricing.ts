@@ -130,10 +130,13 @@ export function newsletterQuota(plan: string | null | undefined): NewsletterQuot
   if (plan === 'premium') return { perSend: 5_000, perMonth: 10, perWeek: 2 }
   return { perSend: 5_000, perMonth: 30 }
 }
-export const newsletterLabel = (q: NewsletterQuota | null) => (q ? `${q.perWeek ? `주 ${q.perWeek}회` : `월 ${q.perMonth}회`} · 회당 ${q.perSend.toLocaleString('ko-KR')}명` : '없음')
+export const newsletterLabel = (q: NewsletterQuota | null, lang?: 'ko' | 'en') =>
+  lang === 'en'
+    ? (q ? `${q.perWeek ? `${q.perWeek === 1 ? 'Weekly' : q.perWeek === 2 ? 'Twice weekly' : `${q.perWeek}× weekly`}` : `${q.perMonth}× monthly`} · ${q.perSend.toLocaleString('en-US')} recipients per send` : 'None')
+    : (q ? `${q.perWeek ? `주 ${q.perWeek}회` : `월 ${q.perMonth}회`} · 회당 ${q.perSend.toLocaleString('ko-KR')}명` : '없음')
 export const BILLING_LABEL: Record<Billing, string> = { monthly: '월 결제', annual: '1년 결제' }
 
-export const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
+export const won = (n: number, lang?: 'ko' | 'en') => (lang === 'en' ? `KRW ${Math.round(n).toLocaleString('en-US')}` : `${Math.round(n).toLocaleString('ko-KR')}원`)
 
 // 한 번 결제하는 이용료 (월 결제면 한 달, 1년 결제면 11개월 값). 별도 문의 요금제는 null
 //   start: 첫 이용 월('YYYY-MM', 기본은 이번 달)
@@ -153,3 +156,56 @@ export function firstPayment(plan: Plan, billing: Billing, beta = isBeta()) {
   return { ...charge, setup, setupFree, total: charge.price + setup }
 }
 
+
+// ───────── 영어 버전 (편집국 영어 화면용) ─────────
+//   한국어 export(PLANS, SETUP_ITEMS 등)는 그대로이고, 아래는 같은 구조의 영어 문구다. 금액은 KRW 그대로 (USD 요금표는 lib/pricing-global.ts)
+//   화면에서는 plansFor(lang)·planName(id, lang)·billingLabel(b, lang)·extraPlanLabel(k, lang)·won(n, lang) 으로 고른다
+type Lang = 'ko' | 'en' | undefined
+export const PLAN_NAME_EN: Record<PlanId, string> = { basic: 'Basic', standard: 'Standard', premium: 'Premium', enterprise: 'Enterprise' }
+export const planName = (id: string | null | undefined, lang?: Lang) => {
+  const p = planById(id)
+  return p ? (lang === 'en' ? PLAN_NAME_EN[p.id] : p.name) : null
+}
+// 요금제 사양 (영어): PLANS 와 같은 순서·같은 칸 수
+export const PLAN_SPECS_EN: Record<PlanId, [string, string][]> = {
+  basic: [['Publications', '1'], ['AI drafts & legal reviews', '300 / month'], ['Storage', '30 GB'], ['Data transfer', 'Unlimited*'], ['Banner & popup design', '3 / month'], ['Newsletter', 'Accept subscriptions (sending starts with Standard)'], ['Auto-receive press releases by email', 'Add-on, KRW 39,000/month']],
+  standard: [['Publications', '1'], ['AI drafts & legal reviews', '900 / month'], ['Storage', '60 GB'], ['Data transfer', 'Unlimited*'], ['Banner & popup design', '5 / month'], ['Newsletter', 'Weekly · 2,000 recipients per send'], ['Auto-receive press releases by email', 'Add-on, KRW 39,000/month']],
+  premium: [['Publications', '2 (more available)'], ['AI drafts & legal reviews', '2,000 / month'], ['Storage', '100 GB'], ['Data transfer', 'Unlimited*'], ['Banner & popup design', '10 / month'], ['Newsletter', 'Twice weekly · 5,000 recipients per send'], ['Auto-receive press releases by email', 'Included']],
+  enterprise: [['Publications', 'Custom'], ['AI drafts & legal reviews', 'Custom'], ['Storage', 'Custom'], ['Data transfer', 'Custom'], ['Banner & popup design', 'By consultation'], ['Newsletter', 'Custom'], ['Auto-receive press releases by email', 'Included']],
+}
+export const PLAN_FOR_EN: Record<PlanId, string> = {
+  basic: 'A small online newspaper where a few reporters publish every day',
+  standard: 'A general news outlet with many sections and steady output',
+  premium: 'A news outlet with heavy traffic or several publications',
+  enterprise: 'A mid-size to large news outlet with very high traffic and output',
+}
+export const PLAN_EXTRAS_EN: Record<PlanId, string[]> = {
+  basic: [],
+  standard: ['Homepage customization support'],
+  premium: ['Homepage customization support', 'Group dashboard · publish to several publications at once', 'From the 3rd publication, choose per publication: KRW 90,000 (Basic), 110,000 (Standard) or 150,000 (Premium) per month', 'Priority support'],
+  enterprise: ['Dedicated support contact'],
+}
+export const planSpecsEn = (id: PlanId) => PLAN_SPECS_EN[id]
+// 화면 언어에 맞는 요금제 목록 (금액·id 는 그대로, 이름·설명·사양·특전 문구만 영어로)
+export const plansFor = (lang?: Lang): Plan[] =>
+  lang === 'en' ? PLANS.map((p) => ({ ...p, name: PLAN_NAME_EN[p.id], for: PLAN_FOR_EN[p.id], specs: PLAN_SPECS_EN[p.id], extras: PLAN_EXTRAS_EN[p.id] })) : PLANS
+
+export const EXTRA_PLAN_LABEL_EN: Record<ExtraPlan, string> = { basic: 'Basic', standard: 'Standard', premium: 'Premium' }
+export const extraPlanLabel = (k: ExtraPlan, lang?: Lang) => (lang === 'en' ? EXTRA_PLAN_LABEL_EN : EXTRA_PLAN_LABEL)[k]
+export const BILLING_LABEL_EN: Record<Billing, string> = { monthly: 'Monthly billing', annual: 'Annual billing' }
+export const billingLabel = (b: Billing, lang?: Lang) => (lang === 'en' ? BILLING_LABEL_EN : BILLING_LABEL)[b]
+
+export const BETA_END_DATE_EN = 'October 31'
+export const BETA_PERIOD_LABEL_EN = `First ${BETA_MONTHS} months`
+export const REGULAR_AFTER_LABEL_EN = `From month ${BETA_MONTHS + 1}`
+export const ANNUAL_FREE_EN = `${12 - ANNUAL_MONTHS} month free`
+export const SETUP_WAIVER_NOTE_EN = `The free setup fee is conditional on using the service for at least ${SETUP_WAIVER_MONTHS} months after launch. If you cancel within ${SETUP_WAIVER_MONTHS} months, the waived setup fee of KRW ${SETUP_FEE.toLocaleString('en-US')} will be charged.`
+export const SETUP_ITEMS_EN: [string, string][] = [
+  ['Newsroom and website setup', 'Publication registration, section (menu) setup, inviting reporter and editor-in-chief accounts and setting roles'],
+  ['Homepage customization', 'Logo, brand color and slogan, home page layout (choose from 5 styles) and specialty sections'],
+  ['Legal notices and policy pages', 'Footer notices such as registration number, publisher and editor names; privacy policy and youth protection policy'],
+  ['Domain connection', 'Connecting your existing domain and enabling secure access (https)'],
+  ['Migrating existing stories', 'Moving stories and photos from another program, with automatic redirects from old story URLs (keeps your search visibility)'],
+  ['Naver and Google search registration', 'Search Advisor and Search Console registration, ownership verification, sitemap and RSS submission'],
+  ['Usage guidance', 'Support Center guides and the story writing guide; answering questions about writing, approving, home editing, press releases and AI drafts'],
+]

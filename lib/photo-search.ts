@@ -23,16 +23,21 @@ export type PhotoHit = {
 const LICENSES = 'cc0,pdm,by,by-sa'
 const SOURCE_LABEL: Record<string, string> = { wikimedia: '위키미디어 공용', flickr: '플리커', geographorguk: 'Geograph', nappy: 'nappy', rawpixel: 'rawpixel', stocksnap: 'StockSnap' }
 
-function licenseLabel(code: string, version: string | null) {
+type PhotoLang = 'ko' | 'en'
+const SOURCE_LABEL_EN: Record<string, string> = { wikimedia: 'Wikimedia Commons', flickr: 'Flickr', geographorguk: 'Geograph', nappy: 'nappy', rawpixel: 'rawpixel', stocksnap: 'StockSnap' }
+
+function licenseLabel(code: string, version: string | null, lang: PhotoLang = 'ko') {
   if (code === 'cc0') return 'CC0'
-  if (code === 'pdm') return '퍼블릭 도메인'
+  if (code === 'pdm') return lang === 'en' ? 'Public domain' : '퍼블릭 도메인'
   return `CC ${code.toUpperCase()}${version ? ` ${version}` : ''}`
 }
 
-export function photoCredit(h: Pick<PhotoHit, 'creator' | 'source' | 'license'>) {
+// lang: 출처 표기 문구의 언어 (영어 매체면 'en' → "Photo: …")
+export function photoCredit(h: Pick<PhotoHit, 'creator' | 'source' | 'license'>, lang: PhotoLang = 'ko') {
   // "RonAlmog, (Flickr page)" 같은 군더더기는 뺀다
   const name = h.creator.replace(/\((?:flickr|wikimedia)[^)]*\)/gi, '').replace(/[\s,]+$/, '').trim()
-  const who = name && !/^unknown$/i.test(name) ? name : '작가 미상'
+  const who = name && !/^unknown$/i.test(name) ? name : lang === 'en' ? 'Unknown photographer' : '작가 미상'
+  if (lang === 'en') return `Photo: ${who}, ${SOURCE_LABEL_EN[h.source] ?? h.source} (${h.license})`
   return `사진=${who}, ${SOURCE_LABEL[h.source] ?? h.source} (${h.license})`
 }
 
@@ -43,7 +48,7 @@ export function downloadUrl(url: string) {
   return `https://upload.wikimedia.org/wikipedia/commons/thumb/${m[1]}/${m[2]}/${m[3]}/1280px-${m[3]}`
 }
 
-export async function searchOpenPhotos(query: string, limit = 12): Promise<PhotoHit[]> {
+export async function searchOpenPhotos(query: string, limit = 12, lang: PhotoLang = 'ko'): Promise<PhotoHit[]> {
   const q = query.trim().slice(0, 100)
   if (!q) return []
   const params = new URLSearchParams({ q, license: LICENSES, page_size: String(Math.min(20, limit + 6)), mature: 'false' })
@@ -55,8 +60,8 @@ export async function searchOpenPhotos(query: string, limit = 12): Promise<Photo
       signal: ctrl.signal,
       cache: 'no-store',
     })
-    if (res.status === 429) throw new Error('사진 검색을 잠시 많이 썼습니다. 1~2분 뒤에 다시 찾아 주세요.')
-    if (!res.ok) throw new Error(`사진 검색이 실패했습니다 (${res.status}).`)
+    if (res.status === 429) throw new Error(lang === 'en' ? 'Photo search has been used heavily for a moment. Please try again in 1-2 minutes.' : '사진 검색을 잠시 많이 썼습니다. 1~2분 뒤에 다시 찾아 주세요.')
+    if (!res.ok) throw new Error(lang === 'en' ? `Photo search failed (${res.status}).` : `사진 검색이 실패했습니다 (${res.status}).`)
     const data = (await res.json()) as { results?: any[] }
     return (data.results ?? [])
       // 너무 작은 사진은 기사에 쓰기 어려워 뺀다
@@ -71,15 +76,15 @@ export async function searchOpenPhotos(query: string, limit = 12): Promise<Photo
           width: r.width ?? null,
           height: r.height ?? null,
           creator: String(r.creator ?? '').slice(0, 80),
-          license: licenseLabel(String(r.license), r.license_version ?? null),
+          license: licenseLabel(String(r.license), r.license_version ?? null, lang),
           licenseUrl: String(r.license_url ?? ''),
           source: String(r.source ?? r.provider ?? ''),
           page: String(r.foreign_landing_url ?? ''),
         }
-        return { ...hit, credit: photoCredit(hit) }
+        return { ...hit, credit: photoCredit(hit, lang) }
       })
   } catch (e) {
-    if (e instanceof Error && e.name === 'AbortError') throw new Error('사진 검색 응답이 늦습니다. 다시 시도해 주세요.')
+    if (e instanceof Error && e.name === 'AbortError') throw new Error(lang === 'en' ? 'Photo search is responding slowly. Please try again.' : '사진 검색 응답이 늦습니다. 다시 시도해 주세요.')
     throw e
   } finally {
     clearTimeout(timer)

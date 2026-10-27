@@ -52,10 +52,10 @@ const fileName = (src: string) => {
 }
 
 // 본문 HTML → 비교용 문단 목록 (사진은 "[사진] 파일이름" 한 줄로)
-export function htmlParagraphs(html: string | null | undefined): string[] {
+export function htmlParagraphs(html: string | null | undefined, lang: 'ko' | 'en' = 'ko'): string[] {
   return decode(
     (html ?? '')
-      .replace(/<img[^>]*?src="([^"]*)"[^>]*>/gi, (_, src: string) => `\n\n[사진] ${fileName(src)}\n\n`)
+      .replace(/<img[^>]*?src="([^"]*)"[^>]*>/gi, (_, src: string) => `\n\n${lang === 'en' ? '[Photo]' : '[사진]'} ${fileName(src)}\n\n`)
       .replace(/<\/(p|h\d|li|blockquote|figure|figcaption|div)>|<br\s*\/?>/gi, '\n\n')
       .replace(/<[^>]+>/g, '')
   )

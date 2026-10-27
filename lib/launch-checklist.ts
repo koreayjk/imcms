@@ -40,5 +40,39 @@ export const LAUNCH_GROUPS: LaunchGroup[] = [
   },
 ]
 
+// 영어판: key 로 짝을 맞춘다. 화면에서는 launchGroups(lang) 으로 고른다 (한국어는 LAUNCH_GROUPS 그대로)
+const LAUNCH_GROUP_TITLE_EN = ['1. Launch preparation', '2. Search registration (with the operations account)', '3. Customer guidance']
+const LAUNCH_ITEM_EN: Record<string, { title: string; detail?: string; linkLabel?: string }> = {
+  invite: { title: 'The publisher signed up and logged in from the invitation email', detail: 'If that fails, re-invite from the Members menu' },
+  domain: { title: 'Outlet domain connected (DNS) and complete', detail: 'Website settings → Domain. While "Opening soon" is on, the address bar shows the notice page; check the real website with the preview link' },
+  brand: { title: 'Logo, colors and legal notices entered', detail: 'Masthead title, publisher and editor names, online newspaper registration number and date, youth protection officer, address and contact details' },
+  sections: { title: 'Sections organized', detail: 'Adapt the default sections to the outlet and set their order' },
+  fresh_start: { title: 'New outlet starting from scratch (no stories to migrate)', detail: 'When checked, the customer\'s launch status shows the "Starter stories prepared" step instead of "Migrate existing stories". This is a display choice, not a progress item' },
+  import: { title: 'Existing stories and photos migrated, and old story URLs confirmed to redirect (for a new outlet: starter stories prepared and approved)', detail: 'Open one old URL (…idxno=123) and confirm it goes to the new story. For a new outlet, put the starter stories in Pending approval and check this once the publisher has approved them' },
+  training: { title: 'Usage walkthrough done', detail: 'Hand over the Help Center guides and story writing guide, plus (for customers who want it) a 30-minute one-on-one by phone or screen share. Writing and approving stories, home page editing, ads' },
+  open_switch: { title: 'Confirmed payment of the first service fee invoice and turned off the "Opening soon" switch', detail: 'Before launch, check the first billing month (the next month if launch falls mid-month) and the beta half-price under Invoices → Automatic billing, issue that month\'s invoice and set the due date before launch day. Once payment is confirmed, turn off Website settings → Opening soon (this day is the launch date)' },
+  indexable: { title: 'Website settings → Search visibility → turn on "Show in Google and Naver search"', detail: 'Turn it on on the official launch day, after deleting the test stories. If it is off, the registrations below fail' },
+  naver_add: { title: 'Register the outlet address in Naver Search Advisor and get the HTML tag', detail: 'Webmaster Tools → Register site → full address starting with https://', linkLabel: 'Search Advisor' },
+  google_add: { title: 'Register the outlet address in Google Search Console (URL prefix) and get the HTML tag', detail: 'Add property → Add website → URL prefix', linkLabel: 'Search Console' },
+  codes: { title: 'Paste both tags into Website settings → Search visibility and save', detail: 'No deployment is needed. Success if naver-site-verification and google-site-verification show up in the page source (Ctrl+U) at the outlet address' },
+  verify: { title: 'Click verify ownership in Naver and Google' },
+  kakao_domain: { title: '(Only for outlets that requested it) Register the outlet domain in the Kakao developer app (IM Newsroom)', detail: 'developers.kakao.com → App → Platform keys → JavaScript key → add the outlet address (including www) to the JavaScript SDK domains and to the web domains under Product link management. Then also add the outlet address, comma-separated, to the Vercel environment variable NEXT_PUBLIC_KAKAO_DOMAINS and redeploy (unregistered addresses make the KakaoTalk button fall back to copying the link or the phone share sheet). If skipped, KakaoTalk sharing fails with error 4019' },
+  naver_sitemap: { title: 'Naver: submit the sitemap and RSS', detail: 'Requests → Submit sitemap: outlet-address/sitemap.xml · Requests → Submit RSS: outlet-address/rss.xml' },
+  google_sitemap: { title: 'Google: submit the sitemap', detail: 'Sitemaps → both sitemap.xml and news-sitemap.xml' },
+  google_owner: { title: 'Add the publisher\'s Google account as an owner in Google Search Console', detail: 'Settings → Users and permissions → Add user → Permission: Owner. Even if we revoke ours, the publisher keeps full control' },
+  naver_news: { title: 'Tell the customer that Naver "News" search partnership is something the outlet applies for itself', detail: 'Search Advisor covers web document search only. Appearing in the News tab requires passing the Naver and Kakao news partnership review (about twice a year)' },
+  check_week: { title: 'One week later, check the indexing status in Search Console and Search Advisor', detail: 'Sitemap shows "Success" and the number of indexed pages is growing' },
+}
+export const LAUNCH_GROUPS_EN: LaunchGroup[] = LAUNCH_GROUPS.map((g, gi) => ({
+  title: LAUNCH_GROUP_TITLE_EN[gi] ?? g.title,
+  items: g.items.map((i) => {
+    const e = LAUNCH_ITEM_EN[i.key]
+    if (!e) return i
+    return { ...i, title: e.title, detail: e.detail ?? i.detail, link: i.link && e.linkLabel ? { ...i.link, label: e.linkLabel } : i.link }
+  }),
+}))
+// 화면 언어에 맞는 체크리스트 (한국어는 LAUNCH_GROUPS 그대로)
+export const launchGroups = (lang?: 'ko' | 'en'): LaunchGroup[] => (lang === 'en' ? LAUNCH_GROUPS_EN : LAUNCH_GROUPS)
+
 export const LAUNCH_KEYS = LAUNCH_GROUPS.flatMap((g) => g.items.map((i) => i.key))
 export type LaunchDone = Record<string, string>

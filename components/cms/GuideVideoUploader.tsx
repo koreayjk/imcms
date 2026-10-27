@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { GUIDE_BUCKET, guideFile } from '@/lib/help-videos'
+import { useT, useCmsLang } from '@/components/cms/CmsLang'
 
 type Slot = { id: string; title: string; poster: string; youtube: boolean; uploaded: { size: number; updatedAt: string | null } | null }
 
@@ -28,6 +29,8 @@ const MAX_MB = 50 // 프로젝트 기본 업로드 한도. Storage 설정에서 
 const mb = (n: number) => (n / 1024 / 1024).toFixed(1)
 
 export default function GuideVideoUploader({ slots }: { slots: Slot[] }) {
+  const t = useT()
+  const lang = useCmsLang()
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<Record<string, { ok?: string; error?: string }>>({})
@@ -35,54 +38,55 @@ export default function GuideVideoUploader({ slots }: { slots: Slot[] }) {
 
   async function upload(id: string, file: File | undefined) {
     if (!file) return
-    if (!/\.mp4$/i.test(file.name) && file.type !== 'video/mp4') return say(id, { error: 'mp4 파일만 올릴 수 있습니다.' })
-    if (file.size > MAX_MB * 1024 * 1024) return say(id, { error: `${mb(file.size)}MB 입니다. ${MAX_MB}MB 이하로 줄여 주세요.` })
+    if (!/\.mp4$/i.test(file.name) && file.type !== 'video/mp4') return say(id, { error: t('mp4 파일만 올릴 수 있습니다.', 'Only mp4 files can be uploaded.') })
+    if (file.size > MAX_MB * 1024 * 1024) return say(id, { error: t(`${mb(file.size)}MB 입니다. ${MAX_MB}MB 이하로 줄여 주세요.`, `This file is ${mb(file.size)}MB. Please reduce it to ${MAX_MB}MB or less.`) })
     setBusy(id); say(id, {})
     const { error } = await createClient().storage.from(GUIDE_BUCKET).upload(guideFile(id), file, { upsert: true, contentType: 'video/mp4', cacheControl: '300' })
     setBusy(null)
-    if (error) return say(id, { error: /bucket|not found/i.test(error.message) ? 'Supabase에서 supabase/guide-videos.sql 을 먼저 실행해 주세요.' : `올리지 못했습니다: ${error.message}` })
-    say(id, { ok: '올렸습니다.' })
+    if (error) return say(id, { error: /bucket|not found/i.test(error.message) ? t('Supabase에서 supabase/guide-videos.sql 을 먼저 실행해 주세요.', 'Run supabase/guide-videos.sql in Supabase first.') : `${t('올리지 못했습니다', 'Could not upload')}: ${error.message}` })
+    say(id, { ok: t('올렸습니다.', 'Uploaded.') })
     router.refresh()
   }
 
   // 여러 파일을 한꺼번에 고르면 이름으로 칸을 찾아 차례로 올린다
-  const [bulk, setBulk] = useState<{ name: string; slot: string | null; state: string }[]>([])
+  const [bulk, setBulk] = useState<{ name: string; slot: string | null; state: string; tone: 'ok' | 'bad' | 'muted' }[]>([])
   async function uploadMany(files: FileList | null) {
     if (!files?.length) return
     const ids = slots.map((s) => s.id)
     const list = Array.from(files).map((f) => ({ f, slot: slotOf(f.name, ids) }))
-    setBulk(list.map(({ f, slot }) => ({ name: f.name, slot, state: !slot ? '칸을 찾지 못해 건너뜀 (칸에서 직접 올려 주세요)' : '기다리는 중' })))
+    setBulk(list.map(({ f, slot }) => ({ name: f.name, slot, state: !slot ? t('칸을 찾지 못해 건너뜀 (칸에서 직접 올려 주세요)', 'Skipped — no matching slot (upload it in the slot yourself)') : t('기다리는 중', 'Waiting'), tone: !slot ? 'bad' as const : 'muted' as const })))
     setBusy('bulk')
     for (let i = 0; i < list.length; i++) {
       const { f, slot } = list[i]
       if (!slot) continue
-      const put = (state: string) => setBulk((cur) => cur.map((b, j) => (j === i ? { ...b, state } : b)))
-      if (f.size > MAX_MB * 1024 * 1024) { put(`${mb(f.size)}MB — ${MAX_MB}MB 이하로 줄여 주세요`); continue }
-      put('올리는 중…')
+      const put = (state: string, tone: 'ok' | 'bad' | 'muted' = 'muted') => setBulk((cur) => cur.map((b, j) => (j === i ? { ...b, state, tone } : b)))
+      if (f.size > MAX_MB * 1024 * 1024) { put(t(`${mb(f.size)}MB — ${MAX_MB}MB 이하로 줄여 주세요`, `${mb(f.size)}MB — reduce it to ${MAX_MB}MB or less`), 'bad'); continue }
+      put(t('올리는 중…', 'Uploading…'))
       const { error } = await createClient().storage.from(GUIDE_BUCKET).upload(guideFile(slot), f, { upsert: true, contentType: 'video/mp4', cacheControl: '300' })
-      put(error ? `실패: ${/bucket|not found/i.test(error.message) ? 'guide-videos.sql 을 먼저 실행해 주세요' : error.message}` : '올렸습니다')
+      if (error) put(`${t('실패', 'Failed')}: ${/bucket|not found/i.test(error.message) ? t('guide-videos.sql 을 먼저 실행해 주세요', 'run guide-videos.sql first') : error.message}`, 'bad')
+      else put(t('올렸습니다', 'Uploaded'), 'ok')
     }
     setBusy(null)
     router.refresh()
   }
 
   async function remove(id: string) {
-    if (!window.confirm('이 영상을 지울까요? 이용안내에서 바로 사라집니다(유튜브 영상이 있으면 그것이 대신 나옵니다).')) return
+    if (!window.confirm(t('이 영상을 지울까요? 이용안내에서 바로 사라집니다(유튜브 영상이 있으면 그것이 대신 나옵니다).', 'Delete this video? It disappears from the Help page right away (if there is a YouTube video, that one is shown instead).'))) return
     setBusy(id)
     const { error } = await createClient().storage.from(GUIDE_BUCKET).remove([guideFile(id)])
     setBusy(null)
-    if (error) return say(id, { error: `지우지 못했습니다: ${error.message}` })
-    say(id, { ok: '지웠습니다.' })
+    if (error) return say(id, { error: `${t('지우지 못했습니다', 'Could not delete')}: ${error.message}` })
+    say(id, { ok: t('지웠습니다.', 'Deleted.') })
     router.refresh()
   }
 
   return (
     <>
     <div className="mt-5 rounded-xl border border-dashed border-line bg-white p-4">
-      <p className="text-[13.5px] font-bold">한꺼번에 올리기</p>
-      <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">만들어 둔 영상 파일을 모두 골라 주세요. 파일 이름(사용법-03-…, 개통안내-0-…, 보도자료메일-…)을 보고 알맞은 칸에 차례로 올립니다. 받은 이름 그대로 고르면 됩니다. 이름에 “자막판”·“이전판”이 들어 있는 파일은 건너뜁니다.</p>
+      <p className="text-[13.5px] font-bold">{t('한꺼번에 올리기', 'Upload in bulk')}</p>
+      <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{t('만들어 둔 영상 파일을 모두 골라 주세요. 파일 이름(사용법-03-…, 개통안내-0-…, 보도자료메일-…)을 보고 알맞은 칸에 차례로 올립니다. 받은 이름 그대로 고르면 됩니다. 이름에 “자막판”·“이전판”이 들어 있는 파일은 건너뜁니다.', 'Select all the video files you have prepared. They are matched by file name (사용법-03-…, 개통안내-0-…, 보도자료메일-…) and uploaded to the right slots in turn. Just select them with the names you received. Files whose names contain “자막판” or “이전판” are skipped.')}</p>
       <label className={`btn-primary mt-2.5 inline-block cursor-pointer px-4 py-2 text-[13px] ${busy ? 'pointer-events-none opacity-60' : ''}`}>
-        {busy === 'bulk' ? '올리는 중… (창을 닫지 마세요)' : '영상 파일 여러 개 고르기'}
+        {busy === 'bulk' ? t('올리는 중… (창을 닫지 마세요)', 'Uploading… (do not close this window)') : t('영상 파일 여러 개 고르기', 'Select multiple video files')}
         <input type="file" accept="video/mp4" multiple className="hidden" disabled={!!busy} onChange={(e) => { void uploadMany(e.target.files); e.target.value = '' }} />
       </label>
       {bulk.length > 0 && (
@@ -91,7 +95,7 @@ export default function GuideVideoUploader({ slots }: { slots: Slot[] }) {
             <li key={i} className="flex flex-wrap gap-x-2">
               <span className="font-semibold">{b.name}</span>
               <span className="text-muted">→ {b.slot ? slots.find((s) => s.id === b.slot)?.title : '—'}</span>
-              <span className={b.state === '올렸습니다' ? 'text-published' : /실패|MB|찾지/.test(b.state) ? 'text-danger' : 'text-muted'}>{b.state}</span>
+              <span className={b.tone === 'ok' ? 'text-published' : b.tone === 'bad' ? 'text-danger' : 'text-muted'}>{b.state}</span>
             </li>
           ))}
         </ul>
@@ -105,18 +109,18 @@ export default function GuideVideoUploader({ slots }: { slots: Slot[] }) {
           <div className="min-w-0 flex-1 basis-56">
             <p className="text-[13.5px] font-bold leading-snug"><span className="mr-1.5 text-muted">{i + 1}</span>{s.title}</p>
             <p className="mt-0.5 text-[12px] text-muted">
-              {s.uploaded ? <span className="font-semibold text-published">올라가 있음 · {mb(s.uploaded.size)}MB{s.uploaded.updatedAt ? ` · ${new Date(s.uploaded.updatedAt).toLocaleDateString('ko-KR')}` : ''}</span> : s.youtube ? '직접 올린 영상 없음 (유튜브 영상으로 나옴)' : <span className="text-draft">영상 없음 (이용안내에 안 나옴)</span>}
-              <span className="ml-2 text-[11px]">파일 이름 {guideFile(s.id)}</span>
+              {s.uploaded ? <span className="font-semibold text-published">{t('올라가 있음', 'Uploaded')} · {mb(s.uploaded.size)}MB{s.uploaded.updatedAt ? ` · ${new Date(s.uploaded.updatedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR')}` : ''}</span> : s.youtube ? t('직접 올린 영상 없음 (유튜브 영상으로 나옴)', 'No uploaded video (the YouTube video is shown)') : <span className="text-draft">{t('영상 없음 (이용안내에 안 나옴)', 'No video (not shown on the Help page)')}</span>}
+              <span className="ml-2 text-[11px]">{t('파일 이름', 'File name')} {guideFile(s.id)}</span>
             </p>
             {msg[s.id]?.ok && <p role="status" className="mt-0.5 text-[12px] text-published">{msg[s.id].ok}</p>}
             {msg[s.id]?.error && <p role="alert" className="mt-0.5 text-[12px] text-danger">{msg[s.id].error}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <label className={`btn-secondary cursor-pointer px-3 py-1.5 text-[12.5px] ${busy ? 'pointer-events-none opacity-60' : ''}`}>
-              {busy === s.id ? '올리는 중…' : s.uploaded ? '영상 바꾸기' : '영상 올리기'}
+              {busy === s.id ? t('올리는 중…', 'Uploading…') : s.uploaded ? t('영상 바꾸기', 'Replace video') : t('영상 올리기', 'Upload video')}
               <input type="file" accept="video/mp4" className="hidden" disabled={!!busy} onChange={(e) => { void upload(s.id, e.target.files?.[0]); e.target.value = '' }} />
             </label>
-            {s.uploaded && <button type="button" disabled={!!busy} onClick={() => void remove(s.id)} className="rounded border border-line px-2.5 py-1.5 text-[12.5px] text-danger disabled:opacity-50">지우기</button>}
+            {s.uploaded && <button type="button" disabled={!!busy} onClick={() => void remove(s.id)} className="rounded border border-line px-2.5 py-1.5 text-[12.5px] text-danger disabled:opacity-50">{t('지우기', 'Delete')}</button>}
           </div>
         </li>
       ))}

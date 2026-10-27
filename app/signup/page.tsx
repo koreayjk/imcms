@@ -5,9 +5,13 @@ import { createClient } from '@supabase/supabase-js'
 import AuthShell from '@/components/auth/AuthShell'
 import SignupForm from '@/components/auth/SignupForm'
 import { BRAND_ICONS } from '@/lib/brand'
+import { getPublicT } from '@/lib/cms-t-public'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: '회원가입 | IM 뉴스룸', icons: BRAND_ICONS }
+export async function generateMetadata() {
+  const { t } = await getPublicT()
+  return { title: t('회원가입 | IM 뉴스룸', 'Sign up | IM Newsroom'), icons: BRAND_ICONS }
+}
 
 // 승인 칸(signup.sql)이 없으면 가입하자마자 기사를 쓸 수 있게 되므로 가입을 열지 않는다
 async function signupReady() {
@@ -25,18 +29,19 @@ async function signupOutlets() {
 }
 
 export default async function SignupPage() {
+  const { t, lang } = await getPublicT()
   if (isIosAppUA((await headers()).get('user-agent'))) {
     return (
-      <AuthShell subtitle="언론사 구성원 전용" footer={<Link href="/login" className="font-semibold text-ink underline underline-offset-2">로그인 화면으로</Link>}>
-        <p className="rounded-lg border border-line bg-white px-6 py-7 text-center text-sm leading-relaxed text-muted">{IOS_ORG_ONLY_NOTICE}</p>
+      <AuthShell lang={lang} subtitle={t('언론사 구성원 전용', 'For newsroom members only')} footer={<Link href="/login" className="font-semibold text-ink underline underline-offset-2">{t('로그인 화면으로', 'Go to sign in')}</Link>}>
+        <p className="rounded-lg border border-line bg-white px-6 py-7 text-center text-sm leading-relaxed text-muted">{t(IOS_ORG_ONLY_NOTICE, 'This app is for members of newsrooms that use IM Newsroom only. Accounts are created by your newsroom’s publisher through an invitation email.')}</p>
       </AuthShell>
     )
   }
-  if (await signupReady()) return <SignupForm outlets={await signupOutlets()} />
+  if (await signupReady()) return <SignupForm lang={lang} outlets={await signupOutlets()} />
   return (
-    <AuthShell subtitle="회원가입" footer={<Link href="/login" className="font-semibold text-ink underline underline-offset-2">로그인 화면으로</Link>}>
+    <AuthShell lang={lang} subtitle={t('회원가입', 'Sign up')} footer={<Link href="/login" className="font-semibold text-ink underline underline-offset-2">{t('로그인 화면으로', 'Go to sign in')}</Link>}>
       <p className="rounded-lg border border-line bg-white px-6 py-7 text-center text-sm leading-relaxed text-muted">
-        회원가입을 준비 중입니다. 관리자에게 문의해 주세요.
+        {t('회원가입을 준비 중입니다. 관리자에게 문의해 주세요.', 'Sign-up is not available yet. Please contact your administrator.')}
       </p>
     </AuthShell>
   )

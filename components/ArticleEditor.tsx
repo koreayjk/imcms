@@ -7,7 +7,9 @@ import { createClient } from '@/lib/supabase'
 import { refreshArticlePages } from '@/app/(main)/articles/refresh'
 import { toHtml } from '@/lib/body-text'
 import { formatDateTime, fromKstInput, isScheduled, toKstInput } from '@/lib/format'
-import { STATUS_LABEL, type Article, type ArticleStatus, type Category } from '@/lib/types'
+import { statusLabel, type Article, type ArticleStatus, type Category } from '@/lib/types'
+import { useCmsLang, useT } from './cms/CmsLang'
+import type { T } from '@/lib/cms-i18n'
 import RichEditor from './editor/RichEditor'
 import MediaPanel, { type LibraryImage } from './editor/MediaPanel'
 import PhotoSuggest from './editor/PhotoSuggest'
@@ -50,9 +52,9 @@ type Mode = 'draft' | 'review' | 'publish'
 
 const IMG_SRC = /<img[^>]+src="([^"]+)"[^>]*>/gi
 
-function saveError(message: string) {
-  if (/byline/.test(message)) return '기자명을 바꾸려면 관리자가 Supabase에서 article-manage.sql을 실행해야 합니다. 기자명을 원래대로 두면 저장됩니다.'
-  return `저장하지 못했습니다: ${message}`
+function saveError(message: string, t: T) {
+  if (/byline/.test(message)) return t('기자명을 바꾸려면 관리자가 Supabase에서 article-manage.sql을 실행해야 합니다. 기자명을 원래대로 두면 저장됩니다.', 'To change the byline, an administrator must run article-manage.sql in Supabase. If you keep the original byline, the story will save.')
+  return `${t('저장하지 못했습니다', 'Could not save')}: ${message}`
 }
 
 function imagesIn(html: string): string[] {
@@ -61,6 +63,8 @@ function imagesIn(html: string): string[] {
 
 export default function ArticleEditor({ article, categories, userId, outletId, outletName, authorName, authorEmail, isEditorPlus, moderated = false, outlets, syndicatedOutletIds, sourceOutletName, articleAuthorName, outletEmail = null, settingsReady = false }: Props) {
   const router = useRouter()
+  const t = useT()
+  const lang = useCmsLang()
   const editorRef = useRef<Editor | null>(null)
 
   const [initialHtml] = useState(() =>
@@ -93,6 +97,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   const [saving, setSaving] = useState<Mode | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [error, setError] = useState('')
+  // 섹션을 안 골랐다는 오류인지 (한국어·영어 문구 모두)
+  const sectionError = /섹션|section/i.test(error)
   const defaultName = (article ? articleAuthorName : authorName) ?? ''
   const [byline, setByline] = useState(article?.byline?.trim() || defaultName)
   const shownName = useRef(byline)
@@ -118,7 +124,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
   // 저장할 내용 (상태 변경은 저장 방식에 따라 따로 붙인다)
   function contentPayload(): Record<string, unknown> {
-    const tagArray = tags.split(',').map((t) => t.trim()).filter(Boolean)
+    const tagArray = tags.split(',').map((x) => x.trim()).filter(Boolean)
     const payload: Record<string, unknown> = {
       title: title.trim(),
       body: html,
@@ -149,20 +155,20 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     setError('')
     const r = await checkArticleLegal({ title: title.trim(), subtitle: subtitle.trim(), html, outletId: ownOutlet, articleId: article?.id ?? draftId })
     setChecking(false)
-    if (!r.ok) { setError(r.skipped ? r.error : `AI 검수를 하지 못했습니다: ${r.error}`); return }
+    if (!r.ok) { setError(r.skipped ? r.error : `${t('AI 검수를 하지 못했습니다', 'The AI review could not be completed')}: ${r.error}`); return }
     setLegal({ check: r.check, key: legalKey })
     setLegalOpen(true)
   }
   // forSubmit: 승인신청·발행할 때는 섹션도 꼭 골라야 한다 (저장·미리보기는 섹션 없이도 된다)
   function validate(forSubmit = false) {
-    if (!title.trim()) { setError('제목을 입력해주세요.'); return false }
+    if (!title.trim()) { setError(t('제목을 입력해주세요.', 'Please enter a headline.')); return false }
     if (forSubmit && !categoryId) {
-      setError('섹션을 골라 주세요. 섹션이 없으면 승인신청·발행할 수 없습니다.')
+      setError(t('섹션을 골라 주세요. 섹션이 없으면 승인신청·발행할 수 없습니다.', 'Please choose a section. A story without a section cannot be submitted for review or published.'))
       document.getElementById('section')?.focus()
       return false
     }
-    if (!charCount) { setError('본문을 입력해주세요.'); return false }
-    if (pubAt && !fromKstInput(pubAt)) { setError('발행 일시를 확인해 주세요.'); return false }
+    if (!charCount) { setError(t('본문을 입력해주세요.', 'Please enter the story body.')); return false }
+    if (pubAt && !fromKstInput(pubAt)) { setError(t('발행 일시를 확인해 주세요.', 'Please check the publish date and time.')); return false }
     return true
   }
 
@@ -182,7 +188,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       author: byline.trim() || defaultName,
       email: settingsReady ? (isEditorPlus ? bylineEmail.trim() || outletEmail : savedEmail ?? outletEmail) || null : null,
       publishedAt: fromKstInput(pubAt) ?? new Date().toISOString(),
-      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      tags: tags.split(',').map((x) => x.trim()).filter(Boolean),
       thumbnail: thumbnailUrl || null,
     }
   }
@@ -196,20 +202,20 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   function applyDecisions(decisions: Decision[]) {
     if (!legal) return
     const editor = editorRef.current
-    let t = title
+    let newTitle = title
     let sub = subtitle
     const issues = legal.check.issues.map((x, i) => {
       let decision: Decision = decisions[i] ?? 'kept'
       if (decision === 'fixed' && x.fix) {
-        const nt = replaceInText(t, x.quote, x.fix)
+        const nt = replaceInText(newTitle, x.quote, x.fix)
         const ns = nt == null ? replaceInText(sub, x.quote, x.fix) : null
-        if (nt != null) t = nt
+        if (nt != null) newTitle = nt
         else if (ns != null) sub = ns
         else if (!(editor && replaceInEditor(editor, x.quote, x.fix))) decision = 'kept'
       } else decision = 'kept'
       return { ...x, decision }
     })
-    if (t !== title) setTitle(t)
+    if (newTitle !== title) setTitle(newTitle)
     if (sub !== subtitle) setSubtitle(sub)
     const check = { ...legal.check, issues, reused: undefined }
     // 고친 뒤 내용 기준으로 "이미 골랐음"을 기억한다 (아래 effect가 새 내용의 key를 붙인다)
@@ -225,9 +231,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     if (mode === 'publish' && chosenAt) {
       const when = new Date(chosenAt).getTime()
       const msg = when > Date.now() + 60_000
-        ? `${formatDateTime(chosenAt)}에 홈페이지에 공개되도록 예약 발행할까요?\n그 전까지는 홈페이지에 보이지 않습니다.`
+        ? t(`${formatDateTime(chosenAt)}에 홈페이지에 공개되도록 예약 발행할까요?\n그 전까지는 홈페이지에 보이지 않습니다.`, `Schedule this story to go live on the site at ${formatDateTime(chosenAt, lang, 'Asia/Seoul')}?\nIt will not be visible on the site until then.`)
         : when < Date.now() - 60_000
-          ? `발행 일시를 ${formatDateTime(chosenAt)}(지난 날짜)로 해서 발행할까요?`
+          ? t(`발행 일시를 ${formatDateTime(chosenAt)}(지난 날짜)로 해서 발행할까요?`, `Publish with the publish time set to ${formatDateTime(chosenAt, lang, 'Asia/Seoul')} (a past date)?`)
           : null
       if (msg && !window.confirm(msg)) return
     }
@@ -258,11 +264,11 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
     let id = article?.id ?? draftId
     if (id) {
       const { error: err } = await supabase.from('articles').update(payload).eq('id', id)
-      if (err) { setError(saveError(err.message)); setSaving(null); return }
+      if (err) { setError(saveError(err.message, t)); setSaving(null); return }
     } else {
       payload.author_id = userId
       const { data, error: err } = await supabase.from('articles').insert(payload).select('id').single()
-      if (err) { setError(saveError(err.message)); setSaving(null); return }
+      if (err) { setError(saveError(err.message, t)); setSaving(null); return }
       id = data.id
     }
     // 저장했으니 이 브라우저의 임시 저장은 지운다
@@ -277,8 +283,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       if (!r.ok) {
         published = false
         window.alert(r.held
-          ? `욕설·혐오·선정적 표현이 있을 수 있어 바로 발행되지 않았습니다.\n총관리자가 확인한 뒤 발행됩니다.\n\n사유: ${r.note}`
-          : `저장은 했지만 발행하지 못했습니다 (승인대기로 저장됨).\n${r.error}`)
+          ? t(`욕설·혐오·선정적 표현이 있을 수 있어 바로 발행되지 않았습니다.\n총관리자가 확인한 뒤 발행됩니다.\n\n사유: ${r.note}`, `The story was not published right away because it may contain profanity, hate speech or sensational language.\nIt will be published after the Super Admin reviews it.\n\nReason: ${r.note}`)
+          : t(`저장은 했지만 발행하지 못했습니다 (승인대기로 저장됨).\n${r.error}`, `The story was saved but could not be published (saved as awaiting approval).\n${r.error}`))
       }
     }
 
@@ -291,7 +297,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
         const summary = describe(await syndicate(id, { rewrite: rewriteCopies }))
         if (summary) window.alert(summary)
       } catch (e) {
-        window.alert(`함께 송고 중 문제가 생겼습니다: ${e instanceof Error ? e.message : ''}`)
+        window.alert(`${t('함께 송고 중 문제가 생겼습니다', 'There was a problem sending to other outlets')}: ${e instanceof Error ? e.message : ''}`)
       }
     }
 
@@ -300,7 +306,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
     setSaving(null)
     if (mode === 'draft') {
-      setSavedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))
+      setSavedAt(new Date().toLocaleTimeString(lang === 'en' ? 'en-US' : 'ko-KR', { hour: '2-digit', minute: '2-digit' }))
       if (!article) router.replace(`/articles/${id}/edit`)
       router.refresh()
     } else {
@@ -377,8 +383,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
   useEffect(() => {
     if (!ready) return
     if (contentKey === serverKey.current) { clearLocalBackup(); return }
-    const t = setTimeout(() => writeRef.current(), 800)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => writeRef.current(), 800)
+    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentKey, ready])
 
@@ -459,22 +465,24 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       <div className="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-5 rounded-lg border border-line bg-white p-4 md:p-7">
           <div className="flex flex-wrap items-center gap-3 border-b border-line pb-5">
-            <span className="w-16 text-[13px] font-semibold">기사상태</span>
+            <span className="w-16 text-[13px] font-semibold">{t('기사상태', 'Status')}</span>
             {article && isScheduled(article)
-              ? <span className="status-badge status-scheduled px-2.5 py-1 text-[12.5px]">예약 · {formatDateTime(article.published_at)} 공개</span>
-              : <span className={`status-badge status-${status} px-2.5 py-1 text-[12.5px]`}>{STATUS_LABEL[status]}</span>}
-            {savedAt && <span className="text-[12px] text-muted">{savedAt} 저장됨</span>}
+              ? <span className="status-badge status-scheduled px-2.5 py-1 text-[12.5px]">{lang === 'en' ? `Scheduled · Goes live ${formatDateTime(article.published_at, lang)}` : `예약 · ${formatDateTime(article.published_at)} 공개`}</span>
+              : <span className={`status-badge status-${status} px-2.5 py-1 text-[12.5px]`}>{statusLabel(status, lang)}</span>}
+            {savedAt && <span className="text-[12px] text-muted">{lang === 'en' ? `Saved ${savedAt}` : `${savedAt} 저장됨`}</span>}
             {article?.id
-              ? <CopyLinkButton articleId={article.id} label="🔗 기사 링크 복사" className="rounded border border-line px-2 py-0.5 text-[12px] text-muted hover:border-ink hover:text-ink" />
-              : <span className="text-[11.5px] text-muted">저장하면 기사 링크를 받을 수 있습니다</span>}
+              ? <CopyLinkButton articleId={article.id} label={t('🔗 기사 링크 복사', '🔗 Copy story link')} className="rounded border border-line px-2 py-0.5 text-[12px] text-muted hover:border-ink hover:text-ink" />
+              : <span className="text-[11.5px] text-muted">{t('저장하면 기사 링크를 받을 수 있습니다', 'Save to get a story link')}</span>}
             <span className="text-[11.5px] text-muted md:ml-auto" aria-live="polite">
               {tempSavedAt && contentKey !== serverKey.current
-                ? `${new Date(tempSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 이 브라우저에 임시 저장됨 · “저장”을 눌러야 기사목록에 들어갑니다`
-                : '쓰는 내용은 이 브라우저에 자동 임시 저장됩니다'}
+                ? (lang === 'en'
+                  ? `Temporarily saved in this browser at ${new Date(tempSavedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} · Click “Save” to add it to the story list`
+                  : `${new Date(tempSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 이 브라우저에 임시 저장됨 · “저장”을 눌러야 기사목록에 들어갑니다`)
+                : t('쓰는 내용은 이 브라우저에 자동 임시 저장됩니다', 'What you write is automatically saved temporarily in this browser')}
             </span>
             {status === 'rejected' && article?.reject_reason && (
               <p className="w-full rounded border border-danger/30 bg-danger/5 px-3 py-2 text-[13px] text-danger">
-                <strong>반려 사유:</strong> {article.reject_reason}
+                <strong>{t('반려 사유', 'Rejection reason')}:</strong> {article.reject_reason}
               </p>
             )}
           </div>
@@ -482,17 +490,19 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
           {restored && (
             <div role="status" className="flex flex-wrap items-center gap-3 rounded border border-[#2F6BF0]/40 bg-[#2F6BF0]/5 px-4 py-3 text-[13px]">
               <span className="min-w-[12rem] flex-1">
-                <strong className="text-[#2F6BF0]">임시 저장된 내용을 불러왔습니다.</strong>{' '}
-                {new Date(restored.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}에 이 브라우저에 저장된 내용입니다. 이어서 쓰세요.
+                <strong className="text-[#2F6BF0]">{t('임시 저장된 내용을 불러왔습니다.', 'Loaded your temporarily saved draft.')}</strong>{' '}
+                {lang === 'en'
+                  ? `This was saved in this browser on ${new Date(restored.at).toLocaleString('en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}. Continue writing.`
+                  : `${new Date(restored.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}에 이 브라우저에 저장된 내용입니다. 이어서 쓰세요.`}
               </span>
               <span className="flex items-center gap-3">
-              <button type="button" onClick={() => setRestored(null)} className="btn-primary px-3 py-1.5 text-[12.5px]">확인</button>
+              <button type="button" onClick={() => setRestored(null)} className="btn-primary px-3 py-1.5 text-[12.5px]">{t('확인', 'OK')}</button>
               <button
                 type="button"
-                onClick={() => { if (window.confirm(article ? '임시 저장된 내용을 버리고 마지막으로 저장한 기사로 되돌릴까요?' : '임시 저장된 내용을 지우고 새로 쓸까요?')) discardRestored() }}
+                onClick={() => { if (window.confirm(article ? t('임시 저장된 내용을 버리고 마지막으로 저장한 기사로 되돌릴까요?', 'Discard the temporarily saved draft and go back to the last saved story?') : t('임시 저장된 내용을 지우고 새로 쓸까요?', 'Delete the temporarily saved draft and start over?'))) discardRestored() }}
                 className="whitespace-nowrap text-[12.5px] text-muted underline underline-offset-2 hover:text-danger"
               >
-                {article ? '버리고 저장된 기사로' : '지우고 새로 쓰기'}
+                {article ? t('버리고 저장된 기사로', 'Discard and use saved story') : t('지우고 새로 쓰기', 'Delete and start over')}
               </button>
               </span>
             </div>
@@ -500,27 +510,27 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
           {legal && !legalOpen && legal.check.issues.some((x) => !x.decision) && legal.key === legalKey && (
             <div className="rounded border border-danger/30 bg-danger/5 px-4 py-3 text-[13px]">
-              <p className="flex flex-wrap items-center gap-2"><strong className="text-danger">AI 법적 검수: 확인할 곳 {legal.check.issues.length}개</strong><button type="button" onClick={() => setLegalOpen(true)} className="text-[12.5px] underline underline-offset-2">다시 보기</button></p>
+              <p className="flex flex-wrap items-center gap-2"><strong className="text-danger">{t(`AI 법적 검수: 확인할 곳 ${legal.check.issues.length}개`, `AI legal review: ${legal.check.issues.length} ${legal.check.issues.length === 1 ? 'item' : 'items'} to check`)}</strong><button type="button" onClick={() => setLegalOpen(true)} className="text-[12.5px] underline underline-offset-2">{t('다시 보기', 'View again')}</button></p>
             </div>
           )}
 
           {article?.ai_notes && (
             <div className="rounded border border-draft/40 bg-draft/10 px-4 py-3 text-[13px] leading-relaxed">
-              <p className="font-semibold text-draft">발행 전에 확인하세요</p>
+              <p className="font-semibold text-draft">{t('발행 전에 확인하세요', 'Check before publishing')}</p>
               <p className="mt-1 whitespace-pre-line text-ink">{article.ai_notes}</p>
-              <p className="mt-1.5 text-[12px] text-muted">이 메모는 편집 화면에만 보이고 홈페이지에는 나가지 않습니다. 원문과 사실관계를 대조한 뒤 발행해 주세요. <a href="/support/guide#checklist" target="_blank" className="font-semibold text-ink underline underline-offset-2">발행 전 체크리스트</a></p>
+              <p className="mt-1.5 text-[12px] text-muted">{t('이 메모는 편집 화면에만 보이고 홈페이지에는 나가지 않습니다. 원문과 사실관계를 대조한 뒤 발행해 주세요.', 'This note is visible only on the edit screen and is not shown on the site. Please check the facts against the source before publishing.')} <a href="/support/guide#checklist" target="_blank" className="font-semibold text-ink underline underline-offset-2">{t('발행 전 체크리스트', 'Pre-publication checklist')}</a></p>
             </div>
           )}
 
           <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
-            <label htmlFor="section" className="text-[13px] font-semibold">섹션 <span className="text-danger" aria-hidden>*</span></label>
-            <select id="section" required aria-required="true" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); if (e.target.value && /섹션/.test(error)) setError('') }} className={`field-input max-w-xs ${!categoryId && /섹션/.test(error) ? 'border-danger' : ''}`}>
-              <option value="">섹션 선택</option>
+            <label htmlFor="section" className="text-[13px] font-semibold">{t('섹션', 'Section')} <span className="text-danger" aria-hidden>*</span></label>
+            <select id="section" required aria-required="true" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); if (e.target.value && sectionError) setError('') }} className={`field-input max-w-xs ${!categoryId && sectionError ? 'border-danger' : ''}`}>
+              <option value="">{t('섹션 선택', 'Choose section')}</option>
               {/* 2차 메뉴는 상위 섹션 바로 아래에 '상위 › 하위' 로 */}
               {orderedCategories(categories).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
 
-            <label htmlFor="byline" className="text-[13px] font-semibold">기자명</label>
+            <label htmlFor="byline" className="text-[13px] font-semibold">{t('기자명', 'Byline')}</label>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13.5px]">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center rounded border border-line focus-within:border-ink">
@@ -530,29 +540,29 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                     onChange={(e) => setByline(e.target.value)}
                     onBlur={() => syncBylineInBody()}
                     maxLength={30}
-                    placeholder={defaultName || '기자 이름'}
+                    placeholder={defaultName || t('기자 이름', 'Reporter name')}
                     className="w-32 bg-transparent px-3 py-2 outline-none"
                   />
-                  <span className="pr-3 text-muted">기자</span>
+                  {lang !== 'en' && <span className="pr-3 text-muted">기자</span>}
                 </div>
                 {settingsReady ? (
                   isEditorPlus ? (
                     <>
-                      <label htmlFor="byline-email" className="sr-only">기자 이메일</label>
+                      <label htmlFor="byline-email" className="sr-only">{t('기자 이메일', 'Reporter email')}</label>
                       <input
                         id="byline-email"
                         type="email"
                         value={bylineEmail}
                         onChange={(e) => setBylineEmail(e.target.value)}
-                        placeholder={outletEmail ?? '기자 이메일'}
+                        placeholder={outletEmail ?? t('기자 이메일', 'Reporter email')}
                         maxLength={120}
                         className="field-input py-2"
                         style={{ width: 210 }}
                       />
                     </>
                   ) : (
-                    <span title="언론사 대표 이메일 (편집장이 바꿀 수 있습니다)" className="max-w-full truncate rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">
-                      {savedEmail ?? outletEmail ?? '대표 이메일 미설정'}
+                    <span title={t('언론사 대표 이메일 (편집장이 바꿀 수 있습니다)', 'Outlet’s main email (the editor-in-chief can change it)')} className="max-w-full truncate rounded border border-line bg-[#F8F9FA] px-3 py-2 text-muted">
+                      {savedEmail ?? outletEmail ?? t('대표 이메일 미설정', 'Main email not set')}
                     </span>
                   )
                 ) : (
@@ -560,33 +570,33 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                 )}
                 {byline.trim() && byline.trim() !== defaultName && (
                   <button type="button" onClick={() => { setByline(defaultName); syncBylineInBody(defaultName) }} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">
-                    {defaultName}(으)로 되돌리기
+                    {t(`${defaultName}(으)로 되돌리기`, `Revert to ${defaultName}`)}
                   </button>
                 )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 md:ml-auto">
-                <label htmlFor="pub-at" className="text-[13px] font-semibold">발행 일시</label>
+                <label htmlFor="pub-at" className="text-[13px] font-semibold">{t('발행 일시', 'Publish time')}</label>
                 <input
                   id="pub-at"
                   type="datetime-local"
                   value={pubAt}
                   onChange={(e) => setPubAt(e.target.value)}
-                  title="비우면 발행하는 순간의 시각으로 정해집니다"
+                  title={t('비우면 발행하는 순간의 시각으로 정해집니다', 'If left empty, the time of publishing is used')}
                   className="field-input py-1.5"
                   style={{ width: 'auto', maxWidth: 210 }}
                 />
-                {pubAt && <button type="button" onClick={() => setPubAt('')} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">비우기</button>}
+                {pubAt && <button type="button" onClick={() => setPubAt('')} className="text-[12px] text-muted underline underline-offset-2 hover:text-ink">{t('비우기', 'Clear')}</button>}
               </div>
             </div>
             {(() => {
-              const t = fromKstInput(pubAt)
-              if (!t) return null
-              const diff = Date.parse(t) - Date.now()
+              const at = fromKstInput(pubAt)
+              if (!at) return null
+              const diff = Date.parse(at) - Date.now()
               const msg = diff > 60_000
-                ? <p className="text-[12px] font-semibold text-[#6D28D9]">예약 발행: {formatDateTime(t)}(한국 시간)에 홈페이지에 공개됩니다. 그 전까지는 보이지 않습니다.</p>
+                ? <p className="text-[12px] font-semibold text-[#6D28D9]">{lang === 'en' ? `Scheduled: goes live on the site at ${formatDateTime(at, lang, 'Asia/Seoul')} (Korea time). It will not be visible until then.` : `예약 발행: ${formatDateTime(at)}(한국 시간)에 홈페이지에 공개됩니다. 그 전까지는 보이지 않습니다.`}</p>
                 : diff < -60_000
-                  ? <p className="text-[12px] text-muted">지난 날짜로 발행됩니다. 기사 날짜와 목록 순서가 이 일시를 따릅니다.</p>
+                  ? <p className="text-[12px] text-muted">{t('지난 날짜로 발행됩니다. 기사 날짜와 목록 순서가 이 일시를 따릅니다.', 'This will be published with a past date. The story date and list order follow this time.')}</p>
                   : null
               return msg && <><span />{msg}</>
             })()}
@@ -594,24 +604,24 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
 
           <div className="space-y-3 border-t border-line pt-5">
             <div>
-              <label htmlFor="title" className="sr-only">제목</label>
+              <label htmlFor="title" className="sr-only">{t('제목', 'Headline')}</label>
               <input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="제목을 입력하세요"
+                placeholder={t('제목을 입력하세요', 'Enter a headline')}
                 className="w-full rounded border border-line px-4 py-3 text-[19px] font-bold outline-none focus:border-ink/60"
               />
-              <div className="mt-1 text-right text-[11.5px] tabular-nums text-muted">{title.length}자</div>
+              <div className="mt-1 text-right text-[11.5px] tabular-nums text-muted">{title.length}{t('자', ' chars')}</div>
             </div>
             <div>
-              <label htmlFor="subtitle" className="sr-only">부제목</label>
+              <label htmlFor="subtitle" className="sr-only">{t('부제목', 'Subhead')}</label>
               <textarea
                 id="subtitle"
                 value={subtitle}
                 onChange={(e) => setSubtitle(e.target.value)}
                 rows={2}
-                placeholder="부제목을 입력하세요 (여러 줄 가능 · 기사 목록의 요약과 검색 결과 설명으로도 쓰입니다)"
+                placeholder={t('부제목을 입력하세요 (여러 줄 가능 · 기사 목록의 요약과 검색 결과 설명으로도 쓰입니다)', 'Enter a subhead (multiple lines allowed · also used as the summary in story lists and the description in search results)')}
                 className="w-full resize-y rounded border border-line px-4 py-2.5 text-[14.5px] leading-relaxed outline-none focus:border-ink/60"
               />
             </div>
@@ -624,37 +634,39 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               onReady={onReady}
               advanced={isEditorPlus}
               onUploadImage={async (file) => {
-                const url = await uploadImage(file, outletId, watermark.on ? watermark.text : null)
+                const url = await uploadImage(file, outletId, watermark.on ? watermark.text : null, lang)
                 setImages((prev) => [...prev, { url, caption: '' }])
                 if (!thumbnailUrl) setThumbnailUrl(url)
                 return url
               }}
             />
             <div className="mt-1.5 flex justify-between gap-3 text-[12px] text-muted">
-              <span><span className="md:hidden">사진을 누르면 크기·배치를 바꿀 수 있습니다</span><span className="hidden md:inline">사진을 누르면 크기(25~100%)·배치를 바꿀 수 있고, 파란 모서리를 끌어도 됩니다 · Ctrl+S 저장</span></span>
-              <span className="shrink-0 tabular-nums">{charCount.toLocaleString()}자<span className="hidden md:inline"> (공백 제외)</span></span>
+              <span><span className="md:hidden">{t('사진을 누르면 크기·배치를 바꿀 수 있습니다', 'Tap a photo to change its size and placement')}</span><span className="hidden md:inline">{t('사진을 누르면 크기(25~100%)·배치를 바꿀 수 있고, 파란 모서리를 끌어도 됩니다 · Ctrl+S 저장', 'Click a photo to change its size (25–100%) and placement, or drag the blue corner · Ctrl+S to save')}</span></span>
+              <span className="shrink-0 tabular-nums">{charCount.toLocaleString(lang === 'en' ? 'en-US' : undefined)}{t('자', ' chars')}<span className="hidden md:inline">{t(' (공백 제외)', ' (excluding spaces)')}</span></span>
             </div>
           </div>
 
           <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 border-t border-line pt-5">
-            <label htmlFor="tags" className="text-[13px] font-semibold">태그</label>
-            <input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="쉼표로 구분 (예: 요양병원, 간병비)" className="field-input" />
+            <label htmlFor="tags" className="text-[13px] font-semibold">{t('태그', 'Tags')}</label>
+            <input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t('쉼표로 구분 (예: 요양병원, 간병비)', 'Separate with commas (e.g. nursing care, caregiver costs)')} className="field-input" />
 
-            <span className="text-[13px] font-semibold">옵션</span>
+            <span className="text-[13px] font-semibold">{t('옵션', 'Options')}</span>
             <label className="flex cursor-pointer items-center gap-2 text-[13.5px]">
               <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
-              주요 기사로 지정 (홈페이지 톱 영역 우선 노출)
+              {t('주요 기사로 지정 (홈페이지 톱 영역 우선 노출)', 'Mark as featured story (shown first in the top area of the site)')}
             </label>
 
           </div>
 
           {isCopy ? (
             <p className="rounded border border-review/30 bg-review/5 px-4 py-3 text-[13px] leading-relaxed text-review">
-              이 기사는 <strong>{sourceOutletName ?? '다른 매체'}</strong>에서 함께 송고된 사본입니다. 원본이 다시 반영되면 제목·본문이 원본 내용으로 바뀝니다.
+              {lang === 'en'
+                ? <>This story is a copy sent together from <strong>{sourceOutletName ?? 'another outlet'}</strong>. If the original is reflected again, the headline and body will change to match the original.</>
+                : <>이 기사는 <strong>{sourceOutletName ?? '다른 매체'}</strong>에서 함께 송고된 사본입니다. 원본이 다시 반영되면 제목·본문이 원본 내용으로 바뀝니다.</>}
             </p>
           ) : otherOutlets.length > 0 && (
             <fieldset className="rounded border border-line px-4 py-3.5">
-              <legend className="px-1 text-[13px] font-semibold">함께 송고할 매체</legend>
+              <legend className="px-1 text-[13px] font-semibold">{t('함께 송고할 매체', 'Also send to')}</legend>
               <div className="flex flex-wrap gap-x-5 gap-y-2">
                 {otherOutlets.map((o) => {
                   const sent = syndicatedOutletIds.includes(o.id)
@@ -667,36 +679,36 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                         onChange={(e) => setSyndicateTo((prev) => (e.target.checked ? [...prev, o.id] : prev.filter((x) => x !== o.id)))}
                       />
                       {o.name}
-                      {sent && <span className="rounded bg-published/10 px-1.5 text-[11px] text-published">송고됨</span>}
+                      {sent && <span className="rounded bg-published/10 px-1.5 text-[11px] text-published">{t('송고됨', 'Sent')}</span>}
                     </label>
                   )
                 })}
               </div>
               <label className="mt-3 flex cursor-pointer items-start gap-2 text-[13px]">
                 <input type="checkbox" checked={rewriteCopies} onChange={(e) => setRewriteCopies(e.target.checked)} className="mt-0.5" />
-                <span><strong className="font-semibold">AI로 문장을 바꿔서 올리기</strong> <span className="text-muted">— 매체마다 제목·본문 표현을 다르게 바꿉니다(사실·숫자·인용은 그대로). 매체 하나에 AI 사용 1회</span></span>
+                <span><strong className="font-semibold">{t('AI로 문장을 바꿔서 올리기', 'Rewrite with AI for each outlet')}</strong> <span className="text-muted">— {t('매체마다 제목·본문 표현을 다르게 바꿉니다(사실·숫자·인용은 그대로). 매체 하나에 AI 사용 1회', 'Rewords the headline and body for each outlet (facts, numbers and quotes stay the same). 1 AI use per outlet')}</span></span>
               </label>
               <p className="mt-2 text-[12px] leading-relaxed text-muted">
-                발행될 때 선택한 매체에 바이라인과 섹션을 맞춰 사본이 올라갑니다. 사본에는 이 기사를 원본으로 알리는 표시가 들어가 검색엔진에서 중복 기사로 처리되지 않습니다.
+                {t('발행될 때 선택한 매체에 바이라인과 섹션을 맞춰 사본이 올라갑니다. 사본에는 이 기사를 원본으로 알리는 표시가 들어가 검색엔진에서 중복 기사로 처리되지 않습니다.', 'When published, copies are posted to the selected outlets with the byline and section matched. Copies carry a marker pointing to this story as the original, so search engines do not treat them as duplicates.')}
               </p>
             </fieldset>
           )}
 
           <div className="rounded border border-line">
             <button type="button" onClick={() => setShowSeo(!showSeo)} aria-expanded={showSeo} className="flex w-full items-center justify-between px-4 py-3 text-[13px] text-muted hover:text-ink">
-              <span>검색·공유 설정 (SEO) — 비워두면 제목과 부제목이 쓰입니다</span>
+              <span>{t('검색·공유 설정 (SEO) — 비워두면 제목과 부제목이 쓰입니다', 'Search & sharing settings (SEO) — if left empty, the headline and subhead are used')}</span>
               <span aria-hidden>{showSeo ? '▲' : '▼'}</span>
             </button>
             {showSeo && (
               <div className="space-y-3 border-t border-line px-4 pb-4 pt-3">
                 <div>
-                  <label htmlFor="meta-title" className="field-label">검색 결과 제목</label>
-                  <input id="meta-title" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || '기사 제목'} maxLength={60} className="field-input" />
+                  <label htmlFor="meta-title" className="field-label">{t('검색 결과 제목', 'Search result title')}</label>
+                  <input id="meta-title" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || t('기사 제목', 'Story headline')} maxLength={60} className="field-input" />
                   <div className="mt-1 text-right text-[11.5px] text-muted">{metaTitle.length}/60</div>
                 </div>
                 <div>
-                  <label htmlFor="meta-desc" className="field-label">검색 결과 설명</label>
-                  <textarea id="meta-desc" value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder={subtitle || '160자 이내'} rows={2} maxLength={160} className="field-input resize-none" />
+                  <label htmlFor="meta-desc" className="field-label">{t('검색 결과 설명', 'Search result description')}</label>
+                  <textarea id="meta-desc" value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder={subtitle || t('160자 이내', 'Up to 160 characters')} rows={2} maxLength={160} className="field-input resize-none" />
                   <div className="mt-1 text-right text-[11.5px] text-muted">{metaDesc.length}/160</div>
                 </div>
               </div>
@@ -705,7 +717,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
         </div>
 
         <aside className="min-w-0 rounded-lg border border-line bg-white p-4 md:p-5 lg:sticky lg:top-6">
-          <h2 className="mb-4 text-[16px] font-bold">라이브러리</h2>
+          <h2 className="mb-4 text-[16px] font-bold">{t('라이브러리', 'Library')}</h2>
           <MediaPanel
             outletId={outletId}
             images={images}
@@ -722,7 +734,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
           {/* AI 검수가 고른 검색어로 공개 라이선스 사진을 찾아 준다 */}
           <PhotoSuggest
             keywords={legal?.check.photo_keywords ?? []}
-            fallback={tags.split(',').map((t) => t.trim()).filter(Boolean)[0] ?? ''}
+            fallback={tags.split(',').map((x) => x.trim()).filter(Boolean)[0] ?? ''}
             onAdd={(img) => {
               setImages((prev) => (prev.some((p) => p.url === img.url) ? prev : [...prev, img]))
               if (!thumbnailUrl) setThumbnailUrl(img.url)
@@ -734,27 +746,27 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       {legalOpen && legal && (
         <div role="dialog" aria-modal="true" aria-labelledby="legal-title" className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-0 md:items-center md:p-6">
           <div className="max-h-[88vh] w-full max-w-[680px] overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl md:rounded-2xl md:p-7">
-            <h2 id="legal-title" className="text-[18px] font-bold">AI 법적 검수 결과</h2>
+            <h2 id="legal-title" className="text-[18px] font-bold">{t('AI 법적 검수 결과', 'AI legal review result')}</h2>
             {legal.check.issues.length > 0 && legal.check.issues.every((x) => x.decision) ? (
               // 이미 항목마다 고른 결과를 다시 볼 때
               <>
-                <p className="mb-4 mt-1 text-[13px] text-muted">고른 대로 반영된 결과입니다. 승인신청·발행할 때 이 기록이 함께 저장됩니다.</p>
+                <p className="mb-4 mt-1 text-[13px] text-muted">{t('고른 대로 반영된 결과입니다. 승인신청·발행할 때 이 기록이 함께 저장됩니다.', 'This shows the result as you chose. This record is saved when you submit for review or publish.')}</p>
                 <LegalReview check={legal.check} compact />
                 <div className="mt-5 flex justify-end border-t border-line pt-4">
-                  <button type="button" onClick={() => setLegalOpen(false)} className="btn-primary px-5" autoFocus>닫기</button>
+                  <button type="button" onClick={() => setLegalOpen(false)} className="btn-primary px-5" autoFocus>{t('닫기', 'Close')}</button>
                 </div>
               </>
             ) : (
               <>
                 <p className="mb-4 mt-1 text-[13px] text-muted">
                   {legal.check.issues.length
-                    ? '명예훼손·개인정보·저작권(도용) 등 문제가 될 수 있는 부분입니다. 항목마다 AI가 고친 문장으로 바꿀지, 그대로 둘지 골라 주세요.'
-                    : '명예훼손·개인정보·저작권(도용) 등을 살펴봤습니다.'}
+                    ? t('명예훼손·개인정보·저작권(도용) 등 문제가 될 수 있는 부분입니다. 항목마다 AI가 고친 문장으로 바꿀지, 그대로 둘지 골라 주세요.', 'These parts may raise issues such as defamation, privacy or copyright (plagiarism). For each item, choose whether to replace it with the AI-revised wording or leave it as is.')
+                    : t('명예훼손·개인정보·저작권(도용) 등을 살펴봤습니다.', 'We checked for defamation, privacy and copyright (plagiarism) issues.')}
                 </p>
                 <LegalDecide
                   check={legal.check}
                   fixable={legal.check.issues.map((x) => !!x.fix && (!!findInText(title, x.quote) || !!findInText(subtitle, x.quote) || canReplaceInEditor(editorRef.current, x.quote)))}
-                  next="완료"
+                  next={t('완료', 'Done')}
                   onDone={applyDecisions}
                   onEdit={() => setLegalOpen(false)}
                 />
@@ -765,24 +777,24 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       )}
 
       {preview && (
-        <div role="dialog" aria-modal="true" aria-label="기사 미리보기" className="fixed inset-0 z-[80] flex flex-col bg-[#14171C]/85">
+        <div role="dialog" aria-modal="true" aria-label={t('기사 미리보기', 'Story preview')} className="fixed inset-0 z-[80] flex flex-col bg-[#14171C]/85">
           <div className="flex flex-wrap items-center gap-2 border-b border-line bg-white px-4 py-2.5 md:gap-3 md:px-6">
             {/* 휴대폰: 버튼이 많으면 제목 칸이 0으로 찌그러지지 않게 버튼을 다음 줄로 */}
             <div className="min-w-[10rem] flex-1">
-              <p className="text-[14.5px] font-bold">미리보기</p>
+              <p className="text-[14.5px] font-bold">{t('미리보기', 'Preview')}</p>
               <p className="truncate text-[12px] text-muted">
-                홈페이지에 이렇게 보입니다{preview.mode ? ' · 고칠 곳이 있으면 “고치러 가기”를 누르세요' : ''}
-                {preview.mode && (currentLegal ? ' · AI 검수 완료' : ' · AI 검수를 하지 않았습니다')}
+                {t('홈페이지에 이렇게 보입니다', 'This is how it will look on the site')}{preview.mode ? t(' · 고칠 곳이 있으면 “고치러 가기”를 누르세요', ' · If anything needs fixing, click “Back to editing”') : ''}
+                {preview.mode && (currentLegal ? t(' · AI 검수 완료', ' · AI review done') : t(' · AI 검수를 하지 않았습니다', ' · AI review not run'))}
               </p>
             </div>
-            <div role="group" aria-label="화면 크기" className="inline-flex rounded-md border border-line p-0.5 text-[12.5px] font-semibold">
-              {([['pc', 'PC'], ['mobile', '모바일']] as const).map(([d, label]) => (
+            <div role="group" aria-label={t('화면 크기', 'Screen size')} className="inline-flex rounded-md border border-line p-0.5 text-[12.5px] font-semibold">
+              {([['pc', 'PC'], ['mobile', t('모바일', 'Mobile')]] as const).map(([d, label]) => (
                 <button key={d} type="button" aria-pressed={previewDevice === d} onClick={() => setPreviewDevice(d)} className={`rounded px-3 py-1 ${previewDevice === d ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>{label}</button>
               ))}
             </div>
             {article?.id && <CopyLinkButton articleId={article.id} className="btn-secondary hidden px-3 md:inline-flex md:px-4" />}
             <button type="button" onClick={() => setPreview(null)} className="btn-secondary px-3 md:px-4" autoFocus={!preview.mode}>
-              {preview.mode ? '← 고치러 가기' : '닫기'}
+              {preview.mode ? t('← 고치러 가기', '← Back to editing') : t('닫기', 'Close')}
             </button>
             {preview.mode && (
               <button
@@ -791,14 +803,14 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
                 className={`${preview.mode === 'publish' ? 'btn-publish' : 'btn-review'} px-4 md:px-5`}
                 autoFocus
               >
-                {preview.mode === 'publish' ? (status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행하기' : '발행하기') : '승인신청하기'}
+                {preview.mode === 'publish' ? (status === 'published' ? t('수정 내용 반영', 'Apply changes') : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? t('예약 발행하기', 'Schedule') : t('발행하기', 'Publish')) : t('승인신청하기', 'Submit for review')}
               </button>
             )}
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-0 md:p-4">
             <iframe
               key={preview.n}
-              title="홈페이지 미리보기"
+              title={t('홈페이지 미리보기', 'Site preview')}
               src={`/preview/article?outlet=${ownOutlet ?? ''}&c=${encodeURIComponent(categories.find((c) => c.id === categoryId)?.slug ?? '')}&n=${preview.n}`}
               className={`mx-auto block h-full border-0 bg-white ${previewDevice === 'mobile' ? 'w-[390px] max-w-full md:rounded-xl md:shadow-2xl' : 'w-full md:rounded-lg'}`}
             />
@@ -813,15 +825,15 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
             <p role="alert" className="line-clamp-2 min-w-0 flex-1 basis-full text-[12.5px] text-danger md:basis-0 md:truncate md:text-[13px]">{error}</p>
           ) : (
             <div className="hidden items-center gap-4 md:flex">
-              <button type="button" onClick={() => router.back()} className="whitespace-nowrap text-[13px] text-muted hover:text-ink">← 취소</button>
+              <button type="button" onClick={() => router.back()} className="whitespace-nowrap text-[13px] text-muted hover:text-ink">{t('← 취소', '← Cancel')}</button>
               {article && (
                 <form className="hidden md:block" action={deleteArticle.bind(null, article.id)}>
                   <PendingButton
-                    pending="삭제 중…"
-                    confirm={`이 기사를 삭제할까요?${status === 'published' ? '\n홈페이지에서도 바로 내려가고, 함께 송고된 다른 매체 사본도 삭제됩니다.' : ''}\n삭제하면 되돌릴 수 없습니다.`}
+                    pending={t('삭제 중…', 'Deleting…')}
+                    confirm={`${t('이 기사를 삭제할까요?', 'Delete this story?')}${status === 'published' ? t('\n홈페이지에서도 바로 내려가고, 함께 송고된 다른 매체 사본도 삭제됩니다.', '\nIt will be taken down from the site immediately, and copies sent to other outlets will be deleted too.') : ''}${t('\n삭제하면 되돌릴 수 없습니다.', '\nThis cannot be undone.')}`}
                     className="text-[13px] text-muted hover:text-danger"
                   >
-                    기사 삭제
+                    {t('기사 삭제', 'Delete story')}
                   </PendingButton>
                 </form>
               )}
@@ -829,29 +841,29 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
           )}
           <div className="ml-auto flex shrink-0 gap-1 md:gap-2">
             <button type="button" onClick={() => { if (validate()) openPreview(null) }} disabled={!!saving} className="btn-secondary whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
-              미리보기
+              {t('미리보기', 'Preview')}
             </button>
             {/* 저장 = 기사목록에 들어간다 (쓰는 중인 내용은 따로 이 브라우저에 자동 임시 저장) */}
             <button type="button" onClick={() => save('draft')} disabled={!!saving} className="btn-secondary whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
-              {saving === 'draft' ? '저장 중…' : '저장'}
+              {saving === 'draft' ? t('저장 중…', 'Saving…') : t('저장', 'Save')}
             </button>
             <button
               type="button"
               onClick={runLegal}
               disabled={!!saving || checking}
-              title="명예훼손·저작권(도용)·개인정보 등 법적으로 문제가 될 표현을 AI가 찾아 줍니다 (AI 사용 1회)"
+              title={t('명예훼손·저작권(도용)·개인정보 등 법적으로 문제가 될 표현을 AI가 찾아 줍니다 (AI 사용 1회)', 'AI looks for legally risky wording such as defamation, copyright (plagiarism) and privacy issues (1 AI use)')}
               className={`btn-secondary whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm ${currentLegal ? 'border-published/50 text-published' : ''}`}
             >
-              {checking ? '검수 중…' : currentLegal ? 'AI 검수 ✓' : 'AI 검수'}
+              {checking ? t('검수 중…', 'Reviewing…') : currentLegal ? t('AI 검수 ✓', 'AI review ✓') : t('AI 검수', 'AI review')}
             </button>
             {status !== 'published' && status !== 'in_review' && (
               <button type="button" onClick={() => submit('review')} disabled={!!saving || checking} className="btn-review whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
-                {saving === 'review' ? '신청 중…' : '승인신청'}
+                {saving === 'review' ? t('신청 중…', 'Submitting…') : t('승인신청', 'Submit for review')}
               </button>
             )}
             {isEditorPlus && (
               <button type="button" onClick={() => submit('publish')} disabled={!!saving || checking} className="btn-publish whitespace-nowrap !px-1.5 !text-[13px] sm:!px-2 md:!px-5 md:!text-sm">
-                {saving === 'publish' ? '발행 중…' : status === 'published' ? '수정 내용 반영' : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? '예약 발행' : '바로 발행'}
+                {saving === 'publish' ? t('발행 중…', 'Publishing…') : status === 'published' ? t('수정 내용 반영', 'Apply changes') : (fromKstInput(pubAt) ?? '') > new Date(Date.now() + 60_000).toISOString() ? t('예약 발행', 'Schedule') : t('바로 발행', 'Publish now')}
               </button>
             )}
           </div>

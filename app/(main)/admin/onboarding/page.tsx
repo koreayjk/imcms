@@ -2,12 +2,16 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { formatDateTime } from '@/lib/format'
-import { ONBOARDING_STEPS, stepStates } from '@/lib/onboarding-guide'
+import { onboardingSteps, stepStates } from '@/lib/onboarding-guide'
 import type { LaunchDone } from '@/lib/launch-checklist'
 import { isPrepNow } from '@/lib/sites'
 
-export const metadata: Metadata = { title: '개통 현황' }
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getT()
+  return { title: t('개통 현황', 'Launch Status') }
+}
 
 type OutletRow = { id: string; name: string; domain: string | null; site: { comingSoon?: boolean; openAt?: string } | null; publisher_id: string | null; created_at: string; publisher: { name: string } | null }
 
@@ -15,6 +19,8 @@ type OutletRow = { id: string; name: string; domain: string | null; site: { comi
 export default async function OnboardingListPage() {
   const { supabase, isStaff } = await getCmsContext()
   if (!isStaff) redirect('/newsroom')
+  const { t, lang } = await getT()
+  const STEPS = onboardingSteps(lang)
 
   const [{ data: outletData }, doneRes, commentRes, { data: leads }, { data: staffRows }] = await Promise.all([
     supabase.from('outlets').select('id, name, domain, site, publisher_id, created_at, publisher:publishers(name)').not('publisher_id', 'is', null).order('created_at', { ascending: false }),
@@ -35,7 +41,7 @@ export default async function OnboardingListPage() {
   }
   const progress = (id: string) => {
     const states = stepStates(doneBy.get(id) ?? {}, true)
-    return { finished: states.filter((s) => s === 'done').length, total: states.length, doing: ONBOARDING_STEPS[states.findIndex((s) => s === 'doing')]?.title }
+    return { finished: states.filter((s) => s === 'done').length, total: states.length, doing: STEPS[states.findIndex((s) => s === 'doing')]?.title }
   }
   const ongoing = outlets.filter((o) => isPrepNow(o.site ?? {}))
     .sort((a, b) => (unseen.get(b.id) ?? 0) - (unseen.get(a.id) ?? 0))
@@ -51,15 +57,15 @@ export default async function OnboardingListPage() {
           <div className="min-w-[200px] flex-1">
             <p className="flex items-center gap-2 font-semibold">
               {o.name}
-              {n > 0 && <span className="rounded-full bg-danger px-2 text-[11.5px] font-bold tabular-nums text-white" aria-label={`새 고객 글 ${n}건`}>새 글 {n}</span>}
+              {n > 0 && <span className="rounded-full bg-danger px-2 text-[11.5px] font-bold tabular-nums text-white" aria-label={t(`새 고객 글 ${n}건`, `${n} new customer ${n === 1 ? 'post' : 'posts'}`)}>{t('새 글', 'New')} {n}</span>}
             </p>
-            <p className="mt-0.5 text-[12.5px] text-muted">{o.publisher?.name ?? ''}{o.domain ? ` · ${o.domain}` : ''}{managerOf.get(o.publisher_id ?? '') ? ` · 담당 ${managerOf.get(o.publisher_id ?? '')}` : ''}</p>
+            <p className="mt-0.5 text-[12.5px] text-muted">{o.publisher?.name ?? ''}{o.domain ? ` · ${o.domain}` : ''}{managerOf.get(o.publisher_id ?? '') ? ` · ${t('담당', 'Manager')} ${managerOf.get(o.publisher_id ?? '')}` : ''}</p>
           </div>
           <div className="w-44">
             <div className="h-1.5 overflow-hidden rounded-full bg-line" aria-hidden><div className="h-full rounded-full bg-[#2F6BF0]" style={{ width: `${Math.round((p.finished / p.total) * 100)}%` }} /></div>
-            <p className="mt-1 text-[12px] tabular-nums text-muted">{p.finished}/{p.total}단계{p.doing ? ` · ${p.doing}` : ''}</p>
+            <p className="mt-1 text-[12px] tabular-nums text-muted">{p.finished}/{p.total}{t('단계', ' steps')}{p.doing ? ` · ${p.doing}` : ''}</p>
           </div>
-          <p className="w-36 text-right text-[12px] text-muted">{l ? `${l.staff ? '운영팀 답' : '고객 글'} ${formatDateTime(l.at)}` : '코멘트 없음'}</p>
+          <p className="w-36 text-right text-[12px] text-muted">{l ? `${l.staff ? t('운영팀 답', 'Team reply') : t('고객 글', 'Customer post')} ${formatDateTime(l.at, lang)}` : t('코멘트 없음', 'No comments')}</p>
         </Link>
       </li>
     )
@@ -68,20 +74,20 @@ export default async function OnboardingListPage() {
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-5">
-        <h1 className="text-[22px] font-bold tracking-tight">개통 현황</h1>
-        <p className="mt-1 text-[13px] text-muted">고객사 개설 뒤의 모든 절차는 여기서 합니다. 매체를 열어 단계별 체크 항목을 체크하고, 고객이 남긴 코멘트에 답하세요. 고객상담은 신청을 확인하고 완료로 넘기면 끝납니다.</p>
+        <h1 className="text-[22px] font-bold tracking-tight">{t('개통 현황', 'Launch Status')}</h1>
+        <p className="mt-1 text-[13px] text-muted">{t('고객사 개설 뒤의 모든 절차는 여기서 합니다. 매체를 열어 단계별 체크 항목을 체크하고, 고객이 남긴 코멘트에 답하세요. 고객상담은 신청을 확인하고 완료로 넘기면 끝납니다.', 'Everything after a customer account is created happens here. Open an outlet, check off the items for each step, and reply to comments the customer leaves. Customer consultation ends once you confirm the application and mark it complete.')}</p>
       </header>
       <section>
-        <h2 className="mb-2 flex items-center gap-2 text-[15px] font-bold">개통 진행 중 <span className="text-[12.5px] font-normal text-muted">{ongoing.length}곳</span></h2>
+        <h2 className="mb-2 flex items-center gap-2 text-[15px] font-bold">{t('개통 진행 중', 'Launch in progress')} <span className="text-[12.5px] font-normal text-muted">{t(`${ongoing.length}곳`, `${ongoing.length} ${ongoing.length === 1 ? 'outlet' : 'outlets'}`)}</span></h2>
         {ongoing.length ? (
           <ul className="divide-y divide-line rounded-lg border border-line bg-white">{ongoing.map((o) => <Row key={o.id} o={o} />)}</ul>
         ) : (
-          <p className="rounded-lg border border-line bg-white px-5 py-10 text-center text-sm text-muted">개통 중인 고객사가 없습니다. 고객상담에서 “고객사 개설”을 하면 여기에 나타납니다.</p>
+          <p className="rounded-lg border border-line bg-white px-5 py-10 text-center text-sm text-muted">{t('개통 중인 고객사가 없습니다. 고객상담에서 “고객사 개설”을 하면 여기에 나타납니다.', 'No customers are in launch. Once you use “Create customer account” in Customer Consultation, they appear here.')}</p>
         )}
       </section>
       {opened.length > 0 && (
         <details className="mt-8">
-          <summary className="cursor-pointer text-[15px] font-bold">개통 완료 <span className="text-[12.5px] font-normal text-muted">{opened.length}곳 · 펼치기</span></summary>
+          <summary className="cursor-pointer text-[15px] font-bold">{t('개통 완료', 'Launched')} <span className="text-[12.5px] font-normal text-muted">{t(`${opened.length}곳 · 펼치기`, `${opened.length} ${opened.length === 1 ? 'outlet' : 'outlets'} · Show`)}</span></summary>
           <ul className="mt-2 divide-y divide-line rounded-lg border border-line bg-white">{opened.map((o) => <Row key={o.id} o={o} />)}</ul>
         </details>
       )}

@@ -1,6 +1,7 @@
 'use server'
 
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { ensureFullBody, htmlToText, sourceLabel, type PressRelease } from '@/lib/press'
 import { AiDraftError, draftWithModel, type AiDraft } from '@/lib/ai-draft'
 import { checkDraft, type DraftIssue } from '@/lib/ai-check'
@@ -16,7 +17,8 @@ export type CompareResult =
 // 최근 보도자료 10건 (전문을 가져올 수 있는 것만)
 export async function prepareReleases(count = 10): Promise<{ releases?: CompareRelease[]; error?: string }> {
   const { supabase, isStaff } = await getCmsContext()
-  if (!isStaff) return { error: '운영팀만 쓸 수 있습니다.' }
+  const { t } = await getT()
+  if (!isStaff) return { error: t('운영팀만 쓸 수 있습니다.', 'Only the IM Newsroom team can use this.') }
   const { data, error } = await supabase.from('press_releases').select('*').order('published_at', { ascending: false, nullsFirst: false }).limit(30)
   if (error) return { error: error.message }
   const out: CompareRelease[] = []
@@ -32,20 +34,22 @@ export async function prepareReleases(count = 10): Promise<{ releases?: CompareR
 
 export async function runDraft(modelId: string, release: CompareRelease): Promise<CompareResult> {
   const { isStaff } = await getCmsContext()
-  if (!isStaff) return { ok: false, error: '운영팀만 쓸 수 있습니다.' }
+  const { t } = await getT()
+  if (!isStaff) return { ok: false, error: t('운영팀만 쓸 수 있습니다.', 'Only the IM Newsroom team can use this.') }
   try {
     const r = await draftWithModel(modelId, { title: release.title, text: release.text, source: release.source })
     return { ok: true, draft: r.draft, ms: r.ms, inputTokens: r.inputTokens, outputTokens: r.outputTokens, costUsd: r.costUsd, issues: checkDraft(release.text, r.draft) }
   } catch (e) {
-    return { ok: false, error: e instanceof AiDraftError ? e.message : e instanceof Error ? e.message : '알 수 없는 오류' }
+    return { ok: false, error: e instanceof AiDraftError ? e.message : e instanceof Error ? e.message : t('알 수 없는 오류', 'Unknown error') }
   }
 }
 
 // ───────── 검토 링크: 비교 결과를 다른 기자에게 보내 검토받기 ─────────
 export async function createShare(input: { title: string; blind: boolean; data: ShareData }): Promise<{ token?: string; error?: string }> {
   const { supabase, isStaff } = await getCmsContext()
-  if (!isStaff) return { error: '운영팀만 쓸 수 있습니다.' }
-  const title = input.title.trim().slice(0, 80) || 'AI 초안 비교'
+  const { t } = await getT()
+  if (!isStaff) return { error: t('운영팀만 쓸 수 있습니다.', 'Only the IM Newsroom team can use this.') }
+  const title = input.title.trim().slice(0, 80) || t('AI 초안 비교', 'AI draft comparison')
   const d = input.data
   // 성공한 초안만, 필요한 값만 담는다
   const results: ShareData['results'] = {}
@@ -56,19 +60,20 @@ export async function createShare(input: { title: string; blind: boolean; data: 
     }
   }
   const releases = d.releases.filter((r) => d.models.some((m) => results[shareKey(r.id, m.id)]))
-  if (!releases.length) return { error: '공유할 초안이 없습니다. 비교를 먼저 끝내 주세요.' }
+  if (!releases.length) return { error: t('공유할 초안이 없습니다. 비교를 먼저 끝내 주세요.', 'There are no drafts to share. Finish the comparison first.') }
   const data: ShareData = { at: d.at, releases: releases.map((r) => ({ id: r.id, title: r.title, source: r.source, text: r.text })), models: d.models, results }
   const meta: ShareMeta = { models: d.models, releases: releases.map((r) => ({ id: r.id, title: r.title })) }
   const token = randomBytes(18).toString('base64url')
   const { error } = await supabase.from('ai_compare_shares').insert({ token, title, blind: input.blind, data, meta })
-  if (error) return { error: /ai_compare_shares/.test(error.message) ? 'DB 준비가 안 됐습니다. supabase/ai-compare-share.sql을 먼저 실행해 주세요.' : error.message }
+  if (error) return { error: /ai_compare_shares/.test(error.message) ? t('DB 준비가 안 됐습니다. supabase/ai-compare-share.sql을 먼저 실행해 주세요.', 'The database is not ready. Run supabase/ai-compare-share.sql first.') : error.message }
   revalidatePath('/admin/ai-compare')
   return { token }
 }
 
 export async function deleteShare(id: string): Promise<{ error?: string }> {
   const { supabase, isStaff } = await getCmsContext()
-  if (!isStaff) return { error: '운영팀만 쓸 수 있습니다.' }
+  const { t } = await getT()
+  if (!isStaff) return { error: t('운영팀만 쓸 수 있습니다.', 'Only the IM Newsroom team can use this.') }
   const { error } = await supabase.from('ai_compare_shares').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/ai-compare')

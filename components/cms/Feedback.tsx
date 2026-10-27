@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { FEEDBACK_CATEGORIES, FEEDBACK_STATUS, type FeedbackStatus } from '@/lib/feedback'
+import { FEEDBACK_CATEGORIES, FEEDBACK_STATUS, feedbackCategoryLabel, feedbackStatusLabel, type FeedbackStatus } from '@/lib/feedback'
+import { useCmsLang, useT } from '@/components/cms/CmsLang'
 import {
   addFeedbackComment, createFeedback, deleteFeedback, deleteFeedbackComment,
   setFeedbackStatus, updateFeedback, updateFeedbackComment,
@@ -16,6 +17,8 @@ export function FeedbackForm({ initial, postId, onDone }: { initial?: Draft; pos
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
   const router = useRouter()
+  const t = useT()
+  const lang = useCmsLang()
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -30,29 +33,29 @@ export function FeedbackForm({ initial, postId, onDone }: { initial?: Draft; pos
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="분류">
-        {Object.entries(FEEDBACK_CATEGORIES).map(([k, label]) => (
+      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t('분류', 'Category')}>
+        {Object.keys(FEEDBACK_CATEGORIES).map((k) => (
           <button key={k} type="button" role="radio" aria-checked={v.category === k} onClick={() => setV({ ...v, category: k })}
             className={`rounded-full border px-3 py-1 text-[13px] ${v.category === k ? 'border-ink bg-ink text-white' : 'border-line bg-white text-muted hover:border-ink hover:text-ink'}`}>
-            {label}
+            {feedbackCategoryLabel(k, lang)}
           </button>
         ))}
       </div>
       <div>
-        <label htmlFor="fb-title" className="field-label">제목</label>
+        <label htmlFor="fb-title" className="field-label">{t('제목', 'Title')}</label>
         <input id="fb-title" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} maxLength={120} required
-          placeholder="예) 기사목록에서 여러 기사를 한 번에 지우고 싶어요" className="field-input" />
+          placeholder={t('예) 기사목록에서 여러 기사를 한 번에 지우고 싶어요', 'e.g. I want to delete several stories at once from the story list')} className="field-input" />
       </div>
       <div>
-        <label htmlFor="fb-body" className="field-label">내용</label>
+        <label htmlFor="fb-body" className="field-label">{t('내용', 'Details')}</label>
         <textarea id="fb-body" value={v.body} onChange={(e) => setV({ ...v, body: e.target.value })} maxLength={5000} required rows={6}
-          placeholder={'어느 화면에서, 무엇이 불편한지, 어떻게 되면 좋을지 적어 주세요.\n오류라면 언제·어떤 버튼을 눌렀을 때인지 함께 적어 주시면 빨리 고칠 수 있습니다.'}
+          placeholder={t('어느 화면에서, 무엇이 불편한지, 어떻게 되면 좋을지 적어 주세요.\n오류라면 언제·어떤 버튼을 눌렀을 때인지 함께 적어 주시면 빨리 고칠 수 있습니다.', 'Tell us which screen, what is hard to use, and how it could be better.\nFor a bug, please also say when it happened and which button you pressed so we can fix it quickly.')}
           className="field-input resize-y leading-relaxed" />
       </div>
       {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
-        {onDone && <button type="button" onClick={onDone} className="btn-secondary">취소</button>}
-        <button type="submit" disabled={pending || !v.title.trim() || !v.body.trim()} className="btn-primary">{pending ? '저장 중…' : postId ? '고친 내용 저장' : '올리기'}</button>
+        {onDone && <button type="button" onClick={onDone} className="btn-secondary">{t('취소', 'Cancel')}</button>}
+        <button type="submit" disabled={pending || !v.title.trim() || !v.body.trim()} className="btn-primary">{pending ? t('저장 중…', 'Saving…') : postId ? t('고친 내용 저장', 'Save changes') : t('올리기', 'Post')}</button>
       </div>
     </form>
   )
@@ -61,10 +64,11 @@ export function FeedbackForm({ initial, postId, onDone }: { initial?: Draft; pos
 // 목록 위 '개선 요청 쓰기' 열고 닫기
 export function NewFeedback() {
   const [open, setOpen] = useState(false)
-  if (!open) return <button type="button" onClick={() => setOpen(true)} className="btn-primary shrink-0 px-4 py-2.5 md:px-5">+ 개선 요청 쓰기</button>
+  const t = useT()
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="btn-primary shrink-0 px-4 py-2.5 md:px-5">{t('+ 개선 요청 쓰기', '+ New request')}</button>
   return (
-    <section className="w-full rounded-lg border border-line bg-white p-4 md:p-5" aria-label="개선 요청 쓰기">
-      <h2 className="mb-3 text-[15px] font-bold">개선 요청 쓰기</h2>
+    <section className="w-full rounded-lg border border-line bg-white p-4 md:p-5" aria-label={t('개선 요청 쓰기', 'New improvement request')}>
+      <h2 className="mb-3 text-[15px] font-bold">{t('개선 요청 쓰기', 'New improvement request')}</h2>
       <FeedbackForm onDone={() => setOpen(false)} />
     </section>
   )
@@ -75,9 +79,10 @@ export function FeedbackPost({ id, initial, canEdit, children }: { id: string; i
   const [editing, setEditing] = useState(false)
   const [pending, start] = useTransition()
   const router = useRouter()
+  const t = useT()
 
   function remove() {
-    if (!window.confirm('이 개선 요청을 지울까요? 달린 댓글도 함께 지워지고 되돌릴 수 없습니다.')) return
+    if (!window.confirm(t('이 개선 요청을 지울까요? 달린 댓글도 함께 지워지고 되돌릴 수 없습니다.', 'Delete this request? Its comments will be deleted too, and this cannot be undone.'))) return
     start(async () => {
       const r = await deleteFeedback(id)
       if (r.error) { window.alert(r.error); return }
@@ -92,8 +97,8 @@ export function FeedbackPost({ id, initial, canEdit, children }: { id: string; i
       {children}
       {canEdit && (
         <div className="mt-5 flex justify-end gap-3 text-[13px]">
-          <button type="button" onClick={() => setEditing(true)} className="text-muted hover:text-ink">수정</button>
-          <button type="button" onClick={remove} disabled={pending} className="text-muted hover:text-danger">{pending ? '지우는 중…' : '삭제'}</button>
+          <button type="button" onClick={() => setEditing(true)} className="text-muted hover:text-ink">{t('수정', 'Edit')}</button>
+          <button type="button" onClick={remove} disabled={pending} className="text-muted hover:text-danger">{pending ? t('지우는 중…', 'Deleting…') : t('삭제', 'Delete')}</button>
         </div>
       )}
     </>
@@ -105,6 +110,8 @@ export function FeedbackStatusPicker({ id, status }: { id: string; status: Feedb
   const [pending, start] = useTransition()
   const [cur, setCur] = useState(status)
   const router = useRouter()
+  const lang = useCmsLang()
+  const t = useT()
   function pick(s: FeedbackStatus) {
     if (s === cur) return
     const before = cur
@@ -116,11 +123,11 @@ export function FeedbackStatusPicker({ id, status }: { id: string; status: Feedb
     })
   }
   return (
-    <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="처리 상태">
+    <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label={t('처리 상태', 'Status')}>
       {(Object.keys(FEEDBACK_STATUS) as FeedbackStatus[]).map((s) => (
         <button key={s} type="button" role="radio" aria-checked={cur === s} disabled={pending} onClick={() => pick(s)}
           className={`rounded-full border px-3 py-1 text-[13px] font-semibold transition ${cur === s ? `${FEEDBACK_STATUS[s].className} border-current` : 'border-line bg-white text-muted hover:border-ink hover:text-ink'}`}>
-          {FEEDBACK_STATUS[s].label}
+          {feedbackStatusLabel(s, lang)}
         </button>
       ))}
     </div>
@@ -133,6 +140,7 @@ export function FeedbackComment({ id, body, canEdit, children }: { id: string; b
   const [text, setText] = useState(body)
   const [pending, start] = useTransition()
   const router = useRouter()
+  const t = useT()
 
   function save() {
     start(async () => {
@@ -143,7 +151,7 @@ export function FeedbackComment({ id, body, canEdit, children }: { id: string; b
     })
   }
   function remove() {
-    if (!window.confirm('이 댓글을 지울까요?')) return
+    if (!window.confirm(t('이 댓글을 지울까요?', 'Delete this comment?'))) return
     start(async () => {
       const r = await deleteFeedbackComment(id)
       if (r.error) { window.alert(r.error); return }
@@ -156,11 +164,11 @@ export function FeedbackComment({ id, body, canEdit, children }: { id: string; b
       {children}
       {editing ? (
         <div className="mt-2 space-y-2">
-          <label htmlFor={`c-${id}`} className="sr-only">댓글 고치기</label>
+          <label htmlFor={`c-${id}`} className="sr-only">{t('댓글 고치기', 'Edit comment')}</label>
           <textarea id={`c-${id}`} value={text} onChange={(e) => setText(e.target.value)} maxLength={3000} rows={3} className="field-input resize-y" autoFocus />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => { setEditing(false); setText(body) }} className="btn-secondary py-1.5">취소</button>
-            <button type="button" onClick={save} disabled={pending || !text.trim()} className="btn-primary py-1.5">{pending ? '저장 중…' : '저장'}</button>
+            <button type="button" onClick={() => { setEditing(false); setText(body) }} className="btn-secondary py-1.5">{t('취소', 'Cancel')}</button>
+            <button type="button" onClick={save} disabled={pending || !text.trim()} className="btn-primary py-1.5">{pending ? t('저장 중…', 'Saving…') : t('저장', 'Save')}</button>
           </div>
         </div>
       ) : (
@@ -168,8 +176,8 @@ export function FeedbackComment({ id, body, canEdit, children }: { id: string; b
           <p className="mt-1.5 whitespace-pre-line break-words text-[14px] leading-relaxed">{body}</p>
           {canEdit && (
             <div className="mt-1.5 flex gap-3 text-[12px]">
-              <button type="button" onClick={() => setEditing(true)} className="text-muted hover:text-ink">수정</button>
-              <button type="button" onClick={remove} disabled={pending} className="text-muted hover:text-danger">삭제</button>
+              <button type="button" onClick={() => setEditing(true)} className="text-muted hover:text-ink">{t('수정', 'Edit')}</button>
+              <button type="button" onClick={remove} disabled={pending} className="text-muted hover:text-danger">{t('삭제', 'Delete')}</button>
             </div>
           )}
         </>
@@ -184,6 +192,7 @@ export function FeedbackCommentBox({ postId }: { postId: string }) {
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
   const router = useRouter()
+  const t = useT()
   function submit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -196,12 +205,12 @@ export function FeedbackCommentBox({ postId }: { postId: string }) {
   }
   return (
     <form onSubmit={submit} className="space-y-2">
-      <label htmlFor="fb-comment" className="sr-only">댓글</label>
+      <label htmlFor="fb-comment" className="sr-only">{t('댓글', 'Comment')}</label>
       <textarea id="fb-comment" value={text} onChange={(e) => setText(e.target.value)} maxLength={3000} rows={3}
-        placeholder="의견을 남겨 주세요" className="field-input resize-y" />
+        placeholder={t('의견을 남겨 주세요', 'Leave a comment')} className="field-input resize-y" />
       {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
       <div className="flex justify-end">
-        <button type="submit" disabled={pending || !text.trim()} className="btn-primary">{pending ? '올리는 중…' : '댓글 달기'}</button>
+        <button type="submit" disabled={pending || !text.trim()} className="btn-primary">{pending ? t('올리는 중…', 'Posting…') : t('댓글 달기', 'Post comment')}</button>
       </div>
     </form>
   )

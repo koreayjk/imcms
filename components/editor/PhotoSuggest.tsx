@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { findPhotos, importPhoto } from '@/app/(main)/articles/photos'
 import type { PhotoHit } from '@/lib/photo-search'
 import type { LibraryImage } from './MediaPanel'
+import { useT } from '@/components/cms/CmsLang'
 
 // 추천 사진: 저작권 걱정 없는 공개 라이선스 사진 (CC0·퍼블릭 도메인·CC BY·CC BY-SA)
 //   AI 검수가 끝나면 AI가 고른 검색어로 바로 찾아 준다. 검색어가 없으면 제목·태그로 직접 찾는다
@@ -13,6 +14,7 @@ export default function PhotoSuggest({ keywords, fallback, onAdd }: {
   fallback: string
   onAdd: (img: LibraryImage) => void
 }) {
+  const t = useT()
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<PhotoHit[] | null>(null)
   const [loading, setLoading] = useState(false)
@@ -48,48 +50,48 @@ export default function PhotoSuggest({ keywords, fallback, onAdd }: {
     setError('')
     const r = await importPhoto(h.id)
     setBusy(null)
-    if (r.error || !r.url) { setError(r.error ?? '사진을 가져오지 못했습니다.'); return }
+    if (r.error || !r.url) { setError(r.error ?? t('사진을 가져오지 못했습니다.', 'Could not import the photo.')); return }
     onAdd({ url: r.url, caption: r.caption ?? h.credit })
     setAdded((s) => new Set(s).add(h.id))
   }
 
   return (
     <section aria-labelledby="photo-suggest-title" className="mt-6 border-t border-line pt-5">
-      <h3 id="photo-suggest-title" className="text-[14px] font-bold">추천 사진 <span className="text-[11.5px] font-normal text-muted">저작권 걱정 없는 공개 사진</span></h3>
+      <h3 id="photo-suggest-title" className="text-[14px] font-bold">{t('추천 사진', 'Suggested photos')} <span className="text-[11.5px] font-normal text-muted">{t('저작권 걱정 없는 공개 사진', 'Openly licensed photos, no copyright worries')}</span></h3>
       <form onSubmit={(e) => { e.preventDefault(); search(query || fallback) }} className="mt-2 flex gap-1.5">
-        <label htmlFor="photo-q" className="sr-only">사진 검색어</label>
-        <input id="photo-q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={fallback ? `예: ${fallback}` : '영어로 쓰면 더 잘 찾습니다 (예: Jerusalem)'} className="field-input min-w-0 flex-1 py-1.5 text-[12.5px]" />
-        <button type="submit" disabled={loading} className="rounded bg-ink px-3 text-[12px] font-semibold text-white disabled:opacity-50">{loading ? '찾는 중…' : '찾기'}</button>
+        <label htmlFor="photo-q" className="sr-only">{t('사진 검색어', 'Photo search terms')}</label>
+        <input id="photo-q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={fallback ? t(`예: ${fallback}`, `e.g. ${fallback}`) : t('영어로 쓰면 더 잘 찾습니다 (예: Jerusalem)', 'Works best with specific terms (e.g. Jerusalem)')} className="field-input min-w-0 flex-1 py-1.5 text-[12.5px]" />
+        <button type="submit" disabled={loading} className="rounded bg-ink px-3 text-[12px] font-semibold text-white disabled:opacity-50">{loading ? t('찾는 중…', 'Searching…') : t('찾기', 'Search')}</button>
       </form>
       {keywords.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
-          <span className="text-[11.5px] text-muted">AI 추천 검색어</span>
+          <span className="text-[11.5px] text-muted">{t('AI 추천 검색어', 'AI-suggested search terms')}</span>
           {keywords.map((k) => (
             <button key={k} type="button" onClick={() => search(k)} className={`rounded-full border px-2 py-0.5 text-[11.5px] ${query === k ? 'border-ink bg-ink text-white' : 'border-line hover:border-ink'}`}>{k}</button>
           ))}
         </div>
       )}
       {!keywords.length && hits === null && (
-        <p className="mt-2 text-[11.5px] leading-relaxed text-muted">AI 검수를 하면 기사에 맞는 검색어로 사진을 찾아 드립니다. 검색어를 직접 넣어 찾아도 됩니다.</p>
+        <p className="mt-2 text-[11.5px] leading-relaxed text-muted">{t('AI 검수를 하면 기사에 맞는 검색어로 사진을 찾아 드립니다. 검색어를 직접 넣어 찾아도 됩니다.', 'Run the AI review and we will find photos using search terms that fit your story. You can also enter your own search terms.')}</p>
       )}
       {error && <p role="alert" className="mt-2 text-[12px] text-danger">{error}</p>}
-      {hits && !hits.length && !error && !loading && <p className="mt-2 text-[12px] text-muted">맞는 사진을 찾지 못했습니다. 다른 검색어(영어)로 찾아 보세요.</p>}
+      {hits && !hits.length && !error && !loading && <p className="mt-2 text-[12px] text-muted">{t('맞는 사진을 찾지 못했습니다. 다른 검색어(영어)로 찾아 보세요.', 'No matching photos found. Try different search terms.')}</p>}
       {hits && hits.length > 0 && (
         <ul className="mt-3 grid grid-cols-2 gap-2">
           {hits.map((h) => (
             <li key={h.id} className="overflow-hidden rounded border border-line bg-white">
-              <a href={h.page || h.url} target="_blank" rel="noopener noreferrer" title={`${h.title} — 원본 페이지 보기`}>
+              <a href={h.page || h.url} target="_blank" rel="noopener noreferrer" title={`${h.title} — ${t('원본 페이지 보기', 'View original page')}`}>
                 <img src={h.thumb} alt={h.title} loading="lazy" className="aspect-[4/3] w-full object-cover" />
               </a>
               <div className="p-1.5">
-                <p className="truncate text-[10.5px] text-muted" title={h.credit}>{h.license} · {h.creator || '작가 미상'}</p>
+                <p className="truncate text-[10.5px] text-muted" title={h.credit}>{h.license} · {h.creator || t('작가 미상', 'Unknown creator')}</p>
                 <button
                   type="button"
                   onClick={() => take(h)}
                   disabled={busy === h.id || added.has(h.id)}
                   className="mt-1 w-full rounded bg-ink py-1 text-[11.5px] font-semibold text-white disabled:opacity-50"
                 >
-                  {added.has(h.id) ? '가져옴' : busy === h.id ? '가져오는 중…' : '라이브러리로'}
+                  {added.has(h.id) ? t('가져옴', 'Added') : busy === h.id ? t('가져오는 중…', 'Importing…') : t('라이브러리로', 'Add to library')}
                 </button>
               </div>
             </li>
@@ -97,8 +99,8 @@ export default function PhotoSuggest({ keywords, fallback, onAdd }: {
         </ul>
       )}
       <p className="mt-3 text-[11px] leading-relaxed text-muted">
-        상업적 이용·수정이 허락된 라이선스(CC0·퍼블릭 도메인·CC BY·CC BY-SA)만 보여줍니다. 가져오면 사진 설명에 작가·라이선스가 들어가니 지우지 마세요(CC BY 조건).
-        사람 얼굴이 크게 나온 사진은 초상권을, 상표가 보이는 사진은 광고처럼 보이지 않는지 확인하세요.
+        {t('상업적 이용·수정이 허락된 라이선스(CC0·퍼블릭 도메인·CC BY·CC BY-SA)만 보여줍니다. 가져오면 사진 설명에 작가·라이선스가 들어가니 지우지 마세요(CC BY 조건).', 'Only licenses that allow commercial use and modification (CC0, public domain, CC BY, CC BY-SA) are shown. Importing adds the creator and license to the photo caption, so do not delete it (a CC BY requirement).')}
+        {' '}{t('사람 얼굴이 크게 나온 사진은 초상권을, 상표가 보이는 사진은 광고처럼 보이지 않는지 확인하세요.', 'For photos with prominent faces, check image rights; for photos with visible brands, make sure they do not read as advertising.')}
       </p>
     </section>
   )

@@ -1,4 +1,5 @@
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { outletEmailOf } from '@/lib/outlet-email'
 import { getAiStatus } from '@/lib/ai-usage'
 import ContactEmailForm from '@/components/cms/ContactEmailForm'
@@ -11,18 +12,19 @@ import { SITES, type OutletSiteSettings } from '@/lib/sites'
 export default async function NewsroomSettingsPage(props: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await props.searchParams
   const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
+  const { t, lang } = await getT()
   const manager = isEditorPlus || isStaff
   // 편집장 이상: 매체 정보 | AI 탭, 기자: AI(내 사용량)만
   const activeTab: 'site' | 'ai' = manager && tab !== 'ai' ? 'site' : 'ai'
   if (!outletId) {
-    return <div className="mx-auto max-w-[960px] px-4 py-10 md:px-8"><p className="rounded-lg border border-line bg-white px-5 py-4 text-sm">위쪽에서 작업할 매체를 먼저 골라 주세요.</p></div>
+    return <div className="mx-auto max-w-[960px] px-4 py-10 md:px-8"><p className="rounded-lg border border-line bg-white px-5 py-4 text-sm">{t('위쪽에서 작업할 매체를 먼저 골라 주세요.', 'Choose an outlet to work on from the top of the page first.')}</p></div>
   }
   const [contact, status, { data: members, error }] = await Promise.all([
     outletEmailOf(supabase, outletId),
     getAiStatus(supabase, outletId),
     supabase.rpc('ai_member_usage', { o: outletId }),
   ])
-  const month = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long' }).format(new Date())
+  const month = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long' }).format(new Date())
 
   // 매체 정보 탭: 편집장 이상이 고칠 수 있는 항목 (로고·색·슬로건·하단 표시 정보·AI 활용 표시·해외 언론 자료 받기·섹션)
   let siteForm: React.ReactNode = null
@@ -32,7 +34,7 @@ export default async function NewsroomSettingsPage(props: { searchParams: Promis
       supabase.from('categories').select('*').eq('outlet_id', outletId).order('sort_order'),
     ])
     if (!outlet || !('site' in outlet)) {
-      siteForm = <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">매체 정보를 쓰려면 운영팀이 Supabase에서 <code>supabase/outlet-sites.sql</code>과 <code>supabase/outlet-site-self.sql</code>을 실행해야 합니다.</p>
+      siteForm = <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">{lang === 'en' ? <>To use outlet information, the IM Newsroom team needs to run <code>supabase/outlet-sites.sql</code> and <code>supabase/outlet-site-self.sql</code> in Supabase.</> : <>매체 정보를 쓰려면 운영팀이 Supabase에서 <code>supabase/outlet-sites.sql</code>과 <code>supabase/outlet-site-self.sql</code>을 실행해야 합니다.</>}</p>
     } else {
       const code = SITES.find((x) => outlet.domain && x.domains.includes(outlet.domain))
       const defaults: OutletSiteSettings = code
@@ -52,45 +54,45 @@ export default async function NewsroomSettingsPage(props: { searchParams: Promis
   return (
     <div className="mx-auto max-w-[960px] space-y-6 px-4 py-5 md:px-8 md:py-8">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight">{manager ? '설정' : '내 AI 사용량'}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight">{manager ? t('설정', 'Settings') : t('내 AI 사용량', 'My AI usage')}</h1>
         {manager && (
-          <nav className="mt-3 flex gap-1 border-b border-line text-[14px]" aria-label="설정 구역">
-            {([['site', '매체 정보'], ['ai', 'AI·이메일']] as const).map(([k, label]) => (
+          <nav className="mt-3 flex gap-1 border-b border-line text-[14px]" aria-label={t('설정 구역', 'Settings sections')}>
+            {([['site', t('매체 정보', 'Outlet info')], ['ai', t('AI·이메일', 'AI & email')]] as const).map(([k, label]) => (
               <Link key={k} href={`/admin/settings?tab=${k}`} aria-current={activeTab === k ? 'page' : undefined} className={`-mb-px border-b-2 px-4 py-2 font-semibold ${activeTab === k ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'}`}>{label}</Link>
             ))}
           </nav>
         )}
-        {manager && activeTab === 'site' && <p className="mt-3 text-[13px] leading-relaxed text-muted">홈페이지에 나오는 로고·색·슬로건·하단 표시 정보를 직접 고칠 수 있습니다. 도메인·검색 노출 같은 항목은 운영팀이 관리하니 필요하면 고객센터 업무요청으로 알려 주세요.</p>}
+        {manager && activeTab === 'site' && <p className="mt-3 text-[13px] leading-relaxed text-muted">{t('홈페이지에 나오는 로고·색·슬로건·하단 표시 정보를 직접 고칠 수 있습니다. 도메인·검색 노출 같은 항목은 운영팀이 관리하니 필요하면 고객센터 업무요청으로 알려 주세요.', 'You can edit the logo, colors, slogan and footer information shown on your website. Items such as the domain and search visibility are managed by the IM Newsroom team, so send a work request through the Help Center if you need a change.')}</p>}
       </header>
 
       {activeTab === 'site' && siteForm}
 
       {activeTab === 'ai' && (!contact.ready ? (
-        <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">이 화면을 쓰려면 운영팀이 Supabase에서 <code>supabase/newsroom-settings.sql</code>을 실행해야 합니다.</p>
+        <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">{lang === 'en' ? <>To use this screen, the IM Newsroom team needs to run <code>supabase/newsroom-settings.sql</code> in Supabase.</> : <>이 화면을 쓰려면 운영팀이 Supabase에서 <code>supabase/newsroom-settings.sql</code>을 실행해야 합니다.</>}</p>
       ) : (
         <>
           {manager && (
             <section aria-labelledby="mail-title" className="rounded-xl border border-line bg-white p-5">
-              <h2 id="mail-title" className="text-[16px] font-bold">언론사 대표 이메일</h2>
-              <p className="mb-3 mt-1 text-[13px] text-muted">기자들이 쓴 기사의 기자명 옆에 이 이메일이 붙습니다(기자는 바꿀 수 없음). 편집장 이상은 기사쓰기 화면에서 기사마다 다른 이메일로 바꿀 수 있습니다.</p>
+              <h2 id="mail-title" className="text-[16px] font-bold">{t('언론사 대표 이메일', 'Outlet contact email')}</h2>
+              <p className="mb-3 mt-1 text-[13px] text-muted">{t('기자들이 쓴 기사의 기자명 옆에 이 이메일이 붙습니다(기자는 바꿀 수 없음). 편집장 이상은 기사쓰기 화면에서 기사마다 다른 이메일로 바꿀 수 있습니다.', 'This email appears next to the byline on stories written by reporters (reporters cannot change it). Editors-in-Chief and above can switch to a different email per story on the story writing screen.')}</p>
               <ContactEmailForm email={contact.email} />
             </section>
           )}
 
           <section aria-labelledby="ai-title" className="rounded-xl border border-line bg-white">
             <div className="border-b border-line px-5 py-4">
-              <h2 id="ai-title" className="text-[16px] font-bold">{month} 기자별 AI 사용량</h2>
+              <h2 id="ai-title" className="text-[16px] font-bold">{t(`${month} 기자별 AI 사용량`, `AI usage by reporter, ${month}`)}</h2>
               <p className="mt-1 text-[13px] leading-relaxed text-muted">
                 {status?.limit != null
-                  ? <>매체 전체 AI 사용 <strong className="text-ink">{status.used} / {status.limit}회</strong>{status.drafts != null ? ` (초안 ${status.drafts} · 법적 검수 ${status.legal ?? 0})` : ''}. </>
-                  : '요금제 한도가 없는 매체입니다. '}
+                  ? <>{t('매체 전체 AI 사용', 'Outlet-wide AI use')} <strong className="text-ink">{status.used} / {status.limit}{t('회', '')}</strong>{status.drafts != null ? t(` (초안 ${status.drafts} · 법적 검수 ${status.legal ?? 0})`, ` (drafts ${status.drafts} · legal checks ${status.legal ?? 0})`) : ''}. </>
+                  : t('요금제 한도가 없는 매체입니다. ', 'This outlet has no plan limit. ')}
                 {manager
-                  ? '기자별 한도를 비워 두면 매체 한도를 인원수로 나눠 자동으로 정해집니다(예: 월 300회 · 3명 → 각 100회). 숫자를 적으면 그 사람만 따로 정해지고, 나머지 인원이 남은 횟수를 나눠 갖습니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다.'
-                  : '편집장이 정한 내 한도입니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다. 더 필요하면 편집장에게 요청해 주세요.'}
+                  ? t('기자별 한도를 비워 두면 매체 한도를 인원수로 나눠 자동으로 정해집니다(예: 월 300회 · 3명 → 각 100회). 숫자를 적으면 그 사람만 따로 정해지고, 나머지 인원이 남은 횟수를 나눠 갖습니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다.', 'If you leave a reporter\'s limit blank, the outlet limit is divided by headcount automatically (e.g. 300 per month ÷ 3 people = 100 each). If you enter a number, it applies to that person only and the others share the remaining uses. One AI draft and one legal check each count as 1 use.')
+                  : t('편집장이 정한 내 한도입니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다. 더 필요하면 편집장에게 요청해 주세요.', 'This is your limit, set by the Editor-in-Chief. One AI draft and one legal check each count as 1 use. Ask the Editor-in-Chief if you need more.')}
               </p>
             </div>
             {error ? (
-              <p className="px-5 py-5 text-[13px] text-muted">사용량을 읽지 못했습니다.</p>
+              <p className="px-5 py-5 text-[13px] text-muted">{t('사용량을 읽지 못했습니다.', 'Could not load usage.')}</p>
             ) : (
               <ul className="divide-y divide-line">
                 {((members ?? []) as MemberAi[]).map((m) => <MemberAiRow key={m.profile_id} m={m} editable={manager} />)}

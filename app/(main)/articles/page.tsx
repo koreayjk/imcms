@@ -3,7 +3,8 @@ import { cookies } from 'next/headers'
 import { getCmsContext } from '@/lib/cms'
 import { formatDateTime, isScheduled } from '@/lib/format'
 import { ImageIcon } from '@/components/cms/icons'
-import { STATUS_LABEL, type ArticleStatus } from '@/lib/types'
+import { statusLabel, type ArticleStatus } from '@/lib/types'
+import { getT } from '@/lib/cms-t'
 import PendingButton from '@/components/cms/PendingButton'
 import { deleteArticle } from './actions'
 import CopyLinkButton from '@/components/cms/CopyLinkButton'
@@ -20,6 +21,7 @@ type Props = { searchParams: Promise<{ status?: string; q?: string; mine?: strin
 export default async function ArticlesPage(props: Props) {
   const searchParams = await props.searchParams
   const { supabase, user, outletId, isEditorPlus, trial } = await getCmsContext()
+  const { t, lang } = await getT()
 
   const status = TABS.includes(searchParams.status as ArticleStatus) ? (searchParams.status as ArticleStatus) : undefined
   const q = searchParams.q?.trim().slice(0, 100) || undefined
@@ -53,10 +55,10 @@ export default async function ArticlesPage(props: Props) {
   if (!countsRes.error) {
     byStatus = Object.fromEntries(((countsRes.data ?? []) as { status: string; n: number | string }[]).map((r) => [r.status, Number(r.n)]))
   } else {
-    const olds = await Promise.all(TABS.filter((t) => t !== 'all').map((t) => scoped(supabase.from('articles').select('id', { count: 'exact', head: true })).eq('status', t)))
-    byStatus = Object.fromEntries(TABS.filter((t) => t !== 'all').map((t, i) => [t, olds[i].count ?? 0]))
+    const olds = await Promise.all(TABS.filter((s) => s !== 'all').map((s) => scoped(supabase.from('articles').select('id', { count: 'exact', head: true })).eq('status', s)))
+    byStatus = Object.fromEntries(TABS.filter((s) => s !== 'all').map((s, i) => [s, olds[i].count ?? 0]))
   }
-  const tabCounts = TABS.map((t) => ({ count: t === 'all' ? Object.values(byStatus).reduce((a, b) => a + b, 0) : byStatus[t] ?? 0 }))
+  const tabCounts = TABS.map((s) => ({ count: s === 'all' ? Object.values(byStatus).reduce((a, b) => a + b, 0) : byStatus[s] ?? 0 }))
   const count = q ? searchCount : status ? byStatus[status] ?? 0 : tabCounts[0].count
 
   const rows = (data ?? []) as any[]
@@ -78,34 +80,34 @@ export default async function ArticlesPage(props: Props) {
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
       <div className="mb-5 flex items-end justify-between gap-3 md:mb-6">
         <div>
-          <h1 className="text-[22px] font-bold tracking-tight">기사목록</h1>
+          <h1 className="text-[22px] font-bold tracking-tight">{t('기사목록', 'Stories')}</h1>
           {isEditorPlus && (
             <div className="mt-2 flex gap-1 text-[13px]">
-              <Link href={href({ mine: undefined, page: undefined })} className={`rounded px-2.5 py-1 ${!mineOnly ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>편집국 전체</Link>
-              <Link href={href({ mine: '1', page: undefined })} className={`rounded px-2.5 py-1 ${mineOnly ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>내 기사</Link>
+              <Link href={href({ mine: undefined, page: undefined })} className={`rounded px-2.5 py-1 ${!mineOnly ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>{t('편집국 전체', 'Whole newsroom')}</Link>
+              <Link href={href({ mine: '1', page: undefined })} className={`rounded px-2.5 py-1 ${mineOnly ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>{t('내 기사', 'My stories')}</Link>
             </div>
           )}
         </div>
-        <Link href="/articles/new" className="btn-primary shrink-0 px-4 py-2.5 md:px-5">+ 기사쓰기</Link>
+        <Link href="/articles/new" className="btn-primary shrink-0 px-4 py-2.5 md:px-5">{t('+ 기사쓰기', '+ Write')}</Link>
       </div>
 
       {searchParams.deleted && (
-        <p role="status" className="mb-4 rounded-lg border border-line bg-white px-5 py-3 text-[13.5px]">기사를 삭제했습니다.</p>
+        <p role="status" className="mb-4 rounded-lg border border-line bg-white px-5 py-3 text-[13.5px]">{t('기사를 삭제했습니다.', 'The story was deleted.')}</p>
       )}
 
       <section className="rounded-lg border border-line bg-white">
         <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-line px-2 md:px-5">
-          <nav className="-mx-2 flex max-w-full overflow-x-auto px-2 md:mx-0 md:px-0" aria-label="기사 상태">
-            {TABS.map((t, i) => {
-              const active = t === 'all' ? !status : status === t
+          <nav className="-mx-2 flex max-w-full overflow-x-auto px-2 md:mx-0 md:px-0" aria-label={t('기사 상태', 'Story status')}>
+            {TABS.map((s, i) => {
+              const active = s === 'all' ? !status : status === s
               return (
                 <Link
-                  key={t}
-                  href={href({ status: t === 'all' ? undefined : t, page: undefined })}
+                  key={s}
+                  href={href({ status: s === 'all' ? undefined : s, page: undefined })}
                   aria-current={active ? 'page' : undefined}
                   className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 py-3.5 text-[14px] md:px-4 ${active ? 'border-ink font-bold text-ink' : 'border-transparent text-muted hover:text-ink'}`}
                 >
-                  {t === 'all' ? '전체' : STATUS_LABEL[t]}
+                  {s === 'all' ? t('전체', 'All') : statusLabel(s, lang)}
                   <span className="ml-1.5 text-[12px] tabular-nums opacity-60">{tabCounts[i].count ?? 0}</span>
                 </Link>
               )
@@ -114,10 +116,10 @@ export default async function ArticlesPage(props: Props) {
           <form action="/articles" className="flex w-full items-center gap-2 px-2 py-2 md:w-auto md:px-0">
             {mineOnly && isEditorPlus && <input type="hidden" name="mine" value="1" />}
             {status && <input type="hidden" name="status" value={status} />}
-            <label htmlFor="list-q" className="sr-only">제목 검색</label>
-            <input id="list-q" name="q" defaultValue={q} placeholder="제목 검색" className="field-input h-9 min-w-0 flex-1 py-1.5 md:w-56 md:flex-none" />
-            <button type="submit" className="btn-secondary h-9 py-1.5">검색</button>
-            {q && <Link href={href({ q: undefined, page: undefined })} className="text-[12.5px] text-muted hover:text-ink">초기화</Link>}
+            <label htmlFor="list-q" className="sr-only">{t('제목 검색', 'Search titles')}</label>
+            <input id="list-q" name="q" defaultValue={q} placeholder={t('제목 검색', 'Search titles')} className="field-input h-9 min-w-0 flex-1 py-1.5 md:w-56 md:flex-none" />
+            <button type="submit" className="btn-secondary h-9 py-1.5">{t('검색', 'Search')}</button>
+            {q && <Link href={href({ q: undefined, page: undefined })} className="text-[12.5px] text-muted hover:text-ink">{t('초기화', 'Reset')}</Link>}
           </form>
         </div>
 
@@ -128,36 +130,36 @@ export default async function ArticlesPage(props: Props) {
               <li key={a.id} className="group flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3.5 hover:bg-[#F8F9FA] md:flex-nowrap md:gap-4 md:px-5">
                 <BulkCheck id={a.id} title={a.title} />
                 {isScheduled(a)
-                  ? <span className="status-badge status-scheduled w-[64px] shrink-0 justify-center whitespace-nowrap" title={`${formatDateTime(a.published_at)} 공개 예정`}>예약</span>
-                  : <span className={`status-badge status-${a.status} w-[64px] shrink-0 justify-center whitespace-nowrap`}>{STATUS_LABEL[a.status as ArticleStatus]}</span>}
+                  ? <span className="status-badge status-scheduled w-[64px] shrink-0 justify-center whitespace-nowrap" title={lang === 'en' ? `Goes live ${formatDateTime(a.published_at, lang)}` : `${formatDateTime(a.published_at)} 공개 예정`}>{t('예약', 'Scheduled')}</span>
+                  : <span className={`status-badge status-${a.status} w-[64px] shrink-0 justify-center whitespace-nowrap`}>{statusLabel(a.status as ArticleStatus, lang)}</span>}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    {a.is_featured && <span className="text-[12px] font-bold text-draft" title="주요 기사">★</span>}
+                    {a.is_featured && <span className="text-[12px] font-bold text-draft" title={t('주요 기사', 'Featured story')}>★</span>}
                     <Link href={`/articles/${a.id}`} className="line-clamp-2 text-[14.5px] font-medium hover:underline md:truncate">{a.title}</Link>
-                    {a.thumbnail_url && <span className="shrink-0 text-muted" title="사진 있음"><ImageIcon /></span>}
-                    {a.status === 'published' && <span className="hidden shrink-0 text-[12px] tabular-nums text-muted md:inline">조회 {a.view_count ?? 0}</span>}
+                    {a.thumbnail_url && <span className="shrink-0 text-muted" title={t('사진 있음', 'Has photo')}><ImageIcon /></span>}
+                    {a.status === 'published' && <span className="hidden shrink-0 text-[12px] tabular-nums text-muted md:inline">{t('조회', 'Views')} {a.view_count ?? 0}</span>}
                   </div>
                   <p className="mt-0.5 truncate text-[12px] text-muted md:hidden">
-                    {[a.category?.name ?? '섹션 없음', `${a.byline?.trim() || a.author?.full_name || ''} 기자`, a.status === 'published' ? `조회 ${a.view_count ?? 0}` : null, formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)].filter(Boolean).join(' · ')}
+                    {[a.category?.name ?? t('섹션 없음', 'No section'), lang === 'en' ? `${a.byline?.trim() || a.author?.full_name || ''}` : `${a.byline?.trim() || a.author?.full_name || ''} 기자`, a.status === 'published' ? `${t('조회', 'Views')} ${a.view_count ?? 0}` : null, formatDateTime(a.status === 'published' ? a.published_at : a.updated_at, lang)].filter(Boolean).join(' · ')}
                   </p>
-                  {a.status === 'rejected' && a.reject_reason && <p className="mt-0.5 truncate text-[12px] text-danger">반려 사유: {a.reject_reason}</p>}
+                  {a.status === 'rejected' && a.reject_reason && <p className="mt-0.5 truncate text-[12px] text-danger">{t('반려 사유', 'Rejection reason')}: {a.reject_reason}</p>}
                 </div>
-                <span className="hidden w-24 shrink-0 truncate text-[12.5px] text-muted md:block">{a.category?.name ?? '섹션 없음'}</span>
-                <span className="hidden w-20 shrink-0 truncate text-[12.5px] text-muted md:block">{a.byline?.trim() || a.author?.full_name} 기자</span>
+                <span className="hidden w-24 shrink-0 truncate text-[12.5px] text-muted md:block">{a.category?.name ?? t('섹션 없음', 'No section')}</span>
+                <span className="hidden w-20 shrink-0 truncate text-[12.5px] text-muted md:block">{a.byline?.trim() || a.author?.full_name}{lang === 'en' ? '' : ' 기자'}</span>
                 <time className="hidden w-[118px] shrink-0 text-right text-[12.5px] tabular-nums text-muted md:block">
-                  {formatDateTime(a.status === 'published' ? a.published_at : a.updated_at)}
+                  {formatDateTime(a.status === 'published' ? a.published_at : a.updated_at, lang)}
                 </time>
                 <div className="flex w-full shrink-0 justify-end gap-4 text-[13px] md:w-[120px] md:gap-2.5 md:text-[12.5px] md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-                  <CopyLinkButton articleId={a.id} label="링크" className="whitespace-nowrap text-muted hover:text-ink" />
-                  <Link href={`/articles/${a.id}/edit`} className="text-muted hover:text-ink">수정</Link>
+                  <CopyLinkButton articleId={a.id} label={t('링크', 'Link')} className="whitespace-nowrap text-muted hover:text-ink" />
+                  <Link href={`/articles/${a.id}/edit`} className="text-muted hover:text-ink">{t('수정', 'Edit')}</Link>
                   {(a.author_id === user.id || isEditorPlus) && (
                     <form action={deleteArticle.bind(null, a.id)}>
                       <PendingButton
                         pending="…"
-                        confirm={`“${a.title}” 기사를 삭제할까요?${a.status === 'published' ? '\n홈페이지에서도 바로 내려가고, 함께 송고된 다른 매체 사본도 삭제됩니다.' : ''}\n삭제하면 되돌릴 수 없습니다.`}
+                        confirm={`${t(`“${a.title}” 기사를 삭제할까요?`, `Delete “${a.title}”?`)}${a.status === 'published' ? t('\n홈페이지에서도 바로 내려가고, 함께 송고된 다른 매체 사본도 삭제됩니다.', '\nIt will be taken down from the site immediately, and copies sent to other outlets will be deleted too.') : ''}${t('\n삭제하면 되돌릴 수 없습니다.', '\nThis cannot be undone.')}`}
                         className="text-muted hover:text-danger"
                       >
-                        삭제
+                        {t('삭제', 'Delete')}
                       </PendingButton>
                     </form>
                   )}
@@ -168,18 +170,18 @@ export default async function ArticlesPage(props: Props) {
           </BulkReview>
         ) : (
           <p className="py-20 text-center text-[14px] text-muted">
-            {q ? `‘${q}’에 해당하는 기사가 없습니다.` : status ? `${STATUS_LABEL[status]} 상태의 기사가 없습니다.` : '아직 작성한 기사가 없습니다.'}
+            {q ? t(`‘${q}’에 해당하는 기사가 없습니다.`, `No stories match ‘${q}’.`) : status ? t(`${statusLabel(status, lang)} 상태의 기사가 없습니다.`, `No stories with status “${statusLabel(status, lang)}”.`) : t('아직 작성한 기사가 없습니다.', 'You have not written any stories yet.')}
           </p>
         )}
       </section>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-muted">
         <div className="flex items-center gap-3">
-          <span>총 <span className="tabular-nums">{(count ?? 0).toLocaleString()}</span>건</span>
+          <span>{lang === 'en' ? 'Total ' : '총 '}<span className="tabular-nums">{(count ?? 0).toLocaleString(lang === 'en' ? 'en-US' : undefined)}</span>{lang === 'en' ? ((count ?? 0) === 1 ? ' story' : ' stories') : '건'}</span>
           <PageSizeSelect cookie={SIZE_COOKIE} value={PAGE_SIZE} href={href({ page: undefined })} />
         </div>
         {pages > 1 && (
-          <nav className="flex flex-wrap justify-end gap-1" aria-label="페이지">
+          <nav className="flex flex-wrap justify-end gap-1" aria-label={t('페이지', 'Pagination')}>
             {pageList(page, pages).map((p, i) => p === 0 ? (
               <span key={`gap${i}`} className="grid h-8 place-items-center px-1" aria-hidden>…</span>
             ) : (

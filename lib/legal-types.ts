@@ -20,3 +20,12 @@ export const LEGAL_TYPE_LABEL: Record<LegalIssue['type'], string> = {
 }
 export const RISK_LABEL: Record<LegalCheck['risk'], string> = { low: '낮음', medium: '주의', high: '높음' }
 
+// 영어 화면용 이름 (화면에서 legalTypeLabel / riskLabel / sevLabel 로 고른다)
+export const LEGAL_TYPE_LABEL_EN: Record<LegalIssue['type'], string> = {
+  defamation: 'Defamation', insult: 'Insult / disparagement', privacy: 'Privacy / portrait rights', copyright: 'Copyright / plagiarism',
+  false_info: 'Needs fact-checking', crime_report: 'Crime / incident reporting', ad: 'Advertorial', election: 'Election coverage', other: 'Other',
+}
+export const RISK_LABEL_EN: Record<LegalCheck['risk'], string> = { low: 'Low', medium: 'Caution', high: 'High' }
+export const SEV_LABEL_EN: Record<string, string> = { high: 'High risk', medium: 'Caution', low: 'Note' }
+export const legalTypeLabel = (type: LegalIssue['type'], lang: 'ko' | 'en' = 'ko') => (lang === 'en' ? LEGAL_TYPE_LABEL_EN : LEGAL_TYPE_LABEL)[type] ?? type
+export const riskLabel = (risk: LegalCheck['risk'], lang: 'ko' | 'en' = 'ko') => (lang === 'en' ? RISK_LABEL_EN : RISK_LABEL)[risk]

@@ -1,7 +1,8 @@
 'use client'
 
 import type { DragEvent, ReactNode } from 'react'
-import { AD_SLOTS, type AdSlotId } from '@/lib/ads'
+import { AD_SLOTS, adSlots, slotOf, type AdSlotId } from '@/lib/ads'
+import { useT, useCmsLang } from '@/components/cms/CmsLang'
 
 // 광고 자리 지도: 홈페이지를 단순하게 그린 그림 위에 광고 자리를 색으로 표시한다
 export const SLOT_COLOR: Record<AdSlotId, string> = {
@@ -14,7 +15,6 @@ export const SLOT_COLOR: Record<AdSlotId, string> = {
   popup: '#7C3AED',
 }
 export const SLOT_NO: Record<AdSlotId, number> = Object.fromEntries(AD_SLOTS.map((s, i) => [s.id, i + 1])) as Record<AdSlotId, number>
-const LABEL = Object.fromEntries(AD_SLOTS.map((s) => [s.id, s.label])) as Record<AdSlotId, string>
 
 type Kind = 'home' | 'article' | 'mobile'
 
@@ -28,13 +28,16 @@ const Box = ({ h, className = '' }: { h: number; className?: string }) => <span 
 function Slot({ id, h, show, small, count, onPick, drop, className = '', children }: {
   id: AdSlotId; h?: number; show: AdSlotId | 'all'; small: boolean; count?: number; onPick?: (id: AdSlotId) => void; drop?: Drop; className?: string; children?: ReactNode
 }) {
+  const t = useT()
+  const lang = useCmsLang()
+  const label = slotOf(id, lang)?.label ?? id
   const on = show === 'all' || show === id
   const color = SLOT_COLOR[id]
   const Tag = onPick ? 'button' : 'span'
   const hot = !!drop?.dragging && drop.over === id
   return (
     <Tag
-      {...(onPick ? { type: 'button' as const, onClick: () => onPick(id), title: `${LABEL[id]} 자리 보기` } : {})}
+      {...(onPick ? { type: 'button' as const, onClick: () => onPick(id), title: t(`${label} 자리 보기`, `View the “${label}” placement`) } : {})}
       {...(drop?.dragging ? {
         onDragOver: (e: DragEvent) => { e.preventDefault(); drop.setOver(id) },
         onDragLeave: () => drop.setOver(null),
@@ -45,8 +48,8 @@ function Slot({ id, h, show, small, count, onPick, drop, className = '', childre
     >
       {on && !small && (
         <span className="px-1 text-[11px] font-bold">
-          {SLOT_NO[id]} {LABEL[id]}
-          {count != null && <span className="ml-1 font-semibold opacity-80">· {count ? `${count}개` : '비어 있음'}</span>}
+          {SLOT_NO[id]} {label}
+          {count != null && <span className="ml-1 font-semibold opacity-80">· {count ? t(`${count}개`, String(count)) : t('비어 있음', 'Empty')}</span>}
         </span>
       )}
       {on && small && <span className="text-[9px] font-extrabold">{SLOT_NO[id]}</span>}
@@ -59,6 +62,7 @@ function Slot({ id, h, show, small, count, onPick, drop, className = '', childre
 export function PageSketch({ kind, show = 'all', small = false, counts, onPick, drop }: {
   kind: Kind; show?: AdSlotId | 'all'; small?: boolean; counts?: Partial<Record<AdSlotId, number>>; onPick?: (id: AdSlotId) => void; drop?: Drop
 }) {
+  const t = useT()
   const s = (id: AdSlotId, h: number, className = '') => <Slot id={id} h={h} show={show} small={small} count={counts?.[id]} onPick={onPick} drop={drop} className={className} />
   const k = small ? 0.42 : 1 // 작은 그림은 높이를 줄인다
   const H = (n: number) => Math.max(3, Math.round(n * k))
@@ -94,7 +98,7 @@ export function PageSketch({ kind, show = 'all', small = false, counts, onPick, 
             <div className="pointer-events-none absolute inset-0 bg-black/[0.04]">
               <div className="pointer-events-auto absolute left-[36%] top-[22%] w-[26%] rounded-[4px] bg-white p-0.5 shadow-lg">
                 {s('popup', H(64))}
-                {!small && <span className="mt-0.5 block text-center text-[8px] text-[#5B616B]">오늘 하루 보지 않기 · 닫기</span>}
+                {!small && <span className="mt-0.5 block text-center text-[8px] text-[#5B616B]">{t('오늘 하루 보지 않기 · 닫기', 'Don’t show again today · Close')}</span>}
               </div>
             </div>
           )}
@@ -138,6 +142,8 @@ export function PageSketch({ kind, show = 'all', small = false, counts, onPick, 
 
 // 광고 관리 화면 맨 위: 세 화면을 나란히 보여 주고, 자리를 누르면 그 자리 목록으로 이동
 export default function AdSlotMap({ counts, drop }: { counts: Partial<Record<AdSlotId, number>>; drop?: Drop }) {
+  const t = useT()
+  const lang = useCmsLang()
   const pick = (id: AdSlotId) => {
     const el = document.getElementById(`slot-card-${id}`)
     if (!el) return
@@ -148,11 +154,11 @@ export default function AdSlotMap({ counts, drop }: { counts: Partial<Record<AdS
   return (
     <section aria-labelledby="ad-map-title" className="rounded-xl border border-line bg-white p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="ad-map-title" className="text-[15px] font-bold">광고 자리 지도</h2>
-        <p className="text-[12.5px] text-muted">색칠된 자리를 누르면 그 자리에 건 배너로 이동합니다. 배너를 끌어서 이 지도의 다른 자리에 놓으면 그대로 옮겨집니다.</p>
+        <h2 id="ad-map-title" className="text-[15px] font-bold">{t('광고 자리 지도', 'Ad placement map')}</h2>
+        <p className="text-[12.5px] text-muted">{t('색칠된 자리를 누르면 그 자리에 건 배너로 이동합니다. 배너를 끌어서 이 지도의 다른 자리에 놓으면 그대로 옮겨집니다.', 'Click a colored placement to jump to the banners in it. Drag a banner onto another placement on this map to move it there.')}</p>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1fr_0.55fr]">
-        {([['home', '홈 첫 화면 (PC)'], ['article', '기사 화면 (PC)'], ['mobile', '휴대폰 (기사 화면)']] as const).map(([kind, title]) => (
+        {([['home', t('홈 첫 화면 (PC)', 'Front page (desktop)')], ['article', t('기사 화면 (PC)', 'Story page (desktop)')], ['mobile', t('휴대폰 (기사 화면)', 'Phone (story page)')]] as const).map(([kind, title]) => (
           <figure key={kind} className={kind === 'mobile' ? 'mx-auto w-full max-w-[220px]' : ''}>
             <PageSketch kind={kind} counts={counts} onPick={pick} drop={drop} />
             <figcaption className="mt-1.5 text-center text-[12px] font-semibold text-muted">{title}</figcaption>
@@ -160,11 +166,11 @@ export default function AdSlotMap({ counts, drop }: { counts: Partial<Record<AdS
         ))}
       </div>
       <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[12.5px]">
-        {AD_SLOTS.map((s) => (
+        {adSlots(lang).map((s) => (
           <li key={s.id} className="flex items-center gap-1.5">
             <span className="grid h-4 w-4 place-items-center rounded-sm text-[10px] font-bold text-white" style={{ background: SLOT_COLOR[s.id] }}>{SLOT_NO[s.id]}</span>
             <span className="font-semibold">{s.label}</span>
-            <span className="text-muted">{counts[s.id] ? `${counts[s.id]}개` : '비어 있음'}</span>
+            <span className="text-muted">{counts[s.id] ? t(`${counts[s.id]}개`, String(counts[s.id])) : t('비어 있음', 'Empty')}</span>
           </li>
         ))}
       </ul>

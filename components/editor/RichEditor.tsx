@@ -20,6 +20,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Fragment, Slice } from '@tiptap/pm/model'
 import type { EditorView } from '@tiptap/pm/view'
 import { FontSize, ResizableImage, VideoNode } from './extensions'
+import { useT } from '@/components/cms/CmsLang'
 
 // 워드·한글·웹에서 복사한 글을 서식(글꼴·굵기·색·크기 등) 없이 글자만 넣는다. 줄바꿈은 문단으로 살린다
 function pastePlainText(view: EditorView, text: string) {
@@ -58,6 +59,7 @@ const HIGHLIGHTS = ['#FFF3A3', '#FFE0B2', '#FFCDD2', '#C8E6C9', '#BBDEFB', '#E1B
 const SYMBOLS = ['▲', '▼', '△', '▽', '◆', '◇', '■', '□', '●', '○', '◎', '★', '☆', '※', '☞', '→', '←', '↑', '↓', '·', '…', '―', '「', '」', '『', '』', '‘', '’', '“', '”', '㈜', '℃', '㎡', '㎞', '㎏', '㎎', '%', '①', '②', '③', '④', '⑤', '×', '÷', '±', '≒', '≥', '≤', '₩', '$', '€', '¥']
 
 export default function RichEditor({ initialHtml, onChange, onReady, onUploadImage, advanced = false }: Props) {
+  const t = useT()
   const [more, setMore] = useState(false)
   // 더보기를 펼쳐 둔 사람은 다음에도 펼친 채로 (이 브라우저에만 기억)
   useEffect(() => {
@@ -87,8 +89,8 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
   }
   useEffect(() => {
     if (!pasteNote) return
-    const t = setTimeout(() => setPasteNote(false), 6000)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setPasteNote(false), 6000)
+    return () => clearTimeout(timer)
   }, [pasteNote])
 
   const editor = useEditor({
@@ -111,7 +113,7 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
       TableRow,
       TableHeader,
       TableCell,
-      Placeholder.configure({ placeholder: '기사 본문을 입력하세요' }),
+      Placeholder.configure({ placeholder: t('기사 본문을 입력하세요', 'Enter the story body') }),
     ],
     content: initialHtml,
     editorProps: {
@@ -156,15 +158,15 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
 
   const setLink = () => {
     const prev = editor.getAttributes('link').href as string | undefined
-    const url = window.prompt('링크 주소를 입력하세요 (비우면 링크 삭제)', prev ?? 'https://')
+    const url = window.prompt(t('링크 주소를 입력하세요 (비우면 링크 삭제)', 'Enter the link URL (leave empty to remove the link)'), prev ?? 'https://')
     if (url === null) return
     if (!url.trim() || url === 'https://') chain().unsetLink().run()
     else chain().extendMarkRange('link').setLink({ href: url.trim() }).run()
   }
 
   const addYoutube = () => {
-    const url = window.prompt('유튜브 영상 주소를 입력하세요')
-    if (url && !editor.chain().focus().setYoutubeVideo({ src: url.trim() }).run()) window.alert('유튜브 주소를 확인해 주세요.')
+    const url = window.prompt(t('유튜브 영상 주소를 입력하세요', 'Enter the YouTube video URL'))
+    if (url && !editor.chain().focus().setYoutubeVideo({ src: url.trim() }).run()) window.alert(t('유튜브 주소를 확인해 주세요.', 'Please check the YouTube link.'))
   }
 
   const pickImage = async (files: FileList | null) => {
@@ -176,7 +178,7 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
         editor.chain().focus().setImage({ src, alt: '' }).run()
       }
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : '사진을 올리지 못했습니다.')
+      window.alert(e instanceof Error ? e.message : t('사진을 올리지 못했습니다.', 'Could not upload the photo.'))
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -191,14 +193,14 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
 
   return (
     <div className={full ? 'fixed inset-0 z-50 flex flex-col bg-white' : 'rounded border border-line bg-white focus-within:border-ink/60'}>
-      <div role="toolbar" aria-label="본문 서식" className={`sticky top-0 z-10 space-y-1 border-b border-line bg-[#FAFBFC] px-2 py-1.5 ${source !== null ? 'pointer-events-none opacity-40' : ''}`}>
+      <div role="toolbar" aria-label={t('본문 서식', 'Text formatting')} className={`sticky top-0 z-10 space-y-1 border-b border-line bg-[#FAFBFC] px-2 py-1.5 ${source !== null ? 'pointer-events-none opacity-40' : ''}`}>
         {/* 기본 도구: 기자가 매일 쓰는 것만 한 줄에 */}
         <div className="flex flex-wrap items-center gap-0.5">
-          <Btn label="되돌리기 (Ctrl+Z)" onClick={() => chain().undo().run()} disabled={!editor.can().undo()}>↶</Btn>
-          <Btn label="다시 실행 (Ctrl+Y)" onClick={() => chain().redo().run()} disabled={!editor.can().redo()}>↷</Btn>
+          <Btn label={t('되돌리기 (Ctrl+Z)', 'Undo (Ctrl+Z)')} onClick={() => chain().undo().run()} disabled={!editor.can().undo()}>↶</Btn>
+          <Btn label={t('다시 실행 (Ctrl+Y)', 'Redo (Ctrl+Y)')} onClick={() => chain().redo().run()} disabled={!editor.can().redo()}>↷</Btn>
           <Sep />
           <select
-            aria-label="문단 형식"
+            aria-label={t('문단 형식', 'Paragraph format')}
             value={block}
             onChange={(e) => {
               const v = e.target.value
@@ -207,88 +209,88 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
             }}
             className="h-8 rounded border border-line bg-white px-1.5 text-[13px]"
           >
-            <option value="p">본문</option>
-            <option value="h2">소제목</option>
-            <option value="h3">중간제목</option>
-            <option value="h4">작은제목</option>
+            <option value="p">{t('본문', 'Body')}</option>
+            <option value="h2">{t('소제목', 'Heading')}</option>
+            <option value="h3">{t('중간제목', 'Subheading')}</option>
+            <option value="h4">{t('작은제목', 'Small heading')}</option>
           </select>
           <Sep />
-          <Btn label="굵게 (Ctrl+B)" active={editor.isActive('bold')} onClick={() => chain().toggleBold().run()}><b>B</b></Btn>
-          <Btn label="밑줄 (Ctrl+U)" active={editor.isActive('underline')} onClick={() => chain().toggleUnderline().run()}><u>U</u></Btn>
+          <Btn label={t('굵게 (Ctrl+B)', 'Bold (Ctrl+B)')} active={editor.isActive('bold')} onClick={() => chain().toggleBold().run()}><b>B</b></Btn>
+          <Btn label={t('밑줄 (Ctrl+U)', 'Underline (Ctrl+U)')} active={editor.isActive('underline')} onClick={() => chain().toggleUnderline().run()}><u>U</u></Btn>
           <Sep />
           {/* 기본은 양쪽 정렬(정렬을 따로 정하지 않은 문단). 양쪽 정렬을 누르면 기본으로 되돌린다 */}
-          <Btn label="양쪽 정렬 (기본)" active={align === 'justify'} onClick={() => chain().unsetTextAlign().run()}><AlignIcon kind="justify" /></Btn>
-          <Btn label="왼쪽 정렬" active={align === 'left'} onClick={() => chain().setTextAlign('left').run()}><AlignIcon kind="left" /></Btn>
-          <Btn label="가운데 정렬" active={align === 'center'} onClick={() => chain().setTextAlign('center').run()}><AlignIcon kind="center" /></Btn>
-          <Btn label="오른쪽 정렬" active={align === 'right'} onClick={() => chain().setTextAlign('right').run()}><AlignIcon kind="right" /></Btn>
+          <Btn label={t('양쪽 정렬 (기본)', 'Justify (default)')} active={align === 'justify'} onClick={() => chain().unsetTextAlign().run()}><AlignIcon kind="justify" /></Btn>
+          <Btn label={t('왼쪽 정렬', 'Align left')} active={align === 'left'} onClick={() => chain().setTextAlign('left').run()}><AlignIcon kind="left" /></Btn>
+          <Btn label={t('가운데 정렬', 'Align center')} active={align === 'center'} onClick={() => chain().setTextAlign('center').run()}><AlignIcon kind="center" /></Btn>
+          <Btn label={t('오른쪽 정렬', 'Align right')} active={align === 'right'} onClick={() => chain().setTextAlign('right').run()}><AlignIcon kind="right" /></Btn>
           <Sep />
-          <Btn label="글머리 목록" active={editor.isActive('bulletList')} onClick={() => chain().toggleBulletList().run()}>• 목록</Btn>
-          <Btn label="링크" active={editor.isActive('link')} onClick={setLink}>🔗 링크</Btn>
+          <Btn label={t('글머리 목록', 'Bulleted list')} active={editor.isActive('bulletList')} onClick={() => chain().toggleBulletList().run()}>{t('• 목록', '• List')}</Btn>
+          <Btn label={t('링크', 'Link')} active={editor.isActive('link')} onClick={setLink}>{t('🔗 링크', '🔗 Link')}</Btn>
           {onUploadImage && (
             <>
-              <Btn label="사진 넣기" onClick={() => fileRef.current?.click()} disabled={uploading}>{uploading ? '올리는 중…' : '🖼 사진'}</Btn>
+              <Btn label={t('사진 넣기', 'Insert photo')} onClick={() => fileRef.current?.click()} disabled={uploading}>{uploading ? t('올리는 중…', 'Uploading…') : t('🖼 사진', '🖼 Photo')}</Btn>
               <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => pickImage(e.target.files)} />
             </>
           )}
-          <Btn label="유튜브 영상" onClick={addYoutube}>▶ 영상</Btn>
-          <Btn label="표 넣기 (3×3)" active={inTable} onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>▦ 표</Btn>
+          <Btn label={t('유튜브 영상', 'YouTube video')} onClick={addYoutube}>{t('▶ 영상', '▶ Video')}</Btn>
+          <Btn label={t('표 넣기 (3×3)', 'Insert table (3×3)')} active={inTable} onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>{t('▦ 표', '▦ Table')}</Btn>
           <Symbols onPick={(s) => chain().insertContent(s).run()} />
           <span className="ml-auto flex items-center gap-0.5">
-            {pasteNote && <span role="status" className="hidden px-1 text-[11.5px] text-muted md:inline">서식 없이 글자만 붙여 넣었습니다</span>}
+            {pasteNote && <span role="status" className="hidden px-1 text-[11.5px] text-muted md:inline">{t('서식 없이 글자만 붙여 넣었습니다', 'Pasted as plain text without formatting')}</span>}
             <Btn
-              label={pastePlain ? '글자만 붙여넣기 켜짐: 워드·한글에서 복사한 글꼴·굵기·색은 빼고 글자만 넣습니다. 누르면 서식도 함께 붙여 넣습니다' : '서식 포함 붙여넣기 켜짐: 누르면 글자만 붙여 넣습니다'}
+              label={pastePlain ? t('글자만 붙여넣기 켜짐: 워드·한글에서 복사한 글꼴·굵기·색은 빼고 글자만 넣습니다. 누르면 서식도 함께 붙여 넣습니다', 'Paste as plain text is on: fonts, weights and colors copied from Word or other apps are dropped and only the text is pasted. Click to paste with formatting.') : t('서식 포함 붙여넣기 켜짐: 누르면 글자만 붙여 넣습니다', 'Paste with formatting is on: click to paste plain text only.')}
               active={!pastePlain}
               onClick={togglePaste}
             >
-              {pastePlain ? '📋 글자만 붙여넣기' : '📋 서식 포함 붙여넣기'}
+              {pastePlain ? t('📋 글자만 붙여넣기', '📋 Paste as plain text') : t('📋 서식 포함 붙여넣기', '📋 Paste with formatting')}
             </Btn>
-            <Btn label={more ? '추가 도구 접기' : '추가 도구 펼치기'} active={more} onClick={() => toggleMore(!more)}>{more ? '접기 ▴' : '더보기 ▾'}</Btn>
+            <Btn label={more ? t('추가 도구 접기', 'Hide more tools') : t('추가 도구 펼치기', 'Show more tools')} active={more} onClick={() => toggleMore(!more)}>{more ? t('접기 ▴', 'Less ▴') : t('더보기 ▾', 'More ▾')}</Btn>
           </span>
         </div>
 
         {/* 더보기: 가끔 쓰는 것 (편집장 이상은 글자 크기·색·HTML까지) */}
         {more && (
           <div className="flex flex-wrap items-center gap-0.5 border-t border-line/70 pt-1">
-            <Btn label="기울임 (Ctrl+I)" active={editor.isActive('italic')} onClick={() => chain().toggleItalic().run()}><i className="font-serif">I</i></Btn>
-            <Btn label="취소선" active={editor.isActive('strike')} onClick={() => chain().toggleStrike().run()}><s>S</s></Btn>
-            <Btn label="위첨자" active={editor.isActive('superscript')} onClick={() => chain().toggleSuperscript().run()}>X<sup>2</sup></Btn>
-            <Btn label="아래첨자" active={editor.isActive('subscript')} onClick={() => chain().toggleSubscript().run()}>X<sub>2</sub></Btn>
+            <Btn label={t('기울임 (Ctrl+I)', 'Italic (Ctrl+I)')} active={editor.isActive('italic')} onClick={() => chain().toggleItalic().run()}><i className="font-serif">I</i></Btn>
+            <Btn label={t('취소선', 'Strikethrough')} active={editor.isActive('strike')} onClick={() => chain().toggleStrike().run()}><s>S</s></Btn>
+            <Btn label={t('위첨자', 'Superscript')} active={editor.isActive('superscript')} onClick={() => chain().toggleSuperscript().run()}>X<sup>2</sup></Btn>
+            <Btn label={t('아래첨자', 'Subscript')} active={editor.isActive('subscript')} onClick={() => chain().toggleSubscript().run()}>X<sub>2</sub></Btn>
             <Palette
-              label="형광펜"
+              label={t('형광펜', 'Highlighter')}
               colors={HIGHLIGHTS}
               current={editor.getAttributes('highlight').color as string | undefined}
               onPick={(c) => chain().setHighlight({ color: c }).run()}
               onClear={() => chain().unsetHighlight().run()}
-              face={<span className="rounded px-1 text-[13px] font-bold" style={{ background: (editor.getAttributes('highlight').color as string) || '#FFF3A3' }}>가</span>}
+              face={<span className="rounded px-1 text-[13px] font-bold" style={{ background: (editor.getAttributes('highlight').color as string) || '#FFF3A3' }}>{t('가', 'A')}</span>}
             />
             <Sep />
-            <Btn label="번호 목록" active={editor.isActive('orderedList')} onClick={() => chain().toggleOrderedList().run()}>1. 목록</Btn>
-            <Btn label="인용문" active={editor.isActive('blockquote')} onClick={() => chain().toggleBlockquote().run()}>“ 인용</Btn>
-            <Btn label="구분선" onClick={() => chain().setHorizontalRule().run()}>구분선</Btn>
-            <Btn label="서식 지우기" onClick={() => chain().unsetAllMarks().clearNodes().run()}>서식 지우기</Btn>
-            <Btn label={full ? '전체 화면 끝내기 (Esc)' : '전체 화면으로 쓰기'} active={full} onClick={() => setFull(!full)}>{full ? '⤡ 작게' : '⤢ 크게'}</Btn>
+            <Btn label={t('번호 목록', 'Numbered list')} active={editor.isActive('orderedList')} onClick={() => chain().toggleOrderedList().run()}>{t('1. 목록', '1. List')}</Btn>
+            <Btn label={t('인용문', 'Block quote')} active={editor.isActive('blockquote')} onClick={() => chain().toggleBlockquote().run()}>{t('“ 인용', '“ Quote')}</Btn>
+            <Btn label={t('구분선', 'Divider')} onClick={() => chain().setHorizontalRule().run()}>{t('구분선', 'Divider')}</Btn>
+            <Btn label={t('서식 지우기', 'Clear formatting')} onClick={() => chain().unsetAllMarks().clearNodes().run()}>{t('서식 지우기', 'Clear formatting')}</Btn>
+            <Btn label={full ? t('전체 화면 끝내기 (Esc)', 'Exit full screen (Esc)') : t('전체 화면으로 쓰기', 'Write in full screen')} active={full} onClick={() => setFull(!full)}>{full ? t('⤡ 작게', '⤡ Smaller') : t('⤢ 크게', '⤢ Larger')}</Btn>
             {advanced && (
               <>
                 <Sep />
-                <span className="px-1 text-[11px] font-semibold text-muted">편집장</span>
+                <span className="px-1 text-[11px] font-semibold text-muted">{t('편집장', 'Editor')}</span>
                 <select
-                  aria-label="글자 크기"
+                  aria-label={t('글자 크기', 'Font size')}
                   value={fontSize}
                   onChange={(e) => (e.target.value ? chain().setFontSize(e.target.value).run() : chain().unsetFontSize().run())}
                   className="h-8 w-[78px] rounded border border-line bg-white px-1.5 text-[13px]"
                 >
-                  <option value="">크기</option>
+                  <option value="">{t('크기', 'Size')}</option>
                   {FONT_SIZES.map((s) => <option key={s} value={s}>{s.replace('px', '')}px</option>)}
                 </select>
                 <Palette
-                  label="글자색"
+                  label={t('글자색', 'Text color')}
                   colors={TEXT_COLORS}
                   current={editor.getAttributes('textStyle').color as string | undefined}
                   onPick={(c) => chain().setColor(c).run()}
                   onClear={() => chain().unsetColor().run()}
-                  face={<span className="flex flex-col items-center leading-none"><span className="text-[13px] font-bold">가</span><span className="mt-0.5 h-[3px] w-4 rounded" style={{ background: (editor.getAttributes('textStyle').color as string) || '#E5483A' }} /></span>}
+                  face={<span className="flex flex-col items-center leading-none"><span className="text-[13px] font-bold">{t('가', 'A')}</span><span className="mt-0.5 h-[3px] w-4 rounded" style={{ background: (editor.getAttributes('textStyle').color as string) || '#E5483A' }} /></span>}
                 />
-                <Btn label="HTML 보기" active={source !== null} onClick={() => setSource(editor.getHTML())}>{'</>'} HTML</Btn>
+                <Btn label={t('HTML 보기', 'View HTML')} active={source !== null} onClick={() => setSource(editor.getHTML())}>{'</>'} HTML</Btn>
               </>
             )}
           </div>
@@ -297,31 +299,31 @@ export default function RichEditor({ initialHtml, onChange, onReady, onUploadIma
         {/* 표 안에 있을 때만 나오는 표 도구 */}
         {inTable && (
           <div className="flex flex-wrap items-center gap-0.5 rounded bg-[#EEF2F8] px-1.5 py-1 text-[12.5px]">
-            <span className="mr-1 font-semibold text-[#2D6CA8]">표</span>
-            <Btn label="위에 줄 추가" onClick={() => chain().addRowBefore().run()}>↑ 줄</Btn>
-            <Btn label="아래에 줄 추가" onClick={() => chain().addRowAfter().run()}>↓ 줄</Btn>
-            <Btn label="줄 삭제" onClick={() => chain().deleteRow().run()}>줄 삭제</Btn>
+            <span className="mr-1 font-semibold text-[#2D6CA8]">{t('표', 'Table')}</span>
+            <Btn label={t('위에 줄 추가', 'Add row above')} onClick={() => chain().addRowBefore().run()}>{t('↑ 줄', '↑ Row')}</Btn>
+            <Btn label={t('아래에 줄 추가', 'Add row below')} onClick={() => chain().addRowAfter().run()}>{t('↓ 줄', '↓ Row')}</Btn>
+            <Btn label={t('줄 삭제', 'Delete row')} onClick={() => chain().deleteRow().run()}>{t('줄 삭제', 'Delete row')}</Btn>
             <Sep />
-            <Btn label="왼쪽에 칸 추가" onClick={() => chain().addColumnBefore().run()}>← 칸</Btn>
-            <Btn label="오른쪽에 칸 추가" onClick={() => chain().addColumnAfter().run()}>→ 칸</Btn>
-            <Btn label="칸 삭제" onClick={() => chain().deleteColumn().run()}>칸 삭제</Btn>
+            <Btn label={t('왼쪽에 칸 추가', 'Add column left')} onClick={() => chain().addColumnBefore().run()}>{t('← 칸', '← Column')}</Btn>
+            <Btn label={t('오른쪽에 칸 추가', 'Add column right')} onClick={() => chain().addColumnAfter().run()}>{t('→ 칸', '→ Column')}</Btn>
+            <Btn label={t('칸 삭제', 'Delete column')} onClick={() => chain().deleteColumn().run()}>{t('칸 삭제', 'Delete column')}</Btn>
             <Sep />
-            <Btn label="셀 합치기" onClick={() => chain().mergeCells().run()} disabled={!editor.can().mergeCells()}>합치기</Btn>
-            <Btn label="셀 나누기" onClick={() => chain().splitCell().run()} disabled={!editor.can().splitCell()}>나누기</Btn>
-            <Btn label="머리글 줄 켜고 끄기" onClick={() => chain().toggleHeaderRow().run()}>머리글</Btn>
-            <Btn label="표 삭제" onClick={() => chain().deleteTable().run()}><span className="text-danger">표 삭제</span></Btn>
+            <Btn label={t('셀 합치기', 'Merge cells')} onClick={() => chain().mergeCells().run()} disabled={!editor.can().mergeCells()}>{t('합치기', 'Merge')}</Btn>
+            <Btn label={t('셀 나누기', 'Split cell')} onClick={() => chain().splitCell().run()} disabled={!editor.can().splitCell()}>{t('나누기', 'Split')}</Btn>
+            <Btn label={t('머리글 줄 켜고 끄기', 'Toggle header row')} onClick={() => chain().toggleHeaderRow().run()}>{t('머리글', 'Header')}</Btn>
+            <Btn label={t('표 삭제', 'Delete table')} onClick={() => chain().deleteTable().run()}><span className="text-danger">{t('표 삭제', 'Delete table')}</span></Btn>
           </div>
         )}
       </div>
 
       {source !== null ? (
         <div className={`flex flex-col gap-2 p-3 ${full ? 'flex-1' : ''}`}>
-          <p className="text-[12.5px] text-muted">HTML을 직접 고칠 수 있습니다. 허용되지 않는 태그·스크립트는 발행할 때 자동으로 지워집니다.</p>
-          <label htmlFor="html-source" className="sr-only">HTML 원본</label>
+          <p className="text-[12.5px] text-muted">{t('HTML을 직접 고칠 수 있습니다. 허용되지 않는 태그·스크립트는 발행할 때 자동으로 지워집니다.', 'You can edit the HTML directly. Tags and scripts that are not allowed are removed automatically when you publish.')}</p>
+          <label htmlFor="html-source" className="sr-only">{t('HTML 원본', 'HTML source')}</label>
           <textarea id="html-source" value={source} onChange={(e) => setSource(e.target.value)} spellCheck={false} className={`w-full rounded border border-line bg-[#0F1117] p-4 font-mono text-[12.5px] leading-relaxed text-[#E6E6E6] ${full ? 'flex-1' : 'min-h-[520px]'}`} />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setSource(null)} className="btn-secondary">취소</button>
-            <button type="button" onClick={applySource} className="btn-primary">편집 화면에 적용</button>
+            <button type="button" onClick={() => setSource(null)} className="btn-secondary">{t('취소', 'Cancel')}</button>
+            <button type="button" onClick={applySource} className="btn-primary">{t('편집 화면에 적용', 'Apply to editor')}</button>
           </div>
         </div>
       ) : (
@@ -372,6 +374,7 @@ function AlignIcon({ kind }: { kind: 'left' | 'center' | 'right' | 'justify' }) 
 
 // 색 고르기 (글자색·형광펜)
 function Palette({ label, colors, current, onPick, onClear, face }: { label: string; colors: string[]; current?: string; onPick: (c: string) => void; onClear: () => void; face: ReactNode }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   return (
     // 휴대폰: 도구 줄 오른쪽 끝에서 열면 화면 밖으로 잘리므로 도구 줄 왼쪽 끝에 맞춰 연다
@@ -404,7 +407,7 @@ function Palette({ label, colors, current, onPick, onClear, face }: { label: str
             ))}
           </div>
           <button type="button" onClick={() => { onClear(); setOpen(false) }} className="mt-2 w-full rounded bg-line/60 py-1 text-[12px] hover:bg-line">
-            {label} 없애기
+            {t(`${label} 없애기`, `Clear ${label}`)}
           </button>
         </div>
       )}
@@ -414,15 +417,16 @@ function Palette({ label, colors, current, onPick, onClear, face }: { label: str
 
 // 기사에 자주 쓰는 특수문자
 function Symbols({ onPick }: { onPick: (s: string) => void }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   return (
     // 휴대폰: 도구 줄 왼쪽 끝에 맞춰 연다 (위 Palette와 같은 이유)
     <div className="md:relative" onMouseLeave={() => setOpen(false)}>
-      <Btn label="특수문자" active={open} onClick={() => setOpen(!open)}>※ 특수문자</Btn>
+      <Btn label={t('특수문자', 'Special characters')} active={open} onClick={() => setOpen(!open)}>{t('※ 특수문자', '※ Symbols')}</Btn>
       {open && (
         <div className="absolute left-0 top-full z-30 grid w-[276px] grid-cols-9 gap-1 rounded-lg border border-line bg-white p-2 shadow-lg" onMouseDown={(e) => e.preventDefault()}>
           {SYMBOLS.map((s) => (
-            <button key={s} type="button" onClick={() => onPick(s)} className="h-7 rounded text-[14px] hover:bg-line/70" aria-label={`${s} 넣기`}>
+            <button key={s} type="button" onClick={() => onPick(s)} className="h-7 rounded text-[14px] hover:bg-line/70" aria-label={t(`${s} 넣기`, `Insert ${s}`)}>
               {s}
             </button>
           ))}

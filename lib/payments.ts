@@ -84,6 +84,8 @@ export async function recordFailure(supabase: SupabaseClient, orderId: string, m
 }
 
 export const KIND_LABEL: Record<string, string> = { card: '카드·간편결제', transfer: '계좌이체', autopay: '자동결제' }
+export const KIND_LABEL_EN: Record<string, string> = { card: 'Card / digital wallet', transfer: 'Bank transfer', autopay: 'Autopay' }
+export const PAY_STATUS_EN: Record<string, string> = { ready: 'In progress', done: 'Paid', failed: 'Failed', canceled: 'Canceled / refunded' }
 export const PAY_STATUS: Record<string, { label: string; cls: string }> = {
   ready: { label: '결제 중', cls: 'bg-line text-muted' },
   done: { label: '결제 완료', cls: 'bg-published/10 text-published' },

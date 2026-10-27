@@ -17,6 +17,26 @@ export const FEEDBACK_STATUS = {
 } as const
 export type FeedbackStatus = keyof typeof FEEDBACK_STATUS
 
+// 영어 화면용 이름 (색 className 은 한국어 쪽을 그대로 쓴다)
+export const FEEDBACK_CATEGORIES_EN: Record<FeedbackCategory, string> = {
+  improve: 'Improvement',
+  bug: 'Problem / bug',
+  new: 'New feature',
+  etc: 'Other',
+}
+export const FEEDBACK_STATUS_EN: Record<FeedbackStatus, string> = {
+  received: 'Received',
+  in_progress: 'In progress',
+  exists: 'Already available',
+  done: 'Done',
+  declined: 'Not planned',
+}
+type L = 'ko' | 'en' | undefined
+export const feedbackCategoryLabel = (c: string, lang?: L, fallback = '') =>
+  (lang === 'en' ? FEEDBACK_CATEGORIES_EN : FEEDBACK_CATEGORIES)[c as FeedbackCategory] ?? fallback
+export const feedbackStatusLabel = (s: string, lang?: L) =>
+  (lang === 'en' ? FEEDBACK_STATUS_EN[s as FeedbackStatus] : FEEDBACK_STATUS[s as FeedbackStatus]?.label) ?? s
+
 export const isFeedbackStatus = (s: unknown): s is FeedbackStatus => typeof s === 'string' && s in FEEDBACK_STATUS
 export const isFeedbackCategory = (s: unknown): s is FeedbackCategory => typeof s === 'string' && s in FEEDBACK_CATEGORIES
 

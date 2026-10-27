@@ -15,6 +15,7 @@ import { GRACE_DAYS, holdFrom, kstToday } from '@/lib/billing'
 import { formatDate } from '@/lib/format'
 import { isPrepNow } from '@/lib/sites'
 import { stepStates } from '@/lib/onboarding-guide'
+import { makeT } from '@/lib/cms-i18n'
 
 // 편집국: 아이폰 사파리는 글씨가 16px보다 작은 입력칸(매체 고르기 등)을 누르면 화면을 확대하고 그대로 둬서 좌우가 잘린다 → 자동 확대를 막는다
 //   (아이폰은 두 손가락 확대는 그대로 된다)
@@ -117,7 +118,8 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     const first = ((inv ?? []) as { id: string; month: string; due_date: string }[])[0]
     billing = { hold: !!(o as { billing_hold?: boolean } | null)?.billing_hold, overdue: first ? { id: first.id, month: first.month, due: first.due_date } : null }
   }
-  const monthText = (m: string) => `${Number(m.slice(5, 7))}월`
+  const t = makeT(lang)
+  const monthText = (m: string) => lang === 'en' ? new Date(2000, Number(m.slice(5, 7)) - 1, 1).toLocaleString('en-US', { month: 'long' }) : `${Number(m.slice(5, 7))}월`
 
   // 화면 높이 단위(dvh)가 창 크기를 잘못 기억하는 브라우저가 있어, 화면 전체에 붙이는 방식으로 높이를 정한다
   return (
@@ -132,17 +134,17 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         {viewAs && <ViewAsBar viewAs={viewAs} />}
         {billing.hold ? (
           <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-danger px-4 py-2 text-[13px] text-white print:hidden">
-            <strong>이용료가 밀려 편집국 이용이 제한되었습니다.</strong>
-            <span className="opacity-90">기사 쓰기·고치기·발행과 AI 기능을 쓸 수 없습니다. 신문 홈페이지는 그대로 열려 있습니다.</span>
+            <strong>{t('이용료가 밀려 편집국 이용이 제한되었습니다.', 'Newsroom access is restricted because of an overdue balance.')}</strong>
+            <span className="opacity-90">{t('기사 쓰기·고치기·발행과 AI 기능을 쓸 수 없습니다. 신문 홈페이지는 그대로 열려 있습니다.', 'Writing, editing and publishing stories and AI features are unavailable. Your newspaper’s homepage remains online.')}</span>
             {isEditorPlus
-              ? <a href={billing.overdue ? `/support/invoices/${billing.overdue.id}` : '/support/invoices'} className="ios-app-hide ml-auto rounded bg-white px-3 py-1 font-semibold text-danger">결제하면 바로 풀립니다 →</a>
-              : <span className="ml-auto opacity-90">발행인·편집장에게 알려 주세요.</span>}
+              ? <a href={billing.overdue ? `/support/invoices/${billing.overdue.id}` : '/support/invoices'} className="ios-app-hide ml-auto rounded bg-white px-3 py-1 font-semibold text-danger">{t('결제하면 바로 풀립니다 →', 'Pay to lift the restriction right away →')}</a>
+              : <span className="ml-auto opacity-90">{t('발행인·편집장에게 알려 주세요.', 'Please let your Publisher or Editor-in-Chief know.')}</span>}
           </div>
         ) : billing.overdue ? (
           <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[#FFF4D6] px-4 py-2 text-[13px] text-[#7A4B00] print:hidden">
-            <strong>{monthText(billing.overdue.month)} 이용료의 납부 기한({formatDate(billing.overdue.due)})이 지났습니다.</strong>
-            <span>{GRACE_DAYS}일 안에 결제하지 않으면 {formatDate(holdFrom(billing.overdue.due))}부터 기사 쓰기·발행이 제한됩니다.</span>
-            <a href={`/support/invoices/${billing.overdue.id}`} className="ios-app-hide ml-auto rounded bg-[#7A4B00] px-3 py-1 font-semibold text-white">지금 결제하기 →</a>
+            <strong>{t(`${monthText(billing.overdue.month)} 이용료의 납부 기한(${formatDate(billing.overdue.due)})이 지났습니다.`, `The payment deadline (${formatDate(billing.overdue.due, lang)}) for the ${monthText(billing.overdue.month)} fee has passed.`)}</strong>
+            <span>{t(`${GRACE_DAYS}일 안에 결제하지 않으면 ${formatDate(holdFrom(billing.overdue.due))}부터 기사 쓰기·발행이 제한됩니다.`, `If you do not pay within ${GRACE_DAYS} days, writing and publishing will be restricted from ${formatDate(holdFrom(billing.overdue.due), lang)}.`)}</span>
+            <a href={`/support/invoices/${billing.overdue.id}`} className="ios-app-hide ml-auto rounded bg-[#7A4B00] px-3 py-1 font-semibold text-white">{t('지금 결제하기 →', 'Pay now →')}</a>
           </div>
         ) : null}
         <TopBar

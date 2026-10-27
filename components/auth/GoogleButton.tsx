@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import { useT } from '@/components/cms/CmsLang'
 
 function GoogleMark() {
   return (
@@ -18,12 +19,13 @@ function GoogleMark() {
 // next: 로그인 뒤 갈 곳, before: 구글로 가기 전 확인 (false면 가지 않는다)
 // consent: 가입 화면에서 약관·개인정보 동의를 받은 경우 → 돌아온 뒤 서버가 동의를 기록한다
 export default function GoogleButton({ label, requestedOutlet, next, before, consent }: { label: string; requestedOutlet?: string; next?: string; before?: () => boolean; consent?: boolean }) {
+  const t = useT()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function start() {
     setError('')
-    if (requestedOutlet === '') { setError('먼저 소속 매체를 골라 주세요.'); return }
+    if (requestedOutlet === '') { setError(t('먼저 소속 매체를 골라 주세요.', 'Please choose your outlet first.')); return }
     if (before && !before()) return
     setLoading(true)
     const back = new URL('/auth/callback', window.location.origin)
@@ -35,7 +37,7 @@ export default function GoogleButton({ label, requestedOutlet, next, before, con
       options: { redirectTo: back.toString() },
     })
     if (error) {
-      setError(/provider is not enabled/i.test(error.message) ? '구글 로그인이 아직 설정되지 않았습니다. 관리자에게 문의하세요.' : `구글 로그인을 시작하지 못했습니다: ${error.message}`)
+      setError(/provider is not enabled/i.test(error.message) ? t('구글 로그인이 아직 설정되지 않았습니다. 관리자에게 문의하세요.', 'Google sign-in is not set up yet. Please contact your administrator.') : `${t('구글 로그인을 시작하지 못했습니다', 'Could not start Google sign-in')}: ${error.message}`)
       setLoading(false)
     }
   }
@@ -49,7 +51,7 @@ export default function GoogleButton({ label, requestedOutlet, next, before, con
         className="btn inline-flex w-full items-center justify-center gap-2.5 border border-line bg-white hover:bg-[#F8F9FA] disabled:opacity-60"
       >
         <GoogleMark />
-        {loading ? '구글로 이동 중…' : label}
+        {loading ? t('구글로 이동 중…', 'Redirecting to Google…') : label}
       </button>
       {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
     </div>

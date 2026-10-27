@@ -2,12 +2,15 @@ import { createClient } from './supabase'
 import { rewriteForOutlet } from '@/app/(main)/articles/rewrite'
 import { aiNoticeText, AI_NOTICE_DEFAULT, hasAiNotice, withAiNotice } from './ai-notice'
 import type { OutletSiteSettings } from './sites'
+import { makeT, type CmsLang } from './cms-i18n'
 
 export type SyndicateResult = { created: string[]; updated: string[]; warnings: string[]; rewritten?: string[] }
 
 // 발행된 원본을 syndicate_to 매체들에 사본으로 올리거나, 이미 있는 사본을 원본 내용으로 갱신한다
+//   lang: 경고 문구의 언어 (편집국 언어, 기본 한국어)
 //   rewrite: 사본의 제목·부제·본문 글을 매체마다 AI로 다시 써서 올린다 (같은 글이 그대로 겹치지 않게). 실패하면 원문 그대로
-export async function syndicate(articleId: string, { rewrite = true }: { rewrite?: boolean } = {}): Promise<SyndicateResult> {
+export async function syndicate(articleId: string, { rewrite = true, lang = 'ko' }: { rewrite?: boolean; lang?: CmsLang } = {}): Promise<SyndicateResult> {
+  const t = makeT(lang)
   const supabase = createClient()
   const result: SyndicateResult = { created: [], updated: [], warnings: [], rewritten: [] }
 
@@ -16,7 +19,7 @@ export async function syndicate(articleId: string, { rewrite = true }: { rewrite
     .select('*, category:categories(slug, name), outlet:outlets(name)')
     .eq('id', articleId)
     .single()
-  if (error || !src) throw new Error('원본 기사를 불러오지 못했습니다.')
+  if (error || !src) throw new Error(t('원본 기사를 불러오지 못했습니다.', 'Could not load the original story.'))
   if (src.source_article_id || src.status !== 'published') return result
 
   const targets = ((src.syndicate_to ?? []) as string[]).filter((id) => id !== src.outlet_id)
@@ -38,7 +41,7 @@ export async function syndicate(articleId: string, { rewrite = true }: { rewrite
       try {
         rewrites.set(o.id, await rewriteForOutlet({ sourceOutletId: src.outlet_id, sourceOutletName: srcOutletName ?? null, outletName: o.name, title: src.title, excerpt: src.excerpt, body: src.body }))
       } catch {
-        rewrites.set(o.id, { ok: false, error: 'AI로 바꾸지 못했습니다' })
+        rewrites.set(o.id, { ok: false, error: t('AI로 바꾸지 못했습니다', 'AI rewrite failed') })
       }
     }))
   }
@@ -48,10 +51,10 @@ export async function syndicate(articleId: string, { rewrite = true }: { rewrite
     const cat = srcCategory
       ? outletCats.find((c) => c.slug === srcCategory.slug) ?? outletCats.find((c) => c.name === srcCategory.name)
       : undefined
-    if (srcCategory && !cat) result.warnings.push(`${outlet.name}: '${srcCategory.name}' 섹션이 없어 섹션 없이 올렸습니다.`)
+    if (srcCategory && !cat) result.warnings.push(t(`${outlet.name}: '${srcCategory.name}' 섹션이 없어 섹션 없이 올렸습니다.`, `${outlet.name}: No “${srcCategory.name}” section exists there, so the story was posted without a section.`))
 
     const rw = rewrites.get(outlet.id)
-    if (rw && !rw.ok) result.warnings.push(`${outlet.name}: AI로 문장을 바꾸지 못해 원문 그대로 올렸습니다 (${rw.error})`)
+    if (rw && !rw.ok) result.warnings.push(t(`${outlet.name}: AI로 문장을 바꾸지 못해 원문 그대로 올렸습니다 (${rw.error})`, `${outlet.name}: The AI rewrite failed, so the original text was posted as is (${rw.error})`))
     let body = rw?.ok ? rw.body : srcOutletName ? (src.body as string).replace(`[${srcOutletName}=`, `[${outlet.name}=`) : src.body
     // AI로 다시 쓴 사본: 받는 매체가 AI 활용 표시를 켰거나 원본에 표시가 있으면, 받는 매체 문구로 본문 끝에 붙인다
     if (rw?.ok) {
@@ -76,7 +79,7 @@ export async function syndicate(articleId: string, { rewrite = true }: { rewrite
     const existing = (copies ?? []).find((c) => c.outlet_id === outlet.id)
     if (existing) {
       const { error: e } = await supabase.from('articles').update(content).eq('id', existing.id)
-      if (e) result.warnings.push(`${outlet.name}: 갱신 실패 (${e.message})`)
+      if (e) result.warnings.push(t(`${outlet.name}: 갱신 실패 (${e.message})`, `${outlet.name}: Update failed (${e.message})`))
       else result.updated.push(outlet.name)
     } else {
       const { error: e } = await supabase.from('articles').insert({
@@ -88,18 +91,19 @@ export async function syndicate(articleId: string, { rewrite = true }: { rewrite
         status: 'published',
         published_at: src.published_at ?? new Date().toISOString(),
       })
-      if (e) result.warnings.push(`${outlet.name}: 송고 실패 (${e.message})`)
+      if (e) result.warnings.push(t(`${outlet.name}: 송고 실패 (${e.message})`, `${outlet.name}: Syndication failed (${e.message})`))
       else result.created.push(outlet.name)
     }
   }
   return result
 }
 
-export function describe(r: SyndicateResult) {
+export function describe(r: SyndicateResult, lang: CmsLang = 'ko') {
+  const t = makeT(lang)
   const lines: string[] = []
-  if (r.created.length) lines.push(`함께 송고: ${r.created.join(', ')}`)
-  if (r.rewritten?.length) lines.push(`AI로 문장을 바꿔 올림: ${r.rewritten.join(', ')}`)
-  if (r.updated.length) lines.push(`사본 갱신: ${r.updated.join(', ')}`)
+  if (r.created.length) lines.push(t(`함께 송고: ${r.created.join(', ')}`, `Syndicated to: ${r.created.join(', ')}`))
+  if (r.rewritten?.length) lines.push(t(`AI로 문장을 바꿔 올림: ${r.rewritten.join(', ')}`, `Posted with AI-rewritten text: ${r.rewritten.join(', ')}`))
+  if (r.updated.length) lines.push(t(`사본 갱신: ${r.updated.join(', ')}`, `Copies updated: ${r.updated.join(', ')}`))
   lines.push(...r.warnings)
   return lines.join('\n')
 }

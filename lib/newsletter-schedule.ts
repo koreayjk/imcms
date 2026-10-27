@@ -1,3 +1,5 @@
+import { newsletterLabel } from './pricing'
+
 // 뉴스레터 자동 발송 예약 (supabase/newsletter-schedule.sql). 시각은 모두 한국 시간 정시
 export type ScheduleKind = 'once' | 'weekly' | 'biweekly' | 'monthly'
 export type NewsletterSchedule = {
@@ -20,6 +22,20 @@ export type NewsletterSchedule = {
 
 export const KIND_LABEL: Record<ScheduleKind, string> = { once: '한 번만', weekly: '매주', biweekly: '2주마다', monthly: '매월' }
 export const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
+// 영어 화면용
+const KIND_LABEL_EN: Record<ScheduleKind, string> = { once: 'One time', weekly: 'Weekly', biweekly: 'Every 2 weeks', monthly: 'Monthly' }
+const WEEKDAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const WEEKDAYS_EN_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+export const kindLabel = (k: ScheduleKind, lang: 'ko' | 'en' = 'ko') => (lang === 'en' ? KIND_LABEL_EN[k] : KIND_LABEL[k])
+// 요일 이름: 한국어 '월', 영어 'Mon'
+export const weekdayLabel = (i: number, lang: 'ko' | 'en' = 'ko') => (lang === 'en' ? WEEKDAYS_EN_SHORT[i] : WEEKDAYS[i])
+// 요일 전체 이름: 한국어 '월요일', 영어 'Monday'
+export const weekdayName = (i: number, lang: 'ko' | 'en' = 'ko') => (lang === 'en' ? WEEKDAYS_EN[i] : `${WEEKDAYS[i]}요일`)
+// 시각 이름: 한국어 '오전 7시', 영어 '7 AM'
+export const hourName = (h: number, lang: 'ko' | 'en' = 'ko') => (lang === 'en' ? timeEn(h) : `${h < 12 ? '오전' : '오후'} ${h % 12 === 0 ? 12 : h % 12}시`)
+const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'}`
+const timeEn = (h: number) => `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? 'AM' : 'PM'}`
 
 const KST = 9 * 3600e3
 // 한국 날짜·시각 → 실제 시각
@@ -64,22 +80,33 @@ export function nextRun(s: Pick<NewsletterSchedule, 'kind' | 'send_on' | 'weekda
 // 한 달에 최대 몇 번 나가는지 (요금제 한도와 비교)
 export const perMonthOf = (kind: ScheduleKind) => (kind === 'weekly' ? 5 : kind === 'biweekly' ? 3 : 1)
 
-// 제목: {매체} {날짜} 를 채운다 (날짜는 '10월 20일')
+// 제목: {매체} {날짜} 를 채운다 (날짜는 '10월 20일'). 영어 편집국에서는 {outlet} {date} 도 쓴다 (날짜는 'Oct 20')
 export function renderSubject(template: string, outletName: string, at: Date) {
   const p = kstParts(at)
-  return template.replace(/\{매체\}/g, outletName).replace(/\{날짜\}/g, `${p.m + 1}월 ${p.d}일`).slice(0, 150)
+  return template.replace(/\{(매체|outlet)\}/g, outletName).replace(/\{날짜\}/g, `${p.m + 1}월 ${p.d}일`).replace(/\{date\}/g, `${MONTHS_EN[p.m]} ${p.d}`).slice(0, 150)
 }
 
-export function describeSchedule(s: Pick<NewsletterSchedule, 'kind' | 'send_on' | 'weekday' | 'month_day' | 'hour'>) {
+// 요금제의 뉴스레터 한도 문구 (영어 화면용 포함)
+export const quotaLabel = (q: Parameters<typeof newsletterLabel>[0], lang: 'ko' | 'en' = 'ko') =>
+  lang === 'en' ? (q ? `${q.perWeek ? `${q.perWeek}/week` : `${q.perMonth}/month`} · up to ${q.perSend.toLocaleString('en-US')} recipients per send` : 'None') : newsletterLabel(q)
+
+export function describeSchedule(s: Pick<NewsletterSchedule, 'kind' | 'send_on' | 'weekday' | 'month_day' | 'hour'>, lang: 'ko' | 'en' = 'ko') {
+  if (lang === 'en') {
+    const time = `${timeEn(s.hour)} KST`
+    if (s.kind === 'once') return `${s.send_on ?? ''} ${time}`
+    if (s.kind === 'monthly') return `Monthly on the ${ordinal(s.month_day ?? 1)}, ${time}`
+    return `${KIND_LABEL_EN[s.kind]} on ${WEEKDAYS_EN[s.weekday ?? 1]}, ${time}`
+  }
   const time = `${s.hour < 12 ? '오전' : '오후'} ${s.hour % 12 === 0 ? 12 : s.hour % 12}시`
   if (s.kind === 'once') return `${s.send_on ?? ''} ${time}`
   if (s.kind === 'monthly') return `매월 ${s.month_day ?? 1}일 ${time}`
   return `${KIND_LABEL[s.kind]} ${WEEKDAYS[s.weekday ?? 1]}요일 ${time}`
 }
 
-export const formatKst = (iso: string) => {
+export const formatKst = (iso: string, lang: 'ko' | 'en' = 'ko') => {
   const t = new Date(iso)
   const p = kstParts(t)
   const h = new Date(t.getTime() + KST).getUTCHours()
+  if (lang === 'en') return `${MONTHS_EN[p.m]} ${p.d} (${WEEKDAYS_EN_SHORT[p.wd]}) ${timeEn(h)}`
   return `${p.m + 1}월 ${p.d}일(${WEEKDAYS[p.wd]}) ${h < 12 ? '오전' : '오후'} ${h % 12 === 0 ? 12 : h % 12}시`
 }

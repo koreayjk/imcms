@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation'
 import { addReply } from '@/app/(main)/support/actions'
 import { uploadSupportFiles } from './support-upload'
 import FilePicker from './FilePicker'
+import { useT, useCmsLang } from './CmsLang'
 
 export default function ReplyBox({ ticketId, isStaff }: { ticketId: string; isStaff: boolean }) {
+  const t = useT()
+  const lang = useCmsLang()
   const router = useRouter()
   const [body, setBody] = useState('')
   const [files, setFiles] = useState<File[]>([])
@@ -18,9 +21,9 @@ export default function ReplyBox({ ticketId, isStaff }: { ticketId: string; isSt
     setBusy(true)
     setError('')
     const res = await addReply(ticketId, body)
-    if (res.error || !res.id) { setError(res.error ?? '저장하지 못했습니다.'); setBusy(false); return }
-    const failed = files.length ? await uploadSupportFiles(ticketId, res.id, files) : []
-    if (failed.length) window.alert(`올리지 못한 파일: ${failed.join(', ')}`)
+    if (res.error || !res.id) { setError(res.error ?? t('저장하지 못했습니다.', 'Could not save.')); setBusy(false); return }
+    const failed = files.length ? await uploadSupportFiles(ticketId, res.id, files, lang) : []
+    if (failed.length) window.alert(t(`올리지 못한 파일: ${failed.join(', ')}`, `Files that could not be uploaded: ${failed.join(', ')}`))
     setBody('')
     setFiles([])
     setBusy(false)
@@ -29,13 +32,13 @@ export default function ReplyBox({ ticketId, isStaff }: { ticketId: string; isSt
 
   return (
     <form onSubmit={submit} className="space-y-3 rounded-2xl bg-white p-5 ring-1 ring-black/5">
-      <label htmlFor="reply" className="text-[14px] font-bold">{isStaff ? '운영팀 답변 쓰기' : '추가 문의 · 답글'}</label>
-      <textarea id="reply" value={body} onChange={(e) => setBody(e.target.value)} rows={5} placeholder={isStaff ? '답변을 적어주세요. 첫 답변을 달면 상태가 “진행”으로 바뀝니다.' : '추가로 알려줄 내용이 있으면 적어주세요.'} className="field-input resize-y leading-relaxed" />
+      <label htmlFor="reply" className="text-[14px] font-bold">{isStaff ? t('운영팀 답변 쓰기', 'Write a team reply') : t('추가 문의 · 답글', 'Follow-up question · Reply')}</label>
+      <textarea id="reply" value={body} onChange={(e) => setBody(e.target.value)} rows={5} placeholder={isStaff ? t('답변을 적어주세요. 첫 답변을 달면 상태가 “진행”으로 바뀝니다.', 'Write your reply. Posting the first reply changes the status to “In progress.”') : t('추가로 알려줄 내용이 있으면 적어주세요.', 'Add anything else you would like us to know.')} className="field-input resize-y leading-relaxed" />
       <FilePicker files={files} setFiles={setFiles} />
       {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
       <div className="flex justify-end">
         <button type="submit" disabled={busy || !body.trim()} className="rounded-full bg-[#2F6BF0] px-6 py-2 text-[14px] font-bold text-white hover:opacity-90 disabled:opacity-50">
-          {busy ? '보내는 중…' : '등록'}
+          {busy ? t('보내는 중…', 'Sending…') : t('등록', 'Post')}
         </button>
       </div>
     </form>

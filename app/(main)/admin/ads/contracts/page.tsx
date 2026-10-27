@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import AdTabs from '@/components/cms/AdTabs'
 import AdHowItWorks from '@/components/cms/AdHowItWorks'
 import AdContracts, { type Contract } from '@/components/cms/AdContracts'
@@ -8,6 +9,7 @@ import type { Booking } from '@/components/cms/AdCalendar'
 // 광고 계약 장부 (그 매체 편집장·발행인). 매출 정보라 IM 뉴스룸 매니저에게는 보이지 않는다
 export default async function AdContractsPage() {
   const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
+  const { t } = await getT()
   if (!isEditorPlus) redirect(isStaff ? '/admin/ads' : '/newsroom')
   if (!outletId) redirect('/admin/ads')
 
@@ -55,18 +57,19 @@ export default async function AdContractsPage() {
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-4">
-        <h1 className="text-[22px] font-bold tracking-tight">광고</h1>
+        <h1 className="text-[22px] font-bold tracking-tight">{t('광고', 'Ads')}</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
-          들어온 광고를 계약 단위로 적어 둡니다. 광고 자리를 고르면 달력에서 빈 날짜를 확인해 예약하고, 사진을 미리 올려 두면 시작일에 자동으로 나가고 끝나면 내려갑니다(같은 자리의 기본 배너는 그동안 쉽니다). 금액·입금·세금계산서와 노출·클릭 수도 함께 봅니다.
-          이 화면은 우리 매체 편집장·발행인만 봅니다.
+          {t(`들어온 광고를 계약 단위로 적어 둡니다. 광고 자리를 고르면 달력에서 빈 날짜를 확인해 예약하고, 사진을 미리 올려 두면 시작일에 자동으로 나가고 끝나면 내려갑니다(같은 자리의 기본 배너는 그동안 쉽니다). 금액·입금·세금계산서와 노출·클릭 수도 함께 봅니다.
+          이 화면은 우리 매체 편집장·발행인만 봅니다.`, `Log each ad you book as a contract. Pick a placement, check open dates on the calendar and reserve them; upload the image ahead of time and it runs automatically from the start date and comes down when it ends (the regular banner in that placement pauses in the meantime). You can also track amounts, payments, tax invoices, impressions and clicks.
+          Only your outlet’s Editor-in-Chief and Publisher can see this page.`)}
         </p>
       </header>
       <AdTabs current="contracts" showContracts />
       <AdHowItWorks current="contracts" />
       {contractsRes.error ? (
-        <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">광고 계약을 쓰려면 Supabase에서 <code>supabase/ad-contracts.sql</code>을 실행해 주세요.</p>
+        <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">{t('광고 계약을 쓰려면 Supabase에서', 'To use ad contracts, run')} <code>supabase/ad-contracts.sql</code>{t('을 실행해 주세요.', ' in Supabase.')}</p>
       ) : (
-        <AdContracts contracts={contracts} bookings={bookings} today={today} outletId={outletId} outletName={(outlet as { name?: string } | null)?.name ?? '매체'} />
+        <AdContracts contracts={contracts} bookings={bookings} today={today} outletId={outletId} outletName={(outlet as { name?: string } | null)?.name ?? t('매체', 'Outlet')} />
       )}
     </div>
   )

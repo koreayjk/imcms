@@ -104,6 +104,76 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
 ]
 
+// 영어판: id 로 짝을 맞춘다 (keys 는 한국어 목록 것을 그대로 쓴다). 화면에서는 onboardingSteps(lang) 으로 고른다
+const ONBOARDING_EN: Record<string, Omit<OnboardingStep, 'id' | 'keys'>> = {
+  apply: {
+    days: 'Application day to day 2',
+    title: 'Application received and consultation',
+    we: ['We send a confirmation email and a quote.', 'Within two business days, your account manager contacts you by phone or email to settle the contract terms and launch schedule.'],
+    you: ['Please reply to the message you receive.', 'If you use a newsroom/CMS program today, let us know (we will migrate your stories and photos).'],
+    result: 'The contract terms and launch schedule are confirmed.',
+  },
+  open: {
+    days: 'Days 1-2',
+    title: 'Newsroom and website set up, invitation sent',
+    we: ['We create your outlet\'s own newsroom and website and send the publisher an invitation email. Until launch, your domain shows an "Opening soon" page, and we show you the real website through a preview link.'],
+    you: ['Sign up and log in using the link in the invitation email.'],
+    result: 'You can enter the newsroom with the publisher account.',
+  },
+  domain: {
+    days: 'Days 2-3',
+    title: 'Connect your domain',
+    we: ['We give you the values needed for the connection (A and CNAME records) and, once connected, confirm that your outlet\'s address opens the website.'],
+    you: ['Change the DNS settings at the company where you bought the domain (about 10 minutes). You do not need to send us your ID or password.'],
+    result: 'The website opens at your outlet\'s address (e.g. www.example.com).',
+  },
+  brand: {
+    days: 'Days 3-5',
+    title: 'Logo, colors, legal notices and sections',
+    we: ['Using the materials you send, we enter your logo, brand color, masthead name, publisher and editor names, online newspaper registration number, youth protection officer and contact details, then set up the sections (menu) and the look of the home page.'],
+    you: ['Send your logo file (PNG with a transparent background), brand color, menu structure, and the legal notice information to show in the footer.'],
+    result: 'The website is styled as your outlet and the legally required notices are in place.',
+  },
+  import: {
+    days: 'Days 3-7',
+    title: 'Migrate existing stories and photos',
+    we: ['We move the stories and photos from your current program and link old story URLs to the new stories, so old links still work.'],
+    you: ['Send your existing story data (an export file or access details) by a secure method. Outlets starting from scratch skip this step.'],
+    result: 'Your earlier stories appear on the new website as they were, and readers arriving from search are not cut off.',
+    alt: {
+      days: 'Days 3-7',
+      title: 'Starter stories prepared',
+      we: ['Because your outlet is starting fresh and has no stories to migrate, we prepare starter stories for each section so the home page is not empty on launch day.', 'We draft stories and create photos based on press releases from government and public agencies, and put them in "Pending approval". The use of AI is disclosed in each story. The byline is set to your editor-in-chief\'s name, and you can change it on the story edit screen.'],
+      you: ['Read the drafts, approve the stories you want to publish, and edit or remove the rest. The outlet that approves a story is responsible for publishing it.', 'For opinion and reported pieces such as editorials, columns and interviews, we provide only drafts (in progress); your outlet needs to finish them.'],
+      result: 'On launch day the website is not empty; it is filled with the starter stories you approved.',
+    },
+  },
+  training: {
+    days: 'Days 5-7',
+    title: 'How to use the newsroom',
+    we: ['We walk you through the Help Center guides and the story writing guide (writing and approving stories, press releases, home page editing, using ads), and answer anything you get stuck on right away through work requests.', 'If you like, we go through it together one-on-one by phone or screen share for about 30 minutes.'],
+    you: ['Take a quick look at the Help Center guides and the writing guide. Please be sure to read the story writing guide, which contains the Naver News partnership evaluation criteria.', 'If you want a one-on-one session, tell us a time that suits you. It helps if your reporters and editor-in-chief join too.'],
+    result: 'You can write, approve and publish stories on your own.',
+  },
+  launch: {
+    days: 'Launch day',
+    title: 'Official launch and search registration',
+    we: ['We issue the first service fee invoice before launch, confirm payment, and on the official launch day take down the "Opening soon" page and open the website. There is no charge while launch work is under way.', 'We clean up the test stories and turn on search visibility.', 'We register your outlet with Naver Search Advisor and Google Search Console and submit the sitemap.', 'We add your Google account as an owner of Search Console.'],
+    you: ['Choose your launch date.', 'Tell us your Google account address so we can add you as a Search Console owner.'],
+    result: 'The website opens on the first service fee paid before launch, and your outlet starts to be registered in Google and Naver web search.',
+  },
+  after: {
+    days: '1 week after launch',
+    title: 'Post-launch check and guidance',
+    we: ['One week later, we check the indexing status and report back to you.', 'Appearing in Naver and Kakao "News" (the news partnership review) is a process the news outlet applies for itself, so we guide you on how to prepare.'],
+    you: ['If you want to go for the news partnership review, we will check the application timing and documents together.'],
+    result: 'Search registration is confirmed to be working, and your next goal (news partnership) is laid out.',
+  },
+}
+export const ONBOARDING_STEPS_EN: OnboardingStep[] = ONBOARDING_STEPS.map((s) => ({ ...s, ...ONBOARDING_EN[s.id] }))
+// 화면 언어에 맞는 단계 목록 (한국어는 ONBOARDING_STEPS 그대로)
+export const onboardingSteps = (lang?: 'ko' | 'en'): OnboardingStep[] => (lang === 'en' ? ONBOARDING_STEPS_EN : ONBOARDING_STEPS)
+
 export type StepState = 'done' | 'doing' | 'todo'
 
 // 끝낸 항목(done) 으로 단계별 상태를 계산한다: 앞에서부터 모두 끝난 단계는 done, 처음 끝나지 않은 단계는 doing, 나머지는 todo

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { PRESS_MAIL_ADDON_FEE } from '@/lib/pricing'
 
 export type MyInbox = {
@@ -33,7 +34,7 @@ export type AddressState = { ok?: boolean; error?: string }
 
 export async function saveMailAddress(_prev: AddressState, form: FormData): Promise<AddressState> {
   const { supabase, isSuper } = await getCmsContext()
-  if (!isSuper) return { error: '총관리자만 바꿀 수 있습니다.' }
+  if (!isSuper) return { error: (await getT()).t('총관리자만 바꿀 수 있습니다.', 'Only a Super Admin can change this.') }
   const address = String(form.get('address') ?? '').trim()
   const { error } = await supabase.rpc('admin_set_press_mail_address', { p_address: address })
   if (error) return { error: error.message }
@@ -57,8 +58,8 @@ const okLimit = (n: number | null) => n === null || (Number.isInteger(n) && n >=
 
 export async function saveOutletLimit(outletId: string, limit: number | null): Promise<{ ok?: boolean; error?: string }> {
   const { supabase, isSuper } = await getCmsContext()
-  if (!isSuper) return { error: '총관리자만 바꿀 수 있습니다.' }
-  if (!okLimit(limit)) return { error: '하루 한도는 0~2000 사이의 숫자로 적어 주세요.' }
+  if (!isSuper) return { error: (await getT()).t('총관리자만 바꿀 수 있습니다.', 'Only a Super Admin can change this.') }
+  if (!okLimit(limit)) return { error: (await getT()).t('하루 한도는 0~2000 사이의 숫자로 적어 주세요.', 'Enter a daily limit between 0 and 2000.') }
   const { error } = await supabase.rpc('admin_set_press_mail_limit', { p_outlet: outletId, p_limit: limit })
   if (error) return { error: error.message }
   revalidatePath('/press/email')
@@ -67,8 +68,8 @@ export async function saveOutletLimit(outletId: string, limit: number | null): P
 
 export async function savePlanLimit(plan: PlanLimit['plan'], limit: number): Promise<{ ok?: boolean; error?: string }> {
   const { supabase, isSuper } = await getCmsContext()
-  if (!isSuper) return { error: '총관리자만 바꿀 수 있습니다.' }
-  if (!okLimit(limit) || limit === null) return { error: '하루 한도는 0~2000 사이의 숫자로 적어 주세요.' }
+  if (!isSuper) return { error: (await getT()).t('총관리자만 바꿀 수 있습니다.', 'Only a Super Admin can change this.') }
+  if (!okLimit(limit) || limit === null) return { error: (await getT()).t('하루 한도는 0~2000 사이의 숫자로 적어 주세요.', 'Enter a daily limit between 0 and 2000.') }
   const { error } = await supabase.rpc('admin_set_press_mail_plan_limit', { p_plan: plan, p_limit: limit })
   if (error) return { error: error.message }
   revalidatePath('/press/email')
@@ -78,7 +79,7 @@ export async function savePlanLimit(plan: PlanLimit['plan'], limit: number): Pro
 // 총관리자: 보도자료 메일 자동 수신 부가 서비스 켜고 끄기 (월 39,000원, 다음 청구서부터 항목이 들어감)
 export async function saveOutletAddon(outletId: string, on: boolean): Promise<{ ok?: boolean; error?: string }> {
   const { supabase, isSuper } = await getCmsContext()
-  if (!isSuper) return { error: '총관리자만 바꿀 수 있습니다.' }
+  if (!isSuper) return { error: (await getT()).t('총관리자만 바꿀 수 있습니다.', 'Only a Super Admin can change this.') }
   const { error } = await supabase.rpc('admin_set_press_mail_addon', { p_outlet: outletId, p_on: on })
   if (error) return { error: error.message }
   revalidatePath('/press/email')
@@ -89,13 +90,13 @@ export async function saveOutletAddon(outletId: string, on: boolean): Promise<{ 
 const ADDON_TITLE = `부가 서비스 신청: 보도자료 메일 자동 수신 (월 ${PRESS_MAIL_ADDON_FEE.toLocaleString('ko-KR')}원)`
 export async function requestPressAddon(): Promise<{ ok?: boolean; already?: boolean; error?: string }> {
   const { supabase, user, outletId, profile } = await getCmsContext()
-  if (!outletId) return { error: '소속 매체가 없어 신청할 수 없습니다.' }
+  if (!outletId) return { error: (await getT()).t('소속 매체가 없어 신청할 수 없습니다.', 'You cannot apply because you do not belong to an outlet.') }
   const { data: open } = await supabase.from('support_tickets').select('id').eq('outlet_id', outletId).eq('title', ADDON_TITLE).neq('status', 'done').limit(1)
   if (open?.length) return { ok: true, already: true }
   const { data: o } = await supabase.from('outlets').select('name').eq('id', outletId).maybeSingle()
   const body = `${(o as { name?: string } | null)?.name ?? '우리 매체'}에서 "보도자료 메일 자동 수신" 부가 서비스를 신청합니다.\n\n- 메일로 온 보도자료를 보도자료함으로 자동 수신, 첨부(한글·워드·PDF·텍스트) 내용 자동 입력\n- 월 ${PRESS_MAIL_ADDON_FEE.toLocaleString('ko-KR')}원, 다음 청구서부터 부가 항목으로 청구\n\n신청자: ${profile?.full_name ?? ''}`
   const { error } = await supabase.from('support_tickets').insert({ category: 'billing', title: ADDON_TITLE, body, requester_id: user.id, outlet_id: outletId })
-  if (error) return { error: `신청을 저장하지 못했습니다: ${error.message}` }
+  if (error) return { error: `${(await getT()).t('신청을 저장하지 못했습니다', 'Could not save your request')}: ${error.message}` }
   revalidatePath('/support', 'layout')
   return { ok: true }
 }

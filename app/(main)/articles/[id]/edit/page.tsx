@@ -3,12 +3,14 @@ import Link from 'next/link'
 import ArticleEditor from '@/components/ArticleEditor'
 import { getCmsContext } from '@/lib/cms'
 import { outletEmailOf } from '@/lib/outlet-email'
+import { getT } from '@/lib/cms-t'
 
 // 승인신청·발행할 때 AI 법적 검수를 기다린다
 export const maxDuration = 60
 
 export default async function EditArticlePage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params
+  const { t } = await getT()
   const { supabase, user, profile, outletId, isEditorPlus, trial, viewAs, viewGroupId } = await getCmsContext()
 
   const { data: article } = await supabase.from('articles').select('*').eq('id', params.id).single()
@@ -35,8 +37,8 @@ export default async function EditArticlePage(props: { params: Promise<{ id: str
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-8 md:py-8">
       <div className="mb-6 flex items-center gap-4">
-        <h1 className="text-[22px] font-bold tracking-tight">기사 수정</h1>
-        <Link href={`/articles/${article.id}`} className="text-[13px] text-muted hover:text-ink">기사 보기 →</Link>
+        <h1 className="text-[22px] font-bold tracking-tight">{t('기사 수정', 'Edit story')}</h1>
+        <Link href={`/articles/${article.id}`} className="text-[13px] text-muted hover:text-ink">{t('기사 보기 →', 'View story →')}</Link>
       </div>
       <ArticleEditor
         article={article as any}

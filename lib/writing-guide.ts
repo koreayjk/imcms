@@ -177,6 +177,184 @@ export const CHECKLIST: string[] = [
   '키워드를 3개 이상 넣었다',
 ]
 
+// ───────── English edition (editorial desk in English) ─────────
+//   The rules come from Naver's (Korea's largest portal) News Partnership evaluation rules, so this is an English
+//   rendering of the Korean guide. ko/en are separate copies; pick one with guideFor / penaltyTableFor / checklistFor / naverRuleFor.
+//   When the Korean guide changes, update the English copy below too.
+
+export const NAVER_RULE_EN = 'Naver News Partnership Review & Evaluation Rules, Article 11 (partially amended 2026-07-21)'
+
+export const PENALTY_TABLE_EN: { area: string; rows: [string, string][] }[] = [
+  { area: 'Article reliability', rows: [
+    ['A. False facts leading to a correction order or defamation ruling', '2 pts'],
+    ['B. Exaggeration or distortion; headline that differs from the body (clickbait)', '0.5 pts'],
+    ['C. False or missing author information', '1 pt · 4 pts'],
+    ['D. Failing to label AI-generated text or photos', '0.5 pts'],
+    ['E. Sensational stories or advertising', '1 pt'],
+  ] },
+  { area: 'User experience', rows: [
+    ['F. Ads or popups that cover the body or are hard to close', '0.5–2 pts'],
+    ['G. Malware, forced login, or loading over 6 seconds', '0.5–2 pts'],
+    ['H. Forced redirects to ad pages, back-button hijacking', '0.5–2 pts'],
+  ] },
+  { area: 'Fair distribution', rows: [
+    ['I. Swapping in a completely different story at the same URL', '1.5 pts'],
+    ['J. Resending the same or similar story within 1 month', '1.5 pts'],
+    ['K. Ads or sensational stories in the top-news area', '0.5–2 pts'],
+    ['L. Repeating or hiding search keywords', '1.5 pts · 2 pts'],
+    ['M. Sending to a category not agreed on (including press releases)', '0.5 pts · 1.5 pts'],
+    ['N. Sending stories from other outlets not covered by the contract', '2 pts'],
+    ['O. Copyright infringement (unauthorized use of articles, photos, video)', '1 pt · 2 pts'],
+  ] },
+  { area: 'Commercial misuse', rows: [
+    ['P. Demanding payment from companies in exchange for coverage', '10 pts'],
+    ['Q. Paid stories (sponsorship or advertising payment received)', '1.5 pts'],
+    ['R. Stories that push readers to buy products or services', '0.5 pts · 1 pt'],
+  ] },
+]
+
+export const GUIDE_EN: GuideSection[] = [
+  {
+    id: 'why',
+    title: 'Why these rules matter',
+    lead: 'Outlets in Naver’s News Partnership are evaluated on every story they send. If the penalty points received over the past 24 months exceed 10, Naver recommends terminating the partnership contract. Outlets not yet partnered should follow the same standards so they can pass the partnership review more easily later.',
+    items: [
+      { text: 'The editor-in-chief who approves stories (the approver) is responsible for what is published. Please check this guide’s checklist before approving.' },
+      { text: 'If one story hits several items, only the highest single penalty is applied. Even so, some items cost 2–4 points at once, so a few stories can reach the termination threshold.' },
+      { text: 'Naver continuously checks stories sent within the past month using software and monitoring staff, and when a report comes in it reviews stories going back 24 months.' },
+    ],
+  },
+  {
+    id: 'byline',
+    title: 'Byline (reporter name)',
+    items: [
+      { text: 'Every story carries the name of the reporter who actually wrote it. This applies to regular stories, appointments and obituaries alike.', point: 'C' },
+      { text: 'Using a name that does not exist (a pseudonym) is 4 points; using only a department name such as “Editorial Desk” or “Reporting Team” is 1 point. The only exception is a joint reporting team with a clearly responsible person.', point: 'C' },
+      { text: 'For outside columns and contributed pieces, always include the writer’s name and a short bio in the body.', point: 'C' },
+    ],
+  },
+  {
+    id: 'press',
+    title: 'Press releases and promotional stories',
+    items: [
+      { text: 'Stories that use a press release almost verbatim, stories paid for through sponsorship or advertising, and promotional stories must be sent to the “Press release” section.', point: 'M·Q' },
+      { text: 'If you base a story on a press release but substantially restructure it and add your own reporting, it can go in a regular section.' },
+      { text: 'For company and product press releases, keep only objective information. Remove anything that pushes a purchase, such as prices, discounts, where to buy, how to buy, and phone numbers.', point: 'R' },
+      { text: 'For products whose advertising is restricted by law, such as alcohol and tobacco, do not just relay what the company provided; add the reporter’s own comparison and analysis.', point: 'R' },
+      { text: 'Use the name of the head of the organization that issued the press release only when truly necessary (leave out profiles of the head that are mostly greetings).' },
+      { text: 'Never demand money or gifts in return for writing or editing a story. It is 10 points at once, which alone reaches the termination threshold.', point: 'P' },
+    ],
+  },
+  {
+    id: 'duplicate',
+    title: 'Duplicate stories',
+    items: [
+      { text: 'Do not resend content that is the same as a story sent within the past month with only the headline, wording or photo changed. Follow-up coverage of breaking news is the exception.', point: 'J' },
+      { text: 'Before writing, search the story list for related stories. Try words in the headline or body, keywords, and reporter names.' },
+      { text: 'News issued jointly by two or more organizations may already have been written by another reporter. Organizations also often redistribute the same press release.' },
+      { text: 'Do not change a published story into a completely different story at the same URL. Limit edits to typos and factual corrections, and add a correction notice for major corrections.', point: 'I' },
+    ],
+  },
+  {
+    id: 'ai',
+    title: 'Using AI',
+    items: [
+      { text: 'Label photos, illustrations and video made with AI in the caption, for example “AI-generated image.” When you publish AI-written text almost as is, also disclose the use of AI in the body.', point: 'D' },
+      { text: 'If the editor-in-chief turns on “AI disclosure” in the outlet’s site settings, a note such as “This story was written with the help of AI, and the reporter has verified the facts.” is added automatically to the end of stories made from AI drafts (including AI-rewritten stories sent to other outlets). Each outlet can change the wording.', point: 'D' },
+      { text: 'Always check AI drafts against the source. Verify dates, numbers, names, titles and quotes one by one.' },
+      { text: 'IM Newsroom’s AI drafts are designed to follow the rules in this guide, but final responsibility rests with the reporter who wrote the story and the editor-in-chief who approved it.' },
+    ],
+  },
+  {
+    id: 'copyright',
+    title: 'Copyright',
+    items: [
+      { text: 'Get the rights holder’s permission before using another outlet’s articles, photos, video, graphics or data. Reproducing them without crediting the source is 2 points.', point: 'O' },
+      { text: 'Photos captured from blogs, cafés, social media and communities also need the poster’s permission. Fair quotation under copyright law is the exception.', point: 'O' },
+      { text: 'When you write a story together with another outlet, rewrite it so the context fits yours. Sending another outlet’s story as is when it is not covered by the contract is 2 points.', point: 'N' },
+      { text: 'When you use press releases, research reports or statistics, cite the source in the body.' },
+    ],
+  },
+  {
+    id: 'title',
+    title: 'Writing headlines',
+    items: [
+      { text: 'Focus on facts. Do not use speculative, exaggerated or clickbait headlines.', point: 'B' },
+      { text: 'Keep it short and clear, around 30 characters including spaces.' },
+      { text: 'Put the key keyword near the front (within the first 10 characters). Do not add popular search terms unrelated to the body.', point: 'B·L' },
+      { text: 'Always say “allegation” for things that are unconfirmed. Include specific numbers when you have them.' },
+      { text: 'Do not end headlines with a period (.). To join items, use a middle dot (·) or a comma.' },
+      { text: 'Do not use words that provoke sexual or violent curiosity, or expressions that demean particular groups.', point: 'E' },
+    ],
+  },
+  {
+    id: 'body',
+    title: 'Writing the body',
+    items: [
+      { text: 'Write the first paragraph (lead) and its first one or two sentences so they read in one go. Check that subjects and verbs agree.' },
+      { text: 'Use short sentences and plain words rather than difficult terms or jargon.' },
+      { text: 'Use double quotation marks (" ") only for direct quotes. Use single quotation marks (\' \') for event names, program names and emphasis.' },
+      { text: 'Use a period (.) only at the end of a sentence. To list words, use commas (,) or middle dots (·).' },
+      { text: 'Instead of emotional adjectives like “amazing,” “shocking” or “wonderful,” show readers with figures and circumstances.' },
+      { text: 'Do not state uncertain things as fact; write “appears to be” or “said that.” Do not run only one side’s claim; confirm with the opposing view or objective data.' },
+      { text: 'Do not put phone numbers in the body (they can look promotional). Write website and email addresses as plain text, without links, and only when truly necessary.' },
+      { text: 'Do not put links to other sites in the body. Sending readers to a page other than what they expect earns penalty points.', point: 'H' },
+      { text: 'Do not repeat the same word to catch searches, or hide it with background color or tiny text.', point: 'L' },
+      { text: 'Check for defamation and invasion of privacy. Do not include personal information unrelated to the public interest.', point: 'A' },
+      { text: 'Before submitting for approval, use the preview to check the flow, typos, spacing and punctuation.' },
+    ],
+  },
+  {
+    id: 'photo',
+    title: 'Photos',
+    items: [
+      { text: 'By default, place the photo above the first paragraph or below the lead. Before publishing, check that the lead photo (thumbnail) is set correctly.' },
+      { text: 'Write captions that paint the scene using the five Ws and one H. If that is hard, polish the sentence in the body that best matches the photo.' },
+      { text: 'Credits: for photos you took yourself, “caption / Outlet name (reporter name)”; for press release photos, “caption / provided by ○○”; for openly licensed photos, give the creator, source and license.' },
+      { text: 'Blur business names and phone numbers on signs, and personal information (people whose faces are not needed, license plates, etc.).', point: 'R' },
+      { text: 'Do not use sensational or gruesome photos.', point: 'E' },
+    ],
+  },
+  {
+    id: 'keywords',
+    title: 'Keywords, related stories and sections',
+    items: [
+      { text: 'Give every story at least 3 keywords (tags) that help search. Keywords are used for search within the outlet.' },
+      { text: 'Link about 2 related stories, based on content, organization or reporter.' },
+      { text: 'Choose the section that fits the content. By default, provincial news goes to Politics, Society, Economy or Culture depending on content; city and county news goes to a regional section; company and organization news goes to Economy (Business); appointments, personal news and obituaries go to People.', point: 'M' },
+      { text: 'Do not send to a section different from the site’s sections, or to a section not agreed on at partnership.', point: 'M' },
+    ],
+  },
+  {
+    id: 'site',
+    title: 'Site ads and operations (editors-in-chief and administrators)',
+    items: [
+      { text: 'Do not let ads cover the body or be hard to close. A banner that sticks to the screen and follows the reader is 1 point; a popup ad is 0.5 points.', point: 'F' },
+      { text: 'Do not send readers who came for a story to an ad page, and do not block the back button.', point: 'H' },
+      { text: 'Do not force login or app installation, and make pages open within 6 seconds.', point: 'G' },
+      { text: 'Do not put ads or sensational stories in the “Top news” slot below the story.', point: 'K' },
+    ],
+  },
+]
+
+export const CHECKLIST_EN: string[] = [
+  'A real reporter’s name is in the byline',
+  'No story with the same content was sent in the past month (I searched the story list)',
+  'If it is a press release or promotional story, it is in the “Press release” section',
+  'The headline matches the body, is around 30 characters, and has no period',
+  'Dates, numbers, names, titles and quotes were checked against the source',
+  'No phone numbers, purchase information or external links',
+  'I have the right to use the photos, and the captions carry the credit',
+  'Photos and text made with AI are labeled as such',
+  'At least 3 keywords are added',
+]
+
+// Pick the ko/en copy of the guide
+export const guideFor = (lang?: 'ko' | 'en') => (lang === 'en' ? GUIDE_EN : GUIDE)
+export const penaltyTableFor = (lang?: 'ko' | 'en') => (lang === 'en' ? PENALTY_TABLE_EN : PENALTY_TABLE)
+export const checklistFor = (lang?: 'ko' | 'en') => (lang === 'en' ? CHECKLIST_EN : CHECKLIST)
+export const naverRuleFor = (lang?: 'ko' | 'en') => (lang === 'en' ? NAVER_RULE_EN : NAVER_RULE)
+
 // AI 초안 지시문에 붙이는 표기·문장 규칙 (위 가이드 가운데 글쓰기에 해당하는 것만)
 export const AI_STYLE_RULES = `표기·문장 규칙 (IM 뉴스룸 기사 작성 가이드 · 네이버 뉴스제휴 운영평가 기준)
 - 제목은 사실 중심으로 공백 포함 30자 안팎(길어도 40자 이내)으로 씁니다. 핵심 키워드를 앞쪽 10자 안에 둡니다. 제목에 마침표(.)를 쓰지 않고, 이어 쓸 때는 가운데점(·)이나 쉼표를 씁니다.

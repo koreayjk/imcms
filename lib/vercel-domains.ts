@@ -1,4 +1,5 @@
 // 서버에서만 쓴다 (토큰이 브라우저로 가지 않게)
+import type { CmsLang } from './cms-i18n'
 
 // 매체 도메인을 Vercel 프로젝트에 자동으로 등록하고 연결 상태(DNS)를 확인한다
 //   Vercel 환경 변수: VERCEL_API_TOKEN(도메인 관리용 토큰), VERCEL_PROJECT_ID, (팀 계정이면) VERCEL_TEAM_ID
@@ -28,7 +29,7 @@ async function api(path: string, init: RequestInit = {}) {
 const isApex = (d: string) => d.split('.').length === 2 || /\.(co|or|ne|go|ac|re|pe|ai|es|hs|ms|sc|kg)\.kr$/.test(d) && d.split('.').length === 3
 const isVercelSub = (d: string) => d.endsWith('.vercel.app')
 
-async function addOne(name: string, redirect?: string) {
+async function addOne(name: string, redirect?: string, lang: CmsLang = 'ko') {
   const r = await api(`/v10/projects/${PROJECT}/domains`, {
     method: 'POST',
     body: JSON.stringify(redirect ? { name, redirect, redirectStatusCode: 308 } : { name }),
@@ -39,24 +40,24 @@ async function addOne(name: string, redirect?: string) {
   if (code === 'domain_already_in_use' || code === 'domain_already_exists' || r.status === 409) {
     const mine = await api(`/v9/projects/${PROJECT}/domains/${encodeURIComponent(name)}`)
     if (mine.ok) return null
-    return `${name}: 다른 Vercel 프로젝트에서 쓰고 있는 도메인입니다.`
+    return lang === 'en' ? `${name}: This domain is in use by another Vercel project.` : `${name}: 다른 Vercel 프로젝트에서 쓰고 있는 도메인입니다.`
   }
-  return `${name}: ${r.body?.error?.message ?? `Vercel 오류 (${r.status})`}`
+  return `${name}: ${r.body?.error?.message ?? (lang === 'en' ? `Vercel error (${r.status})` : `Vercel 오류 (${r.status})`)}`
 }
 
 // 도메인 등록: 대표 도메인 + www(대표 도메인으로 이동). 실패해도 매체 저장은 막지 않고 안내 문구만 돌려준다
-export async function connectDomain(domain: string | null | undefined): Promise<string | null> {
+export async function connectDomain(domain: string | null | undefined, lang: CmsLang = 'ko'): Promise<string | null> {
   if (!domain || !domainsReady()) return null
   try {
-    const err = await addOne(domain)
+    const err = await addOne(domain, undefined, lang)
     if (err) return err
     if (!isVercelSub(domain) && isApex(domain)) {
-      const wErr = await addOne(`www.${domain}`, domain)
+      const wErr = await addOne(`www.${domain}`, domain, lang)
       if (wErr) return wErr
     }
     return null
   } catch (e) {
-    return `Vercel에 연결하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`
+    return `${lang === 'en' ? 'Could not connect to Vercel: ' : 'Vercel에 연결하지 못했습니다: '}${e instanceof Error ? e.message : String(e)}`
   }
 }
 
@@ -70,12 +71,12 @@ export type DomainStatus =
   | { state: 'error'; message: string }
 
 // 연결 상태: 등록됐는지 → 소유 확인(TXT)이 필요한지 → DNS가 맞게 설정됐는지
-export async function domainStatus(domain: string): Promise<DomainStatus> {
+export async function domainStatus(domain: string, lang: CmsLang = 'ko'): Promise<DomainStatus> {
   if (!domainsReady()) return { state: 'off' }
   try {
     const p = await api(`/v9/projects/${PROJECT}/domains/${encodeURIComponent(domain)}`)
     if (p.status === 404) return { state: 'missing' }
-    if (!p.ok) return { state: 'error', message: p.body?.error?.message ?? `Vercel 오류 (${p.status})` }
+    if (!p.ok) return { state: 'error', message: p.body?.error?.message ?? (lang === 'en' ? `Vercel error (${p.status})` : `Vercel 오류 (${p.status})`) }
     if (p.body?.verified === false && Array.isArray(p.body?.verification)) {
       const records = (p.body.verification as any[]).map((v) => ({ type: String(v.type).toUpperCase() as DomainRecord['type'], host: String(v.domain).replace(`.${domain}`, '').replace(domain, '@'), value: String(v.value) }))
       return { state: 'verify', records }

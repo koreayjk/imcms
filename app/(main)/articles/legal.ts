@@ -1,6 +1,7 @@
 'use server'
 
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { AiDraftError } from '@/lib/ai-draft'
 import { checkLegal, legalModel, type LegalCheck } from '@/lib/ai-legal'
 import { htmlToText } from '@/lib/press'
@@ -12,9 +13,10 @@ import { finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 export async function checkArticleLegal(input: { title: string; subtitle: string; html: string; outletId: string | null; articleId?: string | null }):
   Promise<{ ok: true; check: LegalCheck } | { ok: false; skipped?: boolean; error: string }> {
   const { supabase, outletId } = await getCmsContext()
-  if (!legalModel()) return { ok: false, skipped: true, error: 'AI가 설정되지 않아 법적 검수를 건너뜁니다.' }
+  const { t } = await getT()
+  if (!legalModel()) return { ok: false, skipped: true, error: t('AI가 설정되지 않아 법적 검수를 건너뜁니다.', 'AI is not configured, so the legal review was skipped.') }
   const text = htmlToText(input.html)
-  if (text.replace(/\s/g, '').length < 30) return { ok: false, skipped: true, error: '본문이 짧아 검수를 건너뜁니다.' }
+  if (text.replace(/\s/g, '').length < 30) return { ok: false, skipped: true, error: t('본문이 짧아 검수를 건너뜁니다.', 'The body is too short, so the review was skipped.') }
   const hash = legalContentHash(input.title, input.subtitle, text)
   if (input.articleId) {
     // newsroom-settings.sql 실행 전이면 칸이 없어 오류가 나므로 그냥 새로 검수한다
@@ -28,12 +30,12 @@ export async function checkArticleLegal(input: { title: string; subtitle: string
   try {
     slot = await reserveAi(supabase, o, 'legal')
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'AI 사용 한도를 확인하지 못했습니다.' }
+    return { ok: false, error: e instanceof Error ? e.message : t('AI 사용 한도를 확인하지 못했습니다.', 'Could not check the AI usage limit.') }
   }
   if (!slot.ok) {
     return { ok: false, error: slot.scope === 'member'
-      ? `이번 달 내 AI 사용 한도(${slot.limit}회)를 다 써서 검수하지 못했습니다. 편집장에게 한도를 늘려 달라고 요청할 수 있습니다.`
-      : `이번 달 매체 AI 사용 한도(${slot.limit.toLocaleString()}회)를 다 써서 검수하지 못했습니다.` }
+      ? t(`이번 달 내 AI 사용 한도(${slot.limit}회)를 다 써서 검수하지 못했습니다. 편집장에게 한도를 늘려 달라고 요청할 수 있습니다.`, `You have used up your AI usage limit for this month (${slot.limit} uses), so the review could not run. You can ask your editor-in-chief to raise the limit.`)
+      : t(`이번 달 매체 AI 사용 한도(${slot.limit.toLocaleString()}회)를 다 써서 검수하지 못했습니다.`, `Your outlet has used up its AI usage limit for this month (${slot.limit.toLocaleString('en-US')} uses), so the review could not run.`) }
   }
   try {
     const r = await checkLegal({ title: input.title, subtitle: input.subtitle, text })
@@ -44,6 +46,6 @@ export async function checkArticleLegal(input: { title: string; subtitle: string
     return { ok: true, check: { ...r.check, content_hash: hash } }
   } catch (e) {
     await releaseAi(supabase, slot.id)
-    return { ok: false, error: e instanceof AiDraftError ? e.message : 'AI 법적 검수를 하지 못했습니다.' }
+    return { ok: false, error: e instanceof AiDraftError ? e.message : t('AI 법적 검수를 하지 못했습니다.', 'The AI legal review could not be completed.') }
   }
 }

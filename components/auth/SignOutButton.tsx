@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { useT } from '@/components/cms/CmsLang'
 
 // next: 로그아웃한 뒤 갈 곳 (기본은 로그인 화면), label: 버튼 글자
-export default function SignOutButton({ next = '/login', label = '로그아웃' }: { next?: string; label?: string }) {
+export default function SignOutButton({ next = '/login', label }: { next?: string; label?: string }) {
+  const t = useT()
   const router = useRouter()
   return (
     <button
@@ -16,7 +18,7 @@ export default function SignOutButton({ next = '/login', label = '로그아웃' 
       }}
       className="btn-secondary"
     >
-      {label}
+      {label ?? t('로그아웃', 'Sign out')}
     </button>
   )
 }

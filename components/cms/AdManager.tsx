@@ -3,7 +3,9 @@
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteBanner, moveBanner, reorderBanners, saveBanner, setBannerActive, type AdInput, type AdState } from '@/app/(main)/admin/ads/actions'
-import { AD_SLOTS, SLOT_SHAPE, slotOf, type AdSlotId } from '@/lib/ads'
+import { adSlots, SLOT_SHAPE, slotOf, type AdSlotId } from '@/lib/ads'
+import { useT, useCmsLang } from '@/components/cms/CmsLang'
+import type { T } from '@/lib/cms-i18n'
 import AdSlotMap, { SLOT_COLOR, SLOT_NO, SlotThumb } from './AdSlotMap'
 import { formatDateTime, toKstInput } from '@/lib/format'
 import { uploadImage } from '@/components/editor/upload'
@@ -15,12 +17,12 @@ export type ManagedBanner = {
   views: number; clicks: number; views30: number; clicks30: number
 }
 
-type Status = { label: string; cls: string }
-function statusOf(b: ManagedBanner, now: number): Status {
-  if (!b.active) return { label: '꺼짐', cls: 'bg-line text-muted' }
-  if (b.starts_at && Date.parse(b.starts_at) > now) return { label: '예정', cls: 'status-scheduled' }
-  if (b.ends_at && Date.parse(b.ends_at) <= now) return { label: '끝남', cls: 'bg-line text-muted' }
-  return { label: '게재 중', cls: 'bg-published/10 text-published' }
+type Status = { key: 'off' | 'scheduled' | 'ended' | 'live'; label: string; cls: string }
+function statusOf(b: ManagedBanner, now: number, t: T): Status {
+  if (!b.active) return { key: 'off', label: t('꺼짐', 'Off'), cls: 'bg-line text-muted' }
+  if (b.starts_at && Date.parse(b.starts_at) > now) return { key: 'scheduled', label: t('예정', 'Scheduled'), cls: 'status-scheduled' }
+  if (b.ends_at && Date.parse(b.ends_at) <= now) return { key: 'ended', label: t('끝남', 'Ended'), cls: 'bg-line text-muted' }
+  return { key: 'live', label: t('게재 중', 'Live'), cls: 'bg-published/10 text-published' }
 }
 
 const ctr = (v: number, c: number) => (v ? `${((c / v) * 100).toFixed(2)}%` : '-')
@@ -37,6 +39,7 @@ function toInput(b: ManagedBanner): AdInput {
 }
 
 export function ImagePick({ label, hint, value, onChange, outletId }: { label: string; hint: string; value: string; onChange: (v: string) => void; outletId: string }) {
+  const t = useT()
   const ref = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -48,11 +51,11 @@ export function ImagePick({ label, hint, value, onChange, outletId }: { label: s
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value} alt="" className="max-h-24 max-w-[240px] rounded border border-line bg-paper object-contain" />
         ) : (
-          <span className="grid h-16 w-28 place-items-center rounded border border-dashed border-line text-[12px] text-muted">이미지 없음</span>
+          <span className="grid h-16 w-28 place-items-center rounded border border-dashed border-line text-[12px] text-muted">{t('이미지 없음', 'No image')}</span>
         )}
         <div className="flex gap-2">
-          <button type="button" onClick={() => ref.current?.click()} disabled={busy} className="btn-secondary px-3 py-1.5 text-[13px]">{busy ? '올리는 중…' : value ? '바꾸기' : '이미지 올리기'}</button>
-          {value && <button type="button" onClick={() => onChange('')} className="btn-secondary px-3 py-1.5 text-[13px]">빼기</button>}
+          <button type="button" onClick={() => ref.current?.click()} disabled={busy} className="btn-secondary px-3 py-1.5 text-[13px]">{busy ? t('올리는 중…', 'Uploading…') : value ? t('바꾸기', 'Replace') : t('이미지 올리기', 'Upload image')}</button>
+          {value && <button type="button" onClick={() => onChange('')} className="btn-secondary px-3 py-1.5 text-[13px]">{t('빼기', 'Remove')}</button>}
         </div>
         <input
           ref={ref}
@@ -64,7 +67,7 @@ export function ImagePick({ label, hint, value, onChange, outletId }: { label: s
             e.target.value = ''
             if (!f) return
             setBusy(true); setErr('')
-            try { onChange(await uploadImage(f, outletId)) } catch (x) { setErr(x instanceof Error ? x.message : '올리지 못했습니다.') }
+            try { onChange(await uploadImage(f, outletId)) } catch (x) { setErr(x instanceof Error ? x.message : t('올리지 못했습니다.', 'Could not upload.')) }
             setBusy(false)
           }}
         />
@@ -75,43 +78,45 @@ export function ImagePick({ label, hint, value, onChange, outletId }: { label: s
 }
 
 function BannerForm({ initial, outletId, isStaff, onDone }: { initial: AdInput; outletId: string; isStaff: boolean; onDone: (msg: string) => void }) {
+  const t = useT()
+  const lang = useCmsLang()
   const [f, setF] = useState<AdInput>(initial)
   const [state, setState] = useState<AdState>({})
   const [pending, start] = useTransition()
   const set = <K extends keyof AdInput>(k: K, v: AdInput[K]) => setF((x) => ({ ...x, [k]: v }))
-  const slot = slotOf(f.slot)
+  const slot = slotOf(f.slot, lang)
 
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await saveBanner(f); setState(r); if (r.ok) onDone(r.ok) }) }}
       className="space-y-4 rounded-xl border border-ink/20 bg-white p-5"
     >
-      <p className="text-[15px] font-bold">{f.id ? '배너 고치기' : '새 배너'}</p>
+      <p className="text-[15px] font-bold">{f.id ? t('배너 고치기', 'Edit banner') : t('새 배너', 'New banner')}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-[13px]">
-          <span className="field-label">광고 자리</span>
+          <span className="field-label">{t('광고 자리', 'Ad placement')}</span>
           <select value={f.slot} onChange={(e) => set('slot', e.target.value)} className="field-input">
-            {AD_SLOTS.map((s) => <option key={s.id} value={s.id}>{s.label} — {s.where}</option>)}
+            {adSlots(lang).map((s) => <option key={s.id} value={s.id}>{s.label} — {s.where}</option>)}
           </select>
           {slot && (
             <span className="mt-2 flex items-center gap-3">
               <SlotThumb id={slot.id} />
-              <span className="text-[12px] leading-relaxed text-muted">{slot.where}<br />권장 크기: {slot.size}</span>
+              <span className="text-[12px] leading-relaxed text-muted">{slot.where}<br />{t('권장 크기', 'Recommended size')}: {slot.size}</span>
             </span>
           )}
         </label>
         <label className="block text-[13px]">
-          <span className="field-label">광고주·광고 이름</span>
-          <input value={f.name} onChange={(e) => set('name', e.target.value)} maxLength={80} placeholder="예: ○○요양병원 10월 배너" className="field-input" />
-          <span className="mt-1 block text-[12px] text-muted">이미지를 못 보는 독자에게 이 이름이 읽힙니다.</span>
+          <span className="field-label">{t('광고주·광고 이름', 'Advertiser / ad name')}</span>
+          <input value={f.name} onChange={(e) => set('name', e.target.value)} maxLength={80} placeholder={t('예: ○○요양병원 10월 배너', 'e.g. Sunrise Clinic October banner')} className="field-input" />
+          <span className="mt-1 block text-[12px] text-muted">{t('이미지를 못 보는 독자에게 이 이름이 읽힙니다.', 'This name is read aloud to readers who cannot see the image.')}</span>
         </label>
       </div>
 
       {isStaff && (
-        <div role="group" aria-label="광고 종류" className="flex gap-2 text-[13px]">
+        <div role="group" aria-label={t('광고 종류', 'Ad type')} className="flex gap-2 text-[13px]">
           {(['image', 'code'] as const).map((k) => (
             <button key={k} type="button" aria-pressed={f.kind === k} onClick={() => set('kind', k)} className={`rounded-full px-3.5 py-1.5 font-semibold ${f.kind === k ? 'bg-ink text-white' : 'border border-line text-muted'}`}>
-              {k === 'image' ? '이미지 배너' : '광고 코드 (운영팀)'}
+              {k === 'image' ? t('이미지 배너', 'Image banner') : t('광고 코드 (운영팀)', 'Ad code (IM Newsroom team)')}
             </button>
           ))}
         </div>
@@ -120,49 +125,49 @@ function BannerForm({ initial, outletId, isStaff, onDone }: { initial: AdInput; 
       {f.kind === 'image' ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
-            <ImagePick label="PC 이미지 (필수)" hint="JPG·PNG·GIF(움직이는 배너 가능)" value={f.image_url} onChange={(v) => set('image_url', v)} outletId={outletId} />
-            <ImagePick label="휴대폰 이미지 (선택)" hint="없으면 PC 이미지를 줄여서 보여줍니다." value={f.mobile_image_url} onChange={(v) => set('mobile_image_url', v)} outletId={outletId} />
+            <ImagePick label={t('PC 이미지 (필수)', 'Desktop image (required)')} hint={t('JPG·PNG·GIF(움직이는 배너 가능)', 'JPG, PNG or GIF (animated banners allowed)')} value={f.image_url} onChange={(v) => set('image_url', v)} outletId={outletId} />
+            <ImagePick label={t('휴대폰 이미지 (선택)', 'Mobile image (optional)')} hint={t('없으면 PC 이미지를 줄여서 보여줍니다.', 'If left out, the desktop image is shown scaled down.')} value={f.mobile_image_url} onChange={(v) => set('mobile_image_url', v)} outletId={outletId} />
           </div>
           <label className="block text-[13px]">
-            <span className="field-label">누르면 갈 주소</span>
-            <input value={f.link_url} onChange={(e) => set('link_url', e.target.value)} inputMode="url" placeholder="https://광고주-홈페이지.com" className="field-input" />
-            <span className="mt-1 block text-[12px] text-muted">새 창으로 열리고 클릭 수가 집계됩니다. 비우면 누를 수 없는 배너가 됩니다.</span>
+            <span className="field-label">{t('누르면 갈 주소', 'Link address')}</span>
+            <input value={f.link_url} onChange={(e) => set('link_url', e.target.value)} inputMode="url" placeholder={t('https://광고주-홈페이지.com', 'https://advertiser-website.com')} className="field-input" />
+            <span className="mt-1 block text-[12px] text-muted">{t('새 창으로 열리고 클릭 수가 집계됩니다. 비우면 누를 수 없는 배너가 됩니다.', 'Opens in a new window and clicks are counted. If left blank, the banner is not clickable.')}</span>
           </label>
         </>
       ) : (
         <label className="block text-[13px]">
-          <span className="field-label">광고 코드</span>
-          <textarea value={f.code} onChange={(e) => set('code', e.target.value)} rows={6} spellCheck={false} placeholder="구글 애드센스·카카오 애드핏 등에서 받은 코드를 그대로 붙여넣으세요." className="field-input resize-y font-mono text-[12.5px]" />
-          <span className="mt-1 block text-[12px] text-muted">홈페이지에서 그대로 실행됩니다. 광고 회사에서 받은 코드만 넣으세요.</span>
+          <span className="field-label">{t('광고 코드', 'Ad code')}</span>
+          <textarea value={f.code} onChange={(e) => set('code', e.target.value)} rows={6} spellCheck={false} placeholder={t('구글 애드센스·카카오 애드핏 등에서 받은 코드를 그대로 붙여넣으세요.', 'Paste the code exactly as you received it from Google AdSense, Kakao AdFit or similar.')} className="field-input resize-y font-mono text-[12.5px]" />
+          <span className="mt-1 block text-[12px] text-muted">{t('홈페이지에서 그대로 실행됩니다. 광고 회사에서 받은 코드만 넣으세요.', 'It runs as-is on your homepage. Only use code received from an ad company.')}</span>
         </label>
       )}
 
       <div className="grid gap-4 sm:grid-cols-[1fr_1fr_120px]">
         <label className="block text-[13px]">
-          <span className="field-label">시작 (한국 시간)</span>
+          <span className="field-label">{t('시작 (한국 시간)', 'Start (Korea time)')}</span>
           <input type="datetime-local" value={f.starts_at} onChange={(e) => set('starts_at', e.target.value)} className="field-input" />
-          <span className="mt-1 block text-[12px] text-muted">비우면 바로 시작</span>
+          <span className="mt-1 block text-[12px] text-muted">{t('비우면 바로 시작', 'Leave blank to start right away')}</span>
         </label>
         <label className="block text-[13px]">
-          <span className="field-label">끝 (한국 시간)</span>
+          <span className="field-label">{t('끝 (한국 시간)', 'End (Korea time)')}</span>
           <input type="datetime-local" value={f.ends_at} onChange={(e) => set('ends_at', e.target.value)} className="field-input" />
-          <span className="mt-1 block text-[12px] text-muted">비우면 끌 때까지 계속</span>
+          <span className="mt-1 block text-[12px] text-muted">{t('비우면 끌 때까지 계속', 'Leave blank to run until turned off')}</span>
         </label>
         <label className="block text-[13px]">
-          <span className="field-label">순서</span>
+          <span className="field-label">{t('순서', 'Order')}</span>
           <input type="number" min={0} max={999} value={f.sort_order} onChange={(e) => set('sort_order', Number(e.target.value))} className="field-input tabular-nums" />
-          <span className="mt-1 block text-[12px] text-muted">작을수록 위</span>
+          <span className="mt-1 block text-[12px] text-muted">{t('작을수록 위', 'Lower goes higher')}</span>
         </label>
       </div>
 
       <label className="flex cursor-pointer items-center gap-2 text-[14px]">
         <input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} className="h-4 w-4" />
-        켜기 (기간 안이면 홈페이지에 나갑니다)
+        {t('켜기 (기간 안이면 홈페이지에 나갑니다)', 'Turn on (runs on your homepage during the set dates)')}
       </label>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
-        <button type="submit" disabled={pending} className="btn-primary px-5">{pending ? '저장 중…' : f.id ? '저장' : '배너 올리기'}</button>
-        <button type="button" onClick={() => onDone('')} className="btn-secondary">취소</button>
+        <button type="submit" disabled={pending} className="btn-primary px-5">{pending ? t('저장 중…', 'Saving…') : f.id ? t('저장', 'Save') : t('배너 올리기', 'Upload banner')}</button>
+        <button type="button" onClick={() => onDone('')} className="btn-secondary">{t('취소', 'Cancel')}</button>
         {state.error && <p role="alert" className="text-[13px] font-semibold text-danger">{state.error}</p>}
       </div>
     </form>
@@ -170,6 +175,8 @@ function BannerForm({ initial, outletId, isStaff, onDone }: { initial: AdInput; 
 }
 
 export default function AdManager({ banners, outletId, isStaff, now }: { banners: ManagedBanner[]; outletId: string; isStaff: boolean; now: number }) {
+  const t = useT()
+  const lang = useCmsLang()
   const router = useRouter()
   const [editing, setEditing] = useState<AdInput | null>(null)
   const [msg, setMsg] = useState('')
@@ -184,8 +191,8 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
     const b = banners.find((x) => x.id === id)
     if (!b || b.slot === slot) return
     if (SLOT_SHAPE[b.slot] !== SLOT_SHAPE[slot]) {
-      const from = slotOf(b.slot), to = slotOf(slot)
-      if (!window.confirm(`“${to?.label}” 자리는 권장 크기가 다릅니다.\n\n현재 자리(${from?.label}): ${from?.size}\n옮길 자리(${to?.label}): ${to?.size}\n\n그대로 옮기면 배너가 찌그러지거나 작게 보일 수 있습니다. 그래도 옮길까요?`)) return
+      const from = slotOf(b.slot, lang), to = slotOf(slot, lang)
+      if (!window.confirm(t(`“${to?.label}” 자리는 권장 크기가 다릅니다.\n\n현재 자리(${from?.label}): ${from?.size}\n옮길 자리(${to?.label}): ${to?.size}\n\n그대로 옮기면 배너가 찌그러지거나 작게 보일 수 있습니다. 그래도 옮길까요?`, `The recommended size for “${to?.label}” is different.\n\nCurrent placement (${from?.label}): ${from?.size}\nNew placement (${to?.label}): ${to?.size}\n\nIf you move it as is, the banner may look stretched or small. Move it anyway?`))) return
     }
     run(() => moveBanner(b.id, slot))
   }
@@ -194,7 +201,7 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
   const place = (slot: AdSlotId, movedId: string, beforeId: string | null, after = false) => {
     const moved = banners.find((x) => x.id === movedId)
     if (!moved) return
-    if (moved.slot !== slot && SHAPE_DIFF(moved.slot, slot) && !window.confirm(`“${slotOf(slot)?.label}” 자리는 권장 크기가 다릅니다.\n\n그대로 옮기면 배너가 찌그러지거나 작게 보일 수 있습니다. 그래도 옮길까요?`)) return
+    if (moved.slot !== slot && SHAPE_DIFF(moved.slot, slot) && !window.confirm(t(`“${slotOf(slot, lang)?.label}” 자리는 권장 크기가 다릅니다.\n\n그대로 옮기면 배너가 찌그러지거나 작게 보일 수 있습니다. 그래도 옮길까요?`, `The recommended size for “${slotOf(slot, lang)?.label}” is different.\n\nIf you move it as is, the banner may look stretched or small. Move it anyway?`))) return
     const ids = banners.filter((b) => b.slot === slot && b.id !== movedId).map((b) => b.id)
     const at = beforeId ? ids.indexOf(beforeId) + (after ? 1 : 0) : ids.length
     ids.splice(at < 0 ? ids.length : at, 0, movedId)
@@ -218,14 +225,14 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
         <BannerForm key={editing.id ?? 'new'} initial={editing} outletId={outletId} isStaff={isStaff} onDone={(m) => { setEditing(null); if (m) { setMsg(m); router.refresh() } }} />
       ) : (
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={() => setEditing({ ...EMPTY })} className="btn-primary px-5">+ 새 배너</button>
+          <button type="button" onClick={() => setEditing({ ...EMPTY })} className="btn-primary px-5">{t('+ 새 배너', '+ New banner')}</button>
           {msg && <p role="status" className="text-[13px] text-published">{msg}</p>}
         </div>
       )}
 
-      {!editing && <AdSlotMap drop={drop} counts={Object.fromEntries(AD_SLOTS.map((s) => [s.id, banners.filter((b) => b.slot === s.id && statusOf(b, now).label === '게재 중').length]))} />}
+      {!editing && <AdSlotMap drop={drop} counts={Object.fromEntries(adSlots(lang).map((s) => [s.id, banners.filter((b) => b.slot === s.id && statusOf(b, now, t).key === 'live').length]))} />}
 
-      {AD_SLOTS.map((s) => {
+      {adSlots(lang).map((s) => {
         const list = banners.filter((b) => b.slot === s.id)
         return (
           <section key={s.id} id={`slot-card-${s.id}`} aria-labelledby={`slot-${s.id}`} className={`scroll-mt-20 rounded-xl border bg-white transition-shadow ${dragId && over === s.id ? 'border-2 border-dashed' : 'border-line'}`}
@@ -243,13 +250,13 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                   <span className="grid h-5 w-5 place-items-center rounded text-[11px] text-white" style={{ background: SLOT_COLOR[s.id] }}>{SLOT_NO[s.id]}</span>
                   {s.label} <span className="text-[12.5px] font-normal text-muted">· {s.where}</span>
                 </h2>
-                <p className="mt-1 text-[12px] text-muted">권장 {s.size}{list.length > 0 && ' · 배너를 끌어서 순서를 바꾸거나 다른 자리로 옮길 수 있어요 (▲▼ 버튼도 됩니다)'}</p>
+                <p className="mt-1 text-[12px] text-muted">{t('권장', 'Recommended')} {s.size}{list.length > 0 && t(' · 배너를 끌어서 순서를 바꾸거나 다른 자리로 옮길 수 있어요 (▲▼ 버튼도 됩니다)', ' · Drag banners to reorder them or move them to another placement (the ▲▼ buttons work too)')}</p>
               </div>
             </header>
             {list.length ? (
               <ul className="divide-y divide-line">
                 {list.map((b) => {
-                  const st = statusOf(b, now)
+                  const st = statusOf(b, now, t)
                   return (
                     <li
                       key={b.id}
@@ -276,7 +283,7 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                         {b.kind === 'image' && b.image_url
                           // eslint-disable-next-line @next/next/no-img-element
                           ? <img src={b.image_url} alt="" className="max-h-full max-w-full object-contain" />
-                          : <span className="font-mono text-[12px] text-muted">&lt;광고 코드&gt;</span>}
+                          : <span className="font-mono text-[12px] text-muted">&lt;{t('광고 코드', 'ad code')}&gt;</span>}
                       </div>
                       <div className="min-w-0">
                         <p className="flex flex-wrap items-center gap-2">
@@ -284,32 +291,32 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                           <strong className="truncate text-[14.5px]">{b.name}</strong>
                         </p>
                         <p className="mt-1 text-[12.5px] tabular-nums text-muted">
-                          {b.starts_at ? formatDateTime(b.starts_at) : '바로'} ~ {b.ends_at ? formatDateTime(b.ends_at) : '끌 때까지'}
+                          {b.starts_at ? formatDateTime(b.starts_at, lang) : t('바로', 'Right away')} ~ {b.ends_at ? formatDateTime(b.ends_at, lang) : t('끌 때까지', 'Until turned off')}
                           {b.link_url && <> · <a href={b.link_url} target="_blank" rel="noopener" className="break-all underline underline-offset-2">{b.link_url.replace(/^https?:\/\//, '').slice(0, 40)}</a></>}
                         </p>
                         <p className="mt-1 text-[12.5px] tabular-nums">
-                          최근 30일 노출 <strong>{b.views30.toLocaleString()}</strong> · 클릭 <strong>{b.clicks30.toLocaleString()}</strong> · 클릭률 {ctr(b.views30, b.clicks30)}
-                          <span className="text-muted"> (전체 {b.views.toLocaleString()} / {b.clicks.toLocaleString()})</span>
+                          {t('최근 30일 노출', 'Last 30 days: impressions')} <strong>{b.views30.toLocaleString()}</strong> · {t('클릭', 'clicks')} <strong>{b.clicks30.toLocaleString()}</strong> · {t('클릭률', 'CTR')} {ctr(b.views30, b.clicks30)}
+                          <span className="text-muted"> ({t('전체', 'all time')} {b.views.toLocaleString()} / {b.clicks.toLocaleString()})</span>
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2 md:justify-end">
                         {(b.kind === 'image' || isStaff) && (
                           <>
-                            <span className="flex gap-1" role="group" aria-label="순서 바꾸기">
-                              <button type="button" disabled={pending || list[0]?.id === b.id} onClick={() => nudge(b, -1)} className="btn-secondary px-2.5 py-1.5 text-[13px] disabled:opacity-30" aria-label="위로" title="위로">▲</button>
-                              <button type="button" disabled={pending || list[list.length - 1]?.id === b.id} onClick={() => nudge(b, 1)} className="btn-secondary px-2.5 py-1.5 text-[13px] disabled:opacity-30" aria-label="아래로" title="아래로">▼</button>
+                            <span className="flex gap-1" role="group" aria-label={t('순서 바꾸기', 'Change order')}>
+                              <button type="button" disabled={pending || list[0]?.id === b.id} onClick={() => nudge(b, -1)} className="btn-secondary px-2.5 py-1.5 text-[13px] disabled:opacity-30" aria-label={t('위로', 'Move up')} title={t('위로', 'Move up')}>▲</button>
+                              <button type="button" disabled={pending || list[list.length - 1]?.id === b.id} onClick={() => nudge(b, 1)} className="btn-secondary px-2.5 py-1.5 text-[13px] disabled:opacity-30" aria-label={t('아래로', 'Move down')} title={t('아래로', 'Move down')}>▼</button>
                             </span>
-                            <button type="button" disabled={pending} onClick={() => run(() => setBannerActive(b.id, !b.active))} className="btn-secondary px-3 py-1.5 text-[13px]">{b.active ? '끄기' : '켜기'}</button>
-                            <button type="button" onClick={() => { setEditing(toInput(b)); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn-secondary px-3 py-1.5 text-[13px]">고치기</button>
+                            <button type="button" disabled={pending} onClick={() => run(() => setBannerActive(b.id, !b.active))} className="btn-secondary px-3 py-1.5 text-[13px]">{b.active ? t('끄기', 'Turn off') : t('켜기', 'Turn on')}</button>
+                            <button type="button" onClick={() => { setEditing(toInput(b)); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn-secondary px-3 py-1.5 text-[13px]">{t('고치기', 'Edit')}</button>
                           </>
                         )}
                         <button
                           type="button"
                           disabled={pending}
-                          onClick={() => { if (window.confirm(`“${b.name}” 배너를 지울까요? 노출·클릭 기록도 함께 지워집니다.`)) run(() => deleteBanner(b.id)) }}
+                          onClick={() => { if (window.confirm(t(`“${b.name}” 배너를 지울까요? 노출·클릭 기록도 함께 지워집니다.`, `Delete the banner “${b.name}”? Its impression and click records will be deleted too.`))) run(() => deleteBanner(b.id)) }}
                           className="btn-secondary px-3 py-1.5 text-[13px] text-danger"
                         >
-                          지우기
+                          {t('지우기', 'Delete')}
                         </button>
                       </div>
                     </li>
@@ -317,7 +324,7 @@ export default function AdManager({ banners, outletId, isStaff, now }: { banners
                 })}
               </ul>
             ) : (
-              <p className="px-5 py-5 text-[13px] text-muted">이 자리에 건 배너가 없습니다.</p>
+              <p className="px-5 py-5 text-[13px] text-muted">{t('이 자리에 건 배너가 없습니다.', 'There are no banners in this placement.')}</p>
             )}
           </section>
         )

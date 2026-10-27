@@ -2,10 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { setLaunchItem } from '@/app/(main)/admin/leads/actions'
+import { useT, useCmsLang } from './CmsLang'
 import type { LaunchDone, LaunchItem } from '@/lib/launch-checklist'
 
 // 개통 진행 현황의 한 단계에 속한 운영팀 체크 항목 (고객에게는 보이지 않는다). 체크하면 고객 화면의 단계 진행도 바뀐다
 export default function StepChecklist({ outletId, items, done: initial }: { outletId: string; items: LaunchItem[]; done: LaunchDone }) {
+  const t = useT()
+  const lang = useCmsLang()
   const [done, setDone] = useState(initial)
   const [error, setError] = useState('')
   const [pending, start] = useTransition()
@@ -22,7 +25,7 @@ export default function StepChecklist({ outletId, items, done: initial }: { outl
 
   return (
     <div className="mt-4 rounded-xl bg-[#F8F9FA] px-3.5 py-3">
-      <p className="text-[12px] font-bold text-muted">운영팀 체크 <span className="font-normal">(고객에게는 보이지 않고, 모두 체크하면 이 단계가 완료로 보입니다)</span></p>
+      <p className="text-[12px] font-bold text-muted">{t('운영팀 체크', 'Team checklist')} <span className="font-normal">{t('(고객에게는 보이지 않고, 모두 체크하면 이 단계가 완료로 보입니다)', '(not visible to the customer; when all are checked, this step shows as complete)')}</span></p>
       <ul className="mt-2 space-y-1">
         {items.map((it) => {
           const at = done[it.key]
@@ -34,9 +37,9 @@ export default function StepChecklist({ outletId, items, done: initial }: { outl
                   <span className={`block text-[13.5px] ${at ? 'text-muted line-through' : 'font-medium'}`}>{it.title}</span>
                   {it.detail && <span className="mt-0.5 block text-[12px] leading-relaxed text-muted">{it.detail}</span>}
                 </span>
-                {at && <time className="shrink-0 text-[11.5px] tabular-nums text-muted">{new Date(at).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric' })}</time>}
+                {at && <time className="shrink-0 text-[11.5px] tabular-nums text-muted">{new Date(at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric' })}</time>}
               </label>
-              {it.link && <a href={it.link.href} target="_blank" rel="noopener" className="ml-6 mt-1 inline-block text-[12px] text-review underline underline-offset-2">{it.link.label} 열기 ↗</a>}
+              {it.link && <a href={it.link.href} target="_blank" rel="noopener" className="ml-6 mt-1 inline-block text-[12px] text-review underline underline-offset-2">{t(`${it.link.label} 열기 ↗`, `Open ${it.link.label} ↗`)}</a>}
             </li>
           )
         })}

@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { mentionsAi } from '@/lib/ai-notice'
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
 import { cleanLogoStrip, foreignTopics, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 
 // 편집장 이상이 편집국 "설정 → 매체 정보"에서 고치는 항목만 저장한다 (supabase/outlet-site-self.sql 의 DB 함수가 한 번 더 목록 밖의 값을 막는다)
@@ -19,13 +20,14 @@ const cut = (v: unknown, n: number) => String(v ?? '').trim().slice(0, n)
 
 export async function saveSelfSiteSettings(outletId: string, p: SelfSitePayload): Promise<{ error?: string; ok?: string }> {
   const { supabase, isEditorPlus, isStaff } = await getCmsContext()
-  if (!isEditorPlus && !isStaff) return { error: '편집장 이상만 고칠 수 있습니다.' }
+  const { t } = await getT()
+  if (!isEditorPlus && !isStaff) return { error: t('편집장 이상만 고칠 수 있습니다.', 'Only Editors-in-Chief and above can edit this.') }
   const name = cut(p.name, 80)
-  if (!name) return { error: '매체 이름을 적어주세요.' }
+  if (!name) return { error: t('매체 이름을 적어주세요.', 'Enter an outlet name.') }
   const s = p.site ?? {}
   const logoUrl = cut(s.logoUrl, 500)
   if (logoUrl && !logoUrl.startsWith('/sites/') && !logoUrl.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`)) {
-    return { error: '로고는 이 화면에서 올린 이미지만 쓸 수 있습니다.' }
+    return { error: t('로고는 이 화면에서 올린 이미지만 쓸 수 있습니다.', 'Only images uploaded on this screen can be used as the logo.') }
   }
   // 탭 아이콘·공유 미리보기 사진도 이 화면에서 올린 이미지만
   const ownImage = (v: unknown) => {
@@ -34,10 +36,10 @@ export async function saveSelfSiteSettings(outletId: string, p: SelfSitePayload)
   }
   const iconUrl = ownImage(s.iconUrl)
   const ogImage = ownImage(s.ogImage)
-  if (iconUrl === null || ogImage === null) return { error: '이미지는 이 화면에서 올린 것만 쓸 수 있습니다.' }
+  if (iconUrl === null || ogImage === null) return { error: t('이미지는 이 화면에서 올린 것만 쓸 수 있습니다.', 'Only images uploaded on this screen can be used.') }
   const email = cut(s.legal?.email, 120)
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: '하단 이메일 주소를 확인해 주세요.' }
-  if (s.aiNotice?.on && cut(s.aiNotice.text, 150) && !mentionsAi(cut(s.aiNotice.text, 150))) return { error: 'AI 활용 표시 문구에 "AI" 또는 "인공지능"을 넣어 주세요.' }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: t('하단 이메일 주소를 확인해 주세요.', 'Check the footer email address.') }
+  if (s.aiNotice?.on && cut(s.aiNotice.text, 150) && !mentionsAi(cut(s.aiNotice.text, 150))) return { error: t('AI 활용 표시 문구에 "AI" 또는 "인공지능"을 넣어 주세요.', 'The AI disclosure text must include "AI" or "artificial intelligence".') }
   const topics = foreignTopics({ pressForeignTopics: Array.isArray(s.pressForeignTopics) ? s.pressForeignTopics : [], pressForeign: false })
   const mode: LogoMode = s.logoMode === 'full' || s.logoMode === 'text' ? s.logoMode : 'mark'
 
@@ -62,7 +64,7 @@ export async function saveSelfSiteSettings(outletId: string, p: SelfSitePayload)
   }
   const { error } = await supabase.rpc('outlet_site_self_save', { o: outletId, p_name: name, p_patch: JSON.parse(JSON.stringify(patch)) })
   if (error) {
-    if (/outlet_site_self_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return { error: '이 기능을 쓰려면 운영팀이 Supabase에서 outlet-site-self.sql을 실행해야 합니다.' }
+    if (/outlet_site_self_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return { error: t('이 기능을 쓰려면 운영팀이 Supabase에서 outlet-site-self.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run outlet-site-self.sql in Supabase.') }
     return { error: error.message.replace(/^.*?:\s*/, '') }
   }
   for (const c of p.sections ?? []) {
@@ -71,5 +73,5 @@ export async function saveSelfSiteSettings(outletId: string, p: SelfSitePayload)
   revalidateTag('sites', { expire: 0 })
   revalidatePath('/', 'layout')
   revalidatePath('/admin/settings')
-  return { ok: '저장했습니다. 홈페이지에 바로 반영됩니다.' }
+  return { ok: t('저장했습니다. 홈페이지에 바로 반영됩니다.', 'Saved. Changes appear on your website right away.') }
 }

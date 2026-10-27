@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteShare } from '@/app/(main)/admin/ai-compare/actions'
+import { useT, useCmsLang } from './CmsLang'
 
 export type ShareRow = {
   id: string
@@ -17,6 +18,9 @@ export type ShareRow = {
 
 // 보낸 검토 링크와 받은 검토: 모델별 “가장 좋음” 표와 기자별 의견
 export default function AiShares({ shares }: { shares: ShareRow[] }) {
+  const t = useT()
+  const lang = useCmsLang()
+  const loc = lang === 'en' ? 'en-US' : 'ko-KR'
   const router = useRouter()
   const [open, setOpen] = useState<string | null>(shares.find((s) => s.reviews.length)?.id ?? null)
   const [copied, setCopied] = useState<string | null>(null)
@@ -25,13 +29,13 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
 
   return (
     <section className="rounded-lg border border-line bg-white">
-      <h2 className="border-b border-line px-5 py-3 text-[15px] font-bold">받은 검토</h2>
+      <h2 className="border-b border-line px-5 py-3 text-[15px] font-bold">{t('받은 검토', 'Reviews received')}</h2>
       <ul className="divide-y divide-line">
         {shares.map((s) => {
           const models = s.meta.models ?? []
           const releases = s.meta.releases ?? []
           const label = (id: string) => models.find((m) => m.id === id)?.label ?? id
-          const title = (id: string) => releases.find((r) => r.id === id)?.title ?? '(삭제된 자료)'
+          const title = (id: string) => releases.find((r) => r.id === id)?.title ?? t('(삭제된 자료)', '(deleted item)')
           const votes = models.map((m) => ({ ...m, n: s.reviews.reduce((a, r) => a + Object.values(r.picks).filter((x) => x === m.id).length, 0) }))
           const total = votes.reduce((a, v) => a + v.n, 0)
           const expired = new Date(s.expires_at) < new Date()
@@ -42,8 +46,8 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
                 <button type="button" onClick={() => setOpen(open === s.id ? null : s.id)} className="min-w-[12rem] flex-1 text-left">
                   <span className="text-[14px] font-bold">{s.title}</span>
                   <span className="ml-2 text-[12px] text-muted">
-                    {new Date(s.created_at).toLocaleDateString('ko-KR')} · {s.blind ? '블라인드' : '이름 공개'} · 검토 {s.reviews.length}명
-                    {expired && ' · 기한 지남'}
+                    {new Date(s.created_at).toLocaleDateString(loc)} · {s.blind ? t('블라인드', 'Blind') : t('이름 공개', 'Names shown')} · {lang === 'en' ? `${s.reviews.length} ${s.reviews.length === 1 ? 'review' : 'reviews'}` : `검토 ${s.reviews.length}명`}
+                    {expired && t(' · 기한 지남', ' · Expired')}
                   </span>
                 </button>
                 {total > 0 && (
@@ -58,20 +62,20 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
                     onClick={async () => { try { await navigator.clipboard.writeText(url); setCopied(s.id) } catch {} }}
                     className="text-[12.5px] text-review underline underline-offset-2"
                   >
-                    {copied === s.id ? '복사됨 ✓' : '링크 복사'}
+                    {copied === s.id ? t('복사됨 ✓', 'Copied ✓') : t('링크 복사', 'Copy link')}
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={async () => {
-                    if (!confirm('이 검토 링크와 받은 검토를 모두 지울까요? 링크도 더 이상 열리지 않습니다.')) return
+                    if (!confirm(t('이 검토 링크와 받은 검토를 모두 지울까요? 링크도 더 이상 열리지 않습니다.', 'Delete this review link and all reviews received? The link will also stop working.'))) return
                     const r = await deleteShare(s.id)
                     if (r.error) alert(r.error)
                     else router.refresh()
                   }}
                   className="text-[12.5px] text-danger underline underline-offset-2"
                 >
-                  삭제
+                  {t('삭제', 'Delete')}
                 </button>
                 </span>
               </div>
@@ -86,16 +90,16 @@ export default function AiShares({ shares }: { shares: ShareRow[] }) {
                           <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#E9ECEF]">
                             <span className="block h-full rounded-full bg-published" style={{ width: `${(v.n / total) * 100}%` }} />
                           </span>
-                          <span className="w-24 text-right tabular-nums text-muted">{v.n}표 · {Math.round((v.n / total) * 100)}%</span>
+                          <span className="w-24 text-right tabular-nums text-muted">{lang === 'en' ? `${v.n} ${v.n === 1 ? 'vote' : 'votes'}` : `${v.n}표`} · {Math.round((v.n / total) * 100)}%</span>
                         </div>
                       ))}
                     </div>
                   )}
-                  {!s.reviews.length && <p className="text-[13px] text-muted">아직 받은 검토가 없습니다. 링크를 복사해 기자님께 보내 주세요.</p>}
+                  {!s.reviews.length && <p className="text-[13px] text-muted">{t('아직 받은 검토가 없습니다. 링크를 복사해 기자님께 보내 주세요.', 'No reviews received yet. Copy the link and send it to your reporters.')}</p>}
                   {s.reviews.map((r) => (
                     <div key={r.id} className="rounded-lg border border-line bg-white p-4">
                       <p className="text-[13.5px] font-bold">
-                        {r.reviewer} <span className="text-[12px] font-normal text-muted">{new Date(r.created_at).toLocaleString('ko-KR')}</span>
+                        {r.reviewer} <span className="text-[12px] font-normal text-muted">{new Date(r.created_at).toLocaleString(loc)}</span>
                       </p>
                       {r.comment && <p className="mt-1 whitespace-pre-line text-[13px]">“{r.comment}”</p>}
                       <ul className="mt-2 space-y-1 text-[12.5px]">

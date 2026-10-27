@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 export { siteOrigin } from './origin'
+import type { CmsLang } from './cms-i18n'
 
 // Stripe 결제 (미국 법인 계정). 한국 카드·카카오페이·네이버페이·구글페이 등은 Stripe 대시보드 → 결제수단에서 켠다
 //   환경 변수: STRIPE_SECRET_KEY(서버), STRIPE_WEBHOOK_SECRET(웹훅 서명), PAYMENT_DB_SECRET(결제 기록용 DB 열쇠, payments.sql 결과)
@@ -25,14 +26,22 @@ export function methodLabel(details: Stripe.Charge.PaymentMethodDetails | null |
   return PM_LABEL[details.type] ?? details.type
 }
 
-// 저장한 결제수단 표시 (예: “Visa •••• 4242”, “카카오페이”)
-export function savedLabel(pm: Stripe.PaymentMethod) {
-  if (pm.card) return { company: pm.card.brand ? pm.card.brand.toUpperCase() : '카드', number: pm.card.last4 ? `•••• ${pm.card.last4}` : '' }
-  return { company: PM_LABEL[pm.type] ?? pm.type, number: '' }
+const PM_LABEL_EN: Record<string, string> = {
+  card: 'Card', kr_card: 'Korean card', kakao_pay: 'KakaoPay', naver_pay: 'Naver Pay', samsung_pay: 'Samsung Pay', payco: 'PAYCO',
+  link: 'Link', apple_pay: 'Apple Pay', google_pay: 'Google Pay',
 }
 
-export function stripeMessage(e: unknown) {
-  if (e instanceof Stripe.errors.StripeCardError) return e.message || '카드사에서 결제를 거절했습니다.'
-  if (e instanceof Stripe.errors.StripeError) return e.message || '결제 서버 오류가 났습니다.'
-  return '결제 서버에 연결하지 못했습니다.'
+// 저장한 결제수단 표시 (예: “Visa •••• 4242”, “카카오페이”). lang: 'en' 이면 영어 이름 (기본 한국어)
+export function savedLabel(pm: Stripe.PaymentMethod, lang: CmsLang = 'ko') {
+  const en = lang === 'en'
+  if (pm.card) return { company: pm.card.brand ? pm.card.brand.toUpperCase() : en ? 'Card' : '카드', number: pm.card.last4 ? `•••• ${pm.card.last4}` : '' }
+  return { company: (en ? PM_LABEL_EN : PM_LABEL)[pm.type] ?? pm.type, number: '' }
+}
+
+// 오류 문구 (Stripe가 준 메시지가 없을 때의 기본 문구는 lang 에 따른다)
+export function stripeMessage(e: unknown, lang: CmsLang = 'ko') {
+  const en = lang === 'en'
+  if (e instanceof Stripe.errors.StripeCardError) return e.message || (en ? 'The card issuer declined the payment.' : '카드사에서 결제를 거절했습니다.')
+  if (e instanceof Stripe.errors.StripeError) return e.message || (en ? 'A payment server error occurred.' : '결제 서버 오류가 났습니다.')
+  return en ? 'Could not connect to the payment server.' : '결제 서버에 연결하지 못했습니다.'
 }

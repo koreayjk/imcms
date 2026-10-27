@@ -4,15 +4,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { createShare, prepareReleases, runDraft, type CompareRelease, type CompareResult } from '@/app/(main)/admin/ai-compare/actions'
 import { DOC_ACCEPT, extractDocText, guessTitle } from '@/lib/doc-extract'
 import { AI_TEST_SET, AI_TEST_SET_VERSION } from '@/lib/ai-test-set'
+import { useT, useCmsLang } from '@/components/cms/CmsLang'
 
 type Model = { id: string; label: string; input: number; output: number; ready: boolean; note?: string }
 type Run = { releases: CompareRelease[]; models: string[]; results: Record<string, CompareResult | 'running'>; at: string }
 
 const WON = 1400
-const won = (usd: number) => `${Math.round(usd * WON).toLocaleString()}원`
+const wonL = (usd: number, lang: 'ko' | 'en') => (lang === 'en' ? `KRW ${Math.round(usd * WON).toLocaleString('en-US')}` : `${Math.round(usd * WON).toLocaleString()}원`)
 const STORE = 'im-ai-compare-last'
 const CUSTOM_STORE = 'im-ai-compare-custom'
-const CUSTOM_SOURCE = '직접 올린 자료'
 const TEST_SET_FLAG = 'im-ai-compare-testset'
 const key = (r: string, m: string) => `${r}|${m}`
 
@@ -23,6 +23,11 @@ function withTestSet(list: CompareRelease[]) {
 }
 
 export default function AiCompare({ models }: { models: Model[] }) {
+  const t = useT()
+  const lang = useCmsLang()
+  const loc = lang === 'en' ? 'en-US' : 'ko-KR'
+  const won = (usd: number) => wonL(usd, lang)
+  const CUSTOM_SOURCE = t('직접 올린 자료', 'Uploaded by me')
   const [picked, setPicked] = useState<string[]>(() => models.filter((m) => m.ready).map((m) => m.id).filter((id) => id !== 'gemini-3.5-flash-lite'))
   const [run, setRun] = useState<Run | null>(null)
   const [busy, setBusy] = useState(false)
@@ -80,7 +85,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
         const text = await extractDocText(f)
         added.push({ id: `file-${Date.now()}-${added.length}`, title: guessTitle(text, f.name), source: CUSTOM_SOURCE, text: text.slice(0, 12000) })
       } catch (e) {
-        errors.push(`${f.name}: ${e instanceof Error ? e.message : '읽지 못했습니다'}`)
+        errors.push(`${f.name}: ${e instanceof Error ? e.message : t('읽지 못했습니다', 'Could not read the file')}`)
       }
     }
     setCustom((prev) => [...prev, ...added])
@@ -88,12 +93,12 @@ export default function AiCompare({ models }: { models: Model[] }) {
     setReading(false)
   }
 
-  const missingTest = AI_TEST_SET.filter((t) => !custom.some((c) => c.title === t.title))
+  const missingTest = AI_TEST_SET.filter((x) => !custom.some((c) => c.title === x.title))
 
   function addPasted() {
     const text = pasteText.trim()
-    if (text.length < 50) { setFileError('붙여넣은 글이 너무 짧습니다. 보도자료 전문을 붙여넣어 주세요.'); return }
-    setCustom((prev) => [...prev, { id: `paste-${Date.now()}`, title: guessTitle(text, '붙여넣은 보도자료'), source: CUSTOM_SOURCE, text: text.slice(0, 12000) }])
+    if (text.length < 50) { setFileError(t('붙여넣은 글이 너무 짧습니다. 보도자료 전문을 붙여넣어 주세요.', 'The pasted text is too short. Paste the full press release.')); return }
+    setCustom((prev) => [...prev, { id: `paste-${Date.now()}`, title: guessTitle(text, t('붙여넣은 보도자료', 'Pasted press release')), source: CUSTOM_SOURCE, text: text.slice(0, 12000) }])
     setPasteText('')
     setPasteOpen(false)
     setFileError('')
@@ -121,7 +126,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
       releases = [...releases, ...(prep.releases ?? [])]
     }
     if (!releases.length) {
-      setError('비교할 자료가 없습니다. 파일을 올리거나 “최근 보도자료 10건”을 켜 주세요.')
+      setError(t('비교할 자료가 없습니다. 파일을 올리거나 “최근 보도자료 10건”을 켜 주세요.', 'There is nothing to compare. Upload a file or turn on “10 most recent press releases”.'))
       setBusy(false)
       return
     }
@@ -139,7 +144,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
         while (i < list.length) {
           const { r, m } = list[i++]
           setRun((prev) => prev && { ...prev, results: { ...prev.results, [key(r.id, m)]: 'running' } })
-          const res = await runDraft(m, r).catch((e) => ({ ok: false as const, error: e instanceof Error ? e.message : '실패' }))
+          const res = await runDraft(m, r).catch((e) => ({ ok: false as const, error: e instanceof Error ? e.message : t('실패', 'Failed') }))
           setRun((prev) => prev && { ...prev, results: { ...prev.results, [key(r.id, m)]: res } })
           if (gapMs && i < list.length) await new Promise((ok) => setTimeout(ok, gapMs))
         }
@@ -161,12 +166,12 @@ export default function AiCompare({ models }: { models: Model[] }) {
     const results: Record<string, { draft: Extract<CompareResult, { ok: true }>['draft']; ms: number; costUsd: number; issues: Extract<CompareResult, { ok: true }>['issues'] }> = {}
     for (const [k, v] of Object.entries(run.results)) if (v !== 'running' && v.ok) results[k] = { draft: v.draft, ms: v.ms, costUsd: v.costUsd, issues: v.issues }
     const res = await createShare({
-      title: shareTitle.trim() || `AI 초안 비교 (${new Date(run.at).toLocaleDateString('ko-KR')})`,
+      title: shareTitle.trim() || t(`AI 초안 비교 (${new Date(run.at).toLocaleDateString('ko-KR')})`, `AI draft comparison (${new Date(run.at).toLocaleDateString('en-US')})`),
       blind,
       data: { at: run.at, releases: run.releases, models: run.models.map((id) => ({ id, label: models.find((m) => m.id === id)?.label ?? id })), results },
-    }).catch(() => ({ error: '링크를 만들지 못했습니다. 다시 눌러 주세요.' } as { token?: string; error?: string }))
+    }).catch(() => ({ error: t('링크를 만들지 못했습니다. 다시 눌러 주세요.', 'Could not create the link. Please try again.') } as { token?: string; error?: string }))
     setSharing(false)
-    if (res.error || !res.token) { setShareError(res.error ?? '링크를 만들지 못했습니다.'); return }
+    if (res.error || !res.token) { setShareError(res.error ?? t('링크를 만들지 못했습니다.', 'Could not create the link.')); return }
     setShareUrl(`${window.location.origin}/ai-review/${res.token}`)
     setCopied(false)
   }
@@ -197,7 +202,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-line bg-white p-5">
-        <h2 className="text-[15px] font-bold">비교할 모델</h2>
+        <h2 className="text-[15px] font-bold">{t('비교할 모델', 'Models to compare')}</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {models.map((m) => (
             <label key={m.id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-[13.5px] ${m.ready ? 'cursor-pointer border-line hover:border-ink' : 'border-dashed border-line opacity-60'}`}>
@@ -205,41 +210,41 @@ export default function AiCompare({ models }: { models: Model[] }) {
               <span>
                 <strong>{m.label}</strong>
                 <span className="ml-1.5 text-[11.5px] text-muted">${m.input} / ${m.output}</span>
-                {!m.ready && <span className="ml-1.5 text-[11.5px] text-danger">{m.id.startsWith('gemini') ? 'GEMINI_API_KEY 필요' : 'ANTHROPIC_API_KEY 필요'}</span>}
+                {!m.ready && <span className="ml-1.5 text-[11.5px] text-danger">{m.id.startsWith('gemini') ? t('GEMINI_API_KEY 필요', 'GEMINI_API_KEY required') : t('ANTHROPIC_API_KEY 필요', 'ANTHROPIC_API_KEY required')}</span>}
               </span>
             </label>
           ))}
         </div>
-        <h2 className="mt-6 text-[15px] font-bold">비교할 자료</h2>
+        <h2 className="mt-6 text-[15px] font-bold">{t('비교할 자료', 'Material to compare')}</h2>
         <div className="mt-3 space-y-3">
           <label className="flex items-center gap-2 text-[13.5px]">
             <input type="checkbox" checked={includeRecent} disabled={busy} onChange={(e) => setIncludeRecent(e.target.checked)} />
-            보도자료함의 최근 보도자료 10건
+            {t('보도자료함의 최근 보도자료 10건', '10 most recent press releases in the press release inbox')}
           </label>
           <div className="rounded-lg border border-dashed border-line p-3">
             <div className="flex flex-wrap items-center gap-2">
-              <strong className="text-[13.5px]">내 자료 {custom.length}건</strong>
+              <strong className="text-[13.5px]">{t(`내 자료 ${custom.length}건`, `My material: ${custom.length}`)}</strong>
               <label className={`cursor-pointer rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-semibold hover:border-ink ${busy || reading ? 'pointer-events-none opacity-50' : ''}`}>
-                {reading ? '읽는 중…' : '파일 올리기 (한글·워드·txt)'}
+                {reading ? t('읽는 중…', 'Reading…') : t('파일 올리기 (한글·워드·txt)', 'Upload files (HWP, Word, txt)')}
                 <input type="file" accept={DOC_ACCEPT} multiple className="sr-only" onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} />
               </label>
               <button type="button" disabled={busy} onClick={() => setPasteOpen(!pasteOpen)} className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] hover:border-ink">
-                {pasteOpen ? '붙여넣기 닫기' : '글 붙여넣기'}
+                {pasteOpen ? t('붙여넣기 닫기', 'Close paste box') : t('글 붙여넣기', 'Paste text')}
               </button>
               {missingTest.length > 0 && !busy && (
                 <button type="button" onClick={() => setCustom(withTestSet(custom))} className="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] hover:border-ink">
-                  시험 자료 {missingTest.length}건 넣기
+                  {t(`시험 자료 ${missingTest.length}건 넣기`, `Add ${missingTest.length} test ${missingTest.length === 1 ? 'item' : 'items'}`)}
                 </button>
               )}
               {custom.length > 0 && !busy && (
-                <button type="button" onClick={() => setCustom([])} className="ml-auto text-[12px] text-muted underline underline-offset-2 hover:text-danger">모두 빼기</button>
+                <button type="button" onClick={() => setCustom([])} className="ml-auto text-[12px] text-muted underline underline-offset-2 hover:text-danger">{t('모두 빼기', 'Remove all')}</button>
               )}
             </div>
-            <p className="mt-1.5 text-[11.5px] text-muted">파일은 서버로 보내지 않고 이 브라우저에서 글자만 읽어 비교에 씁니다. 한글(.hwp .hwpx)·워드(.doc .docx)·텍스트(.txt)를 읽습니다.</p>
+            <p className="mt-1.5 text-[11.5px] text-muted">{t('파일은 서버로 보내지 않고 이 브라우저에서 글자만 읽어 비교에 씁니다. 한글(.hwp .hwpx)·워드(.doc .docx)·텍스트(.txt)를 읽습니다.', 'Files are not sent to the server; the text is read in this browser only and used for the comparison. HWP (.hwp .hwpx), Word (.doc .docx) and text (.txt) files can be read.')}</p>
             {pasteOpen && (
               <div className="mt-2 space-y-2">
-                <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={6} placeholder="보도자료 전문을 붙여넣으세요. 첫 줄을 제목으로 씁니다." className="w-full rounded-md border border-line px-3 py-2 text-[13px] outline-none focus:border-ink" />
-                <button type="button" onClick={addPasted} className="btn-secondary px-4 py-1.5 text-[13px]">내 자료에 추가</button>
+                <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={6} placeholder={t('보도자료 전문을 붙여넣으세요. 첫 줄을 제목으로 씁니다.', 'Paste the full press release. The first line is used as the title.')} className="w-full rounded-md border border-line px-3 py-2 text-[13px] outline-none focus:border-ink" />
+                <button type="button" onClick={addPasted} className="btn-secondary px-4 py-1.5 text-[13px]">{t('내 자료에 추가', 'Add to my material')}</button>
               </div>
             )}
             {fileError && <p role="alert" className="mt-2 whitespace-pre-line text-[12.5px] text-danger">{fileError}</p>}
@@ -248,8 +253,8 @@ export default function AiCompare({ models }: { models: Model[] }) {
                 {custom.map((c) => (
                   <li key={c.id} className="flex items-center gap-3 px-3 py-2 text-[13px]">
                     <span className="min-w-0 flex-1 truncate">{c.title}</span>
-                    <span className="shrink-0 text-[11.5px] tabular-nums text-muted">{c.text.length.toLocaleString()}자</span>
-                    {!busy && <button type="button" onClick={() => setCustom(custom.filter((x) => x.id !== c.id))} className="shrink-0 text-[12px] text-muted hover:text-danger" aria-label={`${c.title} 빼기`}>빼기</button>}
+                    <span className="shrink-0 text-[11.5px] tabular-nums text-muted">{t(`${c.text.length.toLocaleString()}자`, `${c.text.length.toLocaleString('en-US')} chars`)}</span>
+                    {!busy && <button type="button" onClick={() => setCustom(custom.filter((x) => x.id !== c.id))} className="shrink-0 text-[12px] text-muted hover:text-danger" aria-label={t(`${c.title} 빼기`, `Remove ${c.title}`)}>{t('빼기', 'Remove')}</button>}
                   </li>
                 ))}
               </ul>
@@ -259,30 +264,31 @@ export default function AiCompare({ models }: { models: Model[] }) {
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button type="button" onClick={start} disabled={busy || reading || !picked.length || !releaseCount} className="btn-publish px-5">
-            {busy ? `비교 중… ${finished}/${total}` : `비교 시작 (자료 ${releaseCount}건 × 모델 ${picked.length}개)`}
+            {busy ? t(`비교 중… ${finished}/${total}`, `Comparing… ${finished}/${total}`) : t(`비교 시작 (자료 ${releaseCount}건 × 모델 ${picked.length}개)`, `Start comparison (${releaseCount} ${releaseCount === 1 ? 'item' : 'items'} × ${picked.length} ${picked.length === 1 ? 'model' : 'models'})`)}
           </button>
           {!busy && failedJobs.length > 0 && (
             <button type="button" onClick={() => { setError(''); runJobs(failedJobs) }} className="rounded-lg border border-line px-4 py-2 text-[13.5px] font-semibold hover:border-ink">
-              실패한 {failedJobs.length}건만 다시
+              {t(`실패한 ${failedJobs.length}건만 다시`, `Retry only the ${failedJobs.length} failed`)}
             </button>
           )}
-          {!busy && picked.length > 0 && <span className="text-[12.5px] text-muted">예상 비용 약 {won(estimate)} · 보통 2~4분 걸립니다</span>}
-          {!ready.length && <span className="text-[12.5px] text-danger">Vercel에 AI 키를 넣고 다시 배포해야 비교할 수 있습니다.</span>}
+          {!busy && picked.length > 0 && <span className="text-[12.5px] text-muted">{t('예상 비용 약', 'Estimated cost about')} {won(estimate)} · {t('보통 2~4분 걸립니다', 'usually takes 2–4 minutes')}</span>}
+          {!ready.length && <span className="text-[12.5px] text-danger">{t('Vercel에 AI 키를 넣고 다시 배포해야 비교할 수 있습니다.', 'Add the AI keys in Vercel and redeploy before you can compare.')}</span>}
         </div>
         {error && <p role="alert" className="mt-2 text-[13px] text-danger">{error}</p>}
       </section>
 
       <section className="rounded-lg border border-line bg-white p-5">
-        <h2 className="text-[15px] font-bold">다른 기자에게 검토받기</h2>
+        <h2 className="text-[15px] font-bold">{t('다른 기자에게 검토받기', 'Get a review from other reporters')}</h2>
         <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-          링크를 보내면 로그인 없이 초안을 보고 자료마다 가장 좋은 초안을 골라 의견을 남길 수 있습니다. 결과는 이 화면 맨 위 “받은 검토”에 모입니다. 링크는 30일 동안 쓸 수 있습니다.
+          {t('링크를 보내면 로그인 없이 초안을 보고 자료마다 가장 좋은 초안을 골라 의견을 남길 수 있습니다. 결과는 이 화면 맨 위 “받은 검토”에 모입니다. 링크는 30일 동안 쓸 수 있습니다.', 'Send the link and reviewers can read the drafts without logging in, pick the best draft for each item and leave comments. Results are collected under “Reviews received” at the top of this page. The link works for 30 days.')}
         </p>
         {busy ? (
-          <p className="mt-3 rounded-md bg-[#F8F9FA] px-3 py-2.5 text-[13px] text-muted">비교가 끝나면 링크를 만들 수 있습니다.</p>
+          <p className="mt-3 rounded-md bg-[#F8F9FA] px-3 py-2.5 text-[13px] text-muted">{t('비교가 끝나면 링크를 만들 수 있습니다.', 'You can create the link once the comparison finishes.')}</p>
         ) : !run || finished === 0 ? (
           <p className="mt-3 rounded-md bg-[#F8F9FA] px-3 py-2.5 text-[13px] leading-relaxed text-muted">
-            이 브라우저에 비교 결과가 없습니다. 비교 결과는 비교를 실행한 컴퓨터·브라우저에만 남습니다.
-            그 브라우저에서 이 화면을 열거나, 위에서 비교를 한 번 더 실행하면 바로 링크를 만들 수 있습니다.
+            {t(`이 브라우저에 비교 결과가 없습니다. 비교 결과는 비교를 실행한 컴퓨터·브라우저에만 남습니다.
+            그 브라우저에서 이 화면을 열거나, 위에서 비교를 한 번 더 실행하면 바로 링크를 만들 수 있습니다.`, `There are no comparison results in this browser. Results stay only on the computer and browser where the comparison was run.
+            Open this page in that browser, or run the comparison again above, and you can create the link right away.`)}
           </p>
         ) : (
           <>
@@ -291,18 +297,18 @@ export default function AiCompare({ models }: { models: Model[] }) {
                 value={shareTitle}
                 onChange={(e) => setShareTitle(e.target.value)}
                 maxLength={80}
-                placeholder={`제목 (예: AI 초안 비교 ${new Date(run!.at).toLocaleDateString('ko-KR')})`}
+                placeholder={t(`제목 (예: AI 초안 비교 ${new Date(run!.at).toLocaleDateString('ko-KR')})`, `Title (e.g. AI draft comparison ${new Date(run!.at).toLocaleDateString('en-US')})`)}
                 className="w-full rounded-md border border-line px-3 py-2 text-[13.5px] outline-none focus:border-ink sm:w-auto sm:min-w-[260px] sm:flex-1"
               />
               <label className="flex items-center gap-2 text-[13px]">
                 <input type="checkbox" checked={blind} onChange={(e) => setBlind(e.target.checked)} />
-                AI 이름 가리기(블라인드)
+                {t('AI 이름 가리기(블라인드)', 'Hide AI names (blind)')}
               </label>
               <button type="button" onClick={share} disabled={sharing} className="btn-publish px-5">
-                {sharing ? '만드는 중…' : '검토 링크 만들기'}
+                {sharing ? t('만드는 중…', 'Creating…') : t('검토 링크 만들기', 'Create review link')}
               </button>
             </div>
-            {blind && <p className="mt-1.5 text-[11.5px] text-muted">블라인드: 초안이 A·B·C로만 보이고 자료마다 순서가 섞입니다. 시간·비용도 가립니다. 검토를 보낸 뒤에 공개됩니다.</p>}
+            {blind && <p className="mt-1.5 text-[11.5px] text-muted">{t('블라인드: 초안이 A·B·C로만 보이고 자료마다 순서가 섞입니다. 시간·비용도 가립니다. 검토를 보낸 뒤에 공개됩니다.', 'Blind: drafts are shown only as A, B and C, and the order is shuffled for each item. Time and cost are hidden too. They are revealed after a review is submitted.')}</p>}
             {shareError && <p role="alert" className="mt-2 text-[13px] text-danger">{shareError}</p>}
             {shareUrl && (
               <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-published/5 p-3">
@@ -312,9 +318,9 @@ export default function AiCompare({ models }: { models: Model[] }) {
                   onClick={async () => { try { await navigator.clipboard.writeText(shareUrl); setCopied(true) } catch {} }}
                   className="rounded-lg border border-published px-4 py-2 text-[13px] font-semibold text-published"
                 >
-                  {copied ? '복사됨 ✓' : '링크 복사'}
+                  {copied ? t('복사됨 ✓', 'Copied ✓') : t('링크 복사', 'Copy link')}
                 </button>
-                <a href={shareUrl} target="_blank" rel="noreferrer" className="text-[13px] text-review underline underline-offset-2">미리 보기</a>
+                <a href={shareUrl} target="_blank" rel="noreferrer" className="text-[13px] text-review underline underline-offset-2">{t('미리 보기', 'Preview')}</a>
               </div>
             )}
           </>
@@ -325,39 +331,39 @@ export default function AiCompare({ models }: { models: Model[] }) {
         <>
           <section className="overflow-x-auto rounded-lg border border-line bg-white">
             <h2 className="border-b border-line px-5 py-3 text-[15px] font-bold">
-              요약 <span className="text-[12px] font-normal text-muted">{new Date(run.at).toLocaleString('ko-KR')} · 보도자료 {run.releases.length}건</span>
+              {t('요약', 'Summary')} <span className="text-[12px] font-normal text-muted">{new Date(run.at).toLocaleString(loc)} · {t(`보도자료 ${run.releases.length}건`, `${run.releases.length} press ${run.releases.length === 1 ? 'release' : 'releases'}`)}</span>
             </h2>
             <table className="table-cards w-full text-[13.5px] tabular-nums md:min-w-[760px]">
               <thead>
                 <tr className="border-b border-line text-left text-[12px] text-muted">
-                  <th className="px-5 py-2 font-medium">모델</th><th className="px-3 py-2 text-right font-medium">완료</th><th className="px-3 py-2 text-right font-medium">실패</th>
-                  <th className="px-3 py-2 text-right font-medium">평균 시간</th><th className="px-3 py-2 text-right font-medium">기사 1건 비용</th><th className="px-3 py-2 text-right font-medium">하루 10건 한 달</th>
-                  <th className="px-3 py-2 text-right font-medium">원문에 없는 숫자·인용</th><th className="px-5 py-2 text-right font-medium">평균 본문 길이</th>
+                  <th className="px-5 py-2 font-medium">{t('모델', 'Model')}</th><th className="px-3 py-2 text-right font-medium">{t('완료', 'Done')}</th><th className="px-3 py-2 text-right font-medium">{t('실패', 'Failed')}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t('평균 시간', 'Avg. time')}</th><th className="px-3 py-2 text-right font-medium">{t('기사 1건 비용', 'Cost per story')}</th><th className="px-3 py-2 text-right font-medium">{t('하루 10건 한 달', '10 per day, monthly')}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t('원문에 없는 숫자·인용', 'Numbers/quotes not in source')}</th><th className="px-5 py-2 text-right font-medium">{t('평균 본문 길이', 'Avg. body length')}</th>
                 </tr>
               </thead>
               <tbody>
                 {summary.map((s) => (
                   <tr key={s.id} className="border-b border-line/60 last:border-0">
                     <td className="tc-full px-5 py-2.5 font-bold">{s.label}</td>
-                    <td data-label="완료" className="px-3 py-2.5 text-right">{s.done}</td>
-                    <td data-label="실패" className={`px-3 py-2.5 text-right ${s.failed ? 'font-bold text-danger' : ''}`}>{s.failed}</td>
-                    <td data-label="평균 시간" className="px-3 py-2.5 text-right">{s.done ? `${(s.ms / 1000).toFixed(1)}초` : '-'}</td>
-                    <td data-label="1건 비용" className="px-3 py-2.5 text-right">{s.done ? won(s.cost) : '-'}</td>
-                    <td data-label="하루 10건 한 달" className="px-3 py-2.5 text-right">{s.done ? won(s.cost * 300) : '-'}</td>
-                    <td data-label="원문에 없는 숫자·인용" className={`px-3 py-2.5 text-right ${s.issues ? 'font-bold text-danger' : 'text-published'}`}>{s.done ? `${s.issues}건` : '-'}</td>
-                    <td data-label="평균 본문 길이" className="px-5 py-2.5 text-right">{s.done ? `${Math.round(s.chars).toLocaleString()}자` : '-'}</td>
+                    <td data-label={t('완료', 'Done')} className="px-3 py-2.5 text-right">{s.done}</td>
+                    <td data-label={t('실패', 'Failed')} className={`px-3 py-2.5 text-right ${s.failed ? 'font-bold text-danger' : ''}`}>{s.failed}</td>
+                    <td data-label={t('평균 시간', 'Avg. time')} className="px-3 py-2.5 text-right">{s.done ? t(`${(s.ms / 1000).toFixed(1)}초`, `${(s.ms / 1000).toFixed(1)}s`) : '-'}</td>
+                    <td data-label={t('1건 비용', 'Cost per story')} className="px-3 py-2.5 text-right">{s.done ? won(s.cost) : '-'}</td>
+                    <td data-label={t('하루 10건 한 달', '10 per day, monthly')} className="px-3 py-2.5 text-right">{s.done ? won(s.cost * 300) : '-'}</td>
+                    <td data-label={t('원문에 없는 숫자·인용', 'Numbers/quotes not in source')} className={`px-3 py-2.5 text-right ${s.issues ? 'font-bold text-danger' : 'text-published'}`}>{s.done ? t(`${s.issues}건`, String(s.issues)) : '-'}</td>
+                    <td data-label={t('평균 본문 길이', 'Avg. body length')} className="px-5 py-2.5 text-right">{s.done ? t(`${Math.round(s.chars).toLocaleString()}자`, `${Math.round(s.chars).toLocaleString('en-US')} chars`) : '-'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <p className="border-t border-line px-5 py-2.5 text-[11.5px] text-muted">
-              비용은 실제 사용 토큰 × 공시 가격(1달러 {WON}원)으로 계산했습니다. “원문에 없는 숫자·인용”은 자동 점검이라 표현만 바뀐 경우도 잡힐 수 있으니, 아래에서 직접 확인하세요.
+              {t(`비용은 실제 사용 토큰 × 공시 가격(1달러 ${WON}원)으로 계산했습니다. “원문에 없는 숫자·인용”은 자동 점검이라 표현만 바뀐 경우도 잡힐 수 있으니, 아래에서 직접 확인하세요.`, `Cost is the actual tokens used × the published price (USD 1 = KRW ${WON}). “Numbers/quotes not in source” is an automatic check and can also flag cases where only the wording changed, so verify below.`)}
             </p>
           </section>
 
 
-          <nav className="rounded-lg border border-line bg-white px-5 py-3" aria-label="자료 목록">
-            <p className="text-[12.5px] font-bold text-muted">자료 {run.releases.length}건 — 누르면 해당 자료로 이동</p>
+          <nav className="rounded-lg border border-line bg-white px-5 py-3" aria-label={t('자료 목록', 'Material list')}>
+            <p className="text-[12.5px] font-bold text-muted">{t(`자료 ${run.releases.length}건 — 누르면 해당 자료로 이동`, `${run.releases.length} ${run.releases.length === 1 ? 'item' : 'items'} — click to jump to it`)}</p>
             <ol className="mt-2 grid gap-x-6 gap-y-1 text-[13px] md:grid-cols-2">
               {run.releases.map((r, idx) => {
                 const fails = run.models.filter((m) => { const x = run.results[key(r.id, m)]; return x && x !== 'running' && !x.ok }).length
@@ -365,10 +371,10 @@ export default function AiCompare({ models }: { models: Model[] }) {
                   <li key={r.id} className="flex min-w-0 items-center gap-2">
                     <span className="w-5 shrink-0 text-right tabular-nums text-muted">{idx + 1}</span>
                     {/^(test|file|paste)-/.test(r.id) && (
-                      <span className="shrink-0 rounded bg-review/10 px-1.5 text-[10.5px] font-semibold text-review">내 자료</span>
+                      <span className="shrink-0 rounded bg-review/10 px-1.5 text-[10.5px] font-semibold text-review">{t('내 자료', 'Mine')}</span>
                     )}
                     <a href={`#rel-${idx + 1}`} className="min-w-0 truncate hover:underline">{r.title}</a>
-                    {fails > 0 && <span className="shrink-0 text-[11px] font-semibold text-danger">실패 {fails}</span>}
+                    {fails > 0 && <span className="shrink-0 text-[11px] font-semibold text-danger">{t(`실패 ${fails}`, `${fails} failed`)}</span>}
                   </li>
                 )
               })}
@@ -382,7 +388,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
                   <span className="text-[12px] font-bold text-muted">{idx + 1}</span>
                   <h3 className="min-w-[10rem] flex-1 truncate text-[14.5px] font-bold">{r.title}</h3>
                   <span className="text-[11.5px] text-muted">{r.source}</span>
-                  <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} className="text-[12px] text-review underline underline-offset-2">{open === r.id ? '원문 접기' : '원문 보기'}</button>
+                  <button type="button" onClick={() => setOpen(open === r.id ? null : r.id)} className="text-[12px] text-review underline underline-offset-2">{open === r.id ? t('원문 접기', 'Hide source') : t('원문 보기', 'View source')}</button>
                 </div>
                 {open === r.id && <p className="max-h-72 overflow-y-auto whitespace-pre-line border-b border-line bg-[#F8F9FA] px-5 py-3 text-[12.5px] leading-relaxed">{r.text}</p>}
                 {/* 휴대폰에서는 모델 칸을 위아래로 쌓는다 (컴퓨터에서는 나란히, 넓으면 옆으로 밀어 보기) */}
@@ -395,16 +401,16 @@ export default function AiCompare({ models }: { models: Model[] }) {
                       <div key={m} className="min-w-0 bg-white p-4">
                         <p className="mb-2 flex items-center gap-2 text-[11.5px] font-bold text-muted">
                           {label}
-                          {res && res !== 'running' && res.ok && <span className="font-normal">{(res.ms / 1000).toFixed(1)}초 · {won(res.costUsd)}</span>}
+                          {res && res !== 'running' && res.ok && <span className="font-normal">{(res.ms / 1000).toFixed(1)}{t('초', 's')} · {won(res.costUsd)}</span>}
                         </p>
-                        {!res ? <p className="text-[12.5px] text-muted">대기 중</p>
-                          : res === 'running' ? <p className="text-[12.5px] text-review">작성 중…</p>
-                          : !res.ok ? <p className="text-[12.5px] text-danger">실패: {res.error}</p>
+                        {!res ? <p className="text-[12.5px] text-muted">{t('대기 중', 'Waiting')}</p>
+                          : res === 'running' ? <p className="text-[12.5px] text-review">{t('작성 중…', 'Writing…')}</p>
+                          : !res.ok ? <p className="text-[12.5px] text-danger">{t('실패', 'Failed')}: {res.error}</p>
                           : (
                             <div className="text-[13px] leading-relaxed">
                               {res.issues.length > 0 && (
                                 <p className="mb-2 rounded bg-danger/5 px-2 py-1.5 text-[11.5px] text-danger">
-                                  ⚠ 원문에 없는 {res.issues.map((i) => (i.kind === 'number' ? `숫자 ${i.text}` : `인용 “${i.text}”`)).join(', ')}
+                                  {t('⚠ 원문에 없는', '⚠ Not in the source:')} {res.issues.map((i) => (i.kind === 'number' ? t(`숫자 ${i.text}`, `number ${i.text}`) : t(`인용 “${i.text}”`, `quote “${i.text}”`))).join(', ')}
                                 </p>
                               )}
                               <p className="text-[15px] font-bold leading-snug">{res.draft.title}</p>
@@ -412,7 +418,7 @@ export default function AiCompare({ models }: { models: Model[] }) {
                               <div className="mt-2 space-y-1.5">{res.draft.paragraphs.map((p, i) => <p key={i}>{p}</p>)}</div>
                               {res.draft.review_notes.length > 0 && (
                                 <div className="mt-2 rounded bg-[#FFF8E6] px-2 py-1.5 text-[11.5px]">
-                                  <strong>기자 확인 메모</strong>
+                                  <strong>{t('기자 확인 메모', 'Notes for the reporter to check')}</strong>
                                   {res.draft.review_notes.map((n, i) => <p key={i}>• {n}</p>)}
                                 </div>
                               )}

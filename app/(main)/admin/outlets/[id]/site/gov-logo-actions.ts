@@ -1,6 +1,8 @@
 'use server'
 
 import { getCmsContext } from '@/lib/cms'
+import { getT } from '@/lib/cms-t'
+import type { T } from '@/lib/cms-i18n'
 
 // 지자체 홈페이지에서 공식 로고 후보를 찾는다 (운영팀 전용). 서버가 시청 홈페이지를 열어 로고처럼 보이는 그림을 점수로 골라 보여 주고,
 // 운영팀이 맞는 것을 클릭하면 그 그림이 로고 띠에 올라간다. 해외 접속을 막는 사이트는 못 열 수 있다 (그때는 로고 파일을 직접 올린다)
@@ -26,7 +28,7 @@ function decode(buf: ArrayBuffer, contentType: string) {
 const GOOD = /logo|[-_/.]ci[-_/.0-9]|^ci[-_.]|[-_/]bi[-_/.0-9]|symbol|emblem|sym[-_]|심벌|엠블|로고|상징|시청|군청|구청|시청|home|main_?logo|top_?logo|h_?logo/i
 const BAD = /banner|bnr|icon|btn|button|arrow|bullet|blank|spacer|pixel|sns|facebook|twitter|insta|youtube|kakao|naver|blog|popup|quick|sprite|search|login|ico_|_ico|bg[-_]|[-_]bg|line|dot|close|menu|slide|visual|photo|thumb|qr|app[-_]?store|play[-_]?store|footer|bottom|f_logo|foot/i
 
-function candidates(html: string, base: string) {
+function candidates(html: string, base: string, t: T) {
   const body = html.slice(0, 120_000)
   const out: { url: string; score: number; why: string[] }[] = []
   const seen = new Set<string>()
@@ -45,18 +47,18 @@ function candidates(html: string, base: string) {
     if (!src) continue
     const alt = attr('alt'), cls = `${attr('class')} ${attr('id')}`
     let score = 0; const why: string[] = []
-    if (GOOD.test(src)) { score += 5; why.push('파일 이름이 로고') }
-    if (GOOD.test(alt)) { score += 4; why.push('설명이 로고') }
-    if (/logo|ci|gnb|header/i.test(cls)) { score += 3; why.push('로고 자리') }
+    if (GOOD.test(src)) { score += 5; why.push(t('파일 이름이 로고', 'File name looks like a logo')) }
+    if (GOOD.test(alt)) { score += 4; why.push(t('설명이 로고', 'Description says logo')) }
+    if (/logo|ci|gnb|header/i.test(cls)) { score += 3; why.push(t('로고 자리', 'In a logo position')) }
     if (i < 6) score += 3; else if (i < 16) score += 1
     if (BAD.test(src) || BAD.test(cls)) { score -= 6 }
     if (/\.(svg)(\?|$)/i.test(src)) score += 1
-    push(src, score, why.join(' · ') || `위쪽 ${i + 1}번째 그림`)
+    push(src, score, why.join(' · ') || t(`위쪽 ${i + 1}번째 그림`, `Image #${i + 1} from the top`))
     i++
   }
   // 대표 그림·아이콘은 마지막 후보
-  for (const m of body.matchAll(/<link\b[^>]*rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]*>/gi)) push(/href=["']([^"']+)["']/i.exec(m[0])?.[1], -1, '사이트 아이콘')
-  push(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(body)?.[1], 0, '공유 대표 그림')
+  for (const m of body.matchAll(/<link\b[^>]*rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]*>/gi)) push(/href=["']([^"']+)["']/i.exec(m[0])?.[1], -1, t('사이트 아이콘', 'Site icon'))
+  push(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(body)?.[1], 0, t('공유 대표 그림', 'Share preview image'))
   return out.sort((a, b) => b.score - a.score).slice(0, 8)
 }
 
@@ -76,20 +78,21 @@ async function grab(url: string, referer: string): Promise<{ type: string; buf: 
 
 export async function findGovLogos(pageUrl: string): Promise<GovLogoResult> {
   const { isStaff } = await getCmsContext()
-  if (!isStaff) return { error: '운영팀만 쓸 수 있습니다.', candidates: [] }
+  const { t } = await getT()
+  if (!isStaff) return { error: t('운영팀만 쓸 수 있습니다.', 'Only the IM Newsroom team can use this.'), candidates: [] }
   let u: URL
-  try { u = new URL(pageUrl) } catch { return { error: '홈페이지 주소가 올바르지 않습니다.', candidates: [] } }
-  if (!safeHost(u)) return { error: '지자체 홈페이지(.kr) 주소만 열 수 있습니다.', candidates: [] }
+  try { u = new URL(pageUrl) } catch { return { error: t('홈페이지 주소가 올바르지 않습니다.', 'The website address is not valid.'), candidates: [] } }
+  if (!safeHost(u)) return { error: t('지자체 홈페이지(.kr) 주소만 열 수 있습니다.', 'Only local government website (.kr) addresses can be opened.'), candidates: [] }
   let res: Response
   try {
     res = await fetch(u.toString(), { headers: { 'User-Agent': UA, 'Accept-Language': 'ko-KR,ko;q=0.9', Accept: 'text/html,application/xhtml+xml' }, signal: AbortSignal.timeout(12_000), redirect: 'follow' })
   } catch (e) {
-    return { error: `홈페이지를 열지 못했습니다 (${e instanceof Error ? e.name : '연결 실패'}). 해외 접속을 막는 사이트일 수 있습니다. 로고 파일을 직접 올려 주세요.`, candidates: [] }
+    return { error: t(`홈페이지를 열지 못했습니다 (${e instanceof Error ? e.name : '연결 실패'}). 해외 접속을 막는 사이트일 수 있습니다. 로고 파일을 직접 올려 주세요.`, `Could not open the website (${e instanceof Error ? e.name : 'connection failed'}). The site may block overseas access. Please upload the logo file yourself.`), candidates: [] }
   }
-  if (!res.ok) return { error: `홈페이지가 ${res.status} 응답을 줬습니다. 로고 파일을 직접 올려 주세요.`, candidates: [] }
+  if (!res.ok) return { error: t(`홈페이지가 ${res.status} 응답을 줬습니다. 로고 파일을 직접 올려 주세요.`, `The website responded with ${res.status}. Please upload the logo file yourself.`), candidates: [] }
   const html = decode(await res.arrayBuffer(), res.headers.get('content-type') ?? '')
-  const list = candidates(html, res.url || u.toString())
-  if (!list.length) return { error: '로고처럼 보이는 그림을 못 찾았습니다. 로고 파일을 직접 올려 주세요.', page: res.url, candidates: [] }
+  const list = candidates(html, res.url || u.toString(), t)
+  if (!list.length) return { error: t('로고처럼 보이는 그림을 못 찾았습니다. 로고 파일을 직접 올려 주세요.', 'Could not find any image that looks like a logo. Please upload the logo file yourself.'), page: res.url, candidates: [] }
   const got = await Promise.all(list.map(async (c) => {
     const g = await grab(c.url, res.url || u.toString())
     if (!g) return null
@@ -98,5 +101,5 @@ export async function findGovLogos(pageUrl: string): Promise<GovLogoResult> {
   }))
   const seenSize = new Set<string>()
   const cands = got.filter((x): x is GovLogoCandidate => !!x).filter((x) => { const k = `${x.type}${x.bytes}`; if (seenSize.has(k)) return false; seenSize.add(k); return true }).slice(0, 6)
-  return cands.length ? { page: res.url, candidates: cands } : { error: '후보 그림을 내려받지 못했습니다. 로고 파일을 직접 올려 주세요.', page: res.url, candidates: [] }
+  return cands.length ? { page: res.url, candidates: cands } : { error: t('후보 그림을 내려받지 못했습니다. 로고 파일을 직접 올려 주세요.', 'Could not download the candidate images. Please upload the logo file yourself.'), page: res.url, candidates: [] }
 }
