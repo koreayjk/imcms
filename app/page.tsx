@@ -12,6 +12,8 @@ import SiteFrame from '@/components/site/SiteFrame'
 import SectionHeading from '@/components/site/SectionHeading'
 import MostViewed from '@/components/site/MostViewed'
 import FitRows from '@/components/site/FitRows'
+import WingFill from '@/components/site/WingFill'
+import ArticleRow from '@/components/site/ArticleRow'
 import SpecialtyTabs from '@/components/site/SpecialtyTabs'
 import Thumb from '@/components/site/Thumb'
 import { AdSlot, CategoryLabel, TitleList } from '@/components/site/items'
@@ -92,7 +94,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const underHeadline = take(4)
   const major = fill(pinned.major, hasImage)
   // 오른쪽 광고가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 높이에 맞춰 연다)
-  const majorMore = site.homeLayout === 'bands' ? [] : take(30)
+  const majorMore = site.homeLayout === 'bands' ? [] : take(12)
   const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
@@ -103,6 +105,15 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const general = topSections(site).filter((s) => !s.specialty)
 
   const base = siteBaseUrl(site, (await headers()).get('host'))
+
+  // 넓은 화면의 오른쪽 여백 광고가 본문보다 길어지면, 그 왼쪽 빈자리에 이어서 채울 기사 (화면에서 빈자리에 들어가는 만큼만 연다)
+  const onPage = new Set<string>([...used, ...mostViewed.map((a) => a.id), ...Object.values(bySection).flatMap((l) => l.slice(0, 5).map((a) => a.id))])
+  const spare = latest.filter((a) => !onPage.has(a.id))
+  const wingFill = (
+    <WingFill title={L === 'en' ? 'More stories' : '기사 더 보기'}>
+      {(spare.length >= 6 ? spare : latest.filter((a) => !used.has(a.id))).slice(0, 40).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
+    </WingFill>
+  )
 
   // 화면 전체를 새로 짠 배치: 한국 스타일 2(portal) · 미국 스타일 1(editorial) · 미국 스타일 2(cards)
   const layoutKey = site.homeLayout
@@ -123,6 +134,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         {layoutKey === 'editorial' ? <HomeEditorial {...common} realtime={realtime} />
           : layoutKey === 'cards' ? <HomeCards {...common} />
           : <HomePortal {...common} breaking={realtime.slice(0, 5)} />}
+        {wingFill}
         <AdArea site={site} slot="popup" />
       </SiteFrame>
     )
@@ -365,6 +377,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </div>
         </>
       )}
+      {wingFill}
     </SiteFrame>
   )
 }

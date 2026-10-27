@@ -208,7 +208,7 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
 
   const [pinned, latest, mostViewed, ...sections] = await Promise.all([
     pinnedArticles(scope),
-    published(scope).order('published_at', { ascending: false }).limit(30),
+    published(scope).order('published_at', { ascending: false }).limit(70),
     published(scope).order('view_count', { ascending: false }).limit(8),
     // 1차 섹션마다 (2차 메뉴 기사 포함)
     ...tops.map((s) => {
