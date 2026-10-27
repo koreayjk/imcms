@@ -150,7 +150,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           isStaff={isStaff}
           viewAsPicker={canViewAs ? { viewAs, staff: real.isStaff } : null}
         />
-        <main id="app-main" className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0 print:overflow-visible print:pb-0">{children}</main>
+        <main id="app-main" className="relative min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0 print:overflow-visible print:pb-0">{children}</main>
         <Suspense fallback={null}><ScrollKeeper /></Suspense>
       </div>
     </div>
