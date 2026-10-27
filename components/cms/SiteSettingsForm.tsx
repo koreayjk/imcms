@@ -161,6 +161,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     comingSoon: init.comingSoon && !openTimePassed(init) ? true : undefined,
   })
   const [sections, setSections] = useState(initialSections)
+  const [allSections, setAllSections] = useState(false) // 메뉴(섹션) 칸: 기본은 간단히 보기
   const [uploading, setUploading] = useState(false)
   const [msg, setMsg] = useState<{ ok?: string; error?: string }>({})
   const [pending, start] = useTransition()
@@ -257,21 +258,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               <option value="en">English</option>
             </select>
           </Field>
-          <Field label={t('기사 댓글', 'Story comments')} hint={t('댓글을 받는 방식을 고릅니다. 독자 댓글은 편집국 → 댓글에서 관리합니다.', 'Choose how readers can comment. Manage comments under Comments in the newsroom.')}>
-            <select value={!s.commentsOn ? 'none' : s.commentsKind === 'guest' ? 'guest' : 'login'} onChange={(e) => set(e.target.value === 'none' ? { commentsOn: false } : { commentsOn: true, commentsKind: e.target.value === 'guest' ? 'guest' : 'login' })} className="field-input">
-              <option value="none">{t('댓글 없음', 'No comments')}</option>
-              <option value="guest">{t('간단히 닉네임·비밀번호 넣고 쓰기 (그림 문자 입력, 500자)', 'Quick: nickname + password + captcha (500 characters)')}</option>
-              <option value="login">{t('독자가 로그인(구글·이메일)해서 쓰기', 'Readers sign in with Google or email')}</option>
-            </select>
-          </Field>
-          {s.commentsOn && (
-            <Field label={t('새 댓글 처리', 'New comments')} hint={t('먼저 공개로 해도 링크·연락처·욕설·고함·도배로 보이는 댓글은 승인 대기에 잡힙니다', 'Even when publishing first, comments that look like links, contact details, abuse, shouting or spam are held for review')}>
-              <select value={s.commentsMode === 'open' ? 'open' : 'review'} onChange={(e) => set({ commentsMode: e.target.value === 'open' ? 'open' : 'review' })} className="field-input">
-                <option value="review">{t('승인 후 공개 (모든 댓글을 편집국이 승인)', 'Approve before showing (every comment is reviewed first)')}</option>
-                <option value="open">{t('먼저 공개하고 나중에 검토 (자동 검사에 걸린 것만 대기)', 'Publish first, review afterward (only screened comments wait)')}</option>
-              </select>
-            </Field>
-          )}
           <Field label={t('슬로건', 'Slogan')} hint={t('메뉴·하단에 표시', 'Shown in the menu and footer')}><input value={s.slogan ?? ''} onChange={(e) => set({ slogan: e.target.value })} maxLength={80} className="field-input" /></Field>
           <Field label={t('영문 슬로건', 'English slogan')}><input value={s.sloganEn ?? ''} onChange={(e) => set({ sloganEn: e.target.value })} maxLength={80} className="field-input" /></Field>
           <div className="space-y-4 sm:col-span-2">
@@ -359,6 +345,35 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             </fieldset>
             {!self && <Field label={t('쇼핑몰 주소', 'Shop URL')} hint={t("SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')", 'Address linked from the SHOP menu and strip (shows “Opening soon” if empty)')}><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>}
           </div>
+        </div>
+      </Card>
+
+      <Card title={t('기사 댓글', 'Story comments')} note={t('기사 아래에 독자가 댓글을 남기는 기능입니다. 켜면 모든 기사 맨 아래에 댓글 칸이 생깁니다. 들어온 댓글은 편집국 왼쪽 메뉴의 “댓글”에서 승인·숨기기·삭제·차단합니다.', 'Lets readers leave comments under stories. When on, a comment box appears at the bottom of every story. Approve, hide, delete or block comments under “Comments” in the newsroom menu.')}>
+        <div className="space-y-4">
+          <fieldset className="grid gap-2 sm:grid-cols-3">
+            <legend className="sr-only">{t('댓글 방식', 'Comment type')}</legend>
+            {([
+              ['none', t('댓글 없음', 'No comments'), t('댓글 칸이 나오지 않습니다. 기존 댓글도 보이지 않습니다.', 'No comment box is shown, and existing comments are hidden.')],
+              ['guest', t('닉네임·비밀번호로 쓰기', 'Nickname + password'), t('가입 없이 닉네임·비밀번호·그림 문자만 넣고 바로 씁니다(500자). 쓴 사람은 비밀번호로 자기 댓글을 지울 수 있습니다. 쓰기 쉬워 댓글이 많이 달리지만 도배·악성 댓글이 늘 수 있어, 아래 “새 댓글 처리”와 비회원 차단으로 관리합니다.', 'Readers write without signing up: nickname, password and a captcha (500 characters). They can delete their own comment with the password. Easy to use, so you get more comments, but also more spam; manage it with “New comments” below and guest blocking.')],
+              ['login', t('독자 로그인해서 쓰기', 'Readers sign in'), t('독자가 구글 계정 또는 이메일 링크로 로그인한 뒤 씁니다(1,000자). 누가 썼는지 분명해 댓글 품질이 좋지만, 로그인이 번거로워 댓글 수는 적습니다. 로그인한 독자가 원하면 뉴스레터도 받게 할 수 있습니다.', 'Readers sign in with Google or an email link first (1,000 characters). Clearer who is speaking, so better quality, but fewer comments. Signed-in readers can also opt into the newsletter.')],
+            ] as const).map(([v, label, desc]) => {
+              const cur = !s.commentsOn ? 'none' : s.commentsKind === 'guest' ? 'guest' : 'login'
+              return (
+                <label key={v} className={`flex cursor-pointer gap-2 rounded-lg border p-3 text-[13px] leading-relaxed ${cur === v ? 'border-ink bg-paper' : 'border-line'}`}>
+                  <input type="radio" name="commentsKind" checked={cur === v} onChange={() => set(v === 'none' ? { commentsOn: false } : { commentsOn: true, commentsKind: v })} className="mt-1" />
+                  <span><strong className="block text-[13.5px]">{label}</strong><span className="text-muted">{desc}</span></span>
+                </label>
+              )
+            })}
+          </fieldset>
+          {s.commentsOn && (
+            <Field label={t('새 댓글 처리', 'New comments')} hint={t('먼저 공개로 해도 링크·연락처·욕설·고함·도배로 보이는 댓글은 자동으로 승인 대기에 잡힙니다. 신고가 3건 쌓인 댓글도 승인 대기로 돌아옵니다.', 'Even when publishing first, comments that look like links, contact details, abuse, shouting or spam are held for review automatically. A comment with 3 reports also goes back to review.')}>
+              <select value={s.commentsMode === 'open' ? 'open' : 'review'} onChange={(e) => set({ commentsMode: e.target.value === 'open' ? 'open' : 'review' })} className="field-input">
+                <option value="review">{t('승인 후 공개 (모든 댓글을 편집국이 승인)', 'Approve before showing (every comment is reviewed first)')}</option>
+                <option value="open">{t('먼저 공개하고 나중에 검토 (자동 검사에 걸린 것만 대기)', 'Publish first, review afterward (only screened comments wait)')}</option>
+              </select>
+            </Field>
+          )}
         </div>
       </Card>
 
@@ -532,7 +547,19 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
       </Card>
 
       <Card title={t('메뉴(섹션)', 'Menu (sections)')} note={lang === 'en' ? <>The menu follows the order of the sections created under <a href="/admin/categories" className="underline underline-offset-2">Section menu</a>. Sections marked as “Specialty section” are grouped separately on the right of the menu and appear as specialty section tabs on the home page.</> : <>메뉴는 <a href="/admin/categories" className="underline underline-offset-2">섹션 메뉴</a>에서 만든 섹션 순서 그대로 나옵니다. “전문 섹션”으로 표시하면 메뉴 오른쪽에 따로 모이고, 첫 화면에 전문 섹션 탭으로 나옵니다.</>}>
-        {sections.length ? (
+        {sections.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[12.5px] text-muted">{t(`섹션 ${sections.length}개 · 전문 섹션 ${sections.filter((c) => c.specialty).length}개`, `${sections.length} sections · ${sections.filter((c) => c.specialty).length} specialty`)}</p>
+            <button type="button" onClick={() => setAllSections(!allSections)} aria-expanded={allSections} className="btn-secondary px-3 py-1 text-[12.5px]">{allSections ? t('간단히 보기', 'Collapse') : t('펼치기 (전문 섹션 설정)', 'Expand (specialty settings)')}</button>
+          </div>
+        )}
+        {sections.length && !allSections ? (
+          <p className="flex flex-wrap gap-1.5">
+            {sections.map((c) => (
+              <span key={c.id} className={`rounded-full border px-2.5 py-0.5 text-[12.5px] ${c.specialty ? 'border-ink bg-paper font-semibold' : 'border-line text-muted'}`}>{c.name}{c.specialty ? ` · ${t('전문', 'specialty')}` : ''}</span>
+            ))}
+          </p>
+        ) : sections.length ? (
           <ul className="divide-y divide-line rounded border border-line">
             {sections.map((c, i) => (
               <li key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-[13.5px]">
