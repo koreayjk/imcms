@@ -56,7 +56,7 @@ function photoBlocks(html: string) {
   return Array.from(html.matchAll(/(?:<img[^>]*>|<div data-youtube-video[^>]*>[\s\S]*?<\/div>)(?:<p><em>▲[\s\S]*?<\/em><\/p>)?/g), (m) => m[0])
 }
 
-export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
+export async function createArticleFromPress(id: string, mode: 'raw' | 'ai', form?: FormData) {
   const { supabase, user, profile, outletId } = await getCmsContext()
   const { t } = await getT()
 
@@ -74,6 +74,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
   let aiNotes: string | null = null
   let keywords: string[] = []
   let usedAi = false
+  let usedPhotos = 0
 
   if (mode === 'ai') {
     // 이번 달 AI 사용 한도 확인 (요금제별, 초안·법적 검수 합계). 한도를 다 쓰면 원문 그대로 만들기만 된다
@@ -92,12 +93,17 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai') {
       excerpt = draft.subtitle || excerpt
       const paras = draft.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`)
       // 원문 사진은 첫 문단 뒤에 그대로 둔다
-      body = [paras[0], ...photoBlocks(original), ...paras.slice(1)].join('')
+      // 미국 출처 사진은 기자가 쓸 수 있다고 확인해 체크한 것만 넣는다 (저작권: 체크하지 않은 사진은 기사에 넣지 않는다)
+      const picked = (form?.getAll('photo') ?? []).map(String)
+      const blocks = photoBlocks(original).filter((b) => !isUsSource(r.source_key) || picked.some((src) => b.includes(`src="${escapeHtml(src)}"`)))
+      if (isUsSource(r.source_key) && picked.length) usedPhotos = blocks.length
+      body = [paras[0], ...blocks, ...paras.slice(1)].join('')
       aiNotes = draft.review_notes.length ? draft.review_notes.map((n) => `• ${n}`).join('\n') : null
       keywords = draft.keywords ?? []
       usedAi = true
       // 해외 언론: 확인용 원문 주소를 메모에 남긴다 (본문에는 넣지 않는다)
       if (foreign) aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• ${t('원문', 'Original')}(${sourceLabel(r)}): ${r.link}`
+      if (usedPhotos) aiNotes = `${aiNotes ? `${aiNotes}\n` : ''}• ${t(`사진 ${usedPhotos}장은 ${profile?.full_name ?? '기자'}님이 사용 권리를 확인해 넣었습니다. 출처: ${sourceLabel(r)}`, `${usedPhotos} photo(s) were included after ${profile?.full_name ?? 'the reporter'} confirmed the right to use them. Source: ${sourceLabel(r)}`)}`
     } catch (e) {
       // AI가 실패하면 잡아 둔 한 건을 돌려준다 (한도에서 빠진다)
       await releaseAi(supabase, slot.id)

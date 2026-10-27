@@ -11,7 +11,7 @@ import { aiReady } from '@/lib/ai-draft'
 import { aiLevel, aiLimitMessage, getAiStatus, myLimitFull, myLimitMessage } from '@/lib/ai-usage'
 import { ensureEmailImages, ensureEmailText } from '@/lib/press-attachments'
 import { createArticleFromPress, deleteManualPress } from '../actions'
-import { isForeignSource } from '@/lib/press-sources'
+import { isForeignSource, isUsSource } from '@/lib/press-sources'
 import BackLink from '@/components/cms/BackLink'
 
 export const preferredRegion = 'icn1'
@@ -47,6 +47,10 @@ export default async function PressDetailPage(
 
   const ai = aiReady() && !aiBlocked
   const manual = r.source_key === MANUAL_SOURCE
+  // 미국 출처에 실린 사진: 기자가 사용 권리를 확인한 사진만 기사에 넣는다 (체크하지 않으면 사진 없이 만든다)
+  const usPhotos = isUsSource(r.source_key)
+    ? Array.from((r.body_html ?? '').matchAll(/<img[^>]+src="([^"]+)"[^>]*>(?:<p><em>▲ ([^<]*)<\/em><\/p>)?/g), (m) => ({ src: m[1].replace(/&amp;/g, '&'), caption: m[2] ?? '' }))
+    : []
   const emailed = r.source_key === 'email'
   // 해외 언론: 원문 그대로는 막고, AI가 출처를 밝힌 한국어 기사로 새로 쓴다
   const foreign = isForeignSource(r.source_key)
@@ -115,6 +119,25 @@ export default async function PressDetailPage(
         )}
       </article>
 
+      {usPhotos.length > 0 && (
+        <section aria-labelledby="photo-check" className="mt-5 rounded-lg border border-draft/40 bg-draft/10 px-5 py-4">
+          <h2 id="photo-check" className="text-[14px] font-bold">{t('사진 사용 확인', 'Photo rights check')}</h2>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+            {t('쓸 수 있다고 확인한 사진만 체크하세요. 체크하지 않은 사진은 기사에 넣지 않습니다. 보통 쓸 수 있는 것: 보도자료 발행처가 언론용으로 낸 사진, 미국 연방 정부 사진, 직접 찍거나 허락받은 사진. 쓰면 안 되는 것: 다른 언론사·통신사·사진기자의 사진, 사용 조건(예: 편집용 한정)을 지킬 수 없는 사진.', 'Check only the photos you have confirmed you may use. Unchecked photos are left out of the story. Usually fine: photos the issuer distributed for news use, U.S. federal government photos, and photos you took or have permission to use. Not fine: photos from other news outlets, wire services or photographers, or photos whose terms (for example editorial-use only) you cannot meet.')}
+          </p>
+          <ul className="mt-3 grid gap-3 sm:grid-cols-3">
+            {usPhotos.map((p) => (
+              <li key={p.src} className="rounded border border-line bg-white p-2 text-[12px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.src} alt="" className="h-28 w-full rounded object-cover" />
+                {p.caption && <p className="mt-1 line-clamp-2 text-muted">{p.caption.replace(/^Photo provided by /, '')}</p>}
+                <label className="mt-1.5 flex items-start gap-1.5 font-semibold"><input type="checkbox" name="photo" value={p.src} form="create-ai" className="mt-0.5" /><span>{t('이 사진을 써도 되는 것을 확인했습니다', 'I confirmed I may use this photo')}</span></label>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <p className="mt-4 text-[12px] leading-relaxed text-muted md:hidden">
         {ai ? aiHelp : aiBlocked ? t('이번 달 AI 사용 한도를 다 썼습니다.', 'You have used up this month\'s AI limit.') : t('AI 초안은 관리자가 AI 키를 설정하면 쓸 수 있습니다.', 'AI drafts become available once an admin sets up an AI key.')}
       </p>
@@ -144,7 +167,7 @@ export default async function PressDetailPage(
               <PendingButton pending={t('만드는 중…', 'Creating…')} className="btn-secondary w-full whitespace-nowrap px-3 md:w-auto">{t('원문 그대로', 'Use original')}<span className="hidden md:inline">{t(' 기사로', ' as story')}</span></PendingButton>
             </form>
           )}
-          <form action={createArticleFromPress.bind(null, r.id, 'ai')} className="flex-[1.4] md:flex-none">
+          <form id="create-ai" action={createArticleFromPress.bind(null, r.id, 'ai')} className="flex-[1.4] md:flex-none">
             <PendingButton pending={t('AI가 쓰는 중…', 'AI is writing…')} className="btn-publish w-full whitespace-nowrap px-3 md:w-auto md:px-5" disabled={!ai}>{lang === 'en' ? <>Create<span className="hidden md:inline"> story from</span> AI draft</> : <>AI 초안<span className="hidden md:inline">으로 기사</span> 만들기</>}</PendingButton>
           </form>
         </div>
