@@ -127,6 +127,27 @@ ${a.extra}
 ${AI_STYLE_RULES}`
 }
 
+// 미국(영문) 출처: 영어 기사로 새로 쓴다 (영문 매체용). 보도자료·공공기관 소식·대학 소식을 AP 스타일 스트레이트 기사로
+const US_SYSTEM = `You are a news editor at an American local news site. You are given a press release or an official announcement. Write a fresh straight-news story from it; never paste or lightly paraphrase the original text.
+
+Rules
+- Use only facts that appear in the source. Do not invent numbers, dates, people, titles, quotes or background.
+- Attribute clearly in the body, e.g. "according to a news release from <source>" or "the university said in a statement". A press release is a claim by the issuer: write promotional claims as the issuer's statements, not as fact.
+- Direct quotes: at most three, verbatim from the source, each with the speaker's name and title. Prefer partial quotes embedded in your own sentences.
+- AP style: inverted pyramid, third person, past tense for completed events, plain words. Numerals for 10 and above, spell out one through nine, abbreviate months only with dates (Oct. 25), use "p.m."/"a.m.".
+- Lead (first paragraph) holds who, what, when, where and why it matters locally. Keep the angle useful to readers in the local community; do not add local facts that are not in the source.
+- Remove contact blocks, phone numbers, emails, website calls to action, "About <company>" boilerplate, forward-looking-statement disclaimers and marketing adjectives.
+- Dates: write them as in the source. Do not guess a year or weekday.
+- Do not write "this story is based on a press release" disclaimers beyond the in-text attribution above.
+
+Format
+- title: an AP-style headline of about 60-70 characters, active voice, present tense, no period at the end, no hype.
+- subtitle: one or two sentences that add information beyond the headline.
+- paragraphs: 4-8 paragraphs of 1-3 sentences each. No byline.
+- keywords: 3-5 keywords.
+- review_notes: things the reporter must verify before publishing (unclear or exaggerated claims, numbers to confirm, anything that reads like advertising, what is missing locally such as a second source or a local comment). Empty array if none.
+- Everything you write is in English.`
+
 const SCHEMA = {
   type: 'object',
   properties: {
@@ -147,10 +168,13 @@ export class AiDraftError extends Error {}
 
 // foreign: 해외 언론 기사 (출처를 밝힌 한국어 기사로 새로 쓴다)
 //   topic: 해외 언론 묶음 (이스라엘 / 교육·유학) — 독자와 주의할 점이 달라진다
-export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; topic?: ForeignTopic; link?: string }
+export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; us?: boolean; topic?: ForeignTopic; link?: string }
 export type DraftResult = { draft: AiDraft; model: AiModel; ms: number; inputTokens: number; outputTokens: number; costUsd: number }
 
 function userPrompt(input: DraftInput) {
+  if (input.us) {
+    return `Source: ${input.source}${input.link ? `\nSource URL: ${input.link}` : ''}\n\n<source headline>\n${input.title}\n</source headline>\n\n<source text>\n${input.text}\n</source text>`
+  }
   if (input.foreign) {
     return `출처 매체: ${input.source}${input.link ? `\n원문 주소: ${input.link}` : ''}\n\n<원문 제목>\n${input.title}\n</원문 제목>\n\n<원문 본문 (영문)>\n${input.text}\n</원문 본문>`
   }
@@ -191,7 +215,7 @@ async function withAnthropic(model: AiModel, input: DraftInput, budgetMs = 50_00
       // 안전 필터가 거절하면 서버가 알맞은 모델로 다시 시도한다
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      system: input.foreign ? foreignSystem(input.topic) : SYSTEM,
+      system: input.us ? US_SYSTEM : input.foreign ? foreignSystem(input.topic) : SYSTEM,
       messages: [{ role: 'user', content: userPrompt(input) }],
     })
   } catch (e) {
@@ -226,7 +250,7 @@ const REWRITE_HINT = '\n\n주의: 원문 문장을 길게 그대로 옮기지 �
 
 function geminiPayload(input: DraftInput, hint = '') {
   return JSON.stringify({
-    system_instruction: { parts: [{ text: input.foreign ? foreignSystem(input.topic) : SYSTEM }] },
+    system_instruction: { parts: [{ text: input.us ? US_SYSTEM : input.foreign ? foreignSystem(input.topic) : SYSTEM }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt(input) + hint }] }],
     generationConfig: {
       // REST에서는 enum 이름(대문자)으로 보내야 한다 (API 참조 문서의 ThinkingLevel·MimeType)

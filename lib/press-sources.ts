@@ -5,7 +5,10 @@ export type PressSource = {
   // newswire: 목록은 RSS, 전문은 기사 페이지에서 가져온다 / rss: RSS 설명란을 그대로 전문으로 쓴다
   // foreign: 해외 언론(영문) 기사. 목록은 RSS 요약만, 전문은 열 때 기사 페이지에서 읽는다.
   //          보도자료가 아니므로 AI는 번역하지 않고 출처를 밝힌 한국어 기사로 새로 쓴다 (매체 설정 '해외 언론 자료 받기'를 켠 매체만 본다)
-  kind: 'newswire' | 'rss' | 'foreign'
+  //   us: 미국(영문) 출처. 영문 매체(site.lang = en)만 본다. 목록은 RSS, 전문은 기사 페이지에서 읽고, AI가 영어 기사로 새로 쓴다
+  kind: 'newswire' | 'rss' | 'foreign' | 'us'
+  // 미국 출처 중 매체 지역·기관 소식: 추천 탭에 키워드 없이도 늘 보인다 (전국 뉴스와이어는 추천 키워드가 제목에 있을 때만)
+  local?: boolean
   // 해외 언론: 기사에 밝힐 매체 이름
   outlet?: string
 }
@@ -19,12 +22,24 @@ export const FOREIGN_TOPICS: { key: ForeignTopic; prefix: string; label: string;
   { key: 'reformed', prefix: 'rf-', label: '해외 개혁주의·기독교교육 언론', hint: '가스펠코얼리션·리포메이션21·9Marks·고전기독교학교협회(ACCS) 등' },
 ]
 export const foreignTopicOf = (key: string): ForeignTopic | null => FOREIGN_TOPICS.find((t) => key.startsWith(t.prefix))?.key ?? null
-export const isForeignSource = (key: string) => foreignTopicOf(key) !== null
+// 미국(영문) 출처: 키가 us- 로 시작. 영문 매체만 보고, 한국어 매체는 보지 않는다
+export const US_PREFIX = 'us-'
+export const isUsSource = (key: string) => key.startsWith(US_PREFIX)
+export const isForeignSource = (key: string) => foreignTopicOf(key) !== null || isUsSource(key)
 
 // 뉴스와이어: 언론사가 하루 5건을 넘게 쓰려면 뉴스와이어의 사전 허락이 필요하다 (저작권 안내)
 export const NEWSWIRE_DAILY_FREE = 5
 
 export const PRESS_SOURCES: PressSource[] = [
+  // ───── 미국(영문) 출처: 영문 매체(예: Breaking BCS) 전용 ─────
+  { key: 'us-prn-texas', name: 'PR Newswire · Texas', outlet: 'PR Newswire', url: 'https://www.prnewswire.com/rss/texas-latest-news/texas-latest-news-list.rss', kind: 'us', local: true },
+  { key: 'us-prn-sports', name: 'PR Newswire · Sports', outlet: 'PR Newswire', url: 'https://www.prnewswire.com/rss/sports-latest-news/sports-latest-news-list.rss', kind: 'us' },
+  { key: 'us-prn-health', name: 'PR Newswire · Health', outlet: 'PR Newswire', url: 'https://www.prnewswire.com/rss/health-latest-news/health-latest-news-list.rss', kind: 'us' },
+  { key: 'us-prn-consumer', name: 'PR Newswire · Consumer & lifestyle', outlet: 'PR Newswire', url: 'https://www.prnewswire.com/rss/consumer-products-latest-news/consumer-products-latest-news-list.rss', kind: 'us' },
+  { key: 'us-prn-all', name: 'PR Newswire · All news', outlet: 'PR Newswire', url: 'https://www.prnewswire.com/rss/news-releases-list.rss', kind: 'us' },
+  { key: 'us-tamu-today', name: 'Texas A&M Today', outlet: 'Texas A&M University', url: 'https://today.tamu.edu/feed/', kind: 'us', local: true },
+  { key: 'us-txgov', name: 'Office of the Texas Governor', outlet: 'Office of the Texas Governor', url: 'https://gov.texas.gov/news/rss', kind: 'us', local: true },
+  { key: 'us-fda', name: 'U.S. FDA · Press releases', outlet: 'U.S. Food and Drug Administration', url: 'https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml', kind: 'us' },
   { key: 'nw-hospital', name: '뉴스와이어 · 의료와 병원', url: 'https://api.newswire.co.kr/rss/industry/1007', kind: 'newswire' },
   { key: 'nw-elderly', name: '뉴스와이어 · 노인', url: 'https://api.newswire.co.kr/rss/industry/1901', kind: 'newswire' },
   { key: 'nw-welfare', name: '뉴스와이어 · 사회복지', url: 'https://api.newswire.co.kr/rss/industry/1903', kind: 'newswire' },

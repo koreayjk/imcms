@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { PRESS_SOURCES, findPressSource, isForeignSource, type PressSource } from './press-sources'
+import { PRESS_SOURCES, findPressSource, isForeignSource, isUsSource, type PressSource } from './press-sources'
 
 const UA = 'Mozilla/5.0 (compatible; IMCMS-PressReader/1.0)'
 const STALE_MS = 10 * 60 * 1000
@@ -193,7 +193,7 @@ export function newswireBody(page: string) {
 //   예전 방식으로 읽어 세로 사진 등을 놓친 보도자료(사진 없음 + image_url 비어 있음)도 한 번 다시 읽는다.
 //   다시 읽은 뒤 사진이 없으면 image_url을 ''로 두어 다음부터는 다시 읽지 않는다
 export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease): Promise<PressRelease> {
-  if (findPressSource(r.source_key)?.kind === 'foreign') {
+  if (isForeignSource(r.source_key)) {
     // 해외 언론: 본문 글만 (사진은 그 언론사 저작물이라 가져오지 않는다)
     if (r.body_html) return r
     try {

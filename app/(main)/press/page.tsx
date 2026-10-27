@@ -5,7 +5,7 @@ import { getCmsContext } from '@/lib/cms'
 import { pressScope } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, usableKeywords } from '@/lib/press-sources'
+import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, usableKeywords } from '@/lib/press-sources'
 import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
@@ -60,7 +60,9 @@ export default async function PressPage(props: Props) {
   const keywords = outletSite?.pressKeywords ?? []
   // 해외 언론(영문) 자료는 매체 설정에서 켠 묶음만 본다 (이스라엘 언론 / 해외 교육·유학 언론)
   const topics = outletSite?.pressForeignTopics ?? []
-  const PRESS_SOURCES = ALL_SOURCES.filter((x) => { const tp = foreignTopicOf(x.key); return !tp || topics.includes(tp) })
+  // 영문 매체(site.lang = en)는 미국(영문) 출처만, 한국어 매체는 미국 출처 없이 기존 출처만 본다
+  const english = outletSite?.lang === 'en'
+  const PRESS_SOURCES = ALL_SOURCES.filter((x) => english ? isUsSource(x.key) : !isUsSource(x.key) && (() => { const tp = foreignTopicOf(x.key); return !tp || topics.includes(tp) })())
 
   const tab = searchParams.tab === 'all' ? 'all' : 'rec'
   const src = searchParams.src === MANUAL_SOURCE || searchParams.src === 'email' ? searchParams.src : PRESS_SOURCES.find((s) => s.key === searchParams.src)?.key
@@ -74,7 +76,9 @@ export default async function PressPage(props: Props) {
   // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
   query = pressScope(query, ctx)
   if (src) query = query.eq('source_key', src)
-  for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) query = query.not('source_key', 'like', `${ft.prefix}%`)
+  if (english) query = query.or(`source_key.like.us-*,source_key.in.(${MANUAL_SOURCE},email)`)
+  else query = query.not('source_key', 'like', 'us-%')
+  if (!english) for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) query = query.not('source_key', 'like', `${ft.prefix}%`)
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
   // 추천 탭: 매체 분야(예: 교육)의 출처 + 켠 해외 언론 + 메일·직접 등록 + 정부·공공기관 자료 중 제목에 추천 키워드가 있는 것
   //   분야를 정하지 않은 매체는 예전처럼 제목에 추천 키워드가 있는 자료 (짧은 영문 약어는 엉뚱한 단어에 걸려 뺀다)
@@ -85,9 +89,14 @@ export default async function PressPage(props: Props) {
   const fieldKeys = PRESS_SOURCES.filter((x) => { const f = fieldOfSource(x.key); return !!f && fields.includes(f) }).map((x) => x.key)
   const generalKeys = PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key)).map((x) => x.key)
   const recBase = [MANUAL_SOURCE, 'email', ...foreignKeys, ...fieldKeys]
+  const usLocal = PRESS_SOURCES.filter((x) => x.local).map((x) => x.key)
+  const usWire = PRESS_SOURCES.filter((x) => !x.local).map((x) => x.key)
   // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만
-  const recSources = fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : null
-  if (tab === 'rec' && fields.length) {
+  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : null
+  if (english) {
+    // 영문 매체: 지역·기관 소식은 늘, 전국 뉴스와이어는 추천 키워드가 제목에 있을 때만
+    if (tab === 'rec') query = query.or([`source_key.in.(${[MANUAL_SOURCE, 'email', ...usLocal].join(',')})`, ...(titleHit.length && usWire.length ? [`and(source_key.in.(${usWire.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
+  } else if (tab === 'rec' && fields.length) {
     query = query.or([`source_key.in.(${recBase.join(',')})`, ...(titleHit.length && generalKeys.length ? [`and(source_key.in.(${generalKeys.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
   } else if (tab === 'rec' && titleHit.length) {
     query = query.or([`source_key.in.(${recBase.filter((k) => !fieldOfSource(k)).join(',')})`, ...titleHit].join(','))
@@ -207,7 +216,7 @@ export default async function PressPage(props: Props) {
         </section>
 
         <aside className="space-y-5">
-          <section className={`rounded-lg border px-5 py-4 ${newswireToday >= NEWSWIRE_DAILY_FREE ? 'border-danger/40 bg-danger/5' : 'border-line bg-white'}`}>
+          {!english && <section className={`rounded-lg border px-5 py-4 ${newswireToday >= NEWSWIRE_DAILY_FREE ? 'border-danger/40 bg-danger/5' : 'border-line bg-white'}`}>
             <h2 className="text-[14px] font-bold">{t('오늘 뉴스와이어 기사화', 'Newswire stories created today')}</h2>
             <p className="mt-1 text-[26px] font-bold tabular-nums">
               {newswireToday}<span className="text-[15px] font-medium text-muted"> / {NEWSWIRE_DAILY_FREE}{t('건', '')}</span>
@@ -215,7 +224,7 @@ export default async function PressPage(props: Props) {
             <p className="mt-1 text-[12px] leading-relaxed text-muted">
               {lang === 'en' ? `To use more than ${NEWSWIRE_DAILY_FREE} Newswire press releases per day, an outlet needs Newswire's prior permission.` : `뉴스와이어 보도자료는 언론사가 하루 ${NEWSWIRE_DAILY_FREE}건을 넘게 쓰려면 뉴스와이어의 사전 허락이 필요합니다.`}
             </p>
-          </section>
+          </section>}
 
           <section className="rounded-lg border border-line bg-white">
             <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
