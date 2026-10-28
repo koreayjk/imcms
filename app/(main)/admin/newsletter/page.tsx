@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
 import { mailReady } from '@/lib/mail'
-import { newsletterQuota } from '@/lib/pricing'
+import { newsletterLabel, newsletterQuota } from '@/lib/pricing'
+import Link from 'next/link'
 import NewsletterComposer from '@/components/cms/NewsletterComposer'
 import NewsletterSchedules from '@/components/cms/NewsletterSchedules'
 import type { NewsletterSchedule } from '@/lib/newsletter-schedule'
@@ -12,7 +13,7 @@ export const maxDuration = 60
 
 export default async function NewsletterPage() {
   const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
-  const { t } = await getT()
+  const { t, lang } = await getT()
   if (!isEditorPlus && !isStaff) redirect('/newsroom')
   if (!outletId) {
     return <div className="mx-auto max-w-[960px] px-4 py-10 md:px-8"><p className="rounded-lg border border-line bg-white px-5 py-4 text-sm">{t('위쪽에서 뉴스레터를 보낼 매체를 먼저 골라 주세요.', 'Choose an outlet to send a newsletter for at the top first.')}</p></div>
@@ -41,6 +42,20 @@ export default async function NewsletterPage() {
           {t('독자는 홈페이지 맨 아래 구독 칸에서 신청하고, 확인 메일의 버튼을 눌러야 구독이 시작됩니다. 모든 뉴스레터에는 수신거부 링크가 붙고, 수신거부한 독자에게는 다시 가지 않습니다.', 'Readers sign up in the subscription box at the very bottom of your homepage, and their subscription starts only after they click the button in the confirmation email. Every newsletter carries an unsubscribe link, and readers who unsubscribe are not emailed again.')}
         </p>
       </header>
+      {/* 베이직: 맨 위에 요금제 안내를 먼저 보이고, 아래에 원래 화면(구독자 확인 등)을 그대로 둔다 */}
+      {!quota && !error && (
+        <aside role="note" className="mb-5 rounded-xl border border-[#F2B544] bg-[#FFF8E6] px-5 py-4">
+          <p className="text-[15px] font-bold text-[#6B4A00]">{t('뉴스레터 발송은 스탠다드 요금제 이상부터 가능합니다.', 'Sending newsletters is available on the Standard plan and above.')}</p>
+          <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#5A4A20]">
+            {t('지금 요금제(베이직)에서는 독자의 구독 신청을 받고 구독자 명단을 모을 수 있습니다. 스탠다드는 ', 'Your current plan (Basic) lets you collect reader sign-ups and build the subscriber list. Standard allows ')}
+            <b>{newsletterLabel({ perSend: 2000, perMonth: 5, perWeek: 1 }, lang)}</b>
+            {t(', 프리미엄은 ', ', and Premium allows ')}
+            <b>{newsletterLabel({ perSend: 5000, perMonth: 10, perWeek: 2 }, lang)}</b>
+            {t('까지 보낼 수 있습니다. 구독자 명단은 계속 모이고, 요금제를 바꾸면 그 독자들에게 바로 보낼 수 있습니다.', '. The list keeps growing, and once you change plans you can send to those readers right away.')}
+          </p>
+          <p className="mt-2 text-[13px]"><Link href="/support/tickets" className="font-semibold text-review underline underline-offset-2">{t('요금제 변경 요청하기 (고객센터 업무요청) →', 'Request a plan change (Support) →')}</Link></p>
+        </aside>
+      )}
       {error ? (
         <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">{t('뉴스레터를 쓰려면 Supabase에서', 'To use newsletters, run')} <code>supabase/mail.sql</code>{t('을 실행해 주세요.', ' in Supabase.')}</p>
       ) : (

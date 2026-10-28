@@ -49,12 +49,6 @@ export default function NewsletterComposer({ outletName, articles, counts, subsc
         ))}
       </dl>
 
-      {!quota && (
-        <p className="rounded-lg border border-line bg-white px-5 py-4 text-[13.5px] leading-relaxed">
-          <b>{t('베이직은 독자의 구독 신청을 받을 수 있지만, 구독자에게 뉴스레터를 보내는 것은 스탠다드 요금제부터입니다.', 'Basic can collect reader sign-ups, but sending newsletters to subscribers is available from the Standard plan.')}</b> {t('스탠다드는', 'Standard allows')} {ql({ perSend: 2000, perMonth: 5, perWeek: 1 })}{t(', 프리미엄은', ', and Premium allows')} {ql({ perSend: 5000, perMonth: 10, perWeek: 2 })}{t('까지 보낼 수 있습니다.', '.')}
-          {t('요금제를 바꾸려면 고객센터 업무요청으로 알려 주세요. 구독자 명단은 계속 모이고, 요금제를 바꾸면 그 독자들에게 바로 보낼 수 있습니다.', 'To change plans, send a work request through Support. The subscriber list keeps growing, and once you change plans you can send to those readers right away.')}
-        </p>
-      )}
       {!mailOn && <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-3 text-[13.5px]">{t('메일 발송이 아직 설정되지 않았습니다. 설정되면 홈페이지 아래에 구독 신청 칸이 생기고, 여기서 보낼 수 있습니다.', 'Email sending is not set up yet. Once it is, a subscription box appears at the bottom of your homepage and you can send from here.')}</p>}
 
       {/* ─── 쓰기 ─── */}
