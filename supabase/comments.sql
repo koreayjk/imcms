@@ -166,8 +166,8 @@ create policy "blocked_ips_manage" on comment_blocked_ips for all to authenticat
 -- 신고: 로그인 독자는 독자 번호, 비회원은 ip 표시로 한 번씩
 alter table comment_reports add column if not exists reporter_key text;
 update comment_reports set reporter_key = reader_id::text where reporter_key is null;
-alter table comment_reports alter column reader_id drop not null;
 alter table comment_reports drop constraint if exists comment_reports_pkey;
+alter table comment_reports alter column reader_id drop not null;
 create unique index if not exists comment_reports_key on comment_reports (comment_id, reporter_key);
 drop function if exists public.comment_report(text, uuid, uuid);
 create or replace function public.comment_report(secret text, p_key text, p_comment uuid) returns void
