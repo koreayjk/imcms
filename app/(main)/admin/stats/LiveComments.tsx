@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useCmsLang, useT } from '@/components/cms/CmsLang'
 import { HOLD_LABEL } from '@/lib/comment-screen'
@@ -12,6 +13,7 @@ const POLL_MS = 20_000
 export default function LiveComments({ initial, initialPending, initialError }: { initial: FeedRow[]; initialPending: number; initialError?: boolean }) {
   const t = useT()
   const lang = useCmsLang()
+  const router = useRouter()
   const [tab, setTab] = useState<FeedTab>('new')
   const [rows, setRows] = useState<FeedRow[]>(initial)
   const [pending, setPending] = useState(initialPending)
@@ -53,7 +55,7 @@ export default function LiveComments({ initial, initialPending, initialError }: 
   const act = (fn: () => Promise<{ ok?: boolean; error?: string }>, done?: string) => start(async () => {
     const r = await fn()
     if (r.error) setMsg(r.error)
-    else { setMsg(done ?? ''); await load(tabRef.current, false) }
+    else { setMsg(done ?? ''); await load(tabRef.current, false); router.refresh() } // 왼쪽 메뉴의 대기 숫자도 바로 새로 읽는다
   })
 
   const ago = (iso: string) => {

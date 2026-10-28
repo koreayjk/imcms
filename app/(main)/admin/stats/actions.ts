@@ -111,3 +111,12 @@ export async function replyFeed(parentId: string, text: string): Promise<Result>
   revalidatePath('/admin/comments')
   return { ok: true }
 }
+
+// 왼쪽 메뉴 "댓글" 옆 숫자: 승인을 기다리는 댓글 수 (comments.sql 전이면 0)
+export async function pendingCommentCount(): Promise<number> {
+  const { supabase, outletId } = await ctx()
+  let q = supabase.from('comments').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+  if (outletId) q = q.eq('outlet_id', outletId)
+  const { count } = await q
+  return count ?? 0
+}

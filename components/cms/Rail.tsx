@@ -9,6 +9,7 @@ import type { UserRole } from '@/lib/types'
 import { BulbIcon, BuildingIcon, ChartIcon, HeadsetIcon, FolderIcon, GlobeIcon, InboxIcon, LayoutIcon, ListIcon, MailIcon, MegaphoneIcon, NewsroomIcon, GearIcon, ImageIcon, UsersIcon, WriteIcon } from './icons'
 import LinkPending from './LinkPending'
 import { useT } from './CmsLang'
+import { pendingCommentCount } from '@/app/(main)/admin/stats/actions'
 
 type Item = { href: string; label: [ko: string, en: string]; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
 
@@ -49,13 +50,24 @@ const FlagIcon = () => (
 const ONB_CUSTOMER: Item = { href: '/support/onboarding', label: ['개통 현황', 'Launch status'], icon: <FlagIcon />, match: (p) => p.startsWith('/support/onboarding') }
 const ONB_STAFF: Item = { href: '/admin/onboarding', label: ['개통현황', 'Launch status'], icon: <FlagIcon />, match: (p) => p.startsWith('/admin/onboarding'), minRole: 'staff' }
 
-type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number; feedbackCount?: number; inquiryCount?: number; onboarding?: boolean; onboardingCount?: number; staffOnboardingCount?: number }
+type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number; feedbackCount?: number; inquiryCount?: number; commentCount?: number; onboarding?: boolean; onboardingCount?: number; staffOnboardingCount?: number }
 
-export default function Rail({ userName = '', role, isSuper = false, isStaff = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0, leadCount = 0, feedbackCount = 0, inquiryCount = 0, onboarding = false, onboardingCount = 0, staffOnboardingCount = 0 }: Props) {
+export default function Rail({ userName = '', role, isSuper = false, isStaff = false, isGroupAdmin = false, pendingCount = 0, supportCount = 0, leadCount = 0, feedbackCount = 0, inquiryCount = 0, commentCount = 0, onboarding = false, onboardingCount = 0, staffOnboardingCount = 0 }: Props) {
   const t = useT()
   const pathname = usePathname()
   const router = useRouter()
   const [more, setMore] = useState(false)
+  // 승인 대기 댓글 수: 화면을 옮길 때마다 새로 읽고, 열어 둔 동안에도 1분마다 확인한다
+  const [liveComments, setLiveComments] = useState(commentCount)
+  useEffect(() => setLiveComments(commentCount), [commentCount])
+  const watchComments = isStaff || isSuper || role === 'admin' || role === 'editor'
+  useEffect(() => {
+    if (!watchComments) return
+    const tick = () => { if (document.visibilityState === 'visible') pendingCommentCount().then(setLiveComments).catch(() => {}) }
+    const timer = window.setInterval(tick, 60_000)
+    document.addEventListener('visibilitychange', tick)
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', tick) }
+  }, [watchComments])
   useEffect(() => setMore(false), [pathname])
 
   // 화면이 낮아 메뉴가 다 안 보이면 아래에 '메뉴 더 있음' 표시 (끝까지 내리면 사라진다)
@@ -99,13 +111,14 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
       ]
     : onboarding ? [ONB_CUSTOMER, ...visible] : visible
   const badge = (href: string) =>
-    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/ads' ? inquiryCount : href === '/admin/users' ? pendingCount : href === '/support/onboarding' ? onboardingCount : href === '/admin/onboarding' ? staffOnboardingCount : 0
+    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/ads' ? inquiryCount : href === '/admin/comments' ? liveComments : href === '/admin/users' ? pendingCount : href === '/support/onboarding' ? onboardingCount : href === '/admin/onboarding' ? staffOnboardingCount : 0
   const badgeLabel = (href: string, n: number) =>
     href === '/support' ? (isStaff ? t(`새 요청 ${n}건`, `${n} new ${n === 1 ? 'request' : 'requests'}`) : t(`새 답변 ${n}건`, `${n} new ${n === 1 ? 'reply' : 'replies'}`))
     : href === '/admin/leads' ? t(`새 상담 ${n}건`, `${n} new ${n === 1 ? 'lead' : 'leads'}`)
     : href === '/support/onboarding' ? t(`새 답글 ${n}건`, `${n} new ${n === 1 ? 'reply' : 'replies'}`)
     : href === '/admin/onboarding' ? t(`새 고객 글 ${n}건`, `${n} new customer ${n === 1 ? 'post' : 'posts'}`)
     : href === '/feedback' ? t(`새 개선 요청 ${n}건`, `${n} new feedback ${n === 1 ? 'request' : 'requests'}`)
+    : href === '/admin/comments' ? t(`승인 대기 댓글 ${n}건`, `${n} ${n === 1 ? 'comment' : 'comments'} awaiting review`)
     : href === '/admin/ads' ? t(`새 광고문의 ${n}건`, `${n} new ad ${n === 1 ? 'inquiry' : 'inquiries'}`)
     : t(`승인 대기 ${n}명`, `${n} awaiting approval`)
 

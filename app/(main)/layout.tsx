@@ -46,6 +46,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const inquiryQ = !isStaff && isEditorPlus && outletId
     ? supabase.from('site_inquiries').select('id', { count: 'exact', head: true }).eq('outlet_id', outletId).eq('status', 'new')
     : Promise.resolve({ count: 0 })
+  // 편집장 이상·운영팀: 승인을 기다리는 새 댓글 수 (comments.sql 전이면 0)
+  const commentQ = isEditorPlus || isStaff
+    ? (outletId ? supabase.from('comments').select('id', { count: 'exact', head: true }).eq('status', 'pending').eq('outlet_id', outletId) : supabase.from('comments').select('id', { count: 'exact', head: true }).eq('status', 'pending'))
+    : Promise.resolve({ count: 0 })
   // 개통 진행 현황 메뉴 (launch-hub.sql 전이면 숫자 0): 고객은 개통(정식 오픈) 전까지, 운영팀은 새 고객 글 수
   const onboardQ = !isStaff && !trial && outletId && isEditorPlus
     ? supabase.from('outlets').select('site, created_at').eq('id', outletId).maybeSingle()
@@ -58,8 +62,8 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     const q = supabase.from('outlets').select(fields).order('created_at')
     return isGroupAdmin || isStaff ? q : q.eq('id', outletId ?? '00000000-0000-0000-0000-000000000000')
   }
-  const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes, { data: onboardOutlet }, { count: staffOnboardingCount }, { count: inquiryCount }] = await Promise.all([
-    pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'), onboardQ, staffCommentQ, inquiryQ,
+  const [{ count: pendingCount }, { data: tickets }, { count: leadCount }, { count: feedbackCount }, outletRes, { data: onboardOutlet }, { count: staffOnboardingCount }, { count: inquiryCount }, { count: commentCount }] = await Promise.all([
+    pendingQ, ticketQ, leadQ, feedbackQ, outletQuery('id, name, domain, publisher:publishers(name)'), onboardQ, staffCommentQ, inquiryQ, commentQ,
   ])
   let onboarding = isPrepNow((onboardOutlet?.site ?? {}) as { comingSoon?: boolean; openAt?: string })
   // 오픈한 뒤에도 마지막 단계(검색 등록·오픈 후 점검)가 끝날 때까지는 고객에게 개통 현황을 보여 준다
@@ -127,7 +131,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     <div className="fixed inset-0 flex overflow-hidden bg-[#F4F5F7] print:static print:block print:h-auto print:overflow-visible print:bg-white">
       <AppServiceWorker />
       <div className="contents print:hidden">
-        <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} feedbackCount={feedbackCount ?? 0} inquiryCount={inquiryCount ?? 0} onboarding={onboarding} onboardingCount={onboardingCount} staffOnboardingCount={staffOnboardingCount ?? 0} />
+        <Rail userName={profile?.full_name ?? user.email ?? ''} role={profile?.role ?? null} isSuper={isSuper} isStaff={isStaff} isGroupAdmin={isGroupAdmin} pendingCount={pendingCount ?? 0} supportCount={supportCount} leadCount={leadCount ?? 0} feedbackCount={feedbackCount ?? 0} inquiryCount={inquiryCount ?? 0} commentCount={commentCount ?? 0} onboarding={onboarding} onboardingCount={onboardingCount} staffOnboardingCount={staffOnboardingCount ?? 0} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         {trial && <TrialBar role={trial.role} daysLeft={trial.daysLeft} />}
