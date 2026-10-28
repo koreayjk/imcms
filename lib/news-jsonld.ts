@@ -56,6 +56,12 @@ export function siteJsonLd(site: SiteConfig, base: string) {
         url: `${base}/`,
         ...(logo ? { logo: { '@type': 'ImageObject', url: logo } } : {}),
         ...(site.description ? { description: site.description } : {}),
+        // 신뢰 정보 페이지 (매체소개·편집원칙·정정 안내): 검색·AI가 이 매체의 운영 원칙을 확인하는 곳
+        masthead: `${base}/policy/about`,
+        publishingPrinciples: `${base}/policy/editorial`,
+        ethicsPolicy: `${base}/policy/editorial`,
+        correctionsPolicy: `${base}/policy/corrections`,
+        actionableFeedbackPolicy: `${base}/policy/corrections`,
       },
     ],
   }
