@@ -1,10 +1,9 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
 import { formatDate } from '@/lib/format'
 import { parsePeriod, periodBounds, type StatsPeriod } from '@/lib/stats-period'
-import { fetchFeed } from './actions'
+import { fetchFeed, type FeedRow } from './actions'
 import LiveComments from './LiveComments'
 
 type Summary = { v_today: number; v_week: number; v_month: number; v_year: number; v_total: number; s_total: number; c_approved: number; c_pending: number }
@@ -18,7 +17,8 @@ type SortKey = 'views' | 'comments' | 'shares'
 export default async function StatsPage(props: { searchParams: Promise<{ p?: string; s?: string }> }) {
   const sp = await props.searchParams
   const { supabase, outletId, isEditorPlus, isStaff, lang } = await getCmsContext()
-  if (!isEditorPlus && !isStaff) redirect('/articles')
+  // 편집장 이상·운영팀은 매체 전체, 기자는 내가 쓴 기사만 (reporter-stats.sql)
+  const mine = !isEditorPlus && !isStaff
   const { t } = await getT()
   const en = lang === 'en'
   const period = parsePeriod(sp.p)
@@ -34,11 +34,12 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
   const b = periodBounds(tz)
   const from = period === 'all' ? null : period === 'today' ? b.today : period === 'week' ? b.week : period === 'month' ? b.month : b.year
 
+  const args = { p_today: b.today, p_week: b.week, p_month: b.month, p_year: b.year }
   const [sum, daily, list, feed] = await Promise.all([
-    supabase.rpc('outlet_view_summary', { p_outlet: outletId, p_today: b.today, p_week: b.week, p_month: b.month, p_year: b.year }),
-    supabase.rpc('outlet_daily_views', { p_outlet: outletId, p_from: b.ago30 }),
-    supabase.rpc('article_stats_list', { p_outlet: outletId, p_from: from, p_sort: sort, p_limit: 30 }),
-    fetchFeed('new'),
+    mine ? supabase.rpc('my_stats_summary', args) : supabase.rpc('outlet_view_summary', { p_outlet: outletId, ...args }),
+    mine ? supabase.rpc('my_daily_views', { p_from: b.ago30 }) : supabase.rpc('outlet_daily_views', { p_outlet: outletId, p_from: b.ago30 }),
+    mine ? supabase.rpc('my_article_stats', { p_from: from, p_sort: sort, p_limit: 30 }) : supabase.rpc('article_stats_list', { p_outlet: outletId, p_from: from, p_sort: sort, p_limit: 30 }),
+    mine ? Promise.resolve({ rows: [] as FeedRow[], pending: 0, error: undefined as boolean | undefined }) : fetchFeed('new'),
   ])
   const notReady = !!(sum.error || list.error)
   const s = ((sum.data as Summary[] | null)?.[0]) ?? null
@@ -65,9 +66,11 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
   return (
     <div className="mx-auto max-w-[1320px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-5">
-        <h1 className="text-[22px] font-bold tracking-tight">{t('통계', 'Insights')}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight">{mine ? t('내 기사 통계', 'My stories') : t('통계', 'Insights')}</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
-          {t('기사 조회수·공유·댓글을 기간별로 보고, 새 댓글에 바로 답글을 달거나 차단합니다. 하루별 조회수는 통계 기능을 켠 날부터 쌓입니다. 켜기 전 조회수는 날짜를 알 수 없어서, 그 기간 안에 발행된 기사만 그 기간 숫자에 넣습니다. “전체”는 모든 조회수를 포함합니다.', 'See story views, shares and comments by period, and reply to or block new comments right away. Daily views are recorded from the day this feature was turned on. Earlier views have no date, so they are counted in a period only for stories published within it. “All time” includes every view.')}
+          {mine
+            ? t('내가 쓴 기사의 조회수·공유·공개된 댓글입니다(읽기 전용). 하루별 조회수는 통계 기능을 켠 날부터 쌓이고, 켜기 전 조회수는 그 기간 안에 발행한 기사만 그 기간 숫자에 넣습니다. “전체”는 모든 조회수를 포함합니다. 댓글 관리는 편집장이 합니다.', 'Views, shares and published comments on stories you wrote (read-only). Daily views are recorded from the day this feature was turned on; earlier views count in a period only for stories published within it. “All time” includes every view. Editors manage comments.')
+            : t('기사 조회수·공유·댓글을 기간별로 보고, 새 댓글에 바로 답글을 달거나 차단합니다. 하루별 조회수는 통계 기능을 켠 날부터 쌓입니다. 켜기 전 조회수는 날짜를 알 수 없어서, 그 기간 안에 발행된 기사만 그 기간 숫자에 넣습니다. “전체”는 모든 조회수를 포함합니다.', 'See story views, shares and comments by period, and reply to or block new comments right away. Daily views are recorded from the day this feature was turned on. Earlier views have no date, so they are counted in a period only for stories published within it. “All time” includes every view.')}
         </p>
       </header>
 
@@ -76,7 +79,7 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
           {(sum.error || list.error) && <span className="mt-1 block text-[12px] text-muted">{String((sum.error ?? list.error)?.message ?? '').slice(0, 200)}</span>}</p>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+      <div className={`grid gap-6 ${mine ? '' : 'xl:grid-cols-[minmax(0,1fr)_400px]'}`}>
         <div className="min-w-0 space-y-6">
           {s && (
             <>
@@ -89,10 +92,10 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
                   </div>
                 ))}
               </section>
-              <section aria-label={t('공유·댓글 요약', 'Shares and comments summary')} className="grid grid-cols-3 gap-3 text-[13px]">
+              <section aria-label={t('공유·댓글 요약', 'Shares and comments summary')} className={`grid gap-3 text-[13px] ${mine ? 'grid-cols-2' : 'grid-cols-3'}`}>
                 <div className="rounded-lg border border-line bg-white px-4 py-3"><p className="text-[12px] text-muted">{t('퍼 나른 횟수(공유)', 'Shares')}</p><p className="mt-0.5 text-[18px] font-bold tabular-nums">{nf.format(Number(s.s_total))}</p></div>
-                <div className="rounded-lg border border-line bg-white px-4 py-3"><p className="text-[12px] text-muted">{t('공개된 댓글', 'Published comments')}</p><p className="mt-0.5 text-[18px] font-bold tabular-nums">{nf.format(Number(s.c_approved))}</p></div>
-                <div className="rounded-lg border border-line bg-white px-4 py-3"><p className="text-[12px] text-muted">{t('승인 대기 댓글', 'Comments pending')}</p><p className={`mt-0.5 text-[18px] font-bold tabular-nums ${Number(s.c_pending) > 0 ? 'text-danger' : ''}`}>{nf.format(Number(s.c_pending))}</p></div>
+                <div className="rounded-lg border border-line bg-white px-4 py-3"><p className="text-[12px] text-muted">{mine ? t('내 기사의 공개된 댓글', 'Published comments on my stories') : t('공개된 댓글', 'Published comments')}</p><p className="mt-0.5 text-[18px] font-bold tabular-nums">{nf.format(Number(s.c_approved))}</p></div>
+                {!mine && <div className="rounded-lg border border-line bg-white px-4 py-3"><p className="text-[12px] text-muted">{t('승인 대기 댓글', 'Comments pending')}</p><p className={`mt-0.5 text-[18px] font-bold tabular-nums ${Number(s.c_pending) > 0 ? 'text-danger' : ''}`}>{nf.format(Number(s.c_pending))}</p></div>}
               </section>
 
               <section aria-label={t('최근 30일 조회수', 'Views, last 30 days')} className="rounded-lg border border-line bg-white p-4">
@@ -162,13 +165,15 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
                 </table>
               </div>
             )}
-            <p className="border-t border-line px-4 py-2 text-[11.5px] text-muted">{t('댓글은 공개된 것과 승인 대기를 합친 개수입니다(반려·삭제 제외). 공유는 독자가 기사 아래 공유 버튼(페이스북·X·카카오톡·링크 복사)을 누른 횟수이며, 같은 브라우저는 10분에 한 번만 셉니다.', 'Comments = published + pending (rejected and deleted are excluded). Shares count taps on the share buttons under a story (Facebook, X, KakaoTalk, copy link), once per browser every 10 minutes.')}</p>
+            <p className="border-t border-line px-4 py-2 text-[11.5px] text-muted">{t(mine ? '댓글은 공개된 것만 셉니다. ' : '댓글은 공개된 것과 승인 대기를 합친 개수입니다(반려·삭제 제외). ', mine ? 'Comments count published ones only. ' : 'Comments = published + pending (rejected and deleted are excluded). ')}{t('공유는 독자가 기사 아래 공유 버튼(페이스북·X·카카오톡·링크 복사)을 누른 횟수이며, 같은 브라우저는 10분에 한 번만 셉니다.', 'Shares count taps on the share buttons under a story (Facebook, X, KakaoTalk, copy link), once per browser every 10 minutes.')}</p>
           </section>
         </div>
 
-        <aside className="min-w-0 xl:sticky xl:top-4 xl:self-start">
-          <LiveComments initial={feed.rows} initialPending={feed.pending} initialError={feed.error} />
-        </aside>
+        {!mine && (
+          <aside className="min-w-0 xl:sticky xl:top-4 xl:self-start">
+            <LiveComments initial={feed.rows} initialPending={feed.pending} initialError={feed.error} />
+          </aside>
+        )}
       </div>
     </div>
   )

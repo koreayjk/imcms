@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
 import { formatDateTime } from '@/lib/format'
@@ -18,8 +17,39 @@ type Row = {
 export default async function CommentsPage(props: { searchParams: Promise<{ s?: string }> }) {
   const sp = await props.searchParams
   const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
-  if (!isEditorPlus && !isStaff) redirect('/articles')
   const { t, lang } = await getT()
+  // 기자: 내 기사에 달린 공개 댓글만 읽는다 (reporter-stats.sql). 승인·삭제·차단은 편집장이 한다
+  if (!isEditorPlus && !isStaff) {
+    const { data, error } = await supabase.rpc('my_article_comments', { p_limit: 80 })
+    const all = (data ?? []) as { id: string; article_id: string; article_title: string; name: string; body: string; created_at: string; parent_id: string | null; staff: boolean }[]
+    const tops = all.filter((c) => !c.parent_id)
+    return (
+      <div className="mx-auto max-w-[860px] px-4 py-5 md:px-8 md:py-8">
+        <header className="mb-5">
+          <h1 className="text-[22px] font-bold tracking-tight">{t('내 기사 댓글', 'Comments on my stories')}</h1>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted">{t('내가 쓴 기사에 달려 공개된 댓글입니다(읽기 전용). 승인 대기 댓글과 삭제·차단은 편집장이 관리합니다.', 'Published comments on stories you wrote (read-only). Pending comments, deleting and blocking are handled by your editor.')}</p>
+        </header>
+        {error ? (
+          <p className="rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">{t('댓글을 불러오지 못했습니다. 운영팀이 Supabase에서 reporter-stats.sql을 실행해야 할 수 있습니다.', 'Could not load comments. The operations team may need to run reporter-stats.sql in Supabase.')}</p>
+        ) : tops.length === 0 ? (
+          <p className="rounded-lg border border-line bg-white px-5 py-10 text-center text-[14px] text-muted">{t('아직 공개된 댓글이 없습니다.', 'No published comments yet.')}</p>
+        ) : (
+          <ul className="space-y-3">
+            {tops.map((c) => (
+              <li key={c.id} className="rounded-lg border border-line bg-white p-4">
+                <p className="text-[12.5px] text-muted"><strong className="text-ink">{c.name}</strong> · {formatDateTime(c.created_at, lang)}</p>
+                <p className="mt-1 text-[12.5px]"><Link href={`/articles/${c.article_id}`} className="text-review underline underline-offset-2">{c.article_title}</Link></p>
+                <p className="mt-2 whitespace-pre-line break-words text-[14.5px] leading-[1.7]">{c.body}</p>
+                {all.filter((r) => r.parent_id === c.id).map((r) => (
+                  <p key={r.id} className="mt-2 rounded bg-paper px-3 py-2 text-[13px] leading-[1.6]"><strong>{r.name}</strong> <span className="rounded bg-ink px-1.5 py-0.5 text-[10.5px] font-semibold text-white">{t('편집국', 'Newsroom')}</span> <span className="text-muted">· {formatDateTime(r.created_at, lang)}</span><br />{r.body}</p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )
+  }
   const tab = sp.s === 'approved' || sp.s === 'rejected' ? sp.s : 'pending'
 
   let q = supabase

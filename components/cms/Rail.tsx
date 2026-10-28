@@ -12,7 +12,7 @@ import { useT } from './CmsLang'
 import { pendingCommentCount } from '@/app/(main)/admin/stats/actions'
 
 type Group = 'launch' | 'staff' | 'write' | 'site' | 'readers' | 'manage'
-type Item = { href: string; group?: Group; label: [ko: string, en: string]; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
+type Item = { href: string; group?: Group; label: [ko: string, en: string]; mine?: [ko: string, en: string]; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
 
 const ChatIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 5h16v11H9l-5 4V5Z" /><path d="M8 9h8M8 12h5" /></svg>
@@ -33,8 +33,8 @@ const ITEMS: Item[] = [
   { href: '/admin/categories', group: 'site', label: ['섹션', 'Sections'], icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'site' },
   { href: '/admin/ads', group: 'site', label: ['광고', 'Ads'], icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'site' },
   { href: '/admin/newsletter', group: 'site', label: ['뉴스레터', 'Newsletter'], icon: <MailIcon />, match: (p) => p.startsWith('/admin/newsletter'), minRole: 'editor' },
-  { href: '/admin/stats', group: 'readers', label: ['통계', 'Insights'], icon: <BarsIcon />, match: (p) => p.startsWith('/admin/stats'), minRole: 'editor' },
-  { href: '/admin/comments', group: 'readers', label: ['댓글', 'Comments'], icon: <ChatIcon />, match: (p) => p.startsWith('/admin/comments'), minRole: 'editor' },
+  { href: '/admin/stats', group: 'readers', label: ['통계', 'Insights'], mine: ['내 통계', 'My stats'], icon: <BarsIcon />, match: (p) => p.startsWith('/admin/stats') },
+  { href: '/admin/comments', group: 'readers', label: ['댓글', 'Comments'], mine: ['내 댓글', 'My comments'], icon: <ChatIcon />, match: (p) => p.startsWith('/admin/comments') },
   { href: '/admin/users', group: 'manage', label: ['회원', 'Members'], icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
   { href: '/admin/outlets', group: 'manage', label: ['매체', 'Outlets'], icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
   // 설정 안에 매체 정보·AI·이메일·포털 제휴 탭이 있다
@@ -120,6 +120,9 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
   ]
   const grouped = GROUPS.map((g) => ({ ...g, items: ordered.filter((i) => groupOf(i) === g.key) })).filter((g) => g.items.length > 0)
   const items = grouped.flatMap((g) => g.items)
+  // 기자(편집장 이상이 아닌 회원)에게는 "내 기사" 이름으로 보인다
+  const isManager = isStaff || isSuper || role === 'admin' || role === 'editor'
+  const labelOf = (i: Item): [string, string] => (!isManager && i.mine ? i.mine : i.label)
   const badge = (href: string) =>
     href === '/support' ? supportCount + (isStaff ? feedbackCount : 0) : href === '/admin/leads' ? leadCount : href === '/admin/ads' ? inquiryCount : href === '/admin/comments' ? liveComments : href === '/admin/users' ? pendingCount : href === '/support/onboarding' ? onboardingCount : href === '/admin/onboarding' ? staffOnboardingCount : 0
   const badgeLabel = (href: string, n: number) =>
@@ -174,7 +177,7 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
                       {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-[#F2B544]" />}
                       <LinkPending className="inset-0 bg-white/[0.08] shadow-[inset_3px_0_0_#F2B544]" />
                       {item.icon}
-                      {t(...item.label)}
+                      {t(...labelOf(item))}
                       {n > 0 && (
                         <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={badgeLabel(item.href, n)}>
                           {n}
@@ -217,7 +220,7 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
             >
               <LinkPending className="inset-x-3 top-0 h-[3px] rounded-b bg-[#F2B544]" />
               {item.icon}
-              {t(...item.label)}
+              {t(...labelOf(item))}
             </BackLink>
           )
         })}
@@ -262,7 +265,7 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
                           className={`relative flex flex-col items-center gap-1 rounded-xl py-3 text-[12px] ${active ? 'bg-[#FFF6E0] font-bold text-[#8A5A00]' : 'text-[#3A3F4A]'}`}
                         >
                           {item.icon}
-                          {t(...item.label)}
+                          {t(...labelOf(item))}
                           {n > 0 && (
                             <span className="absolute right-2 top-1.5 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={badgeLabel(item.href, n)}>{n}</span>
                           )}
