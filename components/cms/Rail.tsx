@@ -33,6 +33,7 @@ const ITEMS: Item[] = [
   { href: '/admin/ads', label: ['광고', 'Ads'], icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'site' },
   { href: '/admin/stats', label: ['통계', 'Insights'], icon: <BarsIcon />, match: (p) => p.startsWith('/admin/stats'), minRole: 'editor' },
   { href: '/admin/comments', label: ['댓글', 'Comments'], icon: <ChatIcon />, match: (p) => p.startsWith('/admin/comments'), minRole: 'editor' },
+  { href: '/admin/portal', label: ['포털 제휴', 'Portals'], icon: <GlobeIcon />, match: (p) => p.startsWith('/admin/portal'), minRole: 'editor' },
   { href: '/admin/newsletter', label: ['뉴스레터', 'Newsletter'], icon: <MailIcon />, match: (p) => p.startsWith('/admin/newsletter'), minRole: 'editor' },
   { href: '/admin/users', label: ['회원', 'Members'], icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
   { href: '/admin/outlets', label: ['매체', 'Outlets'], icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
