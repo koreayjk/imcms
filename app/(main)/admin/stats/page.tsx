@@ -72,7 +72,8 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
       </header>
 
       {notReady && (
-        <p className="mb-5 rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">{t('통계를 보려면 운영팀이 Supabase에서 article-stats.sql을 먼저 실행해야 합니다.', 'The operations team needs to run article-stats.sql in Supabase before statistics can be shown.')}</p>
+        <p className="mb-5 rounded-lg border border-draft/40 bg-draft/10 px-5 py-4 text-sm">{t('통계를 불러오지 못했습니다. 운영팀이 Supabase에서 article-stats.sql을 (다시) 실행해야 할 수 있습니다.', 'Could not load statistics. The operations team may need to (re)run article-stats.sql in Supabase.')}
+          {(sum.error || list.error) && <span className="mt-1 block text-[12px] text-muted">{String((sum.error ?? list.error)?.message ?? '').slice(0, 200)}</span>}</p>
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">

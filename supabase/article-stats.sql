@@ -43,13 +43,20 @@ begin
 end $$;
 grant execute on function public.outlet_today(uuid) to authenticated, anon;
 
--- 매체 시간대 이름 (적혀 있지 않거나 잘못되면 한국 시간)
+-- 매체 시간대 이름 (적혀 있지 않거나 잘못되면 한국 시간). 시간대 이름 목록(pg_timezone_names)은 읽을 때마다 느려서 쓰지 않고, 직접 시험해 본다
 create or replace function public.outlet_tz(o uuid) returns text
-language sql stable security definer set search_path = public as $$
-  select coalesce(
-    (select z.name from outlets ou join pg_timezone_names z on z.name = nullif(ou.site->>'timeZone', '') where ou.id = o),
-    'Asia/Seoul')
-$$;
+language plpgsql stable security definer set search_path = public as $$
+declare tz text;
+begin
+  select nullif(site->>'timeZone', '') into tz from outlets where id = o;
+  if tz is null then return 'Asia/Seoul'; end if;
+  begin
+    perform now() at time zone tz;
+  exception when others then
+    return 'Asia/Seoul';
+  end;
+  return tz;
+end $$;
 grant execute on function public.outlet_tz(uuid) to authenticated, anon;
 
 -- 조회수 +1 (전체 + 하루치). 수정 시각(updated_at)은 건드리지 않는다 (view-count.sql 과 같다)
@@ -94,11 +101,14 @@ grant execute on function public.bump_article_share(uuid) to anon, authenticated
 create or replace function public.outlet_view_summary(p_outlet uuid, p_today date, p_week date, p_month date, p_year date)
 returns table (v_today bigint, v_week bigint, v_month bigint, v_year bigint, v_total bigint, s_total bigint, c_approved bigint, c_pending bigint)
 language sql stable security invoker set search_path = public as $$
-  with a as (
+  with otz as (
+    select id, public.outlet_tz(id) as tz from outlets where p_outlet is null or id = p_outlet
+  ), a as (
     select ar.view_count, ar.share_count,
-           (ar.published_at at time zone public.outlet_tz(ar.outlet_id))::date as pub,
+           (ar.published_at at time zone otz.tz)::date as pub,
            greatest(ar.view_count - coalesce(dt.total, 0), 0) as rest
     from articles ar
+    join otz on otz.id = ar.outlet_id
     left join (select article_id, sum(views) as total from article_stats_daily where (p_outlet is null or outlet_id = p_outlet) group by article_id) dt on dt.article_id = ar.id
     where ar.status = 'published' and (p_outlet is null or ar.outlet_id = p_outlet)
   ), d as (
@@ -133,11 +143,13 @@ create or replace function public.article_stats_list(p_outlet uuid, p_from date,
 returns table (id uuid, title text, outlet_name text, category_name text, published_at timestamptz,
                views bigint, views_total bigint, comments bigint, comments_pending bigint, shares bigint, shares_total bigint)
 language sql stable security invoker set search_path = public as $$
-  with base as (
+  with otz as (
+    select id, public.outlet_tz(id) as tz from outlets where p_outlet is null or id = p_outlet
+  ), base as (
     select a.id, a.title, o.name as outlet_name, c.name as category_name, a.published_at,
            case when p_from is null then a.view_count::bigint
                 else coalesce(d.views, 0)
-                     + case when (a.published_at at time zone public.outlet_tz(a.outlet_id))::date >= p_from then greatest(a.view_count - coalesce(dt.total, 0), 0) else 0 end
+                     + case when (a.published_at at time zone otz.tz)::date >= p_from then greatest(a.view_count - coalesce(dt.total, 0), 0) else 0 end
            end as views,
            a.view_count::bigint as views_total,
            coalesce(cm.n, 0) + coalesce(cm.pending, 0) as comments, coalesce(cm.pending, 0) as comments_pending,
@@ -145,6 +157,7 @@ language sql stable security invoker set search_path = public as $$
            a.share_count::bigint as shares_total
     from articles a
     join outlets o on o.id = a.outlet_id
+    join otz on otz.id = a.outlet_id
     left join categories c on c.id = a.category_id
     left join (select article_id, sum(views) as views, sum(shares) as shares from article_stats_daily
                where p_from is not null and day >= p_from and (p_outlet is null or outlet_id = p_outlet) group by article_id) d on d.article_id = a.id
