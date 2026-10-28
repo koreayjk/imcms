@@ -82,6 +82,7 @@ revoke all on function public.reader_get(text, uuid) from public;
 grant execute on function public.reader_get(text, uuid) to anon, authenticated;
 
 -- 승인된 댓글 (홈페이지 기사 아래). 이름은 독자 이름, 없으면 이메일 앞부분의 앞 3글자 + ***
+drop function if exists public.comments_public(text, uuid);
 create or replace function public.comments_public(secret text, p_article uuid) returns table (id uuid, name text, body text, created_at timestamptz)
 language plpgsql stable security definer set search_path = public as $$
 begin
@@ -181,17 +182,25 @@ end $$;
 revoke all on function public.comment_report(text, text, uuid) from public;
 grant execute on function public.comment_report(text, text, uuid) to anon, authenticated;
 
--- 승인된 댓글 (로그인 독자·비회원 모두). can_delete: 비회원이 쓴 댓글이면 비밀번호로 지울 수 있다
+-- 편집국 답글 칸 (comment-replies.sql 과 같다. 어느 쪽을 먼저 실행해도 된다)
+alter table comments add column if not exists parent_id uuid references comments(id) on delete cascade;
+alter table comments add column if not exists staff_reply boolean not null default false;
+create index if not exists comments_parent on comments (parent_id) where parent_id is not null;
+
+-- 승인된 댓글 (로그인 독자·비회원·편집국 답글). guest: 비회원이 쓴 댓글이면 비밀번호로 지울 수 있다. 원 댓글이 공개일 때만 답글도 보인다
 drop function if exists public.comments_public(text, uuid);
-create or replace function public.comments_public(secret text, p_article uuid) returns table (id uuid, name text, body text, created_at timestamptz, guest boolean)
+create or replace function public.comments_public(secret text, p_article uuid)
+returns table (id uuid, name text, body text, created_at timestamptz, guest boolean, parent_id uuid, staff boolean)
 language plpgsql stable security definer set search_path = public as $$
 begin
   if not public.payment_secret_ok(secret) then raise exception 'forbidden'; end if;
   return query
-    select c.id, coalesce(r.name, c.guest_name, left(split_part(r.email, '@', 1), 3) || '***'), c.body, c.created_at, (c.reader_id is null)
+    select c.id, coalesce(r.name, c.guest_name, left(split_part(r.email, '@', 1), 3) || '***'), c.body, c.created_at,
+           (c.reader_id is null and not c.staff_reply), c.parent_id, c.staff_reply
     from comments c left join readers r on r.id = c.reader_id
     where c.article_id = p_article and c.status = 'approved'
-    order by c.created_at limit 200;
+      and (c.parent_id is null or exists (select 1 from comments p where p.id = c.parent_id and p.status = 'approved'))
+    order by c.created_at limit 300;
 end $$;
 revoke all on function public.comments_public(text, uuid) from public;
 grant execute on function public.comments_public(text, uuid) to anon, authenticated;
