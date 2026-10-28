@@ -1,7 +1,9 @@
 import AdArea from '@/components/site/AdArea'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { currentSite, getAuthorProfile, getReporterArticles, REPORTER_PAGE_SIZE } from '@/lib/public-data'
+import { headers } from 'next/headers'
+import { currentSite, getAuthorProfile, getReporterArticles, REPORTER_PAGE_SIZE, siteBaseUrl } from '@/lib/public-data'
+import { reporterJsonLd } from '@/lib/news-jsonld'
 import { reporterHref } from '@/lib/reporter'
 import SiteFrame from '@/components/site/SiteFrame'
 import MostViewed from '@/components/site/MostViewed'
@@ -34,7 +36,7 @@ export default async function ReporterPage(props: Props) {
   const page = Math.max(1, Number(searchParams.page) || 1)
   const [{ articles, total, mostViewed }, author] = await Promise.all([
     getReporterArticles(site, name, page),
-    site.lang === 'en' ? getAuthorProfile(site, name) : Promise.resolve(null),
+    getAuthorProfile(site, name),
   ])
   const pages = Math.max(1, Math.ceil(total / REPORTER_PAGE_SIZE))
   const href = (p: number) => `${reporterHref(name)}${p > 1 ? `&page=${p}` : ''}`
@@ -42,8 +44,11 @@ export default async function ReporterPage(props: Props) {
   const first = Math.max(1, Math.min(page - 4, pages - 9))
   const nums = Array.from({ length: Math.min(10, pages) }, (_, i) => first + i)
 
+  const base = siteBaseUrl(site, (await headers()).get('host'))
+
   return (
     <SiteFrame site={site}>
+      {name && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: reporterJsonLd(site, base, { name, bio: author?.bio, photo: author?.photo, email: author?.email }) }} />}
       {site.lang === 'en' ? (
         <div className="mx-auto max-w-[1200px] px-4 pt-6">
           <nav className="text-[12px] uppercase tracking-wide text-sub" aria-label={t.breadcrumb}>
@@ -88,6 +93,18 @@ export default async function ReporterPage(props: Props) {
             )}
             <h1 className="text-[24px] font-extrabold tracking-[-0.03em] text-brand lg:text-[28px]">{t.reporterTitle(name)}</h1>
           </div>
+          {(author?.bio || author?.photo || author?.email) && (
+            <div className="mt-4 flex flex-col gap-4 sm:flex-row">
+              {author.photo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={author.photo} alt={`${name} 기자`} className="h-[150px] w-[112px] shrink-0 rounded object-cover" />
+              )}
+              <div className="min-w-0 text-[14.5px] leading-[1.75] text-body">
+                {author.bio && author.bio.split(/\n+/).map((para, i) => <p key={i} className={i ? 'mt-2' : ''}>{para}</p>)}
+                {author.email && <p className="mt-2 text-[13.5px] text-sub"><a href={`mailto:${author.email}`} className="hover:text-brand">{author.email}</a></p>}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

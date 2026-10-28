@@ -25,6 +25,8 @@ export type PublicArticle = {
   tags: string[] | null
   meta_title?: string | null
   meta_description?: string | null
+  // 마지막으로 고친 시각 (기사 화면의 수정 표시·구조화 데이터용)
+  updated_at?: string | null
 }
 
 export const isDemo = !process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -135,6 +137,7 @@ function toPublic(row: any): PublicArticle {
     author_email: row.byline_email ?? null,
     category: row.category ?? null,
     tags: row.tags ?? null,
+    updated_at: row.updated_at ?? null,
     meta_title: row.meta_title ?? null,
     meta_description: row.meta_description ?? null,
   }
@@ -312,7 +315,7 @@ async function loadArticleData(site: SiteConfig, id: string) {
   if (!scope) return null
   const { data } = await scope.supabase
     .from('articles')
-    .select(`${scope.fields}, body, category_id, meta_title, meta_description`)
+    .select(`${scope.fields}, body, category_id, meta_title, meta_description, updated_at`)
     .eq('id', id)
     .eq('outlet_id', scope.outletId)
     .eq('status', 'published')

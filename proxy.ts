@@ -59,6 +59,7 @@ function isPublicPath(pathname: string) {
     pathname === '/news-sitemap.xml' ||
     pathname === '/rss.xml' ||
     pathname === '/robots.txt' ||
+    pathname === '/llms.txt' ||
     // 안드로이드 앱 연결 확인 파일·앱 오프라인 화면
     pathname.startsWith('/.well-known/') ||
     pathname === '/sw.js' || pathname === '/offline.html'

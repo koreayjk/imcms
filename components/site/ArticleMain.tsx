@@ -13,6 +13,9 @@ import { enLongDate, siteText } from '@/lib/site-text'
 
 // 홈페이지 기사 본문 (제목·부제·기자·본문·관련기사·태그·기자 정보·섹션 다른 기사). 실제 기사 화면과 기사쓰기 미리보기가 같이 쓴다
 // bodyHtml은 이미 정리(sanitizeBody)한 HTML
+// 발행 뒤 1시간이 넘어 고친 기사만 "수정" 시각을 보여 준다
+const modifiedAt = (a: PublicArticle) => (a.updated_at && a.published_at && Date.parse(a.updated_at) - Date.parse(a.published_at) > 3_600_000 ? a.updated_at : null)
+
 export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, topAd, lang, tz, comments }: {
   a: PublicArticle
   bodyHtml: string
@@ -49,15 +52,16 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
           {lang === 'en' ? (
             <p className="italic">
               {a.author_name && <>By <Link href={reporterHref(a.author_name)} className="font-semibold not-italic text-brand hover:underline">{a.author_name}</Link> - </>}
-              {siteName}{a.published_at && <> - {enLongDate(a.published_at, tz)}</>}
+              {siteName}{a.published_at && <> - <time dateTime={a.published_at}>{enLongDate(a.published_at, tz)}</time></>}{modifiedAt(a) && <span className="not-italic"> · Updated <time dateTime={modifiedAt(a)!}>{enLongDate(modifiedAt(a)!, tz)}</time></span>}
               {a.view_count > 0 && <span className="not-italic tabular-nums"> · {a.view_count.toLocaleString('en-US')} {t.views.toLowerCase()}</span>}
             </p>
           ) : (
             <p className="tabular-nums">
-              {a.author_name && <span className="font-semibold text-body">{t.reporter(a.author_name)}</span>}
+              {a.author_name && <Link href={reporterHref(a.author_name)} rel="author" className="font-semibold text-body hover:text-brand hover:underline">{t.reporter(a.author_name)}</Link>}
               {a.author_email && <a href={`mailto:${a.author_email}`} className="ml-1.5 text-sub hover:text-brand">{a.author_email}</a>}
               <span className="mx-2 text-rule" aria-hidden>|</span>
-              <span>{t.published} {formatDateTime(a.published_at, lang, tz)}</span>
+              <span>{t.published} <time dateTime={a.published_at ?? undefined}>{formatDateTime(a.published_at, lang, tz)}</time></span>
+              {modifiedAt(a) && <><span className="mx-2 text-rule" aria-hidden>|</span><span>수정 <time dateTime={modifiedAt(a)!}>{formatDateTime(modifiedAt(a), lang, tz)}</time></span></>}
               {a.view_count > 0 && (
                 <>
                   <span className="mx-2 text-rule" aria-hidden>|</span>

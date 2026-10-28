@@ -2,7 +2,7 @@ import { notFound, permanentRedirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { currentSite, getArticleData, legacyArticleId, siteBaseUrl } from '@/lib/public-data'
-import { newsArticleJsonLd } from '@/lib/news-jsonld'
+import { articleBreadcrumbJsonLd, newsArticleJsonLd } from '@/lib/news-jsonld'
 import { findSection, siteIcon } from '@/lib/sites'
 import SiteFrame from '@/components/site/SiteFrame'
 import { sanitizeBody } from '@/lib/article-html'
@@ -49,9 +49,15 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       siteName: site.name,
       type: 'article',
       locale: siteText(site).ogLocale,
+      ...(a.published_at ? { publishedTime: a.published_at } : {}),
+      ...(a.updated_at ? { modifiedTime: a.updated_at } : {}),
+      ...(a.category ? { section: a.category.name } : {}),
+      ...(a.author_name ? { authors: [a.author_name] } : {}),
+      ...(a.tags?.length ? { tags: a.tags } : {}),
       // 기사 사진이 없으면 매체 대표 이미지
       images: a.thumbnail_url ? [a.thumbnail_url] : site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined,
     },
+    ...(a.author_name ? { authors: [{ name: a.author_name }] } : {}),
     twitter: { card: a.thumbnail_url || site.ogImage ? 'summary_large_image' : 'summary' },
   }
 }
@@ -77,6 +83,7 @@ export default async function ArticlePage(props: Props) {
     <SiteFrame site={site} current={a.category?.slug}>
       {/* 기사 구조화 데이터 (구글 뉴스·주요 뉴스용, 화면에는 안 보임) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: newsArticleJsonLd(site, a, base, `${base}/news/${a.id}`) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleBreadcrumbJsonLd(site, a, base) }} />
       {!a.id.startsWith('demo-') && <ViewCounter id={a.id} />}
       <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-10">
         <ArticleMain
