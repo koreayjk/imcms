@@ -39,11 +39,11 @@ export default function CommentBox({ articleId, lang, next }: { articleId: strin
 
   return (
     <section aria-labelledby="comments-title" className="mt-10 border-t border-rule pt-6">
-      <h2 id="comments-title" className="text-[17px] font-bold text-body">{en ? 'Comments' : '댓글'} <span className="font-normal text-sub">{data.comments.length}</span></h2>
+      <h2 id="comments-title" className="text-[17px] font-bold text-body">{en ? 'Comments' : '댓글'} <span className="font-normal text-sub">{data.comments.filter((c) => !c.parent_id).length}</span></h2>
 
       {data.comments.length > 0 ? (
         <ul className="mt-4 divide-y divide-rule">
-          {data.comments.map((c) => (
+          {data.comments.filter((c) => !c.parent_id).map((c) => (
             <li key={c.id} className="py-3.5">
               <p className="text-[13px] text-sub"><strong className="font-semibold text-body">{c.name}</strong> · {fmt(c.created_at)}</p>
               <p className="mt-1 whitespace-pre-line break-words text-[15px] leading-[1.7] text-body">{c.body}</p>
@@ -65,6 +65,12 @@ export default function CommentBox({ articleId, lang, next }: { articleId: strin
                   )}
                 </p>
               )}
+              {data.comments.filter((r) => r.parent_id === c.id).map((r) => (
+                <div key={r.id} className="mt-2.5 border-l-2 border-brand/40 bg-soft px-3 py-2">
+                  <p className="text-[13px] text-sub"><strong className="font-semibold text-body">{r.name}</strong> <span className="ml-1 rounded bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-white">{en ? 'Newsroom' : '편집국'}</span> · {fmt(r.created_at)}</p>
+                  <p className="mt-0.5 whitespace-pre-line break-words text-[14.5px] leading-[1.65] text-body">{r.body}</p>
+                </div>
+              ))}
             </li>
           ))}
         </ul>

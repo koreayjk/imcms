@@ -10,7 +10,7 @@ import { subscribeNewsletter } from '@/app/newsletter/actions'
 import { checkGuestPw, guestIpHash, hashGuestPw, makeCaptcha } from '@/lib/guest-comment'
 
 // 홈페이지 독자 댓글 (comments.sql). 독자 로그인은 구글 또는 이메일 확인 링크
-export type PublicComment = { id: string; name: string; body: string; created_at: string; guest: boolean }
+export type PublicComment = { id: string; name: string; body: string; created_at: string; guest: boolean; parent_id?: string | null; staff?: boolean }
 export type CommentKind = 'guest' | 'login'
 
 export async function listComments(articleId: string): Promise<{ comments: PublicComment[]; reader: { name: string } | null; google: boolean; on: boolean; newsletter: boolean; kind: CommentKind }> {

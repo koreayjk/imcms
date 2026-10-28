@@ -63,6 +63,18 @@ export default function ShareButton({ title, lang, size = 'md' }: { title: strin
     try { await navigator.clipboard.writeText(url()); say(after ?? (en ? 'Link copied.' : '링크가 복사되었습니다.')) } catch { say(en ? 'Could not copy the link.' : '링크를 복사하지 못했습니다.') }
   }
   const open = (href: string) => window.open(href, '_blank', 'noopener,noreferrer,width=640,height=560')
+  // 공유 수 세기: 기사 주소(/news/<번호>)일 때만, 같은 브라우저는 10분에 한 번만 (인쇄는 세지 않는다)
+  const count = () => {
+    try {
+      const id = window.location.pathname.match(/\/news\/([0-9a-f-]{36})/)?.[1]
+      if (!id) return
+      const key = `im_shared_${id}`
+      const last = Number(window.localStorage.getItem(key) ?? 0)
+      if (Date.now() - last < 10 * 60_000) return
+      window.localStorage.setItem(key, String(Date.now()))
+      fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), keepalive: true }).catch(() => {})
+    } catch { /* 저장소를 못 쓰면 세지 않는다 */ }
+  }
   const kakaoFallback = () => (mobile && canShare
     ? navigator.share({ title, url: url() }).catch(() => {})
     : copy(en ? 'Link copied. Paste it into KakaoTalk.' : '링크를 복사했습니다. 카카오톡에 붙여 넣어 보내세요.'))
@@ -99,7 +111,7 @@ export default function ShareButton({ title, lang, size = 'md' }: { title: strin
           <button
             key={b.key}
             type="button"
-            onClick={b.onClick}
+            onClick={() => { if (b.key !== 'print') count(); b.onClick() }}
             aria-label={b.label}
             title={b.label}
             style={{ backgroundColor: b.bg, color: b.fg }}

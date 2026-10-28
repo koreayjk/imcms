@@ -42,6 +42,7 @@ function isPublicPath(pathname: string) {
     pathname.startsWith('/pay/') ||
     // 기사 조회수 (독자가 부른다)
     pathname === '/api/view' ||
+    pathname === '/api/share' ||
     // 뉴스레터 구독 확인·수신거부 (메일 속 링크)
     pathname.startsWith('/newsletter/') ||
     // 홈페이지 독자 로그인·댓글 (comments.sql)
