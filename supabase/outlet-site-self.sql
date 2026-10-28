@@ -5,7 +5,7 @@
 create or replace function public.outlet_site_self_save(o uuid, p_name text, p_patch jsonb) returns void
 language plpgsql security definer set search_path = public as $$
 declare
-  allowed text[] := array['nameEn', 'slogan', 'sloganEn', 'description', 'logoUrl', 'logoMode', 'logoSize', 'colors', 'legal', 'aiNotice', 'pressForeignTopics', 'pressForeign', 'logoStrip', 'iconUrl', 'ogImage', 'cmsLang', 'commentsOn', 'commentsMode', 'commentsKind'];
+  allowed text[] := array['nameEn', 'slogan', 'sloganEn', 'description', 'logoUrl', 'logoMode', 'logoSize', 'colors', 'legal', 'aiNotice', 'pressForeignTopics', 'pressForeign', 'logoStrip', 'iconUrl', 'ogImage', 'cmsLang', 'commentsOn', 'commentsMode', 'commentsKind', 'thumbFill'];
   k text;
   cur jsonb;
   found_row boolean;

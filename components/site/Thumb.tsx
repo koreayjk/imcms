@@ -13,7 +13,7 @@ type Props = {
 }
 
 // 칸 비율과 사진 비율이 다르면(세로 포스터, 긴 가로 사진 등) 잘라내지 않고 통째로 보여 준다
-//   남는 자리는 같은 사진을 흐리게 깔아 채운다. 비율이 비슷하면 지금처럼 칸을 꽉 채운다
+//   남는 자리는 매체 설정(thumbFill)에 따라 회색 / 흰색 / 같은 사진을 흐리게 깔아 채운다 (SiteFrame 의 data-thumb-fill). 비율이 비슷하면 칸을 꽉 채운다
 function needsFit(img: HTMLImageElement, ratio: string) {
   const [w, h] = ratio.split('/').map((n) => Number(n.trim()))
   if (!img.naturalWidth || !img.naturalHeight || !w || !h) return false
@@ -40,10 +40,11 @@ export default function Thumb({ src, alt, ratio = '16 / 10', className = '', siz
   }, [src, ratio, opt])
 
   return (
-    <div className={`relative overflow-hidden bg-soft ${className}`} style={{ aspectRatio: ratio }}>
+    <div className={`relative overflow-hidden bg-soft [[data-thumb-fill=white]_&]:bg-white ${className}`} style={{ aspectRatio: ratio }}>
       {src && !failed ? (
         <>
-          {fit && <img src={opt ? optimizedSrc(src, 384, 50) : src} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-xl" />}
+          {/* 흐리게 깔기: 이미지 최적화는 q=75만 받으므로 같은 품질로 작게 받는다. 꺼져 있으면 숨겨 두어(lazy) 내려받지 않는다 */}
+          {fit && <img src={opt ? optimizedSrc(src, 384) : src} alt="" aria-hidden loading="lazy" className="absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-70 blur-xl [[data-thumb-fill=blur]_&]:block" />}
           <img
             ref={imgRef}
             key={opt ? 'opt' : 'orig'}

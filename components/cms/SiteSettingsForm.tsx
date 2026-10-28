@@ -218,7 +218,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -346,6 +346,29 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             {!self && <Field label={t('쇼핑몰 주소', 'Shop URL')} hint={t("SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')", 'Address linked from the SHOP menu and strip (shows “Opening soon” if empty)')}><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>}
           </div>
         </div>
+      </Card>
+
+      <Card title={t('사진 여백 채우기', 'Photo letterbox fill')} note={t('세로 포스터나 아주 긴 사진처럼 사진 비율이 칸과 맞지 않으면 사진을 자르지 않고 통째로 보여 주고, 남는 양옆(위아래) 자리를 아래 방식으로 채웁니다. 홈·섹션·기사 목록의 사진 칸에 모두 적용됩니다.', 'When a photo’s shape does not fit its box (for example a tall poster), the photo is shown whole instead of cropped, and the leftover space is filled as chosen below. Applies to photo boxes on the home page, sections and story lists.')}>
+        <fieldset className="grid gap-2 sm:grid-cols-3">
+          <legend className="sr-only">{t('사진 여백 채우기', 'Photo letterbox fill')}</legend>
+          {([
+            ['gray', t('회색', 'Gray'), t('연한 회색으로 채웁니다 (기본).', 'Fills with light gray (default).'), '#EEF1EF'],
+            ['white', t('흰색', 'White'), t('흰색으로 채웁니다. 배경이 흰 사진·포스터에 깔끔합니다.', 'Fills with white. Clean for photos and posters with white backgrounds.'), '#FFFFFF'],
+            ['blur', t('흐리게 깔기', 'Blurred photo'), t('같은 사진을 크게 늘려 흐리게 뒤에 깔아 채웁니다. 가장 자연스럽지만 사진을 한 번 더 받습니다.', 'Stretches the same photo behind it, blurred. Most natural, but loads the photo once more.'), 'linear-gradient(90deg,#8b97b5,#c8b8a6)'],
+          ] as const).map(([v, label, desc, bg]) => {
+            const cur = s.thumbFill === 'white' || s.thumbFill === 'blur' ? s.thumbFill : 'gray'
+            return (
+              <label key={v} className={`flex cursor-pointer gap-2 rounded-lg border p-3 text-[13px] leading-relaxed ${cur === v ? 'border-ink bg-paper' : 'border-line'}`}>
+                <input type="radio" name="thumbFill" checked={cur === v} onChange={() => set({ thumbFill: v })} className="mt-1" />
+                <span>
+                  <strong className="block text-[13.5px]">{label}</strong>
+                  <span className="my-1.5 flex h-12 w-full items-center justify-center rounded border border-line" style={{ background: bg }} aria-hidden><span className="h-10 w-6 rounded-sm bg-[#3b4a7a]" /></span>
+                  <span className="text-muted">{desc}</span>
+                </span>
+              </label>
+            )
+          })}
+        </fieldset>
       </Card>
 
       <Card title={t('기사 댓글', 'Story comments')} note={t('기사 아래에 독자가 댓글을 남기는 기능입니다. 켜면 모든 기사 맨 아래에 댓글 칸이 생깁니다. 들어온 댓글은 편집국 왼쪽 메뉴의 “댓글”에서 승인·숨기기·삭제·차단합니다.', 'Lets readers leave comments under stories. When on, a comment box appears at the bottom of every story. Approve, hide, delete or block comments under “Comments” in the newsroom menu.')}>

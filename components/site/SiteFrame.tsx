@@ -26,7 +26,7 @@ export default function SiteFrame({ site, current, children, home }: Props) {
   const t = siteText(site)
   const en = site.lang === 'en'
   return (
-    <div className="site relative min-h-screen" data-layout={site.homeLayout ?? 'standard'} style={en ? { ...vars, fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif" } : vars} lang={t.htmlLang} data-lang={t.htmlLang}>
+    <div className="site relative min-h-screen" data-layout={site.homeLayout ?? 'standard'} data-thumb-fill={site.thumbFill ?? 'gray'} style={en ? { ...vars, fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif" } : vars} lang={t.htmlLang} data-lang={t.htmlLang}>
       {/* 영문 매체: 문서 언어를 영어로 (루트 html 은 편집국과 같이 쓰므로 여기서 바꾼다), 미국 신문 느낌의 세리프 글꼴 */}
       {en && (
         <>
