@@ -31,6 +31,14 @@ drop policy if exists "articles_select_staff" on articles;
 create policy "articles_select_staff" on articles for select to authenticated
   using (public.is_staff() and status = 'published');
 
+-- 함께 송고 사본의 원본을 내가 관리하는가. 기사 규칙 안에서 기사 표를 직접 다시 읽으면 DB가
+--   "infinite recursion detected in policy for relation articles" 로 새 기사 저장을 막으므로, 정의자 권한 함수로 읽는다
+create or replace function public.can_copy_article(src uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from articles s where s.id = src and public.can_manage_outlet(s.outlet_id))
+$$;
+grant execute on function public.can_copy_article(uuid) to authenticated;
+
 -- 기사 쓰기는 내 매체·내가 관리하는 매체만 (예전 syndication.sql 규칙이 남아 있으면 아무 매체에나 쓸 수 있으므로 다시 잠근다)
 --   함께 송고 사본: 내가 관리하는 매체의 원본을 같은 그룹 매체로 보내는 것은 그대로 된다
 drop policy if exists "articles_insert" on articles;
@@ -40,7 +48,7 @@ create policy "articles_insert" on articles for insert to authenticated
     or (author_id = auth.uid() and (outlet_id is null or outlet_id = public.my_outlet()))
     or (source_article_id is not null
         and public.my_publisher() is not null and public.outlet_publisher(outlet_id) = public.my_publisher()
-        and exists (select 1 from articles s where s.id = articles.source_article_id and public.can_manage_outlet(s.outlet_id)))
+        and public.can_copy_article(source_article_id))
   );
 
 -- 확인: 이번에 만든 규칙 (5~7줄이 나오면 끝)
