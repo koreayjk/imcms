@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { currentSite, getFeedArticles, siteBaseUrl } from '@/lib/public-data'
 import { xml, xmlResponse } from '@/lib/xml'
-import { PRODUCT, PRODUCT_PAGES, appLink, isProductHost } from '@/lib/product'
+import { PRODUCT, PRODUCT_PAGES, isProductHost } from '@/lib/product'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +10,9 @@ export async function GET() {
   // IM 뉴스룸 제품 홈페이지 도메인: 소개·체험·약관 화면
   if (isProductHost((await headers()).get('host'))) {
     // 체험 신청은 편집국 주소에 있다 (appLive 이후)
-    const loc = (p: string) => (p === '/trial' && PRODUCT.appLive ? appLink(p) : `${PRODUCT.url}${p}`)
-    const urls = PRODUCT_PAGES.map((p) => `<url><loc>${loc(p)}</loc><priority>${p === '/' ? '1.0' : '0.5'}</priority></url>`)
+    //   편집국 주소(app.…)의 체험 신청 화면은 이 사이트맵에 넣지 않는다 (서치콘솔은 사이트맵 안의 주소가 같은 사이트여야 한다)
+    const loc = (p: string) => `${PRODUCT.url}${p}`
+    const urls = PRODUCT_PAGES.filter((p) => !(p === '/trial' && PRODUCT.appLive)).map((p) => `<url><loc>${loc(p)}</loc><priority>${p === '/' ? '1.0' : '0.5'}</priority></url>`)
     return xmlResponse(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`)
   }
   const site = await currentSite()

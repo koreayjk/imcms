@@ -18,7 +18,7 @@ export async function GET() {
     const body = PRODUCT.indexable
       ? ['User-agent: *', 'Allow: /$', 'Allow: /en$', 'Allow: /trial$', 'Allow: /app$', 'Allow: /imnewsroom/',
           // 구글이 화면을 제대로 그려 보고 검색 결과에 로고(파비콘)를 띄우려면 화면 파일·아이콘도 열어 줘야 한다
-          'Allow: /_next/static/', 'Allow: /_next/image', 'Allow: /brand/', 'Allow: /designs/', 'Allow: /designs-en/', 'Allow: /favicon.ico', 'Allow: /sites/',
+          'Allow: /sitemap.xml', 'Allow: /_next/static/', 'Allow: /_next/image', 'Allow: /brand/', 'Allow: /designs/', 'Allow: /designs-en/', 'Allow: /favicon.ico', 'Allow: /sites/',
           'Disallow: /', '', `Sitemap: ${PRODUCT.url}/sitemap.xml`].join('\n')
       : 'User-agent: *\nDisallow: /'
     return new Response(body + '\n', { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, s-maxage=600' } })
