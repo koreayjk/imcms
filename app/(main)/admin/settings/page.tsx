@@ -1,3 +1,4 @@
+import SettingsTabs from '@/components/cms/SettingsTabs'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
 import { outletEmailOf } from '@/lib/outlet-email'
@@ -56,11 +57,7 @@ export default async function NewsroomSettingsPage(props: { searchParams: Promis
       <header>
         <h1 className="text-[22px] font-bold tracking-tight">{manager ? t('설정', 'Settings') : t('내 AI 사용량', 'My AI usage')}</h1>
         {manager && (
-          <nav className="mt-3 flex gap-1 border-b border-line text-[14px]" aria-label={t('설정 구역', 'Settings sections')}>
-            {([['site', t('매체 정보', 'Outlet info')], ['ai', t('AI·이메일', 'AI & email')]] as const).map(([k, label]) => (
-              <Link key={k} href={`/admin/settings?tab=${k}`} aria-current={activeTab === k ? 'page' : undefined} className={`-mb-px border-b-2 px-4 py-2 font-semibold ${activeTab === k ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'}`}>{label}</Link>
-            ))}
-          </nav>
+          <SettingsTabs active={activeTab === 'ai' ? 'ai' : 'site'} t={t} />
         )}
         {manager && activeTab === 'site' && <p className="mt-3 text-[13px] leading-relaxed text-muted">{t('홈페이지에 나오는 로고·색·슬로건·하단 표시 정보를 직접 고칠 수 있습니다. 도메인·검색 노출 같은 항목은 운영팀이 관리하니 필요하면 고객센터 업무요청으로 알려 주세요.', 'You can edit the logo, colors, slogan and footer information shown on your website. Items such as the domain and search visibility are managed by the IM Newsroom team, so send a work request through the Help Center if you need a change.')}</p>}
       </header>

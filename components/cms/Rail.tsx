@@ -11,7 +11,8 @@ import LinkPending from './LinkPending'
 import { useT } from './CmsLang'
 import { pendingCommentCount } from '@/app/(main)/admin/stats/actions'
 
-type Item = { href: string; label: [ko: string, en: string]; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
+type Group = 'launch' | 'staff' | 'write' | 'site' | 'readers' | 'manage'
+type Item = { href: string; group?: Group; label: [ko: string, en: string]; icon: ReactNode; match: (p: string) => boolean; minRole?: 'editor' | 'site' | 'group' | 'outlets' | 'staff' | 'super' }
 
 const ChatIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 5h16v11H9l-5 4V5Z" /><path d="M8 9h8M8 12h5" /></svg>
@@ -22,34 +23,34 @@ const BarsIcon = () => (
 )
 
 const ITEMS: Item[] = [
-  { href: '/admin/dashboard', label: ['대시보드', 'Dashboard'], icon: <ChartIcon />, match: (p) => p.startsWith('/admin/dashboard'), minRole: 'staff' },
-  { href: '/newsroom', label: ['뉴스룸', 'Newsroom'], icon: <NewsroomIcon />, match: (p) => p === '/newsroom' },
-  { href: '/articles/new', label: ['기사쓰기', 'Write'], icon: <WriteIcon />, match: (p) => p === '/articles/new' || p.endsWith('/edit') },
-  { href: '/articles', label: ['기사목록', 'Stories'], icon: <ListIcon />, match: (p) => p === '/articles' || (/^\/articles\/[^/]+$/.test(p) && p !== '/articles/new') },
-  { href: '/press', label: ['보도자료', 'Press'], icon: <InboxIcon />, match: (p) => p.startsWith('/press') },
-  { href: '/media', label: ['저장 파일', 'Files'], icon: <ImageIcon />, match: (p) => p.startsWith('/media') },
-  { href: '/admin/home', label: ['홈편집', 'Front Page'], icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'site' },
-  { href: '/admin/categories', label: ['섹션', 'Sections'], icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'site' },
-  { href: '/admin/ads', label: ['광고', 'Ads'], icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'site' },
-  { href: '/admin/stats', label: ['통계', 'Insights'], icon: <BarsIcon />, match: (p) => p.startsWith('/admin/stats'), minRole: 'editor' },
-  { href: '/admin/comments', label: ['댓글', 'Comments'], icon: <ChatIcon />, match: (p) => p.startsWith('/admin/comments'), minRole: 'editor' },
-  { href: '/admin/portal', label: ['포털 제휴', 'Portals'], icon: <GlobeIcon />, match: (p) => p.startsWith('/admin/portal'), minRole: 'editor' },
-  { href: '/admin/newsletter', label: ['뉴스레터', 'Newsletter'], icon: <MailIcon />, match: (p) => p.startsWith('/admin/newsletter'), minRole: 'editor' },
-  { href: '/admin/users', label: ['회원', 'Members'], icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
-  { href: '/admin/outlets', label: ['매체', 'Outlets'], icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
-  { href: '/admin/settings', label: ['설정', 'Settings'], icon: <GearIcon />, match: (p) => p.startsWith('/admin/settings') },
-  { href: '/support', label: ['고객센터', 'Support'], icon: <HeadsetIcon />, match: (p) => p.startsWith('/support') && !p.startsWith('/support/onboarding') },
-  { href: '/feedback', label: ['개선 요청', 'Feedback'], icon: <BulbIcon />, match: (p) => p.startsWith('/feedback') },
-  { href: '/admin/leads', label: ['고객상담', 'Leads'], icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'staff' },
-  { href: '/admin/association', label: ['협회', 'Association'], icon: <GlobeIcon />, match: (p) => p.startsWith('/admin/association'), minRole: 'staff' },
+  { href: '/admin/dashboard', group: 'staff', label: ['대시보드', 'Dashboard'], icon: <ChartIcon />, match: (p) => p.startsWith('/admin/dashboard'), minRole: 'staff' },
+  { href: '/newsroom', group: 'write', label: ['뉴스룸', 'Newsroom'], icon: <NewsroomIcon />, match: (p) => p === '/newsroom' },
+  { href: '/articles/new', group: 'write', label: ['기사쓰기', 'Write'], icon: <WriteIcon />, match: (p) => p === '/articles/new' || p.endsWith('/edit') },
+  { href: '/articles', group: 'write', label: ['기사목록', 'Stories'], icon: <ListIcon />, match: (p) => p === '/articles' || (/^\/articles\/[^/]+$/.test(p) && p !== '/articles/new') },
+  { href: '/press', group: 'write', label: ['보도자료', 'Press'], icon: <InboxIcon />, match: (p) => p.startsWith('/press') },
+  { href: '/media', group: 'write', label: ['저장 파일', 'Files'], icon: <ImageIcon />, match: (p) => p.startsWith('/media') },
+  { href: '/admin/home', group: 'site', label: ['홈편집', 'Front Page'], icon: <LayoutIcon />, match: (p) => p.startsWith('/admin/home'), minRole: 'site' },
+  { href: '/admin/categories', group: 'site', label: ['섹션', 'Sections'], icon: <FolderIcon />, match: (p) => p.startsWith('/admin/categories'), minRole: 'site' },
+  { href: '/admin/ads', group: 'site', label: ['광고', 'Ads'], icon: <MegaphoneIcon />, match: (p) => p.startsWith('/admin/ads'), minRole: 'site' },
+  { href: '/admin/newsletter', group: 'site', label: ['뉴스레터', 'Newsletter'], icon: <MailIcon />, match: (p) => p.startsWith('/admin/newsletter'), minRole: 'editor' },
+  { href: '/admin/stats', group: 'readers', label: ['통계', 'Insights'], icon: <BarsIcon />, match: (p) => p.startsWith('/admin/stats'), minRole: 'editor' },
+  { href: '/admin/comments', group: 'readers', label: ['댓글', 'Comments'], icon: <ChatIcon />, match: (p) => p.startsWith('/admin/comments'), minRole: 'editor' },
+  { href: '/admin/users', group: 'manage', label: ['회원', 'Members'], icon: <UsersIcon />, match: (p) => p.startsWith('/admin/users'), minRole: 'group' },
+  { href: '/admin/outlets', group: 'manage', label: ['매체', 'Outlets'], icon: <BuildingIcon />, match: (p) => p.startsWith('/admin/outlets'), minRole: 'outlets' },
+  // 설정 안에 매체 정보·AI·이메일·포털 제휴 탭이 있다
+  { href: '/admin/settings', group: 'manage', label: ['설정', 'Settings'], icon: <GearIcon />, match: (p) => p.startsWith('/admin/settings') || p.startsWith('/admin/portal') },
+  // 고객센터 안에 업무요청·공지·청구서·가이드·개선 요청 탭이 있다
+  { href: '/support', group: 'manage', label: ['고객센터', 'Support'], icon: <HeadsetIcon />, match: (p) => (p.startsWith('/support') && !p.startsWith('/support/onboarding')) || p.startsWith('/feedback') },
+  { href: '/admin/leads', group: 'staff', label: ['고객상담', 'Leads'], icon: <MailIcon />, match: (p) => p.startsWith('/admin/leads'), minRole: 'staff' },
+  { href: '/admin/association', group: 'staff', label: ['협회', 'Association'], icon: <GlobeIcon />, match: (p) => p.startsWith('/admin/association'), minRole: 'staff' },
 ]
 
 // 개통 진행 현황 메뉴: 고객은 개통(정식 오픈) 전까지 맨 위에 고정, 운영팀은 고객 응대 메뉴 아래에
 const FlagIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 21V4" /><path d="M5 5h11l-2 4 2 4H5" /></svg>
 )
-const ONB_CUSTOMER: Item = { href: '/support/onboarding', label: ['개통 현황', 'Launch status'], icon: <FlagIcon />, match: (p) => p.startsWith('/support/onboarding') }
-const ONB_STAFF: Item = { href: '/admin/onboarding', label: ['개통현황', 'Launch status'], icon: <FlagIcon />, match: (p) => p.startsWith('/admin/onboarding'), minRole: 'staff' }
+const ONB_CUSTOMER: Item = { href: '/support/onboarding', group: 'launch', label: ['개통 현황', 'Launch status'], icon: <FlagIcon />, match: (p) => p.startsWith('/support/onboarding') }
+const ONB_STAFF: Item = { href: '/admin/onboarding', group: 'staff', label: ['개통현황', 'Launch status'], icon: <FlagIcon />, match: (p) => p.startsWith('/admin/onboarding'), minRole: 'staff' }
 
 type Props = { userName?: string; role: UserRole | null; isSuper?: boolean; isStaff?: boolean; isGroupAdmin?: boolean; pendingCount?: number; supportCount?: number; leadCount?: number; feedbackCount?: number; inquiryCount?: number; commentCount?: number; onboarding?: boolean; onboardingCount?: number; staffOnboardingCount?: number }
 
@@ -100,19 +101,27 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
     || (i.minRole === 'staff' && isStaff)
     || (i.minRole === 'super' && isSuper)
 
-  // 운영팀(총관리자·매니저)은 고객 응대 메뉴(고객센터·개선 요청·고객상담)를 대시보드 바로 아래에
-  const STAFF_TOP = ['/support', '/feedback', '/admin/leads']
-  const visible = ITEMS.filter(allowed)
-  const items = isStaff
-    ? [
-        ...visible.filter((i) => i.href === '/admin/dashboard'),
-        ...STAFF_TOP.map((h) => visible.find((i) => i.href === h)).filter((i): i is Item => !!i),
-        ...[ONB_STAFF].filter(allowed),
-        ...visible.filter((i) => i.href !== '/admin/dashboard' && !STAFF_TOP.includes(i.href)),
-      ]
-    : onboarding ? [ONB_CUSTOMER, ...visible] : visible
+  // 묶음: (개통) → 운영팀 → 작성 → 홈페이지 → 독자·성과 → 관리. 운영팀은 고객 응대 메뉴(고객센터·고객상담·개통현황)를 맨 위 "운영팀" 묶음에 둔다
+  const STAFF_ORDER = ['/admin/dashboard', '/support', '/admin/leads', '/admin/onboarding', '/admin/association']
+  const visible = [...ITEMS, ONB_STAFF].filter(allowed)
+  const groupOf = (i: Item): Group => (isStaff && i.href === '/support' ? 'staff' : i.group ?? 'manage')
+  const ordered = [
+    ...(!isStaff && onboarding ? [ONB_CUSTOMER] : []),
+    ...visible.filter((i) => groupOf(i) === 'staff').sort((a, b) => STAFF_ORDER.indexOf(a.href) - STAFF_ORDER.indexOf(b.href)),
+    ...visible.filter((i) => groupOf(i) !== 'staff'),
+  ]
+  const GROUPS: { key: Group; label: [string, string] }[] = [
+    { key: 'launch', label: ['개통', 'Launch'] },
+    { key: 'staff', label: ['운영팀', 'Team'] },
+    { key: 'write', label: ['작성', 'Write'] },
+    { key: 'site', label: ['홈페이지', 'Site'] },
+    { key: 'readers', label: ['독자', 'Readers'] },
+    { key: 'manage', label: ['관리', 'Admin'] },
+  ]
+  const grouped = GROUPS.map((g) => ({ ...g, items: ordered.filter((i) => groupOf(i) === g.key) })).filter((g) => g.items.length > 0)
+  const items = grouped.flatMap((g) => g.items)
   const badge = (href: string) =>
-    href === '/support' ? supportCount : href === '/admin/leads' ? leadCount : href === '/feedback' ? feedbackCount : href === '/admin/ads' ? inquiryCount : href === '/admin/comments' ? liveComments : href === '/admin/users' ? pendingCount : href === '/support/onboarding' ? onboardingCount : href === '/admin/onboarding' ? staffOnboardingCount : 0
+    href === '/support' ? supportCount + (isStaff ? feedbackCount : 0) : href === '/admin/leads' ? leadCount : href === '/admin/ads' ? inquiryCount : href === '/admin/comments' ? liveComments : href === '/admin/users' ? pendingCount : href === '/support/onboarding' ? onboardingCount : href === '/admin/onboarding' ? staffOnboardingCount : 0
   const badgeLabel = (href: string, n: number) =>
     href === '/support' ? (isStaff ? t(`새 요청 ${n}건`, `${n} new ${n === 1 ? 'request' : 'requests'}`) : t(`새 답변 ${n}건`, `${n} new ${n === 1 ? 'reply' : 'replies'}`))
     : href === '/admin/leads' ? t(`새 상담 ${n}건`, `${n} new ${n === 1 ? 'lead' : 'leads'}`)
@@ -142,34 +151,42 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/im-newsroom-mark.svg" alt="" width={54} height={36} className="block [@media(max-height:780px)]:w-[48px]" />
         </Link>
-        <ul className="flex-1 py-2 [@media(max-height:780px)]:py-1">
-          {items.map((item) => {
-            const active = item.match(pathname)
-            const n = badge(item.href)
-            return (
-              <li key={item.href}>
-                <BackLink
-                  href={item.href}
-                  when={pathname.startsWith(`${item.href}/`)}
-                  aria-current={active ? 'page' : undefined}
-                  // 화면 높이에 맞춰 간격을 줄인다 (큰 화면 → 노트북 → 낮은 화면)
-                  className={`relative flex flex-col items-center gap-1 py-2.5 text-[11.5px] leading-4 transition-colors [@media(min-height:781px)_and_(max-height:900px)]:gap-0.5 [@media(min-height:781px)_and_(max-height:900px)]:py-1.5 [@media(max-height:780px)]:gap-0.5 [@media(max-height:780px)]:py-1 ${
-                    active ? 'bg-white/[0.06] text-[#F2B544]' : 'hover:bg-white/[0.04] hover:text-white'
-                  }`}
-                >
-                  {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-[#F2B544]" />}
-                  <LinkPending className="inset-0 bg-white/[0.08] shadow-[inset_3px_0_0_#F2B544]" />
-                  {item.icon}
-                  {t(...item.label)}
-                  {n > 0 && (
-                    <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={badgeLabel(item.href, n)}>
-                      {n}
-                    </span>
-                  )}
-                </BackLink>
-              </li>
-            )
-          })}
+        <ul className="flex-1 py-1 [@media(max-height:780px)]:py-0.5">
+          {grouped.map((g, gi) => (
+            <li key={g.key} role="presentation">
+              {/* 묶음 제목: 왼쪽 메뉴가 길어도 어디쯤인지 알아보게 한다 */}
+              <p className={`px-1 pb-0.5 pt-2.5 text-center text-[10px] font-semibold tracking-[0.04em] text-[#7A8190] ${gi > 0 ? 'mt-1 border-t border-white/10' : ''}`}>{t(...g.label)}</p>
+              <ul>
+                {g.items.map((item) => {
+                  const active = item.match(pathname)
+                  const n = badge(item.href)
+                  return (
+                    <li key={item.href}>
+                    <BackLink
+                      href={item.href}
+                      when={pathname.startsWith(`${item.href}/`)}
+                      aria-current={active ? 'page' : undefined}
+                      // 화면 높이에 맞춰 간격을 줄인다 (큰 화면 → 노트북 → 낮은 화면)
+                      className={`relative flex flex-col items-center gap-1 py-2.5 text-[11.5px] leading-4 transition-colors [@media(min-height:781px)_and_(max-height:900px)]:gap-0.5 [@media(min-height:781px)_and_(max-height:900px)]:py-1.5 [@media(max-height:780px)]:gap-0.5 [@media(max-height:780px)]:py-1 ${
+                        active ? 'bg-white/[0.06] text-[#F2B544]' : 'hover:bg-white/[0.04] hover:text-white'
+                      }`}
+                    >
+                      {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-[#F2B544]" />}
+                      <LinkPending className="inset-0 bg-white/[0.08] shadow-[inset_3px_0_0_#F2B544]" />
+                      {item.icon}
+                      {t(...item.label)}
+                      {n > 0 && (
+                        <span className="absolute right-3 top-2 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={badgeLabel(item.href, n)}>
+                          {n}
+                        </span>
+                      )}
+                    </BackLink>
+                    </li>
+                  )
+                })}
+              </ul>
+            </li>
+          ))}
         </ul>
         {hidden && (
           <button
@@ -230,27 +247,32 @@ export default function Rail({ userName = '', role, isSuper = false, isStaff = f
               </Link>
               <button type="button" onClick={logout} className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-[13px] text-muted">{t('로그아웃', 'Sign out')}</button>
             </div>
-            <ul className="grid grid-cols-4 gap-1">
-              {items.map((item) => {
-                const active = item.match(pathname)
-                const n = badge(item.href)
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setMore(false)}
-                      className={`relative flex flex-col items-center gap-1 rounded-xl py-3 text-[12px] ${active ? 'bg-[#FFF6E0] font-bold text-[#8A5A00]' : 'text-[#3A3F4A]'}`}
-                    >
-                      {item.icon}
-                      {t(...item.label)}
-                      {n > 0 && (
-                        <span className="absolute right-2 top-1.5 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={badgeLabel(item.href, n)}>{n}</span>
-                      )}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
+            {grouped.map((g) => (
+              <div key={g.key} className="mb-2">
+                <p className="px-1 pb-1 pt-2 text-[11.5px] font-semibold text-muted">{t(...g.label)}</p>
+                <ul className="grid grid-cols-4 gap-1">
+                  {g.items.map((item) => {
+                    const active = item.match(pathname)
+                    const n = badge(item.href)
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setMore(false)}
+                          className={`relative flex flex-col items-center gap-1 rounded-xl py-3 text-[12px] ${active ? 'bg-[#FFF6E0] font-bold text-[#8A5A00]' : 'text-[#3A3F4A]'}`}
+                        >
+                          {item.icon}
+                          {t(...item.label)}
+                          {n > 0 && (
+                            <span className="absolute right-2 top-1.5 min-w-[18px] rounded-full bg-danger px-1 text-center text-[10.5px] font-bold leading-[18px] text-white" aria-label={badgeLabel(item.href, n)}>{n}</span>
+                          )}
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -7,6 +7,7 @@ import { topSections } from '@/lib/sites'
 import { POLICIES } from '@/lib/policies'
 import { portalChecks, type RecentStats } from '@/lib/portal-checks'
 import InfoSheet from './InfoSheet'
+import SettingsTabs from '@/components/cms/SettingsTabs'
 
 // 포털(다음·네이트·줌·MSN 등) 제휴 신청 준비: ① 신청서에 붙여 넣을 매체 정보 한 장 ② 신청 전 자동 점검 (편집장 이상)
 export default async function PortalPrepPage() {
@@ -98,7 +99,9 @@ export default async function PortalPrepPage() {
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-5 md:px-8 md:py-8">
       <header className="mb-5">
-        <h1 className="text-[22px] font-bold tracking-tight">{t('포털 제휴 준비', 'Portal partnership prep')}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight">{t('설정', 'Settings')}</h1>
+        <SettingsTabs active="portal" t={t} />
+        <h2 className="mt-5 text-[17px] font-bold">{t('포털 제휴 준비', 'Portal partnership prep')}</h2>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
           {t('다음·네이트·줌·MSN 같은 포털에 뉴스 제휴를 신청하기 전에, 신청서에 붙여 넣을 매체 정보와 빠진 곳을 확인합니다. 제휴 심사 기준은 포털마다 다르고 바뀌므로 통과를 보장하지 않습니다. 신청은 발행인 이름으로 각 포털에서 직접 하거나, 운영팀에 대행을 요청해 주세요.', 'Before applying for news partnerships with portals such as Daum, Nate, Zum or MSN, check the outlet details to paste into the application and what is still missing. Each portal has its own criteria, which change over time, so passing is not guaranteed. Apply under the publisher’s name on each portal, or ask the operations team to handle it for you.')}
         </p>

@@ -13,6 +13,7 @@ const ITEMS = [
   { href: '/support/billing', label: '결제 정보', en: 'Billing info', billing: true },
   { href: '/support/guide', label: '기사 작성 가이드', en: 'Story writing guide' },
   { href: '/support/help', label: '이용안내', en: 'Help & guides' },
+  { href: '/feedback', label: '개선 요청', en: 'Feedback' },
 ]
 
 export default function SupportNav({ canBilling }: { canBilling: boolean }) {

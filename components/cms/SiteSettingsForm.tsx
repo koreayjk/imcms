@@ -95,9 +95,9 @@ const LEGAL: { k: keyof SiteLegal; label: string; required?: boolean; ph?: strin
   { k: 'address', label: '주소', required: true, wide: true },
 ]
 
-function Card({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
+function Card({ id, title, note, children }: { id?: string; title: string; note?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-4 sm:p-6">
+    <section id={id} className="scroll-mt-16 rounded-lg border border-line bg-white p-4 sm:p-6">
       <h2 className="text-[15.5px] font-bold">{title}</h2>
       {note && <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{note}</p>}
       <div className="mt-4">{children}</div>
@@ -248,7 +248,28 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </section>
 
-      <Card title={t('기본 정보', 'Basic information')}>
+      {/* 구역 바로가기: 누르면 그 설정 칸으로 이동한다 */}
+      <nav aria-label={t('설정 구역 바로가기', 'Jump to a settings section')} className="sticky top-0 z-10 -mx-1 flex gap-1.5 overflow-x-auto rounded-lg border border-line bg-white/95 px-2 py-2 text-[12.5px] backdrop-blur">
+        {([
+          ['s-basic', t('기본 정보', 'Basics'), true],
+          ['s-comments', t('댓글', 'Comments'), true],
+          ['s-fill', t('사진 여백', 'Photo fill'), true],
+          ['s-icon', t('탭 아이콘', 'Tab icon'), true],
+          ['s-logo', t('로고', 'Logo'), true],
+          ['s-colors', t('색', 'Colors'), true],
+          ['s-strip', t('로고 띠', 'Logo strip'), true],
+          ['s-sections', t('섹션 메뉴', 'Sections'), true],
+          ['s-footer', t('하단 표시', 'Footer'), true],
+          ['s-press', t('보도자료 추천', 'Press picks'), !self],
+          ['s-open', t('오픈 준비', 'Opening soon'), !self],
+          ['s-domain', t('도메인', 'Domain'), !self],
+          ['s-search', t('검색 노출', 'Search'), !self],
+        ] as const).filter(([, , on]) => on).map(([id, label]) => (
+          <a key={id} href={`#${id}`} className="shrink-0 whitespace-nowrap rounded-full border border-line px-3 py-1 text-muted hover:border-ink hover:text-ink">{label}</a>
+        ))}
+      </nav>
+
+      <Card id="s-basic" title={t('기본 정보', 'Basic information')}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t('매체 이름 (제호)', 'Outlet name (masthead title)')}><input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} className="field-input" /></Field>
           <Field label={t('영문 이름', 'English name')} hint={t('로고 아래 작은 글자 (비워도 됨)', 'Small text under the logo (optional)')}><input value={s.nameEn ?? ''} onChange={(e) => set({ nameEn: e.target.value })} maxLength={60} placeholder={t('예: THE CARE TIMES', 'e.g. THE CARE TIMES')} className="field-input" /></Field>
@@ -348,7 +369,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </Card>
 
-      <Card title={t('사진 여백 채우기', 'Photo letterbox fill')} note={t('세로 포스터나 아주 긴 사진처럼 사진 비율이 칸과 맞지 않으면 사진을 자르지 않고 통째로 보여 주고, 남는 양옆(위아래) 자리를 아래 방식으로 채웁니다. 홈·섹션·기사 목록의 사진 칸에 모두 적용됩니다.', 'When a photo’s shape does not fit its box (for example a tall poster), the photo is shown whole instead of cropped, and the leftover space is filled as chosen below. Applies to photo boxes on the home page, sections and story lists.')}>
+      <Card id="s-fill" title={t('사진 여백 채우기', 'Photo letterbox fill')} note={t('세로 포스터나 아주 긴 사진처럼 사진 비율이 칸과 맞지 않으면 사진을 자르지 않고 통째로 보여 주고, 남는 양옆(위아래) 자리를 아래 방식으로 채웁니다. 홈·섹션·기사 목록의 사진 칸에 모두 적용됩니다.', 'When a photo’s shape does not fit its box (for example a tall poster), the photo is shown whole instead of cropped, and the leftover space is filled as chosen below. Applies to photo boxes on the home page, sections and story lists.')}>
         <fieldset className="grid gap-2 sm:grid-cols-3">
           <legend className="sr-only">{t('사진 여백 채우기', 'Photo letterbox fill')}</legend>
           {([
@@ -371,7 +392,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </fieldset>
       </Card>
 
-      <Card title={t('기사 댓글', 'Story comments')} note={t('기사 아래에 독자가 댓글을 남기는 기능입니다. 켜면 모든 기사 맨 아래에 댓글 칸이 생깁니다. 들어온 댓글은 편집국 왼쪽 메뉴의 “댓글”에서 승인·숨기기·삭제·차단합니다.', 'Lets readers leave comments under stories. When on, a comment box appears at the bottom of every story. Approve, hide, delete or block comments under “Comments” in the newsroom menu.')}>
+      <Card id="s-comments" title={t('기사 댓글', 'Story comments')} note={t('기사 아래에 독자가 댓글을 남기는 기능입니다. 켜면 모든 기사 맨 아래에 댓글 칸이 생깁니다. 들어온 댓글은 편집국 왼쪽 메뉴의 “댓글”에서 승인·숨기기·삭제·차단합니다.', 'Lets readers leave comments under stories. When on, a comment box appears at the bottom of every story. Approve, hide, delete or block comments under “Comments” in the newsroom menu.')}>
         <div className="space-y-4">
           <fieldset className="grid gap-2 sm:grid-cols-3">
             <legend className="sr-only">{t('댓글 방식', 'Comment type')}</legend>
@@ -400,7 +421,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </Card>
 
-      <Card title={t('탭 아이콘 · 공유 미리보기', 'Tab icon · Share preview')}>
+      <Card id="s-icon" title={t('탭 아이콘 · 공유 미리보기', 'Tab icon · Share preview')}>
         <div className="grid gap-6 sm:grid-cols-2">
           <ImageSlot
             label={t('탭 아이콘 (파비콘)', 'Tab icon (favicon)')}
@@ -450,7 +471,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </details>
       </Card>
 
-      <Card title={t('로고', 'Logo')}>
+      <Card id="s-logo" title={t('로고', 'Logo')}>
         <div className="flex flex-wrap items-start gap-6">
           <div className="grid h-24 w-40 place-items-center rounded border border-dashed border-line bg-[#F8F9FA] p-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -491,7 +512,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </Card>
 
-      <Card title={t('색', 'Colors')} note={t('대표색은 메뉴 줄·제목, 보조색은 강조선·배지에 쓰입니다. 진한 색은 자동으로 만들어집니다.', 'The main color is used for the menu bar and headings, and the accent color for highlight lines and badges. Darker shades are generated automatically.')}>
+      <Card id="s-colors" title={t('색', 'Colors')} note={t('대표색은 메뉴 줄·제목, 보조색은 강조선·배지에 쓰입니다. 진한 색은 자동으로 만들어집니다.', 'The main color is used for the menu bar and headings, and the accent color for highlight lines and badges. Darker shades are generated automatically.')}>
         <div className="flex flex-wrap items-end gap-5">
           <Field label={t('대표색', 'Main color')}>
             <span className="flex items-center gap-2">
@@ -517,7 +538,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </Card>
 
-      <Card title={t('로고 띠 (협력·후원 기관)', 'Logo strip (partners & sponsors)')} note={t('홈페이지 맨 아래에 로고가 오른쪽에서 왼쪽으로 천천히 흐릅니다. 마우스를 올리면 멈추고, 로고를 누르면 그 기관 사이트가 새 창으로 열립니다. 비워 두면 나오지 않습니다.', 'At the very bottom of the website, logos scroll slowly from right to left. They pause on hover, and clicking a logo opens that organization\'s site in a new window. If left empty, nothing is shown.')}>
+      <Card id="s-strip" title={t('로고 띠 (협력·후원 기관)', 'Logo strip (partners & sponsors)')} note={t('홈페이지 맨 아래에 로고가 오른쪽에서 왼쪽으로 천천히 흐릅니다. 마우스를 올리면 멈추고, 로고를 누르면 그 기관 사이트가 새 창으로 열립니다. 비워 두면 나오지 않습니다.', 'At the very bottom of the website, logos scroll slowly from right to left. They pause on hover, and clicking a logo opens that organization\'s site in a new window. If left empty, nothing is shown.')}>
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
             <Field label={t('띠 제목 (선택)', 'Strip title (optional)')} hint={t('예: 함께하는 기관', 'e.g. Our partners')}>
@@ -569,7 +590,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </Card>
 
-      <Card title={t('메뉴(섹션)', 'Menu (sections)')} note={lang === 'en' ? <>The menu follows the order of the sections created under <a href="/admin/categories" className="underline underline-offset-2">Section menu</a>. Sections marked as “Specialty section” are grouped separately on the right of the menu and appear as specialty section tabs on the home page.</> : <>메뉴는 <a href="/admin/categories" className="underline underline-offset-2">섹션 메뉴</a>에서 만든 섹션 순서 그대로 나옵니다. “전문 섹션”으로 표시하면 메뉴 오른쪽에 따로 모이고, 첫 화면에 전문 섹션 탭으로 나옵니다.</>}>
+      <Card id="s-sections" title={t('메뉴(섹션)', 'Menu (sections)')} note={lang === 'en' ? <>The menu follows the order of the sections created under <a href="/admin/categories" className="underline underline-offset-2">Section menu</a>. Sections marked as “Specialty section” are grouped separately on the right of the menu and appear as specialty section tabs on the home page.</> : <>메뉴는 <a href="/admin/categories" className="underline underline-offset-2">섹션 메뉴</a>에서 만든 섹션 순서 그대로 나옵니다. “전문 섹션”으로 표시하면 메뉴 오른쪽에 따로 모이고, 첫 화면에 전문 섹션 탭으로 나옵니다.</>}>
         {sections.length > 0 && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-[12.5px] text-muted">{t(`섹션 ${sections.length}개 · 전문 섹션 ${sections.filter((c) => c.specialty).length}개`, `${sections.length} sections · ${sections.filter((c) => c.specialty).length} specialty`)}</p>
@@ -602,7 +623,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         )}
       </Card>
 
-      <Card title={t('하단 표시 정보', 'Footer information')} note={t('인터넷신문은 제호·등록번호·등록일·발행인·편집인·발행소 주소·전화, 청소년보호책임자를 홈페이지에 표시해야 합니다(* 표시).', 'Under Korean law, an online newspaper must display on its website its masthead title, registration number and date, publisher, editor, publishing address and phone, and its youth protection officer (marked with *).')}>
+      <Card id="s-footer" title={t('하단 표시 정보', 'Footer information')} note={t('인터넷신문은 제호·등록번호·등록일·발행인·편집인·발행소 주소·전화, 청소년보호책임자를 홈페이지에 표시해야 합니다(* 표시).', 'Under Korean law, an online newspaper must display on its website its masthead title, registration number and date, publisher, editor, publishing address and phone, and its youth protection officer (marked with *).')}>
         <div className="grid gap-4 sm:grid-cols-3">
           {LEGAL.map((f) => (
             <div key={f.k} className={f.wide ? 'sm:col-span-2' : ''}>
@@ -617,7 +638,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
 
       {!self && (
         <>
-      <Card title={t('보도자료 추천', 'Press release recommendations')} note={t('보도자료함 ‘추천’ 탭에 보여줄 자료를 정합니다. ‘전체’ 탭에는 언제나 모든 자료가 나옵니다.', 'Choose what appears in the “Recommended” tab of the press release inbox. The “All” tab always shows everything.')}>
+      <Card id="s-press" title={t('보도자료 추천', 'Press release recommendations')} note={t('보도자료함 ‘추천’ 탭에 보여줄 자료를 정합니다. ‘전체’ 탭에는 언제나 모든 자료가 나옵니다.', 'Choose what appears in the “Recommended” tab of the press release inbox. The “All” tab always shows everything.')}>
         <fieldset className="space-y-1.5 text-[13.5px]">
           <legend className="font-bold">{t('매체 분야', 'Outlet field')}</legend>
           <p className="text-[12px] text-muted">{t('고른 분야의 뉴스와이어 분류만 추천에 나옵니다. 정부·공공기관 보도자료는 제목에 아래 키워드가 있을 때만 나옵니다.', 'Only Newswire categories for the chosen fields appear in recommendations. Government and public agency press releases appear only when the title contains one of the keywords below.')}</p>
@@ -640,7 +661,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </Card>
 
-      <Card title={t('오픈 준비 중', 'Opening soon')}>
+      <Card id="s-open" title={t('오픈 준비 중', 'Opening soon')}>
         <label className="flex items-start gap-3 text-[14px]">
           <input type="checkbox" checked={!!s.comingSoon} onChange={(e) => set(e.target.checked ? { comingSoon: true, ...(openTimePassed(s) ? { openAt: undefined } : {}) } : { comingSoon: undefined })} className="mt-1" />
           <span>
@@ -676,7 +697,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         <p className="mt-3 text-[12.5px]"><a href={previewUrl(outlet.id)} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">{t('홈페이지 미리보기 ↗', 'Website preview ↗')}</a><span className="ml-2 text-muted">{t('고객에게 보여 줄 때 이 링크를 보내세요.', 'Send this link when you show it to the customer.')}</span></p>
       </Card>
 
-      <Card title={t('도메인', 'Domain')}>
+      <Card id="s-domain" title={t('도메인', 'Domain')}>
         <Field label={t('홈페이지 주소', 'Website address')} hint={t('www 없이 적습니다. 예: thecaretimes.net', 'Enter it without www. Example: thecaretimes.net')}>
           <input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder={t('예: seniornews.co.kr', 'e.g. seniornews.co.kr')} className="field-input max-w-sm" />
         </Field>
@@ -704,7 +725,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </details>
       </Card>
 
-      <Card title={t('검색 노출', 'Search visibility')}>
+      <Card id="s-search" title={t('검색 노출', 'Search visibility')}>
         <label className="flex items-start gap-3 text-[14px]">
           <input type="checkbox" checked={!!s.indexable} onChange={(e) => set({ indexable: e.target.checked })} className="mt-1" />
           <span>
