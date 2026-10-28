@@ -10,7 +10,11 @@ export async function GET() {
   // 오픈 준비 중인 매체는 목록을 내보내지 않는다
   if (site.comingSoon) return new Response('Not found', { status: 404 })
   const base = siteBaseUrl(site, (await headers()).get('host'))
-  const articles = await getFeedArticles(site, 1000, 48)
+  let articles = await getFeedArticles(site, 1000, 48)
+  // 최근 48시간 기사가 없으면 비어 있는 파일이 되어 구글 서치콘솔이 "XML 태그 누락(url)" 오류를 낸다.
+  //   그럴 때는 가장 최근 기사 몇 건을 대신 넣어 오류 없이 읽히게 한다 (구글 뉴스는 오래된 기사는 알아서 건너뛴다)
+  if (!articles.length) articles = await getFeedArticles(site, 10, 24 * 365)
+  if (!articles.length) return new Response('Not found', { status: 404 })
   const items = articles.map((a) => `<url>
   <loc>${base}/news/${a.id}</loc>
   <news:news>
