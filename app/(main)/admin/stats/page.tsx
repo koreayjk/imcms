@@ -59,7 +59,7 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
     { label: t('이번 주', 'This week'), value: Number(s.v_week) },
     { label: t('이번 달', 'This month'), value: Number(s.v_month) },
     { label: t('올해', 'This year'), value: Number(s.v_year) },
-    { label: t('전체 조회수', 'All-time views'), value: Number(s.v_total), sub: t('이 기능을 켜기 전 조회수 포함', 'includes views before this feature') },
+    { label: t('전체 조회수', 'All-time views'), value: Number(s.v_total), sub: t('켜기 전 조회수 모두 포함', 'includes views from before this feature') },
   ] : []
 
   return (
@@ -67,7 +67,7 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
       <header className="mb-5">
         <h1 className="text-[22px] font-bold tracking-tight">{t('통계', 'Insights')}</h1>
         <p className="mt-1 text-[13px] leading-relaxed text-muted">
-          {t('기사 조회수·공유·댓글을 기간별로 보고, 새 댓글에 바로 답글을 달거나 차단합니다. 오늘·이번 주·이번 달·올해 숫자는 통계 기능을 켠 날부터 쌓이고, “전체”는 이전 조회수까지 포함합니다.', 'See story views, shares and comments by period, and reply to or block new comments right away. Today / week / month / year numbers count from the day this feature was turned on; “All time” includes earlier views.')}
+          {t('기사 조회수·공유·댓글을 기간별로 보고, 새 댓글에 바로 답글을 달거나 차단합니다. 하루별 조회수는 통계 기능을 켠 날부터 쌓입니다. 켜기 전 조회수는 날짜를 알 수 없어서, 그 기간 안에 발행된 기사만 그 기간 숫자에 넣습니다. “전체”는 모든 조회수를 포함합니다.', 'See story views, shares and comments by period, and reply to or block new comments right away. Daily views are recorded from the day this feature was turned on. Earlier views have no date, so they are counted in a period only for stories published within it. “All time” includes every view.')}
         </p>
       </header>
 
