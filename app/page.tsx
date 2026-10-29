@@ -96,8 +96,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // 헤드라인 아래 작은 기사 4건 (가운데가 비어 보이지 않게)
   const underHeadline = take(4)
   const major = fill(pinned.major, hasImage)
-  // 오른쪽 광고가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 높이에 맞춰 연다)
-  const majorMore = site.homeLayout === 'bands' ? [] : take(12)
+  // 오른쪽 광고(최대 10개)가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 오른쪽 높이에 맞춰 연다. 기사가 모자라면 있는 만큼만)
+  const usedBeforeMore = new Set(used)
+  const majorMore = site.homeLayout === 'bands' ? [] : take(36)
   const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
@@ -112,7 +113,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // 넓은 화면의 오른쪽 여백 광고가 본문보다 길어지면, 그 왼쪽 빈자리에 이어서 채울 기사 (화면에서 빈자리에 들어가는 만큼만 연다)
   const onPage = new Set<string>([...used, ...mostViewed.map((a) => a.id), ...Object.values(bySection).flatMap((l) => l.slice(0, 5).map((a) => a.id))])
   const spare = latest.filter((a) => !onPage.has(a.id))
-  const pool = spare.length >= 6 ? spare : latest.filter((a) => !used.has(a.id))
+  // (덤 기사로 다 쓰여 남은 기사가 모자라면, 덤 기사 앞까지 쓴 기사를 뺀 나머지에서 채운다)
+  const pool = spare.length >= 6 ? spare : latest.filter((a) => !usedBeforeMore.has(a.id))
   // 종합 섹션이 4칸 단위로 떨어지지 않으면 남는 칸(PC)에 최신 기사를 채운다
   const gap = general.length % 4 ? 4 - (general.length % 4) : 0
   // 남는 칸마다 사진 있는 기사 1건 + 제목 3건 (다른 섹션 칸과 같은 모양)
