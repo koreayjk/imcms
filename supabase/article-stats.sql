@@ -20,11 +20,11 @@ create index if not exists article_stats_outlet_day on article_stats_daily (outl
 alter table article_stats_daily enable row level security;
 drop policy if exists "article_stats_read" on article_stats_daily;
 create policy "article_stats_read" on article_stats_daily for select to authenticated
-  using (coalesce(public.can_manage_outlet(outlet_id), false) or coalesce(public.is_staff(), false));
+  using (outlet_id in (select public.manageable_outlets()) or coalesce((select public.is_staff()), false));
 do $$ begin
   if to_regprocedure('public.session_ok()') is not null then
     drop policy if exists "zz_account_ok" on public.article_stats_daily;
-    create policy "zz_account_ok" on public.article_stats_daily as restrictive for all to authenticated using (public.session_ok()) with check (public.session_ok());
+    create policy "zz_account_ok" on public.article_stats_daily as restrictive for all to authenticated using ((select public.session_ok())) with check ((select public.session_ok()));
   end if;
 end $$;
 

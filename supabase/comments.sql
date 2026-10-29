@@ -37,14 +37,14 @@ create index if not exists comments_outlet on comments (outlet_id, status, creat
 alter table comments enable row level security;
 drop policy if exists "comments_manage" on comments;
 create policy "comments_manage" on comments for all to authenticated
-  using (coalesce(public.can_manage_outlet(outlet_id), false) or coalesce(public.is_staff(), false))
-  with check (coalesce(public.can_manage_outlet(outlet_id), false) or coalesce(public.is_staff(), false));
+  using (outlet_id in (select public.manageable_outlets()) or coalesce((select public.is_staff()), false))
+  with check (outlet_id in (select public.manageable_outlets()) or coalesce((select public.is_staff()), false));
 drop policy if exists "readers_manage" on readers;
 create policy "readers_manage" on readers for select to authenticated
-  using (coalesce(public.is_staff(), false) or exists (select 1 from comments c where c.reader_id = readers.id and coalesce(public.can_manage_outlet(c.outlet_id), false)));
+  using (coalesce((select public.is_staff()), false) or exists (select 1 from comments c where c.reader_id = readers.id and c.outlet_id in (select public.manageable_outlets())));
 drop policy if exists "readers_ban" on readers;
 create policy "readers_ban" on readers for update to authenticated
-  using (coalesce(public.is_staff(), false) or exists (select 1 from comments c where c.reader_id = readers.id and coalesce(public.can_manage_outlet(c.outlet_id), false)))
+  using (coalesce((select public.is_staff()), false) or exists (select 1 from comments c where c.reader_id = readers.id and c.outlet_id in (select public.manageable_outlets())))
   with check (true);
 
 create table if not exists comment_reports (
@@ -160,8 +160,8 @@ create table if not exists comment_blocked_ips (
 alter table comment_blocked_ips enable row level security;
 drop policy if exists "blocked_ips_manage" on comment_blocked_ips;
 create policy "blocked_ips_manage" on comment_blocked_ips for all to authenticated
-  using (coalesce(public.can_manage_outlet(outlet_id), false) or coalesce(public.is_staff(), false))
-  with check (coalesce(public.can_manage_outlet(outlet_id), false) or coalesce(public.is_staff(), false));
+  using (outlet_id in (select public.manageable_outlets()) or coalesce((select public.is_staff()), false))
+  with check (outlet_id in (select public.manageable_outlets()) or coalesce((select public.is_staff()), false));
 
 -- 신고: 로그인 독자는 독자 번호, 비회원은 ip 표시로 한 번씩
 alter table comment_reports add column if not exists reporter_key text;

@@ -35,14 +35,16 @@ export async function fetchFeed(tab: FeedTab): Promise<{ rows: FeedRow[]; pendin
     return q.order('created_at', { ascending: false }).limit(40)
   }
   let hasReplies = true
-  let res = await run(`${COLS}, parent_id, staff_reply`, true)
+  // 대기 숫자는 목록과 함께 (차례로 기다리지 않는다)
+  let pcq = supabase.from('comments').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+  if (outletId) pcq = pcq.eq('outlet_id', outletId)
+  const [first, pcRes] = await Promise.all([run(`${COLS}, parent_id, staff_reply`, true), pcq])
+  let res = first
   // comment-replies.sql 을 아직 실행하지 않았으면 답글 칸 없이 읽는다
   if (res.error) { hasReplies = false; res = await run(COLS, false) }
   if (res.error) return { rows: [], pending: 0, error: true }
   const data = res.data
-  let pc = supabase.from('comments').select('id', { count: 'exact', head: true }).eq('status', 'pending')
-  if (outletId) pc = pc.eq('outlet_id', outletId)
-  const { count } = await pc
+  const count = pcRes.count
   const rows = ((data ?? []) as unknown as Omit<FeedRow, 'replies'>[]).map((r) => ({ ...r, replies: [] as FeedRow['replies'] }))
   if (hasReplies && rows.length) {
     const { data: reps } = await supabase.from('comments').select('id, parent_id, body, created_at, guest_name').in('parent_id', rows.map((r) => r.id)).eq('staff_reply', true).order('created_at')
