@@ -40,7 +40,10 @@ export async function generateMetadata(): Promise<Metadata> {
     // 네이버 서치어드바이저·구글 서치콘솔 소유 확인 (홈페이지 설정에서 넣는다)
     verification: {
       google: site.verification?.google,
-      other: site.verification?.naver ? { 'naver-site-verification': site.verification.naver } : undefined,
+      other: {
+        ...(site.verification?.naver ? { 'naver-site-verification': site.verification.naver } : {}),
+        ...(site.verification?.bing ? { 'msvalidate.01': site.verification.bing } : {}),
+      },
     },
   }
 }

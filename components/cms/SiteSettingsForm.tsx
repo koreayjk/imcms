@@ -745,14 +745,21 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <p className="text-[12px] text-muted">{lang === 'en' ? <>To check: add <code>/robots.txt</code> after this outlet&apos;s address and open it to see the rules in effect. For outlets without search visibility turned on, all bots are already blocked.</> : <>확인: 이 매체 주소 뒤에 <code>/robots.txt</code>를 붙여 열면 적용된 규칙이 보입니다. 검색 노출을 켜지 않은 매체는 모든 봇이 이미 막혀 있습니다.</>}</p>
         </fieldset>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {s.lang !== 'en' && (
           <Field label={t('네이버 서치어드바이저 확인 코드', 'Naver Search Advisor verification code')} hint={t('“HTML 태그” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다', 'You can paste the whole meta tag from the “HTML tag” method')}>
             <input value={s.naverVerification ?? ''} onChange={(e) => set({ naverVerification: e.target.value })} maxLength={300} placeholder='<meta name="naver-site-verification" content="…" />' className="field-input" />
           </Field>
+          )}
           <Field label={t('구글 서치콘솔 확인 코드', 'Google Search Console verification code')} hint={t('“HTML 태그” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다', 'You can paste the whole meta tag from the “HTML tag” method')}>
             <input value={s.googleVerification ?? ''} onChange={(e) => set({ googleVerification: e.target.value })} maxLength={300} placeholder='<meta name="google-site-verification" content="…" />' className="field-input" />
           </Field>
+          {s.lang === 'en' && (
+            <Field label={t('빙 웹마스터 도구 확인 코드', 'Bing Webmaster Tools verification code')} hint={t('“HTML Meta Tag” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다. 빙은 코파일럿·덕덕고 검색에도 쓰입니다', 'You can paste the whole meta tag from the “HTML Meta Tag” method. Bing also powers Copilot and DuckDuckGo search')}>
+              <input value={s.bingVerification ?? ''} onChange={(e) => set({ bingVerification: e.target.value })} maxLength={300} placeholder='<meta name="msvalidate.01" content="…" />' className="field-input" />
+            </Field>
+          )}
         </div>
-        <SearchRegisterGuide outletId={outlet.id} domain={outlet.domain} />
+        <SearchRegisterGuide outletId={outlet.id} domain={outlet.domain} usa={s.lang === 'en'} />
       </Card>
 
         </>

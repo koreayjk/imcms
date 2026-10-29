@@ -5,7 +5,7 @@ import { useT, useCmsLang } from '@/components/cms/CmsLang'
 import { checkSearchSetup, type SearchCheck } from '@/app/(main)/admin/outlets/[id]/site/actions'
 
 // 홈페이지 설정 → 검색 노출: 담당 매니저가 혼자 네이버·구글 검색 등록을 끝낼 수 있게 순서·복사할 주소·점검 버튼
-export default function SearchRegisterGuide({ outletId, domain }: { outletId: string; domain: string | null }) {
+export default function SearchRegisterGuide({ outletId, domain, usa = false }: { outletId: string; domain: string | null; usa?: boolean }) {
   const t = useT()
   const en = useCmsLang() === 'en'
   const base = domain ? `https://${domain}` : null
@@ -28,10 +28,21 @@ export default function SearchRegisterGuide({ outletId, domain }: { outletId: st
         <p className="font-semibold">{t('등록할 때 쓰는 주소', 'Addresses to register')}</p>
         {base ? (
           <ul className="mt-2 space-y-1.5">
-            <Copy label={t('매체 주소 (네이버·구글에 등록)', 'Site address (register with Naver and Google)')} value={base} />
-            <Copy label={t('사이트맵 (네이버·구글)', 'Sitemap (Naver and Google)')} value={`${base}/sitemap.xml`} />
-            <Copy label={t('뉴스 사이트맵 (구글)', 'News sitemap (Google)')} value={`${base}/news-sitemap.xml`} />
-            <Copy label={t('RSS (네이버)', 'RSS (Naver)')} value={`${base}/rss.xml`} />
+            {usa ? (
+              <>
+                <Copy label={t('매체 주소 (구글·빙에 등록)', 'Site address (register with Google and Bing)')} value={base} />
+                <Copy label={t('사이트맵 (구글·빙)', 'Sitemap (Google and Bing)')} value={`${base}/sitemap.xml`} />
+                <Copy label={t('뉴스 사이트맵 (구글)', 'News sitemap (Google)')} value={`${base}/news-sitemap.xml`} />
+                <Copy label={t('RSS (선택)', 'RSS (optional)')} value={`${base}/rss.xml`} />
+              </>
+            ) : (
+              <>
+                <Copy label={t('매체 주소 (네이버·구글에 등록)', 'Site address (register with Naver and Google)')} value={base} />
+                <Copy label={t('사이트맵 (네이버·구글)', 'Sitemap (Naver and Google)')} value={`${base}/sitemap.xml`} />
+                <Copy label={t('뉴스 사이트맵 (구글)', 'News sitemap (Google)')} value={`${base}/news-sitemap.xml`} />
+                <Copy label={t('RSS (네이버)', 'RSS (Naver)')} value={`${base}/rss.xml`} />
+              </>
+            )}
           </ul>
         ) : (
           <p className="mt-1 text-muted">{t('위 “도메인” 칸에 매체 주소를 저장하면 여기에 등록할 주소가 나옵니다. 도메인 연결 전에는 검색 등록을 하지 마세요.', 'Save your site address in the "Domain" field above and the addresses to register will appear here. Do not register with search engines before the domain is connected.')}</p>
@@ -56,7 +67,51 @@ export default function SearchRegisterGuide({ outletId, domain }: { outletId: st
       )}
 
       {/* 순서 */}
-      {en ? (
+      {usa ? (
+        <details className="rounded bg-[#F8F9FA] px-4 py-3 text-[13px] leading-relaxed">
+          <summary className="cursor-pointer font-semibold">{t('미국·영문 매체: 구글·빙 검색 등록하는 방법 (담당 매니저용)', 'US / English outlets: how to register with Google and Bing (for the account manager)')}</summary>
+          <div className="mt-3 space-y-4">
+            <p className="rounded bg-white px-3 py-2 text-[12.5px] ring-1 ring-black/5">
+              {t('미국 매체는 네이버를 쓰지 않습니다. 구글이 가장 중요하고, 빙(Microsoft)은 코파일럿·덕덕고 검색과 일부 AI 검색의 바탕이라 함께 등록하는 것이 좋습니다. 꼭 IM 뉴스룸 운영 계정(운영용 구글·마이크로소프트 계정)으로 하세요. 시작 전에 ① 도메인 연결 ② 위 “검색에 노출하기” 켜기 ③ 테스트 기사 삭제를 확인하세요.', 'US outlets do not use Naver. Google matters most; Bing (Microsoft) also powers Copilot, DuckDuckGo and some AI search, so register with it too. Use the IM Newsroom team accounts (team Google and Microsoft accounts). Before you start, check that (1) the domain is connected, (2) “Show in search” above is on, and (3) test stories are deleted.')}
+            </p>
+            <section>
+              <h4 className="font-bold">{t('1. 구글 — 코드 받기', '1. Google — get the code')}</h4>
+              <ol className="mt-1 list-decimal space-y-1 pl-5">
+                <li><a href="https://search.google.com/search-console" target="_blank" rel="noopener" className="text-review underline underline-offset-2">Google Search Console ↗</a> → {t('속성 추가 → ', 'Add property → ')}<b>{t('URL 접두어', 'URL prefix')}</b>{t('에 위 매체 주소 입력', ': enter the site address above')}</li>
+                <li>{t('다른 확인 방법 중 ', 'Under other verification methods choose ')}<b>HTML tag</b>{t(' → 한 줄 전체 복사, 창은 닫지 않습니다', ' → copy the whole line and leave the window open')}</li>
+              </ol>
+            </section>
+            <section>
+              <h4 className="font-bold">{t('2. 빙 — 코드 받기', '2. Bing — get the code')}</h4>
+              <ol className="mt-1 list-decimal space-y-1 pl-5">
+                <li><a href="https://www.bing.com/webmasters" target="_blank" rel="noopener" className="text-review underline underline-offset-2">Bing Webmaster Tools ↗</a> → {t('로그인 → ', 'Sign in → ')}<b>Add a site</b>{t('에 위 매체 주소 입력', ': enter the site address above')}</li>
+                <li><b>HTML Meta Tag</b>{t(' 방식 → 나온 한 줄 전체 복사 (이미 구글 서치콘솔에 등록했다면 “Import from Google Search Console”로 한 번에 가져올 수도 있습니다)', ' method → copy the whole line. If the site is already in Google Search Console you can instead use “Import from Google Search Console”.')}</li>
+              </ol>
+            </section>
+            <section>
+              <h4 className="font-bold">{t('3. 여기에 넣고 저장 → 점검', '3. Paste here, save, then check')}</h4>
+              <ol className="mt-1 list-decimal space-y-1 pl-5">
+                <li>{t('위 구글 확인 코드·빙 확인 코드 칸에 복사한 줄을 통째로 붙여 넣고 맨 아래 [저장] (배포 필요 없음)', 'Paste each line into the Google and Bing verification fields above, then click [Save] at the bottom (no deployment needed)')}</li>
+                <li>{t('[검색 등록 점검하기]에서 모두 초록 ✓인지 확인', 'Click [Check search registration] and confirm every line shows a green ✓')}</li>
+              </ol>
+            </section>
+            <section>
+              <h4 className="font-bold">{t('4. 소유 확인 → 사이트맵 제출', '4. Verify ownership, then submit sitemaps')}</h4>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                <li><b>Google</b>: {t('열어 둔 창에서 확인 → 왼쪽 Sitemaps에 ', 'click Verify → in the left menu under Sitemaps submit ')}<code>sitemap.xml</code>, <code>news-sitemap.xml</code>{t(' 제출 → URL 검사에 매체 주소 → 색인 생성 요청', ' → then paste the site address in URL inspection → Request indexing')}</li>
+                <li><b>Bing</b>: {t('Verify → Sitemaps에 ', 'click Verify → under Sitemaps submit ')}<code>sitemap.xml</code>{t(' 제출 (URL Submission으로 홈 주소를 한 번 제출하면 더 빨리 읽힙니다)', ' (submitting the home address under URL Submission gets it read sooner)')}</li>
+              </ul>
+            </section>
+            <section>
+              <h4 className="font-bold">{t('5. 마무리', '5. Wrap up')}</h4>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                <li>{t('구글 서치콘솔 설정 → 사용자 및 권한에서 발행인의 구글 계정을 사용자로 추가 (소유자 권한은 운영 계정이 유지)', 'In Google Search Console, Settings → Users and permissions, add the publisher’s Google account as a user (keep ownership with the team account)')}</li>
+                <li>{t('구글 뉴스에 나오게 하려면 발행인이 Google Publisher Center에서 뉴스 출처를 등록할 수 있습니다 (선택, 구글이 따로 심사). 검색 반영까지 며칠~2주 걸립니다', 'To appear in Google News, the publisher can register the publication in Google Publisher Center (optional, reviewed by Google). Search results take a few days to 2 weeks to update')}</li>
+              </ul>
+            </section>
+          </div>
+        </details>
+      ) : en ? (
       <details className="rounded bg-[#F8F9FA] px-4 py-3 text-[13px] leading-relaxed">
         <summary className="cursor-pointer font-semibold">How to register with Naver and Google Search (for the account manager)</summary>
         <div className="mt-3 space-y-4">

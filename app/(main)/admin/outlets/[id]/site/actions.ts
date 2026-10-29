@@ -51,6 +51,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     // 소유 확인 코드: 메타 태그 전체를 붙여 넣어도 content 값만 남긴다
     naverVerification: verifyCode(s.naverVerification) || undefined,
     googleVerification: verifyCode(s.googleVerification) || undefined,
+    bingVerification: verifyCode(s.bingVerification) || undefined,
     logoUrl: logoUrl || undefined,
     logoMode: mode,
     // 'normal'은 기본값이므로 저장하지 않는다
@@ -165,12 +166,15 @@ export async function checkSearchSetup(outletId: string): Promise<{ items?: Sear
   const meta = (name: string) => home.text.match(new RegExp(`<meta[^>]+name="${name}"[^>]+content="([^"]+)"`))?.[1] ?? null
   const nv = meta('naver-site-verification')
   const gv = meta('google-site-verification')
+  const bv = meta('msvalidate.01')
+  const usa = site.lang === 'en' // 미국 등 영문 매체는 네이버 대신 빙
   const codeDiff = t('저장한 코드와 다릅니다. 저장했는지 확인하세요', 'It does not match the saved code. Check that you saved it')
   const codeOn = t('홈페이지에 들어 있음', 'Present on the website')
   const codeWait = t('저장은 됐지만 홈페이지에 아직 안 보입니다. 1분 뒤 다시 확인하세요', 'Saved, but not showing on the website yet. Check again in a minute')
   const codeNone = t('아직 넣지 않음', 'Not added yet')
-  items.push({ label: t('네이버 확인 코드', 'Naver verification code'), ok: !!nv && (!site.naverVerification || nv === site.naverVerification), detail: nv ? (site.naverVerification && nv !== site.naverVerification ? codeDiff : codeOn) : site.naverVerification ? codeWait : codeNone })
+  if (!usa) items.push({ label: t('네이버 확인 코드', 'Naver verification code'), ok: !!nv && (!site.naverVerification || nv === site.naverVerification), detail: nv ? (site.naverVerification && nv !== site.naverVerification ? codeDiff : codeOn) : site.naverVerification ? codeWait : codeNone })
   items.push({ label: t('구글 확인 코드', 'Google verification code'), ok: !!gv && (!site.googleVerification || gv === site.googleVerification), detail: gv ? (site.googleVerification && gv !== site.googleVerification ? codeDiff : codeOn) : site.googleVerification ? codeWait : codeNone })
+  if (usa) items.push({ label: t('빙 확인 코드', 'Bing verification code'), ok: !!bv && (!site.bingVerification || bv === site.bingVerification), detail: bv ? (site.bingVerification && bv !== site.bingVerification ? codeDiff : codeOn) : (site.bingVerification ? codeWait : codeNone) })
   const allowed = robots.status === 200 && /^Allow: \/\s*$/m.test(robots.text) && !/^Disallow: \/\s*$/m.test(robots.text)
   items.push({ label: t('검색 허용 (robots.txt)', 'Search allowed (robots.txt)'), ok: allowed, detail: allowed ? t('검색엔진이 읽을 수 있음', 'Search engines can read it') : t('막혀 있습니다. 위 “구글·네이버 검색에 노출하기”를 켜고 저장했는지, 매체 도메인으로 열었는지 확인하세요', 'It is blocked. Check that “Show in Google and Naver search” above is on and saved, and that you opened it from the outlet domain') })
   const n = (sitemap.text.match(/<url>/g) ?? []).length

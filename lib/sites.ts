@@ -72,7 +72,7 @@ export type SiteConfig = {
   // 해운 운임지수(SCFI·KCCI) 위젯을 홈 오른쪽에 보여줄지
   indexWidget?: boolean
   // 검색 포털 소유 확인 코드 (네이버 서치어드바이저·구글 서치콘솔)
-  verification?: { naver?: string; google?: string }
+  verification?: { naver?: string; google?: string; bing?: string }
   logoMark: string
   // mark: 심볼 + 매체 이름 글자 / full: 로고 이미지만 / text: 매체 이름 글자만
   logoMode?: LogoMode
@@ -229,6 +229,8 @@ export type OutletSiteSettings = {
   indexWidget?: boolean
   naverVerification?: string
   googleVerification?: string
+  // 빙 웹마스터 도구 확인 코드 (미국 등 영문 매체: 빙·코파일럿·덕덕고 검색)
+  bingVerification?: string
   logoUrl?: string
   logoMode?: LogoMode
   logoSize?: LogoSize
@@ -347,7 +349,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     description: s.description ?? code?.description ?? (s.lang === 'en' ? `${o.name} — news and analysis` : `${o.name} 인터넷신문`),
     specialtyTitle: s.specialtyTitle || code?.specialtyTitle || (s.lang === 'en' ? 'In Focus' : '전문뉴스'),
     indexWidget: !!s.indexWidget,
-    verification: { naver: s.naverVerification || undefined, google: s.googleVerification || undefined },
+    verification: { naver: s.naverVerification || undefined, google: s.googleVerification || undefined, bing: s.bingVerification || undefined },
     logoMark: s.logoUrl ?? code?.logoMark ?? '',
     logoMode: s.logoMode ?? (s.logoUrl || code?.logoMark ? 'mark' : 'text'),
     logoSize: s.logoSize === 'large' || s.logoSize === 'xlarge' ? s.logoSize : 'normal',
