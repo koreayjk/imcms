@@ -82,9 +82,13 @@ export const getCmsContext = cache(async function getCmsContext() {
   // 보기 모드: 지금 보는 매체가 속한 그룹만 보이게 한다 (운영팀이 보는 다른 그룹·매체 자료가 섞여 나오지 않도록)
   //   진짜 발행인·편집장·기자가 보는 범위와 같게 맞춘다. 실제 권한(DB)은 그대로다
   let viewGroupId: string | null = null
-  if (viewAs && outletId) {
+  // 운영팀(총관리자·매니저)이 위쪽에서 매체를 골라 보는 때도, 그 매체가 속한 그룹의 자료만 보여야 한다 (보도자료함)
+  let staffGroupId: string | null = null
+  if ((viewAs || isStaff) && outletId) {
     const { data: vo } = await supabase.from('outlets').select('publisher_id').eq('id', outletId).maybeSingle()
-    viewGroupId = (vo as { publisher_id?: string | null } | null)?.publisher_id ?? null
+    const gid = (vo as { publisher_id?: string | null } | null)?.publisher_id ?? null
+    if (viewAs) viewGroupId = gid
+    else staffGroupId = gid
   }
 
   return {
@@ -101,6 +105,8 @@ export const getCmsContext = cache(async function getCmsContext() {
     publisherId: viewAs ? viewGroupId : ((profile?.publisher_id as string | null) ?? null),
     // 보기 모드일 때 보는 매체의 그룹 (보기 모드가 아니면 null)
     viewGroupId,
+    // 운영팀이 매체를 골라 본 때 그 매체의 그룹 (보기 모드이거나 운영팀이 아니면 null)
+    staffGroupId,
     isEditorPlus: eff.isEditorPlus,
     // 홈페이지 꾸미기(섹션·홈 편집판·광고): 편집장 이상 + 운영팀(매니저)
     canEditSite: eff.canEditSite,

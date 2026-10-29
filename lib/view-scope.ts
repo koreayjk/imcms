@@ -1,19 +1,28 @@
 // 보기 모드(발행인·편집장·기자 화면): 운영팀·발행인 권한으로 읽어 온 자료를 그 역할이 실제로 보는 범위로 다시 거른다
 //   DB 권한(RLS)은 진짜 계정 기준이라, 보기 모드일 때만 화면에서 같은 조건을 한 번 더 건다 (보기 모드가 아니면 그대로)
-type Ctx = { viewAs: string | null; viewGroupId: string | null; outletId: string | null; isStaff?: boolean }
+type Ctx = { viewAs: string | null; viewGroupId: string | null; staffGroupId?: string | null; outletId: string | null; isStaff?: boolean }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Q = any
 
 // 보도자료(press_releases): 공용 자료(그룹 없음) + 보는 매체가 속한 그룹의 메일·직접 등록 자료 (groups.sql 의 press_releases_read)
+//   보기 모드뿐 아니라 운영팀(총관리자·매니저)이 위쪽에서 매체를 고른 때도 그 매체의 그룹 자료만 본다 ("전체 매체"면 모두)
+function pressGroup(ctx: Ctx): { scoped: boolean; group: string | null } {
+  if (ctx.viewAs) return { scoped: true, group: ctx.viewGroupId }
+  if (ctx.isStaff && ctx.outletId) return { scoped: true, group: ctx.staffGroupId ?? null }
+  return { scoped: false, group: null }
+}
+
 export function pressScope<T>(query: T, ctx: Ctx): T {
-  if (!ctx.viewAs) return query
+  const { scoped, group } = pressGroup(ctx)
+  if (!scoped) return query
   const q = query as Q
-  return ctx.viewGroupId ? q.or(`publisher_id.is.null,publisher_id.eq.${ctx.viewGroupId}`) : q.is('publisher_id', null)
+  return group ? q.or(`publisher_id.is.null,publisher_id.eq.${group}`) : q.is('publisher_id', null)
 }
 
 export function pressVisible(row: { publisher_id?: string | null }, ctx: Ctx): boolean {
-  if (!ctx.viewAs) return true
-  return !row.publisher_id || row.publisher_id === ctx.viewGroupId
+  const { scoped, group } = pressGroup(ctx)
+  if (!scoped) return true
+  return !row.publisher_id || row.publisher_id === group
 }
 
 // 고객센터 업무요청(support_tickets): 발행인·편집장은 보는 매체의 요청, 기자는 그 매체에서 내가 보낸 요청 (support.sql 의 tickets_select)
