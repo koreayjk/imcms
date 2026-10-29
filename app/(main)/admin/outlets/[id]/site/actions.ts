@@ -81,6 +81,10 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
   const { data: prev } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
   const prevSite = ((prev as { site?: OutletSiteSettings | null } | null)?.site ?? {}) as OutletSiteSettings
   if (Array.isArray(prevSite.bands)) site.bands = prevSite.bands
+  // 이 화면에 없는 다른 설정(광고 자리 설정 adSlots 등)은 저장할 때 지워지지 않게 예전 값을 그대로 이어받는다
+  for (const k of Object.keys(prevSite) as (keyof OutletSiteSettings)[]) {
+    if (!(k in site)) (site as Record<string, unknown>)[k] = prevSite[k]
+  }
   // 탭 아이콘·공유 미리보기 사진: 화면에서 올린 이미지만 (화면에 값이 없으면 예전 값 유지)
   const ownImage = (v: unknown) => {
     const u = cut(v, 500)
