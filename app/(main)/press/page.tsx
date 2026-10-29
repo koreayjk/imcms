@@ -92,7 +92,9 @@ export default async function PressPage(props: Props) {
   const usLocal = PRESS_SOURCES.filter((x) => x.local).map((x) => x.key)
   const usWire = PRESS_SOURCES.filter((x) => !x.local).map((x) => x.key)
   // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만
-  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : null
+  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : titleHit.length ? null : new Set(foreignKeys)
+  // 추천 분야·키워드를 아직 정하지 않은 한국어 매체 (추천 탭에 안내를 보인다)
+  const noRecSetup = !english && !fields.length && !titleHit.length
   if (english) {
     // 영문 매체: 지역·기관 소식은 늘, 전국 뉴스와이어는 추천 키워드가 제목에 있을 때만
     if (tab === 'rec') query = query.or([`source_key.in.(${[MANUAL_SOURCE, 'email', ...usLocal].join(',')})`, ...(titleHit.length && usWire.length ? [`and(source_key.in.(${usWire.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
@@ -100,6 +102,9 @@ export default async function PressPage(props: Props) {
     query = query.or([`source_key.in.(${recBase.join(',')})`, ...(titleHit.length && generalKeys.length ? [`and(source_key.in.(${generalKeys.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
   } else if (tab === 'rec' && titleHit.length) {
     query = query.or([`source_key.in.(${recBase.filter((k) => !fieldOfSource(k)).join(',')})`, ...titleHit].join(','))
+  } else if (tab === 'rec') {
+    // 분야도 키워드도 정하지 않은 매체: 모든 출처를 다 보여 주지 않고 메일·직접 등록(과 켠 해외 언론)만 추천에 넣는다
+    query = query.in('source_key', recBase.filter((k) => !fieldOfSource(k)))
   }
 
   const [{ data: rows, count }, { data: logs }, { data: todayUses }] = await Promise.all([
@@ -178,6 +183,14 @@ export default async function PressPage(props: Props) {
               </Link>
             ))}
           </div>
+
+          {tab === 'rec' && noRecSetup && (
+            <p className="border-b border-line bg-[#FFF8E6] px-4 py-3 text-[12.5px] leading-relaxed text-[#6B4E00] md:px-5">
+              {t('이 매체의 추천 분야·키워드가 아직 없어 메일·직접 등록 자료만 보입니다. ', 'No recommended fields or keywords are set for this outlet yet, so only email and manually added releases are shown. ')}
+              {outletId && <Link href={`/admin/outlets/${outletId}/site`} className="font-semibold underline">{t('홈페이지 설정 → 보도자료 추천 키워드에서 정하기', 'Set them in Website settings → press keywords')}</Link>}
+              {t(' (예: 경기, 수원, 성남 …). 전체 자료는 “전체” 탭에서 볼 수 있습니다.', ' (e.g. local place names). See everything in the “All” tab.')}
+            </p>
+          )}
 
           {rows?.length ? (
             <ul className="divide-y divide-line">
