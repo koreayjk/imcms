@@ -117,7 +117,12 @@ export default function GroupOutlets({ groups, outlets, canManage, isSuper = fal
   const orphans = outlets.filter((o) => !o.publisher_id || !groups.some((g) => g.id === o.publisher_id))
   const realGroups = groups.filter((g) => !g.solo)
   const soloIds = new Set(groups.filter((g) => g.solo).map((g) => g.id))
-  const soloOutlets = outlets.filter((o) => o.publisher_id && soloIds.has(o.publisher_id))
+  // 운영팀 화면: 언론사는 대부분 매체 1개를 혼자 운영하므로, 매체가 1개뿐인 그룹은 '개별 매체' 칸에 모아 보인다
+  //   (화면만 모을 뿐 그룹은 그대로다. 매체가 여러 개이거나 하나도 없는 그룹은 그룹 칸으로 남는다)
+  const countOf = (gid: string) => outlets.filter((o) => o.publisher_id === gid).length
+  const singleIds = new Set(canManage ? realGroups.filter((g) => countOf(g.id) === 1).map((g) => g.id) : [])
+  const shownGroups = realGroups.filter((g) => !singleIds.has(g.id))
+  const soloOutlets = outlets.filter((o) => o.publisher_id && (soloIds.has(o.publisher_id) || singleIds.has(o.publisher_id)))
   const myGroupIsSolo = !!myGroupId && soloIds.has(myGroupId)
 
   return (
@@ -141,7 +146,7 @@ export default function GroupOutlets({ groups, outlets, canManage, isSuper = fal
       </form>
       )}
 
-      {realGroups.map((g) => {
+      {shownGroups.map((g) => {
         const list = outlets.filter((o) => o.publisher_id === g.id)
         return (
           <section key={g.id} className="rounded-lg border border-line bg-white">
