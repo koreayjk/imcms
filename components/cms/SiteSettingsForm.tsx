@@ -218,7 +218,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill, pressKeywords: s.pressKeywords, pressFields: s.pressFields },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -260,7 +260,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-strip', t('로고 띠', 'Logo strip'), true],
           ['s-sections', t('섹션 메뉴', 'Sections'), true],
           ['s-footer', t('하단 표시', 'Footer'), true],
-          ['s-press', t('보도자료 추천', 'Press picks'), !self],
+          ['s-press', t('보도자료 추천', 'Press picks'), true],
           ['s-open', t('오픈 준비', 'Opening soon'), !self],
           ['s-domain', t('도메인', 'Domain'), !self],
           ['s-search', t('검색 노출', 'Search'), !self],
@@ -636,8 +636,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         {missing.length > 0 && <p className="mt-3 rounded bg-draft/10 px-3 py-2 text-[12.5px] text-[#6B5F22]">⚠ {t('아직 비어 있는 필수 항목:', 'Required fields still empty:')} {missing.map((m) => legalLabel(m)).join(', ')}</p>}
       </Card>
 
-      {!self && (
-        <>
       <Card id="s-press" title={t('보도자료 추천', 'Press release recommendations')} note={t('보도자료함 ‘추천’ 탭에 보여줄 자료를 정합니다. ‘전체’ 탭에는 언제나 모든 자료가 나옵니다.', 'Choose what appears in the “Recommended” tab of the press release inbox. The “All” tab always shows everything.')}>
         <fieldset className="space-y-1.5 text-[13.5px]">
           <legend className="font-bold">{t('매체 분야', 'Outlet field')}</legend>
@@ -656,11 +654,13 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </fieldset>
         <div className="mt-4">
           <p className="text-[13.5px] font-bold">{t('추천 키워드', 'Recommendation keywords')}</p>
-          <p className="mb-1.5 text-[12px] text-muted">{t('제목에 이 단어가 들어간 정부·공공기관 보도자료를 추천에 넣습니다(분야를 고르지 않았다면 모든 출처에서). 쉼표로 구분합니다. 3글자 이하 영문 약어(IB, AI 등)는 다른 단어에 섞여 걸리기 쉬워 쓰지 않습니다.', 'Government and public agency press releases whose title contains these words are added to recommendations (from all sources if no field is chosen). Separate with commas. English abbreviations of 3 letters or fewer (IB, AI, etc.) are not used because they easily match inside other words.')}</p>
+          <p className="mb-1.5 text-[12px] text-muted">{t('제목에 이 단어가 들어간 정부·공공기관 보도자료를 추천에 넣습니다(분야를 고르지 않았다면 모든 출처에서). 분야와 키워드를 모두 비워 두면 매체의 섹션 이름으로 알아서 고릅니다. 쉼표로 구분합니다. 3글자 이하 영문 약어(IB, AI 등)는 다른 단어에 섞여 걸리기 쉬워 쓰지 않습니다.', 'Government and public agency press releases whose title contains these words are added to recommendations (from all sources if no field is chosen). Leave both empty and recommendations follow your section names automatically. Separate with commas. English abbreviations of 3 letters or fewer (IB, AI, etc.) are not used because they easily match inside other words.')}</p>
           <textarea value={s.pressKeywords ?? ''} onChange={(e) => set({ pressKeywords: e.target.value })} rows={3} placeholder={t('예: 요양, 돌봄, 복지, 병원', 'e.g. 요양, 돌봄, 복지, 병원 (enter the words as they appear in Korean titles)')} className="field-input resize-y" />
         </div>
       </Card>
 
+      {!self && (
+        <>
       <Card id="s-open" title={t('오픈 준비 중', 'Opening soon')}>
         <label className="flex items-start gap-3 text-[14px]">
           <input type="checkbox" checked={!!s.comingSoon} onChange={(e) => set(e.target.checked ? { comingSoon: true, ...(openTimePassed(s) ? { openAt: undefined } : {}) } : { comingSoon: undefined })} className="mt-1" />

@@ -4,13 +4,13 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { mentionsAi } from '@/lib/ai-notice'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
-import { cleanLogoStrip, foreignTopics, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { cleanLogoStrip, foreignTopics, pressFields, type LogoMode, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 
 // 편집장 이상이 편집국 "설정 → 매체 정보"에서 고치는 항목만 저장한다 (supabase/outlet-site-self.sql 의 DB 함수가 한 번 더 목록 밖의 값을 막는다)
 //   도메인·검색 노출·AI 봇·오픈 준비 중·홈 배치 같은 항목은 여기서 받지 않는다 (운영팀 홈페이지 설정에서만)
 export type SelfSitePayload = {
   name: string
-  site: Pick<OutletSiteSettings, 'nameEn' | 'slogan' | 'sloganEn' | 'description' | 'logoUrl' | 'logoMode' | 'logoSize' | 'colors' | 'legal' | 'aiNotice' | 'pressForeignTopics' | 'pressForeign' | 'logoStrip' | 'iconUrl' | 'ogImage' | 'cmsLang' | 'commentsOn' | 'commentsMode' | 'commentsKind' | 'thumbFill'>
+  site: Pick<OutletSiteSettings, 'nameEn' | 'slogan' | 'sloganEn' | 'description' | 'logoUrl' | 'logoMode' | 'logoSize' | 'colors' | 'legal' | 'aiNotice' | 'pressForeignTopics' | 'pressForeign' | 'logoStrip' | 'iconUrl' | 'ogImage' | 'cmsLang' | 'commentsOn' | 'commentsMode' | 'commentsKind' | 'thumbFill' | 'pressKeywords' | 'pressFields'>
   sections: { id: string; specialty: boolean; description: string }[]
 }
 
@@ -64,6 +64,8 @@ export async function saveSelfSiteSettings(outletId: string, p: SelfSitePayload)
     thumbFill: s.thumbFill === 'white' || s.thumbFill === 'blur' ? s.thumbFill : undefined,
     commentsKind: s.commentsOn === true && s.commentsKind === 'guest' ? 'guest' : undefined,
     commentsMode: s.commentsOn === true && s.commentsMode === 'open' ? 'open' : undefined,
+    pressKeywords: cut(s.pressKeywords, 2000) || undefined,
+    pressFields: Array.isArray(s.pressFields) ? pressFields({ pressFields: s.pressFields }, []) : undefined,
     cmsLang: s.cmsLang === 'en' ? 'en' : s.cmsLang === 'ko' ? 'ko' : undefined,
   }
   const { error } = await supabase.rpc('outlet_site_self_save', { o: outletId, p_name: name, p_patch: JSON.parse(JSON.stringify(patch)) })

@@ -192,13 +192,13 @@ export default async function PressPage(props: Props) {
             <p className="border-b border-line bg-[#F1F6FF] px-4 py-3 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">
               {t('추천 키워드를 따로 정하지 않아 이 매체의 섹션 이름으로 관련 보도자료를 골랐습니다', 'No keywords are set, so releases were matched to this outlet’s section names')}
               {auto.keywords.length > 0 && <> ({auto.keywords.slice(0, 8).join(', ')}{auto.keywords.length > 8 ? ' …' : ''})</>}.
-              {outletId && <> <Link href={`/admin/outlets/${outletId}/site`} className="font-semibold underline">{t('직접 정하기', 'Set your own')}</Link></>}
+              {outletId && <> <Link href={ctx.isStaff ? `/admin/outlets/${outletId}/site#s-press` : '/admin/settings#s-press'} className="font-semibold underline">{t('직접 정하기', 'Set your own')}</Link></>}
             </p>
           )}
           {tab === 'rec' && noRecSetup && (
             <p className="border-b border-line bg-[#FFF8E6] px-4 py-3 text-[12.5px] leading-relaxed text-[#6B4E00] md:px-5">
               {t('이 매체의 추천 분야·키워드가 아직 없어 메일·직접 등록 자료만 보입니다. ', 'No recommended fields or keywords are set for this outlet yet, so only email and manually added releases are shown. ')}
-              {outletId && <Link href={`/admin/outlets/${outletId}/site`} className="font-semibold underline">{t('홈페이지 설정 → 보도자료 추천 키워드에서 정하기', 'Set them in Website settings → press keywords')}</Link>}
+              {outletId && <Link href={ctx.isStaff ? `/admin/outlets/${outletId}/site#s-press` : '/admin/settings#s-press'} className="font-semibold underline">{t('홈페이지 설정 → 보도자료 추천 키워드에서 정하기', 'Set them in Website settings → press keywords')}</Link>}
               {t(' (예: 경기, 수원, 성남 …). 전체 자료는 “전체” 탭에서 볼 수 있습니다.', ' (e.g. local place names). See everything in the “All” tab.')}
             </p>
           )}
