@@ -5,7 +5,7 @@ import { getCmsContext } from '@/lib/cms'
 import { pressScope } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, usableKeywords } from '@/lib/press-sources'
+import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
 import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
@@ -31,10 +31,11 @@ export default async function PressPage(props: Props) {
   const { t, lang } = await getT()
 
   // 저장 공간 확인과 매체 설정은 함께 묻는다
-  const [probe, { data: outlet }, { data: { session } }] = await Promise.all([
+  const [probe, { data: outlet }, { data: { session } }, { data: sectionRows }] = await Promise.all([
     supabase.from('press_fetch_log').select('source_key').limit(1),
     outletId ? supabase.from('outlets').select('*').eq('id', outletId).single() : Promise.resolve({ data: null }),
     supabase.auth.getSession(),
+    outletId ? supabase.from('categories').select('name').eq('outlet_id', outletId) : Promise.resolve({ data: [] as { name: string }[] }),
   ])
   if (probe.error) {
     return (
@@ -57,7 +58,10 @@ export default async function PressPage(props: Props) {
   }
   // 매체 홈페이지 설정의 '보도자료 추천 키워드' (없으면 추천 탭은 직접 등록·메일 자료만)
   const outletSite = outlet ? buildSite(outlet as OutletRow, []) : null
-  const keywords = outletSite?.pressKeywords ?? []
+  // 추천 분야·키워드를 따로 정하지 않았으면 매체의 섹션 이름으로 알아서 정한다
+  const sectionNames = ((sectionRows ?? []) as { name: string }[]).map((c) => c.name)
+  const auto = outletSite && !outletSite.pressKeywords.length && !outletSite.pressFields.length ? pressHintsFromSections(sectionNames) : null
+  const keywords = outletSite?.pressKeywords.length ? outletSite.pressKeywords : auto?.keywords ?? []
   // 해외 언론(영문) 자료는 매체 설정에서 켠 묶음만 본다 (이스라엘 언론 / 해외 교육·유학 언론)
   const topics = outletSite?.pressForeignTopics ?? []
   // 영문 매체(site.lang = en)는 미국(영문) 출처만, 한국어 매체는 미국 출처 없이 기존 출처만 본다
@@ -82,7 +86,7 @@ export default async function PressPage(props: Props) {
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
   // 추천 탭: 매체 분야(예: 교육)의 출처 + 켠 해외 언론 + 메일·직접 등록 + 정부·공공기관 자료 중 제목에 추천 키워드가 있는 것
   //   분야를 정하지 않은 매체는 예전처럼 제목에 추천 키워드가 있는 자료 (짧은 영문 약어는 엉뚱한 단어에 걸려 뺀다)
-  const fields = outletSite?.pressFields ?? []
+  const fields = outletSite?.pressFields.length ? outletSite.pressFields : auto?.fields ?? []
   const kw = usableKeywords(keywords)
   const titleHit = kw.map((k) => `title.ilike.*${k}*`)
   const foreignKeys = PRESS_SOURCES.filter((x) => foreignTopicOf(x.key)).map((x) => x.key)
@@ -184,6 +188,13 @@ export default async function PressPage(props: Props) {
             ))}
           </div>
 
+          {tab === 'rec' && auto && !noRecSetup && (
+            <p className="border-b border-line bg-[#F1F6FF] px-4 py-3 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">
+              {t('추천 키워드를 따로 정하지 않아 이 매체의 섹션 이름으로 관련 보도자료를 골랐습니다', 'No keywords are set, so releases were matched to this outlet’s section names')}
+              {auto.keywords.length > 0 && <> ({auto.keywords.slice(0, 8).join(', ')}{auto.keywords.length > 8 ? ' …' : ''})</>}.
+              {outletId && <> <Link href={`/admin/outlets/${outletId}/site`} className="font-semibold underline">{t('직접 정하기', 'Set your own')}</Link></>}
+            </p>
+          )}
           {tab === 'rec' && noRecSetup && (
             <p className="border-b border-line bg-[#FFF8E6] px-4 py-3 text-[12.5px] leading-relaxed text-[#6B4E00] md:px-5">
               {t('이 매체의 추천 분야·키워드가 아직 없어 메일·직접 등록 자료만 보입니다. ', 'No recommended fields or keywords are set for this outlet yet, so only email and manually added releases are shown. ')}

@@ -116,6 +116,40 @@ export const PRESS_FIELDS: { key: PressField; label: string; sources: string[]; 
 // 분야에 속하지 않는 출처(정부·공공기관 등)는 제목 키워드로만 추천에 넣는다
 export const fieldOfSource = (key: string): PressField | null => PRESS_FIELDS.find((f) => f.sources.includes(key))?.key ?? null
 
+// 추천 분야·키워드를 따로 정하지 않은 매체: 매체의 섹션(메뉴) 이름으로 추천을 알아서 정한다
+//   · 기사 형식·공통 메뉴(오피니언·칼럼·포토·종합 등)는 주제가 아니므로 뺀다
+//   · 교육·의료·물류 같은 분야 섹션은 그 분야의 뉴스와이어 분류를 통째로 넣고, 나머지는 섹션 이름과 가까운 단어를 제목 키워드로 쓴다
+const SECTION_SKIP = /^(종합|뉴스|전체|홈|오피니언|사설|칼럼|기자수첩|기고|인터뷰|기획|특집|기획특집|포토|포토뉴스|영상|동영상|로컬|사회|사회종합|국제이슈|이슈|속보|포토|사진|opinion|editorial|column|interview|feature|photo|video|news|local|world|home|all)$/i
+const SECTION_WORDS: [RegExp, string[]][] = [
+  [/인공지능|^ai$|AI/, ['인공지능', '생성형', '딥러닝']],
+  [/빅데이터/, ['빅데이터', '데이터센터']],
+  [/4차산업|산업/, ['4차산업', '스마트', '자율주행', '로봇', '반도체']],
+  [/경제|금융|재테크/, ['경제', '수출', '금융', '투자']],
+  [/정치|국회/, ['국회', '대통령', '정당']],
+  [/스포츠|체육/, ['스포츠', '리그', '우승']],
+  [/문화|공연|전시|예술/, ['문화', '공연', '전시', '축제']],
+  [/연예|방송/, ['드라마', '가수', '영화']],
+  [/부동산/, ['부동산', '아파트', '분양']],
+  [/환경|기후/, ['환경', '탄소', '기후']],
+  [/과학|기술|IT|테크/, ['기술', '플랫폼', '개발']],
+  [/농업|농촌|농산/, ['농업', '농촌', '농산물']],
+  [/관광|여행/, ['관광', '여행', '축제']],
+  [/건강|의료|병원/, ['건강', '의료', '병원']],
+]
+export function pressHintsFromSections(names: string[]): { keywords: string[]; fields: PressField[] } {
+  const kw = new Set<string>()
+  const fields = new Set<PressField>()
+  for (const raw of names) {
+    const name = raw.trim()
+    if (!name || SECTION_SKIP.test(name.replace(/[\s·・/]+/g, ''))) continue
+    for (const f of PRESS_FIELDS) if (f.words.some((w) => name.includes(w)) || name.includes(f.label.split('·')[0])) fields.add(f.key)
+    const hit = SECTION_WORDS.filter(([re]) => re.test(name))
+    if (hit.length) hit.forEach(([, ws]) => ws.forEach((w) => kw.add(w)))
+    else kw.add(name.replace(/(종합|뉴스|소식)$/, '').trim())
+  }
+  return { keywords: usableKeywords([...kw]).filter((w) => w.length >= 2).slice(0, 40), fields: [...fields] }
+}
+
 // 추천 키워드로 쓸 단어: 짧은 영문 약어(IB, AI 등)는 다른 단어 속에 섞여 엉뚱한 자료가 걸리므로 뺀다
 export function usableKeywords(words: string[]) {
   return words.map((w) => w.replace(/[,()*%\\]/g, '').trim()).filter((w) => w && !(/^[\x00-\x7F]+$/.test(w) && w.length < 4))
