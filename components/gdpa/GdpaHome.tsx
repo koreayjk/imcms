@@ -51,8 +51,11 @@ function Eyebrow({ children, light = false }: { children: ReactNode; light?: boo
 export default async function GdpaHome({ lang = 'ko' }: { lang?: GdpaLang }) {
   const en = lang === 'en'
   const base = `${await gdpaBase()}${en ? '/en' : ''}`
-  const [outlets, news, notices] = await Promise.all([memberOutlets(lang), memberNews(6, 1, lang), boardPosts('notice', 1, 5)])
-  const [lead, ...rest] = news.items
+  const [outlets, news, notices] = await Promise.all([memberOutlets(lang), memberNews(30, 1, lang), boardPosts('notice', 1, 5)])
+  // 회원사 뉴스: 한 회원사 기사가 한꺼번에 올라와도 여러 회원사가 고르게 보이도록 한 곳에서 2건까지만 (최신순 그대로)
+  const perOutlet = new Map<string, number>()
+  const picked = news.items.filter((n) => { const c = perOutlet.get(n.outlet) ?? 0; if (c >= 2) return false; perOutlet.set(n.outlet, c + 1); return true }).slice(0, 6)
+  const [lead, ...rest] = picked.length >= 3 ? picked : news.items.slice(0, 6)
   const fd = (d: string | null) => formatDate(d, lang)
 
   return (
@@ -171,11 +174,11 @@ export default async function GdpaHome({ lang = 'ko' }: { lang?: GdpaLang }) {
           <Link href={`${base}/members`} className="text-[14.5px] font-semibold text-[var(--g-navy)] hover:text-[var(--g-gold-ink)]">{en ? 'All members →' : '회원사 전체 보기 →'}</Link>
         </div>
         <ul className="mt-10 grid gap-px overflow-hidden rounded-sm bg-[var(--g-line)] ring-1 ring-[var(--g-line)] md:grid-cols-3">
-          {outlets.map((o) => (
-            <li key={o.id} className="bg-white">
+          {outlets.map((o, i) => (
+            <li key={o.id} className={`bg-white ${i === outlets.length - 1 && outlets.length % 3 === 1 ? 'md:col-span-3' : i === outlets.length - 1 && outlets.length % 3 === 2 ? 'md:col-span-2' : ''}`}>
               <a href={o.url ?? '#'} target="_blank" rel="noopener" className="group flex h-full flex-col p-8 transition hover:bg-[var(--g-soft)]">
                 <div className="flex h-[72px] items-center">
-                  {o.logo ? <img src={o.logo} alt={o.name} className="max-h-[60px] max-w-[250px] object-contain" /> : <span className="text-[24px] font-extrabold">{o.name}</span>}
+                  {o.logo ? <img src={o.logo} alt={o.name} className="max-h-[60px] max-w-[250px] object-contain" /> : <span aria-hidden className="grid h-[56px] w-[56px] place-items-center rounded-sm bg-[var(--g-navy)] text-[24px] font-extrabold text-[var(--g-gold)]">{Array.from(o.name.replace(/^the\s+/i, ''))[0]?.toUpperCase()}</span>}
                 </div>
                 <p className="mt-6 text-[18px] font-bold tracking-[-0.02em]">{o.name}</p>
                 <p className="mt-1.5 flex-1 text-[14.5px] leading-[1.7] text-[var(--g-sub)]">{o.intro}</p>
@@ -262,7 +265,7 @@ export default async function GdpaHome({ lang = 'ko' }: { lang?: GdpaLang }) {
       </section>
 
       {/* 가입 안내 */}
-      <section className="relative isolate overflow-hidden bg-[var(--g-navy-d)] text-white">
+      <section className="relative isolate -mb-20 overflow-hidden bg-[var(--g-navy-d)] text-white">
         <img src="/gdpa/photos/seminar.jpg" alt="" loading="lazy" className="absolute inset-0 -z-10 h-full w-full object-cover opacity-40" />
         <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(8,28,51,.95)_0%,rgba(13,43,78,.75)_60%,rgba(13,43,78,.55)_100%)]" />
         <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 py-20 md:grid-cols-[1fr_auto] md:py-24">
