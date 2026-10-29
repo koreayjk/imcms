@@ -91,14 +91,20 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
   outlets.filter((o) => legalDone(o) < REQUIRED_LEGAL.length).forEach((o) => todos.push({ text: t(`${o.name}: 하단 필수 표시 정보 ${REQUIRED_LEGAL.length - legalDone(o)}개 비어 있음`, `${o.name}: ${REQUIRED_LEGAL.length - legalDone(o)} required footer ${REQUIRED_LEGAL.length - legalDone(o) === 1 ? 'item is' : 'items are'} empty`), href: `/admin/outlets/${o.id}/site` }))
   outlets.filter((o) => o.domain && st(o.id).published_week === 0).forEach((o) => todos.push({ text: t(`${o.name}: 최근 7일 발행 기사 없음`, `${o.name}: no stories published in the last 7 days`), href: `/admin/outlets/${o.id}/site` }))
 
-  // 그룹들 → 맨 아래 '개별 매체'(그룹 없이 혼자 운영하는 단독 언론사, 매체마다 숨은 그룹이 있다) → 그룹 없음
-  const soloIds = new Set(groups.filter((g) => g.solo).map((g) => g.id))
+  // 언론사는 대부분 매체 1개를 혼자 운영하므로 기본은 '개별 매체'로 보여 주고, 매체가 2개 이상 묶인 그룹만 그룹으로 나눈다
+  //   (매체가 1개뿐인 그룹도 개별 매체 칸에 보인다 — 화면만 그렇게 모을 뿐 그룹 자체는 그대로다) · 매체가 없는 그룹은 맨 아래에 따로 모아 지울 수 있게 한다
+  const realList = groups.filter((g) => !g.solo)
+  const countOf = (gid: string) => outlets.filter((o) => o.publisher_id === gid).length
+  const multi = realList.filter((g) => countOf(g.id) >= 2)
+  const multiIds = new Set(multi.map((g) => g.id))
+  const emptyGroups = realList.filter((g) => countOf(g.id) === 0)
   const sections = [
-    ...groups.filter((g) => !g.solo).map((g) => ({ id: g.id, name: g.name, note: '', list: outlets.filter((o) => o.publisher_id === g.id), deletable: true })),
-    { id: 'solo', name: t('개별 매체', 'Standalone outlets'), note: t('그룹 없이 혼자 운영하는 단독 언론사', 'Single outlets run on their own, without a group'), list: outlets.filter((o) => o.publisher_id && soloIds.has(o.publisher_id)), deletable: false },
+    ...multi.map((g) => ({ id: g.id, name: g.name, note: '', list: outlets.filter((o) => o.publisher_id === g.id), deletable: true })),
+    { id: 'solo', name: t('개별 매체', 'Standalone outlets'), note: t('그룹 없이 혼자 운영하는 언론사', 'Single outlets run on their own, without a group'), list: outlets.filter((o) => o.publisher_id && !multiIds.has(o.publisher_id) && groups.some((g) => g.id === o.publisher_id)), deletable: false },
     { id: 'none', name: t('그룹 없음', 'No group'), note: '', list: outlets.filter((o) => !o.publisher_id || !groups.some((g) => g.id === o.publisher_id)), deletable: false },
-  ].filter((s) => s.list.length || s.deletable)
-  const realGroups = groups.filter((g) => !g.solo).length
+  ].filter((s) => s.list.length)
+  const realGroups = multi.length
+  const standaloneCount = outlets.filter((o) => o.publisher_id && !multiIds.has(o.publisher_id)).length
 
   const today = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date())
 
@@ -116,7 +122,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
       {searchParams.ok && <p role="status" className="mb-4 rounded-lg border border-published/30 bg-published/5 px-4 py-3 text-[13.5px] text-published">{searchParams.ok}</p>}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-        <Kpi label={t('그룹', 'Groups')} value={realGroups} sub={t(`개별 매체 ${outlets.filter((o) => o.publisher_id && soloIds.has(o.publisher_id)).length}곳`, `${outlets.filter((o) => o.publisher_id && soloIds.has(o.publisher_id)).length} standalone`)} />
+        <Kpi label={t('그룹', 'Groups')} value={realGroups} sub={t(`개별 매체 ${standaloneCount}곳`, `${standaloneCount} standalone`)} />
         <Kpi label={t('매체', 'Outlets')} value={outlets.length} sub={t(`운영 ${live} · 준비 ${outlets.length - live}`, `${live} live · ${outlets.length - live} in prep`)} />
         <Kpi label={t('오늘 발행', 'Published today')} value={sum('published_today')} sub={t('전체 매체 기사', 'Stories across all outlets')} tone="good" />
         <Kpi label={t('최근 7일 발행', 'Last 7 days')} value={sum('published_week')} sub={t(`누적 ${sum('published').toLocaleString()}건`, `${sum('published').toLocaleString('en-US')} total`)} />
@@ -213,6 +219,21 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
               )}
             </section>
           ))}
+          {isSuper && emptyGroups.length > 0 && (
+            <section className="rounded-xl border border-dashed border-line bg-white px-5 py-3.5">
+              <p className="text-[13px] font-bold">{t('비어 있는 그룹', 'Empty groups')} <span className="font-normal text-muted">{t('매체가 하나도 없는 그룹입니다. 쓰지 않으면 지우세요.', 'These groups have no outlets. Delete them if unused.')}</span></p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {emptyGroups.map((g) => (
+                  <li key={g.id} className="flex items-center gap-2 rounded-full border border-line px-3 py-1 text-[12.5px]">
+                    {g.name}
+                    <form action={removeGroup.bind(null, g.id)}>
+                      <ConfirmSubmit message={t(`빈 그룹 ‘${g.name}’을(를) 지울까요?`, `Delete the empty group “${g.name}”?`)} className="text-muted underline underline-offset-2 hover:text-danger">{t('삭제', 'Delete')}</ConfirmSubmit>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <aside className="space-y-5">

@@ -129,7 +129,7 @@ export default function GroupOutlets({ groups, outlets, canManage, isSuper = fal
           <input name="name" required placeholder={t('매체 이름 (예: 시니어경제)', 'Outlet name (e.g. Senior Economy)')} aria-label={t('매체 이름', 'Outlet name')} className="field-input w-56" />
           <input name="domain" placeholder={t('도메인 (나중에 넣어도 됩니다)', 'Domain (you can add it later)')} aria-label={t('도메인', 'Domain')} className="field-input w-64" />
           {(
-            <select name="publisher_id" defaultValue={myGroupId && !myGroupIsSolo ? myGroupId : realGroups[0]?.id ?? SOLO} aria-label={t('그룹', 'Group')} className="field-input w-48">
+            <select name="publisher_id" defaultValue={myGroupId && !myGroupIsSolo ? myGroupId : isSuper ? SOLO : realGroups[0]?.id ?? SOLO} aria-label={t('그룹', 'Group')} className="field-input w-48">
               {isSuper && <option value={SOLO}>{t('개별 매체 (그룹 없음)', 'Standalone outlet (no group)')}</option>}
               {realGroups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
