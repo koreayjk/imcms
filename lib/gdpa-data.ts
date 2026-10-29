@@ -28,6 +28,8 @@ const MEMBER_EN: Record<string, { name: string; intro: string }> = {
   '다음세대타임즈': { name: 'NextGen Times', intro: 'Christian education news grounded in the Reformed faith: church education, Christian schools and faith at home.' },
   'The Statecraft Times': { name: 'The Statecraft Times', intro: 'English-language coverage of international politics, diplomacy, security and the world economy.' },
   '치앙마이미션타임즈': { name: 'Chiang Mai Mission Times', intro: 'Starting from Chiang Mai, Thailand: world mission trends, news from the field, unreached peoples and missionaries’ stories.' },
+  'Malaysia Times': { name: 'Malaysia Times', intro: 'News on Malaysia’s education policy and study-abroad system, plus economy, investment and industry, for readers interested in Malaysia.' },
+  '말레이시아 타임즈': { name: 'Malaysia Times', intro: 'News on Malaysia’s education policy and study-abroad system, plus economy, investment and industry, for readers interested in Malaysia.' },
   '월드미션타임즈': { name: 'World Mission Times', intro: 'Starting from Chiang Mai, Thailand: world mission trends, news from the field, unreached peoples and missionaries’ stories.' },
 }
 const titleCase = (s: string) => s.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase())
