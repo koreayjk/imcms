@@ -17,11 +17,11 @@ declare
   n int;
 begin
   select count(*) into n from outlets
-  where name in ('말레이시아 타임즈', '말레이시아타임즈') or name ilike '%말레이시아%타임즈%';
+  where name in ('말레이시아 타임즈', '말레이시아타임즈') or name ilike '%말레이시아%타임즈%' or name ilike '%malaysia%times%';
   if n = 0 then raise exception '말레이시아 타임즈 매체를 찾지 못했습니다. outlets 표의 이름을 확인해 주세요.'; end if;
   if n > 1 then raise exception '말레이시아 타임즈로 보이는 매체가 %개입니다. 하나만 남기거나 이 파일의 이름을 정확히 고쳐 주세요.', n; end if;
   select id into oid from outlets
-  where name in ('말레이시아 타임즈', '말레이시아타임즈') or name ilike '%말레이시아%타임즈%';
+  where name in ('말레이시아 타임즈', '말레이시아타임즈') or name ilike '%말레이시아%타임즈%' or name ilike '%malaysia%times%';
 
   -- 홈페이지 설정: 기본값 || 지금 설정 (지금 설정에 값이 있는 칸이 이긴다. 빈 글자·빈 칸은 기본값으로 채운다)
   update outlets set site = jsonb_build_object(
@@ -88,4 +88,4 @@ select o.name as "매체", o.site->>'nameEn' as "영문 이름", o.site->>'comin
   o.site->'legal'->>'editor' as "편집인",
   (select string_agg(c.name, ' · ' order by c.sort_order) from categories c where c.outlet_id = o.id and c.parent_slug is null) as "1차 메뉴"
 from outlets o
-where o.name in ('말레이시아 타임즈', '말레이시아타임즈') or o.name ilike '%말레이시아%타임즈%';
+where o.name in ('말레이시아 타임즈', '말레이시아타임즈') or o.name ilike '%말레이시아%타임즈%' or o.name ilike '%malaysia%times%';

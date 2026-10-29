@@ -15,7 +15,7 @@ with ctx as (
            (select p.id from profiles p where (to_jsonb(p) ->> 'is_super') = 'true' order by p.created_at limit 1)
          ) as author_id
   from outlets o
-  where o.name in ('말레이시아 타임즈', '말레이시아타임즈') or o.name ilike '%말레이시아%타임즈%'
+  where o.name in ('말레이시아 타임즈', '말레이시아타임즈') or o.name ilike '%말레이시아%타임즈%' or o.name ilike '%malaysia%times%'
   order by o.created_at limit 1
 )
 insert into articles (outlet_id, category_id, author_id, title, body, excerpt, thumbnail_url, status, published_at, tags, byline, ai_notes)
@@ -498,5 +498,5 @@ where not exists (select 1 from articles a where a.outlet_id = ctx.outlet_id and
 -- 확인 (섹션별 발행 기사 수, 기자명)
 select c.name as "섹션", a.byline as "기자명", a.status as "상태", count(*) as "기사 수"
 from articles a join categories c on c.id = a.category_id join outlets o on o.id = a.outlet_id
-where o.name in ('말레이시아 타임즈', '말레이시아타임즈') or o.name ilike '%말레이시아%타임즈%'
+where o.name in ('말레이시아 타임즈', '말레이시아타임즈') or o.name ilike '%말레이시아%타임즈%' or o.name ilike '%malaysia%times%'
 group by 1, 2, 3 order by 1;
