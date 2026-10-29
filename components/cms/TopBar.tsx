@@ -50,8 +50,15 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
   }
 
   // 그룹별로 묶어서 보여준다 (총관리자는 여러 그룹)
+  //   매체가 1개뿐인 그룹은 그룹 이름 대신 '개별 매체' 한 칸에 모아 보여 준다 (언론사는 대부분 매체 1개를 혼자 운영한다)
   const noGroup = t('그룹 없음', 'No group')
-  const groups = Array.from(new Set(outlets.map((o) => o.group ?? noGroup)))
+  const solo = t('개별 매체', 'Standalone outlets')
+  const rawGroups = Array.from(new Set(outlets.map((o) => o.group ?? noGroup)))
+  const countIn = (g: string) => outlets.filter((o) => (o.group ?? noGroup) === g).length
+  const mergeSolo = rawGroups.length > 1
+  const groupOf = (o: { group: string | null }) => { const g = o.group ?? noGroup; return mergeSolo && g !== noGroup && countIn(g) === 1 ? solo : g }
+  const rank = (g: string) => (g === noGroup ? 2 : g === solo ? 1 : 0)
+  const groups = Array.from(new Set(outlets.map(groupOf))).sort((a, b) => rank(a) - rank(b))
 
   async function logout() {
     await createClient().auth.signOut()
@@ -78,7 +85,7 @@ export default function TopBar({ outletName, groupName, outlets = [], siteUrl = 
               {isStaff ? <option value="">{t('전체 매체', 'All outlets')}</option> : !currentOutletId && <option value="">{t('매체 선택', 'Select outlet')}</option>}
               {groups.map((g) => (
                 <optgroup key={g} label={g}>
-                  {outlets.filter((o) => (o.group ?? noGroup) === g).map((o) => <option key={o.id} value={o.id}>{o.name}{o.role ? ` (${roleLabel(o.role as UserRole, lang)})` : ''}</option>)}
+                  {outlets.filter((o) => groupOf(o) === g).map((o) => <option key={o.id} value={o.id}>{o.name}{o.role ? ` (${roleLabel(o.role as UserRole, lang)})` : ''}</option>)}
                 </optgroup>
               ))}
             </select>
