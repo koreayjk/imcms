@@ -187,6 +187,9 @@ export async function proxy(request: NextRequest) {
   if (!user && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    // 로그인한 뒤 원래 보려던 화면으로 돌아오게 한다 (예: 고객에게 보낸 이용안내 링크). 화면 주소(GET)만, 첫 화면은 제외
+    const back = request.nextUrl.pathname + request.nextUrl.search
+    url.search = request.method === 'GET' && request.nextUrl.pathname !== '/' && !request.nextUrl.pathname.startsWith('/api/') ? `?next=${encodeURIComponent(back)}` : ''
     return NextResponse.redirect(url)
   }
 
@@ -229,7 +232,11 @@ export async function proxy(request: NextRequest) {
   // 로그인 상태에서 /login 접근 → CMS로
   if (user && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/newsroom'
+    // 이미 로그인한 채 링크로 들어왔으면 원래 보려던 화면으로 (우리 화면 주소만)
+    const want = request.nextUrl.searchParams.get('next')
+    const ok = !!want && want.startsWith('/') && !want.startsWith('//') && !want.startsWith('/login') && !want.startsWith('/signup')
+    url.pathname = ok ? want.split('?')[0] : '/newsroom'
+    url.search = ok && want.includes('?') ? want.slice(want.indexOf('?')) : ''
     return NextResponse.redirect(url)
   }
 

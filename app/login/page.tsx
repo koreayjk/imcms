@@ -19,12 +19,16 @@ export default function LoginPage() {
   const [unconfirmed, setUnconfirmed] = useState(false)
   const [resent, setResent] = useState('')
   const router = useRouter()
+  // 로그인 뒤 돌아갈 화면 (우리 화면 주소만, 로그인 화면 자신은 제외)
+  const [next, setNext] = useState('/newsroom')
 
   // 구글 로그인·메일 인증이 실패해서 돌아온 경우
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     const e = q.get('error')
     if (e) setError(e)
+    const n = q.get('next')
+    if (n && n.startsWith('/') && !n.startsWith('//') && !n.startsWith('/login')) setNext(n)
     // 내 정보에서 계정을 지운 뒤
     if (q.get('deleted') === '1') setResent(t('계정을 삭제했습니다. 그동안 IM 뉴스룸을 이용해 주셔서 감사합니다.', 'Your account has been deleted. Thank you for using IM Newsroom.'))
     // 인증 링크가 만료된 경우: 이메일을 적고 인증 메일을 다시 받을 수 있게
@@ -47,7 +51,7 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    router.push('/newsroom')
+    router.push(next)
     router.refresh()
   }
 
@@ -73,7 +77,7 @@ export default function LoginPage() {
         <span className="ios-app-only">{t(IOS_ORG_ONLY_NOTICE, 'This app is for members of newsrooms that use IM Newsroom only. Accounts are created by your newsroom’s publisher through an invitation email.')}</span>
       </>}
     >
-      <GoogleButton label={t('구글 계정으로 로그인', 'Sign in with Google')} />
+      <GoogleButton label={t('구글 계정으로 로그인', 'Sign in with Google')} next={next} />
       <OrDivider />
 
       <form onSubmit={handleLogin} className="space-y-4">
