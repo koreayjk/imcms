@@ -36,9 +36,9 @@ export default async function StatsPage(props: { searchParams: Promise<{ p?: str
 
   const args = { p_today: b.today, p_week: b.week, p_month: b.month, p_year: b.year }
   const [sum, daily, list, feed] = await Promise.all([
-    mine ? supabase.rpc('my_stats_summary', args) : supabase.rpc('outlet_view_summary', { p_outlet: outletId, ...args }),
-    mine ? supabase.rpc('my_daily_views', { p_from: b.ago30 }) : supabase.rpc('outlet_daily_views', { p_outlet: outletId, p_from: b.ago30 }),
-    mine ? supabase.rpc('my_article_stats', { p_from: from, p_sort: sort, p_limit: 30 }) : supabase.rpc('article_stats_list', { p_outlet: outletId, p_from: from, p_sort: sort, p_limit: 30 }),
+    mine ? supabase.rpc('my_stats_summary', { ...args, p_outlet: outletId }) : supabase.rpc('outlet_view_summary', { p_outlet: outletId, ...args }),
+    mine ? supabase.rpc('my_daily_views', { p_from: b.ago30, p_outlet: outletId }) : supabase.rpc('outlet_daily_views', { p_outlet: outletId, p_from: b.ago30 }),
+    mine ? supabase.rpc('my_article_stats', { p_from: from, p_sort: sort, p_limit: 30, p_outlet: outletId }) : supabase.rpc('article_stats_list', { p_outlet: outletId, p_from: from, p_sort: sort, p_limit: 30 }),
     mine ? Promise.resolve({ rows: [] as FeedRow[], pending: 0, error: undefined as boolean | undefined }) : fetchFeed('new'),
   ])
   const notReady = !!(sum.error || list.error)

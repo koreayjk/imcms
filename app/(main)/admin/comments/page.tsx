@@ -20,7 +20,7 @@ export default async function CommentsPage(props: { searchParams: Promise<{ s?: 
   const { t, lang } = await getT()
   // 기자: 내 기사에 달린 공개 댓글만 읽는다 (reporter-stats.sql). 승인·삭제·차단은 편집장이 한다
   if (!isEditorPlus && !isStaff) {
-    const { data, error } = await supabase.rpc('my_article_comments', { p_limit: 80 })
+    const { data, error } = await supabase.rpc('my_article_comments', { p_limit: 80, p_outlet: outletId })
     const all = (data ?? []) as { id: string; article_id: string; article_title: string; name: string; body: string; created_at: string; parent_id: string | null; staff: boolean }[]
     const tops = all.filter((c) => !c.parent_id)
     return (
