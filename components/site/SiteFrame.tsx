@@ -82,7 +82,7 @@ export default function SiteFrame({ site, current, children, home }: Props) {
           본문과 광고 칸을 같은 격자 칸에 겹쳐 두어, 광고가 본문보다 길면 그 높이만큼 아래 띠·푸터가 밀려 내려간다(덮지 않는다) */}
       <div className="grid">
         <main id="content" className="col-start-1 row-start-1 min-w-0">{children}</main>
-        <div data-fit-wing className="pointer-events-none col-start-1 row-start-1 ml-[calc(50%+616px)] hidden w-[300px] pt-40 min-[1840px]:block">
+        <div data-fit-wing className="pointer-events-none col-start-1 row-start-1 ml-[calc(50%+616px)] hidden w-[300px] pt-7 min-[1840px]:block">
           <AdArea site={site} slot="sidebar" wing className="pointer-events-auto" />
         </div>
       </div>

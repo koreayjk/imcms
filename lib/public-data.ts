@@ -5,7 +5,7 @@ import { demoArticles, demoSite } from './demo-articles'
 import { withLayout } from './sites'
 import { isLayoutDemoHost } from './home-layouts'
 import { SITES, applyOpenSchedule, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
-import { normalizeLayout, type SlotKey } from './home-layout'
+import { heroSecondsOf, normalizeLayout, type SlotKey } from './home-layout'
 import { INDEX_WEEKS, type IndexKey, type IndexSeries } from './market-index'
 import { outletTag } from './outlet-cache'
 
@@ -171,6 +171,8 @@ export type HomeData = {
   mostViewed: PublicArticle[]
   bySection: Record<string, PublicArticle[]>
   pinned: Record<SlotKey, (PublicArticle | null)[]>
+  // 톱 헤드라인 슬라이드가 넘어가는 간격(초)
+  heroSeconds?: number
 }
 
 const emptyPinned = () => normalizeLayout({}) as unknown as Record<SlotKey, (PublicArticle | null)[]>
@@ -179,13 +181,15 @@ const emptyPinned = () => normalizeLayout({}) as unknown as Record<SlotKey, (Pub
 async function pinnedArticles(scope: NonNullable<Awaited<ReturnType<typeof outletScope>>>) {
   const { data } = await scope.supabase.from('home_layouts').select('layout').eq('outlet_id', scope.outletId).maybeSingle()
   const layout = normalizeLayout(data?.layout)
+  const heroSeconds = heroSecondsOf(data?.layout)
   const ids = Array.from(new Set(Object.values(layout).flat().filter((x): x is string => !!x)))
-  if (!ids.length) return emptyPinned()
+  if (!ids.length) return { pinned: emptyPinned(), heroSeconds }
   const { data: rows } = await published(scope).in('id', ids)
   const byId = new Map((rows ?? []).map((r) => [r.id as string, toPublic(r)]))
-  return Object.fromEntries(
+  const pinned = Object.fromEntries(
     Object.entries(layout).map(([k, list]) => [k, list.map((id) => (id ? byId.get(id) ?? null : null))])
   ) as Record<SlotKey, (PublicArticle | null)[]>
+  return { pinned, heroSeconds }
 }
 
 async function loadHomeData(site: SiteConfig): Promise<HomeData> {
@@ -209,7 +213,7 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
   if (!scope) return { latest: [], mostViewed: [], bySection: {}, pinned: emptyPinned() }
   const tops = topSections(site)
 
-  const [pinned, latest, mostViewed, ...sections] = await Promise.all([
+  const [pinnedRes, latest, mostViewed, ...sections] = await Promise.all([
     pinnedArticles(scope),
     published(scope).order('published_at', { ascending: false }).limit(70),
     published(scope).order('view_count', { ascending: false }).limit(8),
@@ -223,7 +227,8 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
   ])
 
   return {
-    pinned,
+    pinned: pinnedRes.pinned,
+    heroSeconds: pinnedRes.heroSeconds,
     latest: (latest.data ?? []).map(toPublic),
     mostViewed: (mostViewed.data ?? []).map(toPublic),
     bySection: Object.fromEntries(tops.map((s, i) => [s.slug, (sections[i].data ?? []).map(toPublic)])),

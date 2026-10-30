@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type DragEvent } from 'react'
 import { createClient } from '@/lib/supabase'
 import { refreshOutletPages } from '@/app/(main)/articles/refresh'
 import { formatDateTime } from '@/lib/format'
-import { SLOTS, slotLabel, type HomeLayout, type SlotKey } from '@/lib/home-layout'
+import { HERO_SECONDS, SLOTS, slotLabel, type HomeLayout, type SlotKey } from '@/lib/home-layout'
 import { useT, useCmsLang } from '@/components/cms/CmsLang'
 import { HOME_LAYOUTS, type HomeLayout as HomeLayoutKey } from '@/lib/home-layouts'
 
@@ -25,11 +25,12 @@ const LAYOUT_EN: Record<string, { name: string; label: string }> = {
 }
 
 // 홈페이지 첫 화면 모양(홈 배치)별로 기사 자리를 그 모양 그대로 놓는다. 회색 칸은 자동으로 채워지는 자리
-export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'standard', initialLayout, articles, savedAt }: {
+export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'standard', initialLayout, initialHeroSeconds = 5, articles, savedAt }: {
   siteUrl?: string
   homeLayout?: HomeLayoutKey
   outletId: string
   initialLayout: HomeLayout
+  initialHeroSeconds?: number
   articles: BoardArticle[]
   savedAt: string | null
 }) {
@@ -37,6 +38,9 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
   const lang = useCmsLang()
   const [layout, setLayout] = useState(initialLayout)
   const [baseline, setBaseline] = useState(JSON.stringify(initialLayout))
+  // 톱 헤드라인 슬라이드가 다음 기사로 넘어가는 간격(초)
+  const [heroSeconds, setHeroSeconds] = useState(initialHeroSeconds)
+  const [baseHero, setBaseHero] = useState(initialHeroSeconds)
   const [selected, setSelected] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [over, setOver] = useState<string | null>(null)
@@ -45,7 +49,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
 
   const byId = useMemo(() => new Map(articles.map((a) => [a.id, a])), [articles])
   const placed = useMemo(() => new Set(Object.values(layout).flat().filter(Boolean) as string[]), [layout])
-  const dirty = JSON.stringify(layout) !== baseline
+  const dirty = JSON.stringify(layout) !== baseline || heroSeconds !== baseHero
   const filtered = articles.filter((a) => !query.trim() || a.title.includes(query.trim()))
 
   useEffect(() => {
@@ -94,7 +98,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
     const { data: { user } } = await supabase.auth.getUser()
     const { error } = await supabase.from('home_layouts').upsert({
       outlet_id: outletId,
-      layout,
+      layout: { ...layout, heroSeconds },
       updated_by: user?.id ?? null,
       updated_at: new Date().toISOString(),
     })
@@ -103,6 +107,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
       setMessage({ ok: false, text: `${t('저장하지 못했습니다', 'Could not save')}: ${error.message}` })
     } else {
       setBaseline(JSON.stringify(layout))
+      setBaseHero(heroSeconds)
       if (outletId) await refreshOutletPages(outletId).catch(() => {})
       setMessage({ ok: true, text: t('저장했습니다. 홈페이지에 바로 반영됩니다.', 'Saved. The change goes live on your homepage right away.') })
     }
@@ -152,7 +157,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           </div>
         ) : (
           <p className="flex h-full min-h-[inherit] items-center justify-center px-3 pt-4 text-center text-[12px] text-muted">
-            {id ? t('발행 취소된 기사입니다. 다른 기사로 바꿔주세요.', 'This story has been unpublished. Replace it with another story.') : slot === 'pick' ? t('비어 있음', 'Empty') : t('비어 있음 · 자동 배치', 'Empty · filled automatically')}
+            {id ? t('발행 취소된 기사입니다. 다른 기사로 바꿔주세요.', 'This story has been unpublished. Replace it with another story.') : slot === 'pick' || (slot === 'headline' && index > 0) ? t('비어 있음', 'Empty') : t('비어 있음 · 자동 배치', 'Empty · filled automatically')}
           </p>
         )}
       </div>
@@ -263,6 +268,24 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           <a href={`/admin/outlets/${outletId}/site`} className="ml-auto text-[12px] font-semibold text-[#2F6BF0] hover:underline">{t('홈 모양 바꾸기', 'Change home layout')}</a>
         </div>
         {canvas}
+        {homeLayout === 'standard' && (
+          <div className="mt-6 rounded-lg border border-line bg-[#FAFBFC] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div>
+                <p className="text-[13.5px] font-bold">{t('톱 헤드라인 슬라이드', 'Top headline slideshow')}</p>
+                <p className="mt-0.5 text-[12px] text-muted">{t('위 “톱 헤드라인 1”에 이어 아래 칸에 기사를 더 넣으면(최대 10개) 홈 가운데에서 자동으로 한 장씩 넘어갑니다. 1개만 두면 넘어가지 않습니다.', 'Add more stories in the slots below, after “Top headline 1” (up to 10), and the center of the home page advances one by one automatically. With just one, it stays still.')}</p>
+              </div>
+              <label className="flex items-center gap-2 text-[13px]">
+                <span className="font-semibold">{t('넘어가는 간격', 'Advance every')}</span>
+                <select value={heroSeconds} onChange={(e) => setHeroSeconds(Number(e.target.value))} className="field-input w-24 py-1">
+                  {HERO_SECONDS.map((n) => <option key={n} value={n}>{t(`${n}초`, `${n} s`)}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">{range(9).map((i) => cell('headline', i + 1, { compact: true }))}</div>
+            <p className="mt-2 text-[12px] text-muted">{t('지금 슬라이드에 들어간 기사', 'Stories in the slideshow now')}: {layout.headline.filter(Boolean).length}{t('개', '')}</p>
+          </div>
+        )}
       </section>
 
       <aside className="flex max-h-[70vh] flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-150px)] rounded-lg border border-line bg-white">
@@ -313,7 +336,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           {dirty && <span className="text-[13px] font-semibold text-draft">{t('저장하지 않은 변경이 있습니다', 'You have unsaved changes')}</span>}
           <div className="ml-auto flex gap-2">
             <a href={siteUrl} target="_blank" rel="noopener" className="btn-secondary">{t('홈페이지 보기 ↗', 'View homepage ↗')}</a>
-            <button type="button" onClick={() => setLayout(JSON.parse(baseline))} disabled={!dirty || saving} className="btn-secondary">{t('되돌리기', 'Revert')}</button>
+            <button type="button" onClick={() => { setLayout(JSON.parse(baseline)); setHeroSeconds(baseHero) }} disabled={!dirty || saving} className="btn-secondary">{t('되돌리기', 'Revert')}</button>
             <button type="button" onClick={save} disabled={!dirty || saving} className="btn-publish px-6">{saving ? t('저장 중…', 'Saving…') : t('저장', 'Save')}</button>
           </div>
         </div>

@@ -13,6 +13,7 @@ import SectionHeading from '@/components/site/SectionHeading'
 import MostViewed from '@/components/site/MostViewed'
 import FitRows from '@/components/site/FitRows'
 import WingFill from '@/components/site/WingFill'
+import HeroSlider from '@/components/site/HeroSlider'
 import ArticleRow from '@/components/site/ArticleRow'
 import SpecialtyTabs from '@/components/site/SpecialtyTabs'
 import Thumb from '@/components/site/Thumb'
@@ -55,7 +56,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   if (site.preview || isDemo || site.layoutDemo) site = withLayout(site, wanted)
   const t = siteText(site)
   const L = site.lang
-  const [{ latest, mostViewed, bySection, pinned }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])
+  const [{ latest, mostViewed, bySection, pinned, heroSeconds }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])
 
   if (!latest.length) {
     return (
@@ -88,8 +89,10 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const fill = (slots: (PublicArticle | null)[], pred: (a: PublicArticle) => boolean) =>
     slots.map((a) => a ?? take(1, pred)[0] ?? take(1)[0] ?? null).filter((a): a is PublicArticle => !!a)
 
+  // 톱 헤드라인: 편집판에서 고른 기사(최대 10개). 2개 이상이면 홈 가운데에서 자동으로 넘어가는 슬라이드가 된다
+  const heroSlides = pinned.headline.filter((a): a is PublicArticle => !!a)
   const headline =
-    pinned.headline[0] ?? take(1, (a) => a.is_featured && hasImage(a))[0] ?? take(1, hasImage)[0] ?? take(1)[0]
+    heroSlides[0] ?? take(1, (a) => a.is_featured && hasImage(a))[0] ?? take(1, hasImage)[0] ?? take(1)[0]
   const subTops = fill(pinned.top, hasImage)
   // 실시간 뉴스: PC는 왼쪽 두 기사 높이에 맞춰 7건, 휴대폰은 5건
   const realtime = take(7)
@@ -174,16 +177,23 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </div>
 
           <div className="min-w-0">
-            <Link href={`/news/${headline.id}`} className="headline-link group block">
-              <Thumb sizes="(max-width: 768px) 100vw, 720px" src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" />
-              <div className="mt-5 px-4 text-center">
-                <CategoryLabel article={headline} />
-                <h2 className="headline-text mt-1.5 line-clamp-2 text-balance text-[30px] font-extrabold leading-[1.3] tracking-[-0.035em] text-body">
-                  {headline.title}
-                </h2>
-                {headline.excerpt && <p className="mt-3 line-clamp-2 text-[15px] leading-[1.6] text-sub">{headline.excerpt}</p>}
-              </div>
-            </Link>
+            {(() => {
+              const hero = (a: PublicArticle) => (
+                <Link href={`/news/${a.id}`} className="headline-link group block">
+                  <div className="hs-photo overflow-hidden"><Thumb sizes="(max-width: 768px) 100vw, 720px" src={a.thumbnail_url} alt={a.title} ratio="16 / 10" /></div>
+                  <div className="hs-text mt-5 px-4 text-center">
+                    <CategoryLabel article={a} />
+                    <h2 className="headline-text mt-1.5 line-clamp-2 text-balance text-[30px] font-extrabold leading-[1.3] tracking-[-0.035em] text-body">
+                      {a.title}
+                    </h2>
+                    {a.excerpt && <p className="mt-3 line-clamp-2 text-[15px] leading-[1.6] text-sub">{a.excerpt}</p>}
+                  </div>
+                </Link>
+              )
+              return heroSlides.length > 1
+                ? <HeroSlider seconds={heroSeconds ?? 5} label={t.topStories} brand={site.colors.brand}>{heroSlides.map((a) => <div key={a.id}>{hero(a)}</div>)}</HeroSlider>
+                : hero(headline)
+            })()}
             {underHeadline.length > 0 && (
               <ul className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-rule pt-4">
                 {underHeadline.map((a) => (
@@ -284,9 +294,12 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             <ul className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
               {picks.map((a) => (
                 <li key={a.id}>
-                  <Link href={`/news/${a.id}`} className="headline-link group block border-l-2 border-rule pl-3 hover:border-gold">
-                    <CategoryLabel article={a} />
-                    <p className="headline-text mt-0.5 line-clamp-2 text-[15px] font-semibold leading-[1.45]">{a.title}</p>
+                  <Link href={`/news/${a.id}`} className="headline-link group block">
+                    {a.thumbnail_url && <Thumb sizes="(max-width: 1023px) 50vw, 280px" src={a.thumbnail_url} alt={a.title} ratio="3 / 2" className="mb-2.5" />}
+                    <div className="border-l-2 border-rule pl-3 group-hover:border-gold">
+                      <CategoryLabel article={a} />
+                      <p className="headline-text mt-0.5 line-clamp-2 text-[15px] font-semibold leading-[1.45]">{a.title}</p>
+                    </div>
                   </Link>
                 </li>
               ))}
