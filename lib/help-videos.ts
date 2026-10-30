@@ -18,9 +18,6 @@ export const HELP_VIDEOS: HelpVideo[] = [
   { id: 'members', title: '기자·편집장 초대하고 직급 정하기', desc: '새 기자를 초대하고, 승인하고, 기자·편집장 직급을 정하는 방법입니다.', youtube: '6Kgk4xIuqpU', link: { label: '회원 관리', href: '/admin/users' } },
   { id: 'write', title: '기사 쓰고 승인신청·발행하기', desc: '기사쓰기 → 저장 → 승인신청 → 편집장 발행까지의 기본 흐름입니다.', youtube: 't8t-SgKtW7Y', link: { label: '기사쓰기', href: '/articles/new' } },
   { id: 'press', title: '보도자료로 기사 만들기 (AI 초안·법적 검수)', desc: '보도자료함에서 AI 초안을 만들고, 발행 전 법적 검수를 받는 방법입니다. 메일로 받은 보도자료는 첨부파일(PDF·한글·워드·텍스트) 내용도 AI 초안이 함께 읽습니다.', youtube: 'sRRRRIm1P8Y', link: { label: '보도자료함', href: '/press' } },
-  { id: 'pressmail-gmail', title: '지메일 보도자료를 보도자료함으로 자동 받기', desc: '지메일 필터로 보도자료 메일만 전용 주소로 전달해 보도자료함에 자동으로 쌓이게 하는 방법입니다. 이 기능은 프리미엄은 기본 포함, 베이직·스탠다드는 부가 서비스(월 39,000원, 처음 3통 무료 체험)입니다.', link: { label: '메일로 받기 설정', href: '/press/email' } },
-  { id: 'pressmail-gmail-detail', title: '지메일 자동 받기 자세히 (화면 따라하기)', desc: '전달 주소 추가, 확인 링크, 필터 만들기까지 화면을 하나씩 따라 하며 설정합니다. 이 기능은 프리미엄은 기본 포함, 베이직·스탠다드는 부가 서비스(월 39,000원, 처음 3통 무료 체험)입니다.', link: { label: '메일로 받기 설정', href: '/press/email' } },
-  { id: 'pressmail-other', title: '네이버·다음·회사 메일 보도자료 자동 받기', desc: '지메일이 아닌 메일에서 보도자료를 자동으로 전달받는 방법입니다. 이 기능은 프리미엄은 기본 포함, 베이직·스탠다드는 부가 서비스(월 39,000원, 처음 3통 무료 체험)입니다.', link: { label: '메일로 받기 설정', href: '/press/email' } },
   { id: 'guide', title: '발행 전에 꼭 볼 것: 기사 작성 가이드 핵심', desc: '네이버 뉴스제휴 평가 기준에 맞춘 제목·바이라인·사진 출처 규칙을 짚어 봅니다.', youtube: '81CcaV6wdyw', link: { label: '작성 가이드', href: '/support/guide' } },
   { id: 'photos', title: '기사에 사진 넣고 저장 파일 쓰기', desc: '사진을 올리고, 설명을 달고, 저장 파일에서 다시 가져다 쓰는 방법입니다.', youtube: 'eJzR1GVs_2I', link: { label: '저장 파일', href: '/media' } },
   { id: 'approve', title: '편집장: 승인·반려와 일괄 승인', desc: '승인신청된 기사를 확인하고 한꺼번에 발행하거나 반려하는 방법입니다.', youtube: 'mijfdXVCkZM', link: { label: '기사목록', href: '/articles' } },
@@ -32,6 +29,9 @@ export const HELP_VIDEOS: HelpVideo[] = [
   { id: 'billing', title: '청구서 확인과 카드 등록(자동결제)', desc: '결제 정보를 입력하고, 청구서 메일의 결제하기로 로그인 없이 결제하고, 자동결제(매월 1일 오전 10시)와 청구서 확인·PDF 저장까지 한 번에 봅니다.', youtube: 'HKvkspHjPXo', link: { label: '결제 정보', href: '/support/billing' } },
   { id: 'newsletter', title: '뉴스레터 보내기', desc: '구독자에게 기사 모음을 메일로 보내는 방법입니다.', youtube: 'S1XK6JAM49o', link: { label: '뉴스레터', href: '/admin/newsletter' } },
   { id: 'support', title: '업무요청과 고객센터 이용하기', desc: '수정이나 문의를 업무요청으로 남기고, 답변과 공지를 확인하는 방법입니다.', youtube: 'HXyETgJWYBE', link: { label: '업무요청', href: '/support/tickets/new' } },
+  { id: 'pressmail-gmail', title: '지메일 보도자료를 보도자료함으로 자동 받기', desc: '지메일 필터로 보도자료 메일만 전용 주소로 전달해 보도자료함에 자동으로 쌓이게 하는 방법입니다. 이 기능은 프리미엄은 기본 포함, 베이직·스탠다드는 부가 서비스(월 39,000원, 처음 3통 무료 체험)입니다.', link: { label: '메일로 받기 설정', href: '/press/email' } },
+  { id: 'pressmail-gmail-detail', title: '지메일 자동 받기 자세히 (화면 따라하기)', desc: '전달 주소 추가, 확인 링크, 필터 만들기까지 화면을 하나씩 따라 하며 설정합니다. 이 기능은 프리미엄은 기본 포함, 베이직·스탠다드는 부가 서비스(월 39,000원, 처음 3통 무료 체험)입니다.', link: { label: '메일로 받기 설정', href: '/press/email' } },
+  { id: 'pressmail-other', title: '네이버·다음·회사 메일 보도자료 자동 받기', desc: '지메일이 아닌 메일에서 보도자료를 자동으로 전달받는 방법입니다. 이 기능은 프리미엄은 기본 포함, 베이직·스탠다드는 부가 서비스(월 39,000원, 처음 3통 무료 체험)입니다.', link: { label: '메일로 받기 설정', href: '/press/email' } },
 ]
 
 // 영어 화면용 제목·설명·연결 이름 (id 로 짝을 맞춘다). 영상은 모두 한국어 음성이다 → 영어 안내에 한 줄로 밝힌다 (HELP_VIDEOS_NOTE_EN)
