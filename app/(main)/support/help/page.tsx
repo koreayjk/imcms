@@ -72,7 +72,7 @@ export default async function HelpPage() {
           </div>
           <p className="mt-1 text-[13.5px] text-muted">{t('처음 쓰시는 분은 위에서부터 차례로 보세요. 영상마다 1~5분입니다.', 'If you are new, watch them in order from the top. Each video is 1 to 5 minutes.')}{lang === 'en' && ` ${HELP_VIDEOS_NOTE_EN}`}</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {videos.map((v, i) => <HelpVideoCard key={v.id} n={i + 1} title={v.title} desc={v.desc} videoId={v.videoId} src={v.own ? urls[v.id] : undefined} poster={posterOf(v.id)} link={v.link} />)}
+            {videos.map((v, i) => <HelpVideoCard key={v.id} n={i + 1} title={v.title} desc={v.desc} videoId={v.videoId} src={v.own ? urls[v.id] : undefined} poster={posterOf(v.id)} link={v.link} shareId={v.id} />)}
           </div>
         </section>
       )}
