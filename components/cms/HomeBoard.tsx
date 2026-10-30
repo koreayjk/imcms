@@ -48,6 +48,8 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(savedAt ? { ok: true, text: t(`마지막 저장 ${formatDateTime(savedAt)}`, `Last saved ${formatDateTime(savedAt, lang)}`) } : null)
 
   const byId = useMemo(() => new Map(articles.map((a) => [a.id, a])), [articles])
+  // 공개 시각이 아직 안 됐거나 없는 기사는 홈페이지에 나오지 않는다 (예약 발행). 배치해도 빈 자리처럼 보이므로 표시해 준다
+  const notLive = (a: BoardArticle | undefined) => !!a && (!a.published_at || Date.parse(a.published_at) > Date.now())
   const placed = useMemo(() => new Set(Object.values(layout).flat().filter(Boolean) as string[]), [layout])
   const dirty = JSON.stringify(layout) !== baseline || heroSeconds !== baseHero
   const filtered = articles.filter((a) => !query.trim() || a.title.includes(query.trim()))
@@ -145,6 +147,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
             )}
             <div className="min-w-0 flex-1">
               {a.category && <p className="text-[11px] text-muted">{a.category}</p>}
+              {notLive(a) && <p className="mb-0.5 w-fit rounded bg-danger/10 px-1.5 text-[10.5px] font-semibold text-danger">{t('공개 전 · 홈페이지에 안 나옴', 'Not public yet · hidden on the site')}</p>}
               <p className={`line-clamp-2 font-semibold leading-snug ${large ? 'text-[16px]' : 'text-[13px]'}`}>{a.title}</p>
             </div>
             <button
@@ -284,7 +287,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
               </label>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">{range(9).map((i) => cell('headline', i + 1, { compact: true }))}</div>
-            <p className="mt-2 text-[12px] text-muted">{t('지금 슬라이드에 들어간 기사', 'Stories in the slideshow now')}: {layout.headline.filter(Boolean).length}{t('개', '')}</p>
+            <p className="mt-2 text-[12px] text-muted">{t('지금 슬라이드에 들어간 기사', 'Stories in the slideshow now')}: {layout.headline.filter(Boolean).length}{t('개', '')}{layout.headline.some((id) => notLive(id ? byId.get(id) : undefined)) && <span className="ml-1 font-semibold text-danger">{t(`(그중 ${layout.headline.filter((id) => notLive(id ? byId.get(id) : undefined)).length}개는 공개 전이라 홈페이지에 안 나옵니다)`, ` (${layout.headline.filter((id) => notLive(id ? byId.get(id) : undefined)).length} not public yet, so hidden on the site)`)}</span>}</p>
           </div>
         )}
       </section>
