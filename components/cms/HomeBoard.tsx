@@ -109,7 +109,8 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
       setBaseline(JSON.stringify(layout))
       setBaseHero(heroSeconds)
       if (outletId) await refreshOutletPages(outletId).catch(() => {})
-      setMessage({ ok: true, text: t('저장했습니다. 홈페이지에 바로 반영됩니다.', 'Saved. The change goes live on your homepage right away.') })
+      const n = layout.headline.filter(Boolean).length
+      setMessage({ ok: true, text: t(`저장했습니다. 홈페이지에 바로 반영됩니다.${n > 1 ? ` (톱 헤드라인 슬라이드 ${n}개)` : ''}`, `Saved. The change goes live on your homepage right away.${n > 1 ? ` (${n} top headline slides)` : ''}`) })
     }
   }
 

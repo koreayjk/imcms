@@ -51,15 +51,15 @@ export default function MobileHero({ seconds, children, label, badge = 'TOP NEWS
       <style>{`
         .mhero .mh-slide{opacity:0;visibility:hidden;transition:opacity 900ms cubic-bezier(.4,0,.2,1),visibility 0s linear 900ms}
         .mhero .mh-slide[data-on="true"]{opacity:1;visibility:visible;transition:opacity 900ms cubic-bezier(.4,0,.2,1),visibility 0s}
-        .mhero .mh-slide[data-on="true"] .hs-photo{animation:mh-zoom var(--mh-ms) ease-out both}
+        .mhero .mh-slide[data-on="true"] .hs-photo>*{animation:mh-zoom var(--mh-ms) ease-out both}
         .mhero .mh-slide[data-on="true"] .hs-text{animation:mh-rise 800ms cubic-bezier(.2,.7,.2,1) 200ms both}
-        .mhero[data-paused="true"] .hs-photo{animation-play-state:paused}
+        .mhero [data-paused="true"] .hs-photo>*{animation-play-state:paused}
         @keyframes mh-zoom{from{transform:scale(1)}to{transform:scale(1.06)}}
         @keyframes mh-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
         @keyframes mh-bar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
         @media (prefers-reduced-motion:reduce){
           .mhero .mh-slide,.mhero .mh-slide[data-on="true"]{transition:none}
-          .mhero .mh-slide[data-on="true"] .hs-photo,.mhero .mh-slide[data-on="true"] .hs-text{animation:none}
+          .mhero .mh-slide[data-on="true"] .hs-photo>*,.mhero .mh-slide[data-on="true"] .hs-text{animation:none}
         }
       `}</style>
       <div className="grid" data-paused={paused} style={{ ['--mh-ms' as string]: `${ms + 900}ms` }}>

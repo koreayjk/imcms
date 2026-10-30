@@ -46,15 +46,15 @@ export default function HeroSlider({ seconds, children, label, brand = '#1F3A5F'
       <style>{`
         .hero-slider .hs-slide{opacity:0;visibility:hidden;transition:opacity 1100ms cubic-bezier(.4,0,.2,1),visibility 0s linear 1100ms}
         .hero-slider .hs-slide[data-on="true"]{opacity:1;visibility:visible;transition:opacity 1100ms cubic-bezier(.4,0,.2,1),visibility 0s}
-        .hero-slider .hs-slide[data-on="true"] .hs-photo{animation:hs-zoom var(--hs-ms) ease-out both}
+        .hero-slider .hs-slide[data-on="true"] .hs-photo>*{animation:hs-zoom var(--hs-ms) ease-out both}
         .hero-slider .hs-slide[data-on="true"] .hs-text{animation:hs-rise 900ms cubic-bezier(.2,.7,.2,1) 250ms both}
-        .hero-slider[data-paused="true"] .hs-photo{animation-play-state:paused}
+        .hero-slider [data-paused="true"] .hs-photo>*{animation-play-state:paused}
         @keyframes hs-zoom{from{transform:scale(1)}to{transform:scale(1.07)}}
         @keyframes hs-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
         @keyframes hs-bar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
         @media (prefers-reduced-motion:reduce){
           .hero-slider .hs-slide,.hero-slider .hs-slide[data-on="true"]{transition:none}
-          .hero-slider .hs-slide[data-on="true"] .hs-photo,.hero-slider .hs-slide[data-on="true"] .hs-text{animation:none}
+          .hero-slider .hs-slide[data-on="true"] .hs-photo>*,.hero-slider .hs-slide[data-on="true"] .hs-text{animation:none}
         }
       `}</style>
       <div className="grid" style={{ ['--hs-ms' as string]: `${ms + 1100}ms` }} data-paused={paused}>
