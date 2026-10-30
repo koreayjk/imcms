@@ -25,13 +25,13 @@ begin
     select s.day, s.views from article_stats_daily s where s.day >= p_year and s.article_id in (select id from mine)
   )
   select
-    coalesce((select sum(views) from d where day >= p_today), 0) + coalesce((select sum(rest) from mine where pub >= p_today), 0),
-    coalesce((select sum(views) from d where day >= p_week), 0) + coalesce((select sum(rest) from mine where pub >= p_week), 0),
-    coalesce((select sum(views) from d where day >= p_month), 0) + coalesce((select sum(rest) from mine where pub >= p_month), 0),
-    coalesce((select sum(views) from d), 0) + coalesce((select sum(rest) from mine where pub >= p_year), 0),
-    coalesce((select sum(view_count) from mine), 0),
-    coalesce((select sum(share_count) from mine), 0),
-    (select count(*) from comments c where c.status = 'approved' and c.staff_reply = false and c.article_id in (select id from mine)),
+    (coalesce((select sum(views) from d where day >= p_today), 0) + coalesce((select sum(rest) from mine where pub >= p_today), 0))::bigint,
+    (coalesce((select sum(views) from d where day >= p_week), 0) + coalesce((select sum(rest) from mine where pub >= p_week), 0))::bigint,
+    (coalesce((select sum(views) from d where day >= p_month), 0) + coalesce((select sum(rest) from mine where pub >= p_month), 0))::bigint,
+    (coalesce((select sum(views) from d), 0) + coalesce((select sum(rest) from mine where pub >= p_year), 0))::bigint,
+    coalesce((select sum(view_count) from mine), 0)::bigint,
+    coalesce((select sum(share_count) from mine), 0)::bigint,
+    (select count(*) from comments c where c.status = 'approved' and c.staff_reply = false and c.article_id in (select id from mine))::bigint,
     0::bigint;
 end $$;
 grant execute on function public.my_stats_summary(date, date, date, date) to authenticated;
