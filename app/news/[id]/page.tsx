@@ -54,11 +54,11 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       ...(a.category ? { section: a.category.name } : {}),
       ...(a.author_name ? { authors: [a.author_name] } : {}),
       ...(a.tags?.length ? { tags: a.tags } : {}),
-      // 기사 사진이 없으면 매체 대표 이미지
-      images: a.thumbnail_url ? [a.thumbnail_url] : site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : undefined,
+      // 기사 사진 → 없으면 매체 대표 이미지 → 그것도 없으면 매체 이름·기사 제목 카드 (없으면 메신저가 페이지 안의 엉뚱한 사진을 가져간다)
+      images: a.thumbnail_url ? [a.thumbnail_url] : site.ogImage ? [{ url: site.ogImage, width: 1200, height: 630 }] : [{ url: `/news/${a.id}/og`, width: 1200, height: 630 }],
     },
     ...(a.author_name ? { authors: [{ name: a.author_name }] } : {}),
-    twitter: { card: a.thumbnail_url || site.ogImage ? 'summary_large_image' : 'summary' },
+    twitter: { card: 'summary_large_image' },
   }
 }
 
