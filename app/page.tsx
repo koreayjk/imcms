@@ -14,6 +14,7 @@ import MostViewed from '@/components/site/MostViewed'
 import FitRows from '@/components/site/FitRows'
 import WingFill from '@/components/site/WingFill'
 import HeroSlider from '@/components/site/HeroSlider'
+import AutoRail from '@/components/site/AutoRail'
 import ArticleRow from '@/components/site/ArticleRow'
 import SpecialtyTabs from '@/components/site/SpecialtyTabs'
 import Thumb from '@/components/site/Thumb'
@@ -221,8 +222,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
         {/* ── 톱 기사: 모바일 (좌우로 넘기기) ── */}
         {!splitTop && <section aria-label={t.topStories} className="-mx-4 pt-4 lg:hidden">
-          <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1">
-            {[headline, ...subTops].map((a) => (
+          <AutoRail count={heroSlides.length > 1 ? heroSlides.length : 0} seconds={heroSeconds ?? 5} className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1">
+            {(heroSlides.length > 1 ? [...heroSlides, ...subTops.filter((a) => !heroSlides.some((h) => h.id === a.id))] : [headline, ...subTops]).map((a) => (
               <Link key={a.id} href={`/news/${a.id}`} className="w-[86%] flex-shrink-0 snap-center border border-rule bg-white">
                 <div className="px-4 pb-3 pt-4">
                   <CategoryLabel article={a} />
@@ -232,7 +233,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 {a.excerpt && <p className="line-clamp-2 px-4 py-3 text-[14px] leading-[1.6] text-sub">{a.excerpt}</p>}
               </Link>
             ))}
-          </div>
+          </AutoRail>
         </section>}
 
         {!bandsMode && (
