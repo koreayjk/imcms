@@ -2,10 +2,10 @@
 
 import { Children, useEffect, useRef, useState, type ReactNode } from 'react'
 
-// 휴대폰 홈 톱 기사: 화면 폭을 꽉 채운 큰 사진이 아래에서 흰색으로 풀리며 그 위에 큰 제목이 얹히고, 맨 위에는 TOP NEWS 표지, 맨 아래에는 기사 수만큼 나뉜 진행 막대가 있다.
-//   기사가 2개 이상이면 정한 간격(초)마다 부드럽게 겹쳐 바뀌고(사진은 천천히 확대), 좌우로 밀어서도 넘길 수 있다.
+// 휴대폰 홈 톱 기사: 화면 폭을 꽉 채운 큰 사진이 매체 짙은 색으로 풀려 내려가고, 그 위에 분류·큰 제목·요약이 흰 글씨로 얹힌다.
+//   맨 아래에는 금빛 번호(01 / 06)와 가는 진행선이 있다. 기사가 2개 이상이면 정한 간격(초)마다 부드럽게 겹쳐 바뀌고(사진은 천천히 확대), 좌우로 밀어서도 넘길 수 있다.
 //   손가락을 대고 있는 동안·다른 탭을 보는 동안은 멈추고, 움직임 줄이기 설정이면 확대 없이 바로 바뀐다
-export default function MobileHero({ seconds, children, label, badge = 'TOP NEWS', brand = '#1F3A5F' }: { seconds: number; children: ReactNode; label: string; badge?: string; brand?: string }) {
+export default function MobileHero({ seconds, children, label, bg = '#0F2238', accent = '#C9A227' }: { seconds: number; children: ReactNode; label: string; bg?: string; accent?: string }) {
   const slides = Children.toArray(children)
   const n = slides.length
   const [i, setI] = useState(0)
@@ -34,8 +34,8 @@ export default function MobileHero({ seconds, children, label, badge = 'TOP NEWS
       role="region"
       aria-roledescription="carousel"
       aria-label={label}
-      className="mhero relative"
-      style={{ touchAction: 'pan-y' }}
+      className="mhero relative overflow-hidden"
+      style={{ touchAction: 'pan-y', background: bg }}
       onTouchStart={(e) => { setHold(true); start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }}
       onTouchEnd={(e) => {
         const s = start.current
@@ -69,26 +69,27 @@ export default function MobileHero({ seconds, children, label, badge = 'TOP NEWS
           </div>
         ))}
       </div>
-      <span
-        className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 px-5 pb-3.5 pt-2 text-[17px] font-extrabold tracking-[-0.01em] text-white"
-        style={{ background: brand, clipPath: 'polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%)' }}
-      >
-        {badge}
-      </span>
       {n > 1 && (
-        <div className="flex gap-0.5 bg-[#E3E5E8]" data-paused={paused}>
-          {slides.map((_, k) => (
-            <button key={k} type="button" onClick={() => go(k)} aria-label={`${k + 1}번째 기사`} aria-current={k === i} className="relative block h-[10px] flex-1 overflow-hidden">
-              {k < i && <span className="absolute inset-0" style={{ background: brand, opacity: 0.4 }} />}
-              {k === i && (
-                <span
-                  key={`${i}-${ms}`}
-                  className="absolute inset-0 origin-left"
-                  style={{ background: brand, animation: `mh-bar ${ms}ms linear both`, animationPlayState: paused ? 'paused' : 'running' }}
-                />
-              )}
-            </button>
-          ))}
+        <div className="flex items-center gap-4 px-6 pb-6 pt-1" data-paused={paused}>
+          <span className="shrink-0 text-[13px] font-semibold tabular-nums tracking-[0.08em]" style={{ color: accent }}>
+            {String(i + 1).padStart(2, '0')}<span className="mx-1.5 text-white/35">/</span><span className="text-white/55">{String(n).padStart(2, '0')}</span>
+          </span>
+          <div className="flex flex-1 gap-1.5">
+            {slides.map((_, k) => (
+              <button key={k} type="button" onClick={() => go(k)} aria-label={`${k + 1}번째 기사`} aria-current={k === i} className="relative block h-[14px] flex-1">
+                <span className="absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 overflow-hidden rounded-full bg-white/20">
+                  {k < i && <span className="absolute inset-0" style={{ background: accent, opacity: 0.55 }} />}
+                  {k === i && (
+                    <span
+                      key={`${i}-${ms}`}
+                      className="absolute inset-0 origin-left"
+                      style={{ background: accent, animation: `mh-bar ${ms}ms linear both`, animationPlayState: paused ? 'paused' : 'running' }}
+                    />
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

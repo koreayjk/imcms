@@ -222,15 +222,17 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
         {/* ── 톱 기사: 모바일 (화면 폭 꽉 찬 큰 사진 + 큰 제목, 2개 이상이면 자동으로 넘어감) ── */}
         {!splitTop && <section aria-label={t.topStories} className="-mx-4 lg:hidden">
-          <MobileHero seconds={heroSeconds ?? 5} label={t.topStories} brand={site.colors.brand}>
+          <MobileHero seconds={heroSeconds ?? 5} label={t.topStories} bg={site.colors.brandDark} accent={site.colors.gold}>
             {(heroSlides.length > 1 ? heroSlides : [headline, ...subTops]).map((a) => (
-              <Link key={a.id} href={`/news/${a.id}`} className="headline-link group block">
+              <Link key={a.id} href={`/news/${a.id}`} className="group block text-white">
                 <div className="relative">
                   <div className="hs-photo overflow-hidden"><Thumb sizes="100vw" src={a.thumbnail_url} alt={a.title} ratio="4 / 3" /></div>
-                  <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[34%] bg-gradient-to-t from-white via-white/85 to-transparent" />
+                  <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%]" style={{ background: `linear-gradient(to top, ${site.colors.brandDark} 6%, ${site.colors.brandDark}CC 38%, transparent)` }} />
                 </div>
-                <div className="hs-text relative -mt-5 px-5 pb-6 text-center">
-                  <h2 className="headline-text line-clamp-2 text-balance text-[26px] font-extrabold leading-[1.3] tracking-[-0.035em] text-body">{a.title}</h2>
+                <div className="hs-text relative -mt-14 px-6 pb-5">
+                  {a.category && <p className="text-[12px] font-bold uppercase tracking-[0.16em]" style={{ color: site.colors.gold }}>{a.category.name}</p>}
+                  <h2 className="mt-2 line-clamp-3 text-balance text-[27px] font-extrabold leading-[1.28] tracking-[-0.035em] text-white">{a.title}</h2>
+                  {a.excerpt && <p className="mt-2.5 line-clamp-2 text-[14px] leading-[1.6] text-white/65">{a.excerpt}</p>}
                 </div>
               </Link>
             ))}
