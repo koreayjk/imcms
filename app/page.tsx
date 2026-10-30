@@ -14,7 +14,7 @@ import MostViewed from '@/components/site/MostViewed'
 import FitRows from '@/components/site/FitRows'
 import WingFill from '@/components/site/WingFill'
 import HeroSlider from '@/components/site/HeroSlider'
-import AutoRail from '@/components/site/AutoRail'
+import MobileHero from '@/components/site/MobileHero'
 import ArticleRow from '@/components/site/ArticleRow'
 import SpecialtyTabs from '@/components/site/SpecialtyTabs'
 import Thumb from '@/components/site/Thumb'
@@ -220,20 +220,21 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </>
         )}
 
-        {/* ── 톱 기사: 모바일 (좌우로 넘기기) ── */}
-        {!splitTop && <section aria-label={t.topStories} className="-mx-4 pt-4 lg:hidden">
-          <AutoRail count={heroSlides.length > 1 ? heroSlides.length : 0} seconds={heroSeconds ?? 5} className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1">
-            {(heroSlides.length > 1 ? [...heroSlides, ...subTops.filter((a) => !heroSlides.some((h) => h.id === a.id))] : [headline, ...subTops]).map((a) => (
-              <Link key={a.id} href={`/news/${a.id}`} className="w-[86%] flex-shrink-0 snap-center border border-rule bg-white">
-                <div className="px-4 pb-3 pt-4">
-                  <CategoryLabel article={a} />
-                  <h2 className="mt-1 line-clamp-2 text-[20px] font-bold leading-[1.38] tracking-[-0.03em]">{a.title}</h2>
+        {/* ── 톱 기사: 모바일 (화면 폭 꽉 찬 큰 사진 + 큰 제목, 2개 이상이면 자동으로 넘어감) ── */}
+        {!splitTop && <section aria-label={t.topStories} className="-mx-4 lg:hidden">
+          <MobileHero seconds={heroSeconds ?? 5} label={t.topStories} brand={site.colors.brand}>
+            {(heroSlides.length > 1 ? heroSlides : [headline, ...subTops]).map((a) => (
+              <Link key={a.id} href={`/news/${a.id}`} className="headline-link group block">
+                <div className="relative">
+                  <div className="hs-photo overflow-hidden"><Thumb sizes="100vw" src={a.thumbnail_url} alt={a.title} ratio="4 / 3" /></div>
+                  <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[34%] bg-gradient-to-t from-white via-white/85 to-transparent" />
                 </div>
-                <Thumb src={a.thumbnail_url} alt={a.title} ratio="16 / 10" />
-                {a.excerpt && <p className="line-clamp-2 px-4 py-3 text-[14px] leading-[1.6] text-sub">{a.excerpt}</p>}
+                <div className="hs-text relative -mt-5 px-5 pb-6 text-center">
+                  <h2 className="headline-text line-clamp-2 text-balance text-[26px] font-extrabold leading-[1.3] tracking-[-0.035em] text-body">{a.title}</h2>
+                </div>
               </Link>
             ))}
-          </AutoRail>
+          </MobileHero>
         </section>}
 
         {!bandsMode && (
