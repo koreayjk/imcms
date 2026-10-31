@@ -10,6 +10,8 @@ export type OnboardingStep = {
   you: string[]
   result: string
   keys: string[]
+  // 이 항목 중 하나라도 끝났으면(이미 그 뒤 단계까지 간 매체) 이 단계도 끝난 것으로 본다. 나중에 끼워 넣은 단계가 예전 매체에 "진행 중"으로 뜨지 않게 한다
+  doneIfAny?: string[]
   // 새로 시작하는 매체(옮길 기사가 없는 경우)에 대신 보여 줄 내용. 운영팀이 개통 체크리스트에서 "새로 시작하는 매체"를 체크하면 고객에게는 이쪽이 보인다
   alt?: { days: string; title: string; we: string[]; you: string[]; result: string }
 }
@@ -74,6 +76,16 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
       you: ['초안을 읽어 보시고 발행할 기사는 승인하고, 고칠 부분은 고치거나 빼 주세요. 발행 책임은 승인하신 매체에 있습니다.', '사설·칼럼·인터뷰 같은 오피니언·취재 기사는 초안(작성 중)만 드리며, 마무리는 매체에서 해 주셔야 합니다.'],
       result: '오픈 날 홈페이지가 비어 있지 않고, 승인하신 시작용 기사로 채워집니다.',
     },
+  },
+  {
+    id: 'design',
+    days: '5~8일',
+    title: '디자인 점검과 수정',
+    we: ['기본으로 꾸며 둔 홈페이지(홈 모양, 색, 로고 위치, 섹션 배치, 광고 자리 등)를 미리보기 링크로 보여 드리고, 바꾸고 싶은 디자인과 새로 넣고 싶은 디자인이 있는지 여쭙니다.', '말씀해 주신 내용을 반영해 수정하고, 수정본을 다시 확인받습니다. 반영하기 어려운 부분은 이유와 대안을 함께 알려 드립니다.'],
+    you: ['미리보기 링크로 홈페이지를 둘러보시고, 기본 디자인에서 바꾸고 싶은 곳과 넣고 싶은 디자인(예: 홈 모양, 색, 글자 느낌, 로고 위치, 띠 배너, 섹션 구성)을 개통 현황의 코멘트로 남겨 주세요. 참고하고 싶은 사이트 주소나 이미지를 함께 주셔도 좋습니다.', '수정본을 보시고 마음에 드시면 “확정”이라고 알려 주세요. 바꿀 곳이 없으시면 “그대로 진행”이라고만 남기셔도 됩니다.'],
+    result: '원하시는 모습의 홈페이지로 확정되고, 이후 오픈까지 그 디자인으로 진행됩니다.',
+    keys: ['design_collect', 'design_apply'],
+    doneIfAny: ['training', 'open_switch'],
   },
   {
     id: 'training',
@@ -148,6 +160,13 @@ const ONBOARDING_EN: Record<string, Omit<OnboardingStep, 'id' | 'keys'>> = {
       result: 'On launch day the website is not empty; it is filled with the starter stories you approved.',
     },
   },
+  design: {
+    days: 'Days 5-8',
+    title: 'Design review and changes',
+    we: ['We show you the default-styled website (home layout, colors, logo placement, section arrangement, ad slots, etc.) through a preview link and ask whether there is any design you would like to change, or any design you would like to add.', 'We make the changes you ask for and send you the updated version to check. For anything we cannot do, we explain why and offer an alternative.'],
+    you: ['Look around the website through the preview link and leave a comment in the launch status about what you would like to change from the default design and any design you would like to add (for example the home layout, colors, typography, logo placement, strip banners, or section structure). You can also share the address of a website or an image you like as a reference.', 'When you like the updated version, tell us it is “confirmed”. If there is nothing to change, just leave a note saying “proceed as is”.'],
+    result: 'The website design is confirmed the way you want it, and we continue to launch with that design.',
+  },
   training: {
     days: 'Days 5-7',
     title: 'How to use the newsroom',
@@ -182,7 +201,7 @@ export function stepStates(done: Record<string, unknown> | null | undefined, ope
   const d = done ?? {}
   let seenDoing = false
   return ONBOARDING_STEPS.map((s) => {
-    const complete = s.keys.length === 0 ? opened : s.keys.every((k) => d[k])
+    const complete = s.keys.length === 0 ? opened : s.keys.every((k) => d[k]) || !!s.doneIfAny?.some((k) => d[k])
     if (complete) return 'done'
     if (!seenDoing) { seenDoing = true; return 'doing' }
     return 'todo'
