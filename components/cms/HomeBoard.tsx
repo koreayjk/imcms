@@ -272,7 +272,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           <a href={`/admin/outlets/${outletId}/site`} className="ml-auto text-[12px] font-semibold text-[#2F6BF0] hover:underline">{t('홈 모양 바꾸기', 'Change home layout')}</a>
         </div>
         {canvas}
-        {homeLayout === 'standard' && (
+        {(
           <div className="mt-6 rounded-lg border border-line bg-[#FAFBFC] p-4">
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
               <div>

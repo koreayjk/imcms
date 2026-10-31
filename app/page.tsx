@@ -143,7 +143,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
       </>
     )
-    const common = { site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras }
+    const common = { site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras, slides: heroSlides, heroSeconds }
     return (
       <SiteFrame site={site} home>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
@@ -161,7 +161,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       {/* 매체 이름·로고 구조화 데이터 (구글 검색·구글 뉴스용, 화면에는 안 보임) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
       <div className="mx-auto max-w-[1200px] px-4">
-        {splitTop && <HomeBandsTop site={site} headline={headline} items={[...subTops.slice(0, 2), ...underHeadline].slice(0, 4)} />}
+        {splitTop && <HomeBandsTop site={site} headline={headline} items={[...subTops.slice(0, 2), ...underHeadline].slice(0, 4)} slides={heroSlides} heroSeconds={heroSeconds} />}
         {!splitTop && (
           <>
         {/* ── 톱 기사: PC ── */}

@@ -7,6 +7,7 @@ import { siteText } from '@/lib/site-text'
 import SectionHeading from './SectionHeading'
 import MostViewed from './MostViewed'
 import Thumb from './Thumb'
+import HeroSlider from './HeroSlider'
 import { CategoryLabel, TitleList } from './items'
 
 // 홈 배치 '한국 스타일 2 · 포털 목록형' (homeLayout = 'portal')
@@ -26,9 +27,12 @@ type Props = {
   sections: SectionConfig[]
   middleAd?: ReactNode
   sideExtras?: ReactNode
+  // 톱 헤드라인 슬라이드(홈 편집판에서 정한 2개 이상의 기사)와 넘어가는 간격(초)
+  slides?: PublicArticle[]
+  heroSeconds?: number
 }
 
-export default function HomePortal({ site, headline, subTops, underHeadline, breaking, major, picks, mostViewed, bySection, sections, middleAd, sideExtras }: Props) {
+export default function HomePortal({ site, headline, subTops, underHeadline, breaking, major, picks, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
   const L = site.lang
   const t = siteText(site)
   const boxes = sections.filter((s) => (bySection[s.slug] ?? []).length > 0).slice(0, 8)
@@ -57,14 +61,21 @@ export default function HomePortal({ site, headline, subTops, underHeadline, bre
       <div className="mx-auto max-w-[1200px] px-4">
         {/* ── 톱: 큰 사진 + 오른쪽 제목 목록 ── */}
         <section aria-label={t.topStories} className="grid grid-cols-1 gap-6 border-b border-rule py-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:gap-8 lg:py-7">
-          <Link href={`/news/${headline.id}`} className="headline-link group relative block overflow-hidden">
-            <Thumb sizes="(max-width: 1023px) 100vw, 720px" src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-4 pb-4 pt-16 text-white sm:px-6 sm:pb-6">
-              {headline.category && <span className="block text-[12px] font-semibold text-white/85">{headline.category.name}</span>}
-              <h2 className="mt-1 line-clamp-2 text-balance text-[22px] font-extrabold leading-[1.32] tracking-[-0.03em] sm:text-[30px]">{headline.title}</h2>
-              {headline.excerpt && <p className="mt-2 hidden line-clamp-1 text-[14.5px] text-white/85 sm:block">{headline.excerpt}</p>}
-            </div>
-          </Link>
+          {(() => {
+            const hero = (h: PublicArticle) => (
+              <Link href={`/news/${h.id}`} className="headline-link group relative block overflow-hidden">
+                <div className="hs-photo overflow-hidden"><Thumb sizes="(max-width: 1023px) 100vw, 720px" src={h.thumbnail_url} alt={h.title} ratio="16 / 10" /></div>
+                <div className="hs-text absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-4 pb-4 pt-16 text-white sm:px-6 sm:pb-6">
+                  {h.category && <span className="block text-[12px] font-semibold text-white/85">{h.category.name}</span>}
+                  <h2 className="mt-1 line-clamp-2 text-balance text-[22px] font-extrabold leading-[1.32] tracking-[-0.03em] sm:text-[30px]">{h.title}</h2>
+                  {h.excerpt && <p className="mt-2 hidden line-clamp-1 text-[14.5px] text-white/85 sm:block">{h.excerpt}</p>}
+                </div>
+              </Link>
+            )
+            return slides && slides.length > 1
+              ? <HeroSlider seconds={heroSeconds ?? 5} label={t.topStories} brand={site.colors.brand}>{slides.map((h) => <div key={h.id}>{hero(h)}</div>)}</HeroSlider>
+              : hero(headline)
+          })()}
 
           <div className="min-w-0">
             <ul className="divide-y divide-rule">

@@ -5,6 +5,7 @@ import type { SectionConfig, SiteConfig } from '@/lib/sites'
 import { formatDate, formatShort } from '@/lib/format'
 import { siteText } from '@/lib/site-text'
 import Thumb from './Thumb'
+import HeroSlider from './HeroSlider'
 
 // 홈 배치 '미국 스타일 1 · 에디토리얼' (homeLayout = 'editorial')
 //   머리말은 가운데 큰 제호 + 가로 메뉴(SiteHeader). 제목은 명조(세리프), 가는 선으로 칸을 나눈다
@@ -23,6 +24,9 @@ type Props = {
   sections: SectionConfig[]
   middleAd?: ReactNode
   sideExtras?: ReactNode
+  // 톱 헤드라인 슬라이드(홈 편집판에서 정한 2개 이상의 기사)와 넘어가는 간격(초)
+  slides?: PublicArticle[]
+  heroSeconds?: number
 }
 
 const kicker = 'text-[11.5px] font-bold uppercase tracking-[0.14em] text-gold-ink'
@@ -31,7 +35,7 @@ function Kicker({ a }: { a: PublicArticle }) {
   return a.category ? <span className={`block ${kicker}`}>{a.category.name}</span> : null
 }
 
-export default function HomeEditorial({ site, headline, subTops, underHeadline, realtime, major, picks, mostViewed, bySection, sections, middleAd, sideExtras }: Props) {
+export default function HomeEditorial({ site, headline, subTops, underHeadline, realtime, major, picks, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
   const L = site.lang
   const t = siteText(site)
   const leftItems = subTops.slice(0, 2)
@@ -43,15 +47,22 @@ export default function HomeEditorial({ site, headline, subTops, underHeadline, 
       <section aria-label={t.topStories} className="grid grid-cols-1 gap-8 py-7 lg:grid-cols-[250px_minmax(0,1fr)_280px] lg:gap-0">
         {/* 가운데: 큰 톱 */}
         <div className="order-first min-w-0 lg:order-none lg:border-x lg:border-rule lg:px-7">
-        <Link href={`/news/${headline.id}`} className="headline-link group block">
-          <Thumb sizes="(max-width: 1023px) 100vw, 640px" src={headline.thumbnail_url} alt={headline.title} ratio="3 / 2" />
-          <div className="mt-4">
-            <Kicker a={headline} />
-            <h2 className="headline-text mt-1 text-balance text-[27px] font-extrabold leading-[1.28] tracking-[-0.02em] lg:text-[34px]">{headline.title}</h2>
-            {headline.excerpt && <p className="mt-3 line-clamp-3 text-[16px] leading-[1.65] text-sub">{headline.excerpt}</p>}
-            <p className="mt-3 text-[12.5px] text-[#8A918C]">{headline.author_name ? `${headline.author_name} · ` : ''}{formatDate(headline.published_at, L, site.timeZone)}</p>
-          </div>
-        </Link>
+        {(() => {
+          const hero = (h: PublicArticle) => (
+            <Link href={`/news/${h.id}`} className="headline-link group block">
+              <div className="hs-photo overflow-hidden"><Thumb sizes="(max-width: 1023px) 100vw, 640px" src={h.thumbnail_url} alt={h.title} ratio="3 / 2" /></div>
+              <div className="hs-text mt-4">
+                <Kicker a={h} />
+                <h2 className="headline-text mt-1 text-balance text-[27px] font-extrabold leading-[1.28] tracking-[-0.02em] lg:text-[34px]">{h.title}</h2>
+                {h.excerpt && <p className="mt-3 line-clamp-3 text-[16px] leading-[1.65] text-sub">{h.excerpt}</p>}
+                <p className="mt-3 text-[12.5px] text-[#8A918C]">{h.author_name ? `${h.author_name} · ` : ''}{formatDate(h.published_at, L, site.timeZone)}</p>
+              </div>
+            </Link>
+          )
+          return slides && slides.length > 1
+            ? <HeroSlider seconds={heroSeconds ?? 5} label={t.topStories} brand={site.colors.brand}>{slides.map((h) => <div key={h.id}>{hero(h)}</div>)}</HeroSlider>
+            : hero(headline)
+        })()}
         {underHeadline.length > 0 && (
           <ul className="mt-6 grid grid-cols-1 gap-x-6 border-t border-rule sm:grid-cols-2">
             {underHeadline.slice(0, 4).map((a) => (

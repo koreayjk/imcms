@@ -5,6 +5,7 @@ import type { SectionConfig, SiteConfig } from '@/lib/sites'
 import { formatDate } from '@/lib/format'
 import { siteText } from '@/lib/site-text'
 import Thumb from './Thumb'
+import HeroSlider from './HeroSlider'
 
 // 홈 배치 '미국 스타일 2 · 카드 매거진' (homeLayout = 'cards')
 //   큰 히어로 사진(제목은 사진 위) → 둥근 카드 그리드 → 많이 본 기사 → 섹션별 카드 줄 (휴대폰은 옆으로 밀어서 봄)
@@ -22,6 +23,9 @@ type Props = {
   sections: SectionConfig[]
   middleAd?: ReactNode
   sideExtras?: ReactNode
+  // 톱 헤드라인 슬라이드(홈 편집판에서 정한 2개 이상의 기사)와 넘어가는 간격(초)
+  slides?: PublicArticle[]
+  heroSeconds?: number
 }
 
 function Chip({ a, light = false }: { a: PublicArticle; light?: boolean }) {
@@ -54,7 +58,7 @@ function RowHead({ title, href, more }: { title: string; href?: string; more: st
   )
 }
 
-export default function HomeCards({ site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections, middleAd, sideExtras }: Props) {
+export default function HomeCards({ site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
   const L = site.lang
   const t = siteText(site)
   const topCards = [...subTops.slice(0, 2), ...underHeadline].slice(0, 6)
@@ -64,14 +68,21 @@ export default function HomeCards({ site, headline, subTops, underHeadline, majo
     <div className="mx-auto max-w-[1200px] px-4 pb-6">
       {/* ── 히어로 ── */}
       <section aria-label={t.topStories} className="pt-5 lg:pt-7">
-        <Link href={`/news/${headline.id}`} className="headline-link group relative block overflow-hidden rounded-2xl">
-          <Thumb sizes="(max-width: 1023px) 100vw, 1200px" src={headline.thumbnail_url} alt={headline.title} ratio="16 / 10" className="lg:!aspect-[21/9]" />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-5 pb-5 pt-24 text-white sm:px-9 sm:pb-8">
-            <Chip a={headline} light />
-            <h2 className="mt-3 line-clamp-3 max-w-[900px] text-balance text-[25px] font-extrabold leading-[1.28] tracking-[-0.03em] sm:text-[38px]">{headline.title}</h2>
-            {headline.excerpt && <p className="mt-2.5 hidden max-w-[760px] line-clamp-2 text-[16px] leading-[1.6] text-white/85 sm:block">{headline.excerpt}</p>}
-          </div>
-        </Link>
+        {(() => {
+          const hero = (h: PublicArticle) => (
+            <Link href={`/news/${h.id}`} className="headline-link group relative block overflow-hidden rounded-2xl">
+              <div className="hs-photo overflow-hidden"><Thumb sizes="(max-width: 1023px) 100vw, 1200px" src={h.thumbnail_url} alt={h.title} ratio="16 / 10" className="lg:!aspect-[21/9]" /></div>
+              <div className="hs-text absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-5 pb-5 pt-24 text-white sm:px-9 sm:pb-8">
+                <Chip a={h} light />
+                <h2 className="mt-3 line-clamp-3 max-w-[900px] text-balance text-[25px] font-extrabold leading-[1.28] tracking-[-0.03em] sm:text-[38px]">{h.title}</h2>
+                {h.excerpt && <p className="mt-2.5 hidden max-w-[760px] line-clamp-2 text-[16px] leading-[1.6] text-white/85 sm:block">{h.excerpt}</p>}
+              </div>
+            </Link>
+          )
+          return slides && slides.length > 1
+            ? <HeroSlider seconds={heroSeconds ?? 5} label={t.topStories} brand={site.colors.brand}>{slides.map((h) => <div key={h.id}>{hero(h)}</div>)}</HeroSlider>
+            : hero(headline)
+        })()}
       </section>
 
       {/* ── 주요 카드 ── */}
