@@ -189,7 +189,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
       <>
         <div className={`grid gap-3 ${THREE}`}>
           <div className="grid gap-3">{cell('top', 0, { compact: true })}{cell('top', 1, { compact: true })}</div>
-          <div className="grid gap-3">{cell('headline', 0, { large: true })}{auto(t('헤드라인 아래 최신 기사 4건 (자동)', '4 latest stories below the headline (automatic)'), 'min-h-[64px]')}</div>
+          <div className="grid gap-3">{cell('headline', 0, { large: true })}<div className="grid grid-cols-2 gap-3">{range(4).map((i) => cell('under', i, { compact: true }))}</div></div>
           {auto(t('실시간 뉴스 (자동)', 'Live news (automatic)'), 'min-h-[120px]')}
         </div>
         {head(t('주요뉴스', 'Top stories'), t('비우면 최신 기사로 자동', 'If empty, filled with the latest stories'))}
@@ -206,7 +206,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
         {auto(t('속보 띠 — 최신 기사 5건 (자동)', 'Breaking news strip — 5 latest stories (automatic)'), 'mb-3 min-h-[34px]')}
         <div className="grid gap-3 md:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
           {cell('headline', 0, { large: true, className: 'md:min-h-[230px]' })}
-          <div className="grid gap-3">{cell('top', 0)}{cell('top', 1)}{auto(t('최신 제목 목록 4건 (자동)', 'List of 4 latest headlines (automatic)'), 'min-h-[64px]')}</div>
+          <div className="grid gap-3">{cell('top', 0)}{cell('top', 1)}<div className="grid grid-cols-2 gap-3">{range(4).map((i) => cell('under', i, { compact: true }))}</div></div>
         </div>
         {picks}
         {head(t('주요뉴스', 'Top stories'), t('비우면 최신 기사로 자동', 'If empty, filled with the latest stories'))}
@@ -222,7 +222,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
       <>
         {cell('headline', 0, { large: true })}
         <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {cell('top', 0)}{cell('top', 1)}{auto(t('최신 기사 (자동)', 'Latest story (automatic)'), 'min-h-[88px]')}{auto(t('최신 기사 (자동)', 'Latest story (automatic)'), 'min-h-[88px]')}
+          {cell('top', 0)}{cell('top', 1)}{cell('under', 0)}{cell('under', 1)}
         </div>
         {auto(t('섹션별 띠 — 메뉴 순서대로 자동', 'Section bands — automatic, in menu order'), 'mt-3 min-h-[64px]')}
         {picks}
@@ -234,7 +234,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
       <>
         <div className={`grid gap-3 ${THREE}`}>
           <div className="grid gap-3">{cell('top', 0, { compact: true })}{cell('top', 1, { compact: true })}{auto(t('실시간 3건 (자동)', '3 live stories (automatic)'), 'min-h-[64px]')}</div>
-          <div className="grid gap-3">{cell('headline', 0, { large: true })}{auto(t('헤드라인 아래 최신 기사 4건 (자동)', '4 latest stories below the headline (automatic)'), 'min-h-[64px]')}</div>
+          <div className="grid gap-3">{cell('headline', 0, { large: true })}<div className="grid grid-cols-2 gap-3">{range(4).map((i) => cell('under', i, { compact: true }))}</div></div>
           {auto(t('많이 본 기사 (자동)', 'Most read (automatic)'), 'min-h-[120px]')}
         </div>
         {picks}
@@ -248,9 +248,9 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
     cards: (
       <>
         {cell('headline', 0, { large: true, className: 'min-h-[170px]' })}
-        {head(t('톱 아래 카드 6장', '6 cards below the top story'), t('앞의 2장은 직접, 나머지 4장은 최신 기사로 자동', 'Place the first 2 yourself; the other 4 are filled with the latest stories'))}
+        {head(t('톱 아래 카드 6장', '6 cards below the top story'), t('6장 모두 직접 놓을 수 있고, 비운 칸은 최신 기사로 자동', 'You can place all 6 yourself; empty slots are filled with the latest stories'))}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {cell('top', 0)}{cell('top', 1)}{range(4).map((i) => <div key={`a${i}`}>{auto(t('최신 기사 (자동)', 'Latest story (automatic)'), 'min-h-[92px]')}</div>)}
+          {cell('top', 0)}{cell('top', 1)}{range(4).map((i) => cell('under', i))}
         </div>
         {picks}
         {auto(t('많이 본 뉴스 (자동)', 'Most read (automatic)'), 'mt-3 min-h-[48px]')}

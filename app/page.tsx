@@ -98,7 +98,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // 실시간 뉴스: PC는 왼쪽 두 기사 높이에 맞춰 7건, 휴대폰은 5건
   const realtime = take(7)
   // 헤드라인 아래 작은 기사 4건 (가운데가 비어 보이지 않게)
-  const underHeadline = take(4)
+  // 최신 기사 칸 4개: 편집판에서 고른 기사가 먼저, 빈 칸은 최신 기사로
+  const pinnedUnder = pinned.under.filter((x): x is PublicArticle => !!x)
+  const underHeadline = [...pinnedUnder, ...take(Math.max(0, 4 - pinnedUnder.length))].slice(0, 4)
   const major = fill(pinned.major, hasImage)
   // 오른쪽 광고(최대 10개)가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 오른쪽 높이에 맞춰 연다. 기사가 모자라면 있는 만큼만)
   const usedBeforeMore = new Set(used)
