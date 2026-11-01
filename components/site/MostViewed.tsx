@@ -6,7 +6,7 @@ import type { SiteLang } from '@/lib/sites'
 import { siteText } from '@/lib/site-text'
 import FitList from './FitList'
 
-// fit: 홈에서 왼쪽 칸이 더 길면 빈자리만큼 목록을 이어 붙인다 (items 를 넉넉히 넘긴다)
+// fit: 홈에서 왼쪽 칸이 더 길면 빈자리만큼 목록을 이어 붙인다 (홈은 10건)
 export default function MostViewed({ items, lang, fit }: { items: PublicArticle[]; lang?: SiteLang; fit?: boolean }) {
   if (!items.length) return null
   const t = siteText(lang)
@@ -36,5 +36,5 @@ export default function MostViewed({ items, lang, fit }: { items: PublicArticle[
 }
 
 function List({ fit, children }: { fit?: boolean; children: ReactNode }) {
-  return fit ? <FitList min={8} className="space-y-3">{children}</FitList> : <ol className="space-y-3">{children}</ol>
+  return fit ? <FitList min={10} className="space-y-3">{children}</FitList> : <ol className="space-y-3">{children}</ol>
 }

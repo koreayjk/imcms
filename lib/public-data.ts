@@ -203,7 +203,7 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
     )
     return {
       latest: all.slice(0, 30),
-      mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 16),
+      mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 10),
       bySection,
       pinned: emptyPinned(),
     }
@@ -216,7 +216,7 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
   const [pinnedRes, latest, mostViewed, ...sections] = await Promise.all([
     pinnedArticles(scope),
     published(scope).order('published_at', { ascending: false }).limit(70),
-    published(scope).order('view_count', { ascending: false }).limit(16),
+    published(scope).order('view_count', { ascending: false }).limit(10),
     // 1차 섹션마다 (2차 메뉴 기사 포함)
     ...tops.map((s) => {
       const ids = familyIds(site, scope.catIds, s.slug)
