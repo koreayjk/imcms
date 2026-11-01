@@ -1,16 +1,19 @@
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import type { PublicArticle } from '@/lib/public-data'
 import SectionHeading from './SectionHeading'
 import type { SiteLang } from '@/lib/sites'
 import { siteText } from '@/lib/site-text'
+import FitList from './FitList'
 
-export default function MostViewed({ items, lang }: { items: PublicArticle[]; lang?: SiteLang }) {
+// fit: 홈에서 왼쪽 칸이 더 길면 빈자리만큼 목록을 이어 붙인다 (items 를 넉넉히 넘긴다)
+export default function MostViewed({ items, lang, fit }: { items: PublicArticle[]; lang?: SiteLang; fit?: boolean }) {
   if (!items.length) return null
   const t = siteText(lang)
   return (
     <section aria-label={t.popular}>
       <SectionHeading title={t.popular} as="h3" lang={lang} />
-      <ol className="space-y-3">
+      <List fit={fit}>
         {items.map((a, i) => (
           <li key={a.id}>
             <Link href={`/news/${a.id}`} className="group flex gap-3">
@@ -27,7 +30,11 @@ export default function MostViewed({ items, lang }: { items: PublicArticle[]; la
             </Link>
           </li>
         ))}
-      </ol>
+      </List>
     </section>
   )
+}
+
+function List({ fit, children }: { fit?: boolean; children: ReactNode }) {
+  return fit ? <FitList min={8} className="space-y-3">{children}</FitList> : <ol className="space-y-3">{children}</ol>
 }

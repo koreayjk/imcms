@@ -280,7 +280,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             {/* 숫자 판 (홈페이지 설정에서 채운 매체만) */}
             {site.statsBoard && <StatsBoard board={site.statsBoard} />}
             <div id="popular" className="scroll-mt-28">
-              <MostViewed items={mostViewed} lang={L} />
+              <MostViewed items={mostViewed} lang={L} fit />
             </div>
             {isDemo && <AdSlot label={L === 'en' ? 'Ad 300×250' : '광고 영역 300×250'} className="hidden h-[250px] lg:flex" />}
             <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />

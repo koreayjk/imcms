@@ -125,7 +125,7 @@ export default function HomePortal({ site, headline, subTops, underHeadline, bre
         {middleAd}
 
         {/* ── 주요뉴스 + 섹션 박스 + 오른쪽 많이 본 뉴스 ── */}
-        <div className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div data-fit-grid className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="min-w-0 space-y-10">
             {major.length > 0 && (
               <section id="major" className="scroll-mt-28">
@@ -166,8 +166,8 @@ export default function HomePortal({ site, headline, subTops, underHeadline, bre
             </div>
           </div>
 
-          <aside className="space-y-9">
-            <MostViewed items={mostViewed} lang={L} />
+          <aside data-fit-side className="space-y-9">
+            <MostViewed items={mostViewed} lang={L} fit />
             {sideExtras}
           </aside>
         </div>
