@@ -8,3 +8,12 @@
 
 # 새 언론사 개통 작업
 - 순서와 규칙은 `docs/launch-runbook.md`에 있다. 개통·시작용 기사 작업 전에 먼저 읽는다.
+
+# 운영 DB(Supabase) 사용 규칙
+- `.claude/settings.json` 이 `mcp__Supabase__execute_sql` 을 묻지 않고 허용한다. 이 허용은 읽기·쓰기·삭제를 가리지 않고, 같은 계정의 프로젝트 전체에 적용되므로 아래 규칙을 지킨다.
+- IM뉴스룸 운영 DB는 프로젝트 **`imcms`** (id `xmkrpjsetdneulyyasrf`) 하나뿐이다. 다른 프로젝트(aim, lifememory, IM VOCA, tcs, svm)는 읽지도 쓰지도 않는다.
+- 먼저 읽기(select)로 대상과 현재 값을 확인하고 쓴다. 기사 같은 데이터는 같은 SQL을 다시 실행해도 중복되지 않게 쓴다 (`press_release_id` 등으로 `where not exists`).
+- 삭제(`delete`·`drop`·`truncate`)나 많은 행을 바꾸는 `update` 는 실행 전에 무엇을 몇 건 바꾸는지 사용자에게 말하고 허락받은 뒤에 한다. 구조 변경(`apply_migration`)도 허락받는다.
+- AI가 올리는 기사는 발행하지 않고 **승인대기**(`status = 'in_review'`, `published_at` 비움)로 올린다. 발행은 편집장이 한다.
+- AI 기사는 보도자료 원문 페이지를 읽고 쓴다(보도자료함에는 요약만 있다). 출처·원문 주소·확인할 점은 `articles.ai_notes` 에 남기고, 매체 설정에 켜져 있으면 본문 끝에 AI 활용 표시를 넣는다. 사진은 사용 권리를 확인하지 못하면 넣지 않는다.
+- 법적 검수는 참고용 점검이다. 기록을 남긴다면 "AI 점검, 법률 자문 아님"으로 밝힌다.
