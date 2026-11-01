@@ -94,7 +94,7 @@ create or replace function public.auto_press_cache_body(secret text, p_id uuid, 
 returns void language plpgsql security definer set search_path = public, private as $$
 begin
   if not public.press_cron_check(secret) then raise exception 'forbidden'; end if;
-  update press_releases set body_html = p_html, image_url = p_image where id = p_id;
+  update press_releases set body_html = p_html, image_url = p_image where press_releases.id = p_id;
 end $$;
 
 -- 기사 저장 (항상 승인 대기)
@@ -113,7 +113,7 @@ begin
                         press_release_id, legal_check, legal_checked_at, auto_generated)
   values (p_outlet, p_category, c.author_id, p_title, p_body, p_excerpt, p_thumb, 'in_review', p_tags, c.byline, p_notes,
           p_press, p_legal, now(), true)
-  returning id into new_id;
+  returning articles.id into new_id;
   insert into auto_press_log (outlet_id, press_release_id, article_id, ok, message, cost_usd) values (p_outlet, p_press, new_id, true, '승인 대기로 저장', p_cost);
   return new_id;
 end $$;
