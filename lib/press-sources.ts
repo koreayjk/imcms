@@ -14,12 +14,16 @@ export type PressSource = {
 }
 
 // 해외 언론 묶음: 매체 설정에서 묶음마다 켠다 (출처 key 는 묶음의 앞글자로 시작한다)
-export type ForeignTopic = 'israel' | 'education' | 'reformed' | 'mission'
+export type ForeignTopic = 'israel' | 'education' | 'reformed' | 'mission' | 'thailand' | 'malaysia' | 'shipping' | 'kchurch'
 export const FOREIGN_TOPICS: { key: ForeignTopic; prefix: string; label: string; hint: string }[] = [
   { key: 'israel', prefix: 'il-', label: '이스라엘 언론', hint: '예루살렘포스트·JNS·와이넷 등' },
   { key: 'education', prefix: 'ed-', label: '해외 교육·유학 언론', hint: 'Inside Higher Ed·The PIE News·ICEF Monitor 등' },
   { key: 'mission', prefix: 'ms-', label: '해외 선교 언론', hint: 'IMB·OMF·위클리프·ICC(박해받는 교회)·크리스채너티투데이' },
   { key: 'reformed', prefix: 'rf-', label: '해외 개혁주의·기독교교육 언론', hint: '가스펠코얼리션·리포메이션21·9Marks·고전기독교학교협회(ACCS) 등' },
+  { key: 'thailand', prefix: 'th-', label: '태국 언론', hint: '태국관광청·방콕포스트·타이거 등' },
+  { key: 'malaysia', prefix: 'my-', label: '말레이시아 언론', hint: 'MIDA(투자청)·베르나마·말레이메일 등' },
+  { key: 'shipping', prefix: 'sh-', label: '해운·물류 업계 언론', hint: 'Splash247·gCaptain·Seatrade·Hellenic Shipping News' },
+  { key: 'kchurch', prefix: 'kc-', label: '한국 교계 언론', hint: '기독신문·뉴스앤조이·기독일보' },
 ]
 export const foreignTopicOf = (key: string): ForeignTopic | null => FOREIGN_TOPICS.find((t) => key.startsWith(t.prefix))?.key ?? null
 // 미국(영문) 출처: 키가 us- 로 시작. 영문 매체만 보고, 한국어 매체는 보지 않는다
@@ -96,6 +100,24 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'il-jns', name: '해외 · JNS', outlet: 'JNS(Jewish News Syndicate)', url: 'https://www.jns.org/feed/', kind: 'foreign' },
   { key: 'il-inn', name: '해외 · 아루츠 셰바', outlet: '아루츠 셰바(Israel National News)', url: 'https://www.israelnationalnews.com/Rss.aspx', kind: 'foreign' },
   { key: 'il-cbn', name: '해외 · CBN 이스라엘', outlet: 'CBN 뉴스', url: 'https://www1.cbn.com/app_feeds/rss/news/rss.php?section=israel', kind: 'foreign' },
+  // 태국 언론 (치앙마이 타임즈 등 '태국 언론'을 켠 매체): 관광청 공식 자료 + 영자 언론
+  { key: 'th-tat', name: '해외 · 태국관광청 뉴스룸', outlet: '태국관광청(TAT)', url: 'https://www.tatnews.org/feed/', kind: 'foreign' },
+  { key: 'th-bkkpost', name: '해외 · 방콕포스트', outlet: '방콕포스트(Bangkok Post)', url: 'https://www.bangkokpost.com/rss/data/topstories.xml', kind: 'foreign' },
+  { key: 'th-bkkpost-biz', name: '해외 · 방콕포스트 경제', outlet: '방콕포스트(Bangkok Post)', url: 'https://www.bangkokpost.com/rss/data/business.xml', kind: 'foreign' },
+  { key: 'th-thaiger', name: '해외 · 타이거', outlet: '타이거(The Thaiger)', url: 'https://thethaiger.com/feed', kind: 'foreign' },
+  // 말레이시아 언론 (말레이시아 타임즈 등)
+  { key: 'my-mida', name: '해외 · 말레이시아 투자청(MIDA)', outlet: '말레이시아 투자개발청(MIDA)', url: 'https://www.mida.gov.my/feed/', kind: 'foreign' },
+  { key: 'my-bernama', name: '해외 · 베르나마', outlet: '베르나마(Bernama)', url: 'https://www.bernama.com/en/rssfeed.php?cat=general', kind: 'foreign' },
+  { key: 'my-malaymail', name: '해외 · 말레이메일', outlet: '말레이메일(Malay Mail)', url: 'https://www.malaymail.com/feed/rss/malaysia', kind: 'foreign' },
+  // 해운·물류 업계 언론 (Shipping Times 등)
+  { key: 'sh-splash', name: '해외 · Splash247', outlet: '스플래시247(Splash247)', url: 'https://splash247.com/feed/', kind: 'foreign' },
+  { key: 'sh-gcaptain', name: '해외 · gCaptain', outlet: 'gCaptain', url: 'https://gcaptain.com/feed/', kind: 'foreign' },
+  { key: 'sh-seatrade', name: '해외 · 시트레이드 마리타임', outlet: '시트레이드 마리타임(Seatrade Maritime)', url: 'https://www.seatrade-maritime.com/rss.xml', kind: 'foreign' },
+  { key: 'sh-hellenic', name: '해외 · 헬레닉 시핑뉴스', outlet: '헬레닉 시핑뉴스(Hellenic Shipping News)', url: 'https://www.hellenicshippingnews.com/feed/', kind: 'foreign' },
+  // 한국 교계 언론 (선교·다음세대 매체): 한국어 기사 — 문장을 옮기지 않고 사실만 골라 새로 쓴다
+  { key: 'kc-kidok', name: '교계 · 기독신문', outlet: '기독신문', url: 'https://www.kidok.com/rss/allArticle.xml', kind: 'foreign' },
+  { key: 'kc-newsnjoy', name: '교계 · 뉴스앤조이', outlet: '뉴스앤조이', url: 'https://www.newsnjoy.or.kr/rss/allArticle.xml', kind: 'foreign' },
+  { key: 'kc-christiandaily', name: '교계 · 기독일보', outlet: '기독일보', url: 'https://www.christiandaily.co.kr/rss', kind: 'foreign' },
   // 정책브리핑(korea.kr) RSS는 2026-07-01에 서비스가 중단되어 뺐다 (저작권 보호를 이유로 제공 방식 변경).
   //   이미 받아 둔 'kr-press' 보도자료는 보도자료함에 그대로 남는다. 정부 보도자료는 부처 메일 구독 → 보도자료 메일함으로 받는다
 ]
