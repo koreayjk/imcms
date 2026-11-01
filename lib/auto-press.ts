@@ -5,6 +5,7 @@ import type { LegalCheck } from './legal-types'
 import { legalContentHash } from './legal-hash'
 import { AI_NOTICE_DEFAULT, aiNoticeText, withAiNotice } from './ai-notice'
 import { downloadUrl, searchOpenPhotos } from './photo-search'
+import { searchCommons } from './commons-photo'
 import { ensureFullBody, escapeHtml, htmlToText, pressTextForAi, sourceLabel, type PressRelease } from './press'
 import { PRESS_SOURCES, fieldOfSource, foreignTopicOf, isForeignSource, isUsSource, pressHintsFromSections, usableKeywords } from './press-sources'
 import { buildSite, type OutletRow } from './sites'
@@ -94,16 +95,26 @@ function pressPhoto(r: PressRelease): { src: string; caption: string } | null {
   return { src: src.replace(/&amp;/g, '&'), caption: cap || '' }
 }
 
-async function openPhoto(keywords: string[], english: boolean) {
+// 사진 찾기: 위키미디어 공용 → (안 되면) Openverse. 검색어가 안 맞으면 일반 검색어로 넓혀 간다. 실패 이유를 돌려준다
+async function openPhoto(keywords: string[], english: boolean, seed: number) {
   const lang = english ? 'en' : 'ko'
-  for (const q of keywords.filter(Boolean).slice(0, 4)) {
+  const tried: string[] = []
+  const generic = english ? ['Texas', 'city street', 'newspaper'] : ['news', 'city skyline', 'newspaper']
+  const queries = Array.from(new Set([...keywords.map((k) => k.trim()).filter(Boolean).slice(0, 4), ...generic]))
+  for (const [i, q] of queries.entries()) {
+    try {
+      const c = await searchCommons(q, lang, seed)
+      if (c) return { photo: { src: c.src, caption: c.caption, page: c.page, generic: i >= Math.min(keywords.filter(Boolean).length, 4) }, tried }
+      tried.push(`공용 '${q}' 없음`)
+    } catch (e) { tried.push(e instanceof Error ? e.message : '공용 오류') }
     try {
       const hits = await searchOpenPhotos(q, 6, lang)
       const h = hits.find((x) => /^https:\/\//.test(x.url))
-      if (h) return { src: downloadUrl(h.url), caption: h.credit, page: h.page }
-    } catch { /* 다음 검색어로 */ }
+      if (h) return { photo: { src: downloadUrl(h.url), caption: h.credit, page: h.page, generic: i >= Math.min(keywords.filter(Boolean).length, 4) }, tried }
+      tried.push(`Openverse '${q}' 없음`)
+    } catch (e) { tried.push(e instanceof Error ? e.message.slice(0, 40) : 'Openverse 오류') }
   }
-  return null
+  return { photo: null, tried }
 }
 
 const raceTimeout = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej(new AiDraftError('시간 초과')), ms))])
@@ -149,7 +160,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
 
       // 2) AI 기사
       const left = 52_000 - (Date.now() - started)
-      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link }, Math.min(24_000, left - 22_000))
+      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link }, Math.min(30_000, left - 18_000))
       const draft: AiDraft = dr.draft
       let cost = dr.costUsd
 
@@ -190,8 +201,11 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
         photoNote = `보도자료에 실린 사진을 썼습니다 (출처: ${sourceLabel(r)}). 사용 권리를 확인해 주세요.`
       } else {
         const kws = [...(legal?.photo_keywords ?? []), ...(english ? (draft.keywords ?? []) : [])]
-        photo = await openPhoto(kws.length ? kws : [draft.title], english)
-        if (photo) photoNote = `보도자료에 사진이 없어 공개 라이선스 사진을 검색해 넣었습니다: ${photo.caption}${photo.page ? ` / ${photo.page}` : ''}. 기사와 맞는지 확인해 주세요.`
+        const seed = Array.from(r.id).reduce((n, ch) => n + ch.charCodeAt(0), 0)
+        const found = await openPhoto(kws.length ? kws : [draft.title], english, seed)
+        photo = found.photo
+        if (photo) photoNote = `보도자료에 사진이 없어 공개 라이선스 사진을 검색해 넣었습니다: ${photo.caption}${photo.page ? ` / ${photo.page}` : ''}. ${(photo as { generic?: boolean }).generic ? '기사와 직접 관련된 사진을 못 찾아 일반 사진을 넣었으니 ' : ''}기사와 맞는지 확인해 주세요.`
+        else { await note(r.id, false, `넣을 사진을 찾지 못해 건너뜀 (${found.tried.slice(0, 6).join(', ')})`, cost); failures.push('사진 없음'); continue }
       }
       if (!photo) { await note(r.id, false, '넣을 사진을 찾지 못해 건너뜀', cost); failures.push('사진 없음'); continue }
 
