@@ -3,7 +3,7 @@ import { PRODUCT } from './product'
 import { SETUP_FEE, SETUP_WAIVER_MONTHS, won } from './pricing'
 import { ONBOARDING_STEPS, ONBOARDING_URL } from './onboarding-guide'
 
-type LeadInfo = { company: string; contact_name: string; domain?: string | null }
+type LeadInfo = { company: string; contact_name: string; domain?: string | null; message?: string | null; current_cms?: string | null }
 
 export type LeadMailTemplate = { key: string; label: string; subject: string; body: string }
 
@@ -13,6 +13,15 @@ export const DNS_CNAME = '13a356fc85cf917a.vercel-dns-017.com'
 
 const name = (l: LeadInfo) => `${l.contact_name} 대표님`
 
+// 신청서의 "[이전·연동 확인]" 답을 읽는다 (신청서 요청사항 맨 앞에 적힌 줄: "질문: 답"). 모르겠음으로 답한 질문 이름과, 창간 준비 중인지
+function applyAnswers(l: LeadInfo) {
+  const m = (l.message ?? '').match(/\[이전·연동 확인\]\n([\s\S]*?)(?:\n\n|$)/)
+  const lines = m ? m[1].split('\n') : []
+  const unknown = lines.filter((x) => /: .*모르겠음/.test(x)).map((x) => x.split(': ')[0].trim())
+  const isNew = lines.some((x) => x.startsWith('(창간 준비 중'))
+  return { answered: !!m, unknown, isNew }
+}
+
 export function leadMailTemplates(l: LeadInfo): LeadMailTemplate[] {
   const addr = l.domain ? l.domain : '신청해 주신 도메인'
   return [
@@ -20,7 +29,17 @@ export function leadMailTemplates(l: LeadInfo): LeadMailTemplate[] {
       key: 'hello',
       label: '신청 받았습니다 (첫 연락)',
       subject: `[${PRODUCT.name}] ${l.company} 신청 감사합니다`,
-      body: `${name(l)}, 안녕하세요.\n${PRODUCT.name}입니다. ${l.company} 신청 감사합니다.\n\n진행을 위해 두 가지만 확인하고 싶습니다.\n- 지금 쓰시는 기사 관리 프로그램이 있는지 (있으면 기사·사진을 옮겨 드립니다)\n- 홈페이지에 넣을 로고, 대표 색, 메뉴(섹션) 구성\n\n편하신 시간에 통화하셔도 좋고, 이 메일에 회신해 주셔도 됩니다.\n\n감사합니다.\n${PRODUCT.name} 운영팀 드림`,
+      body: (() => {
+        const a = applyAnswers(l)
+        // 신청서에서 이미 물어본 것(지금 쓰는 프로그램, 도메인, 검색 등록, 네이버 제휴 등)은 다시 묻지 않는다
+        const intro = a.answered
+          ? `신청서에 적어 주신 내용은 잘 받았습니다.${a.unknown.length ? `\n“모르겠음”으로 답하신 항목(${a.unknown.join(', ')})은 걱정하지 않으셔도 됩니다. 통화하면서 저희가 같이 확인해 드립니다.` : ''}`
+          : '신청해 주신 내용은 잘 받았습니다.'
+        const ask = a.isNew
+          ? '- 홈페이지에 넣을 로고, 대표 색, 메뉴(섹션) 구성 (아직 없으시면 말씀만 주셔도 되고, 로고 제작이 필요하면 알려 주세요)'
+          : '- 홈페이지에 넣을 로고, 대표 색, 메뉴(섹션) 구성 (파일이 없으시면 말씀만 주셔도 됩니다)\n- 지금 쓰시는 업체에 기사 전체와 원본 사진 백업을 요청하는 방법 (저희가 요청 문안을 알려 드리고, 받은 자료로 기사·사진과 옛 기사 주소를 옮겨 드립니다)'
+        return `${name(l)}, 안녕하세요.\n${PRODUCT.name}입니다. ${l.company} 신청 감사합니다.\n\n${intro}\n\n진행을 위해 아래만 확인하고 싶습니다.\n${ask}\n\n편하신 시간에 통화하셔도 좋고, 이 메일에 회신해 주셔도 됩니다.\n\n감사합니다.\n${PRODUCT.name} 운영팀 드림`
+      })(),
     },
     {
       key: 'schedule',
