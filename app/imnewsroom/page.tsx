@@ -669,17 +669,43 @@ export default async function ProductHome() {
 
         {/* ─── 저희가 먼저 씁니다 ─── */}
         <section>
-          <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 py-24 sm:px-6 lg:py-32 md:grid-cols-[1fr_1.2fr]">
+          <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
+            <div className="grid items-center gap-8 md:grid-cols-[1fr_1.2fr] md:gap-10">
+              <Reveal>
+                <Eyebrow icon="cloud" color="#16294D">직접 운영하며 만듭니다</Eyebrow>
+                <h2 className={`mt-5 ${H2}`}>저희 매체가<br />먼저 씁니다.</h2>
+              </Reveal>
+              <Reveal delay={150}>
+                <p className="text-[17px] leading-[1.9] text-[#3B4048]">
+                  {PRODUCT.name}은 저희가 직접 운영하는 인터넷신문을 위해 만들었습니다. 보건·복지·요양 전문지 <strong>더케어타임즈</strong>를 시작으로, 국제물류 전문지 <strong>Shipping Times</strong>(준비 중) 등 운영 매체를 차례로 옮기고 있습니다.
+                  매일 쓰면서 불편한 점을 먼저 고치니, 현장에서 필요한 기능이 먼저 들어갑니다.
+                </p>
+              </Reveal>
+            </div>
+
+            {/* 최근에 고친 것: 매일 쓰면서 고친다는 말의 실제 예 */}
             <Reveal>
-              <Eyebrow icon="cloud" color="#16294D">직접 운영하며 만듭니다</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>저희 매체가<br />먼저 씁니다.</h2>
+              <p className="mt-14 text-[13px] font-bold tracking-[0.04em] text-[#1D3461]">최근에 고친 것</p>
             </Reveal>
-            <Reveal delay={150}>
-              <p className="text-[17px] leading-[1.9] text-[#3B4048]">
-                {PRODUCT.name}은 저희가 직접 운영하는 인터넷신문을 위해 만들었습니다. 보건·복지·요양 전문지 <strong>더케어타임즈</strong>를 시작으로, 국제물류 전문지 <strong>Shipping Times</strong>(준비 중) 등 운영 매체를 차례로 옮기고 있습니다.
-                매일 쓰면서 불편한 점을 먼저 고치니, 현장에서 필요한 기능이 먼저 들어갑니다.
-              </p>
-            </Reveal>
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { t: '첫 화면 톱기사 슬라이드', d: '톱기사를 1~10개 정해 두면 자동으로 넘어갑니다. 넘어가는 간격은 편집장이 홈 편집에서 정합니다.' },
+                { t: '빈자리 없는 첫 화면', d: '주요뉴스 옆 “많이 본 뉴스” 칸이 왼쪽 높이에 맞춰 이어져 아래가 휑하지 않습니다.' },
+                { t: '메일 보도자료 정리', d: '광고 메일처럼 디자인 코드가 섞여 오는 HTML 메일도 글자만 깔끔하게 보도자료함에 들어옵니다.' },
+                { t: '개통 때 디자인 점검', d: '시작용 기사를 확인한 뒤, 바꾸고 싶은 디자인을 받아 개통 전에 수정하는 단계를 넣었습니다.' },
+              ].map((x, i) => (
+                <li key={x.t} className="list-none">
+                  <Reveal delay={i * 80} className="h-full">
+                    <div className="pn-shell h-full">
+                      <div className="pn-core h-full p-6">
+                        <p className="text-[16.5px] font-extrabold tracking-[-0.02em]">{x.t}</p>
+                        <p className="mt-2 text-[14.5px] leading-[1.75] text-[#5B616B]">{x.d}</p>
+                      </div>
+                    </div>
+                  </Reveal>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
