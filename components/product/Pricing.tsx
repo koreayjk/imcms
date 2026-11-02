@@ -133,7 +133,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               </dl>
               {p.extras.length > 0 && (
                 <ul className="mt-4 space-y-1.5 text-[13.5px] text-[#3B4048]">
-                  {p.extras.map((x) => <li key={x} className="flex gap-2"><span className="text-[#16294D]" aria-hidden>✓</span>{x}</li>)}
+                  {p.extras.map((x) => <li key={x} className="flex gap-2"><span className="text-[#16294D]" aria-hidden>✓</span><span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{x}</span></li>)}
                 </ul>
               )}
             </div>
