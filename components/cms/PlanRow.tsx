@@ -12,6 +12,8 @@ export type PlanRowData = {
   id: string; name: string; group: string | null
   plan: string | null; customLimit: number | null; limit: number | null; overage: boolean
   used: number; overCount: number; costWon: number; extraWon: number
+  // 자동 작성(한도에 넣지 않음): 이번 달 건수·원가(원)
+  autoCount?: number; autoWon?: number
 }
 
 // 매체 한 줄: 요금제·한도·추가 사용을 고르고, 이번 달 사용량을 막대로 보여준다
@@ -47,6 +49,13 @@ export default function PlanRow({ row }: { row: PlanRowData }) {
             ? <>AI cost approx. KRW {row.costWon.toLocaleString(loc)}{row.extraWon > 0 && <> · Extra charge KRW {row.extraWon.toLocaleString(loc)}</>}</>
             : <>AI 원가 약 {row.costWon.toLocaleString()}원{row.extraWon > 0 && <> · 추가 청구 {row.extraWon.toLocaleString()}원</>}</>}
         </p>
+        {(row.autoCount ?? 0) > 0 && (
+          <p className="mt-0.5 text-[11.5px] tabular-nums text-muted">
+            {lang === 'en'
+              ? <>Auto-written {row.autoCount} (not counted toward the limit) · cost approx. KRW {(row.autoWon ?? 0).toLocaleString(loc)}</>
+              : <>자동 작성 {row.autoCount}건 (한도에 안 들어감) · 원가 약 {(row.autoWon ?? 0).toLocaleString()}원</>}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-[13px]">

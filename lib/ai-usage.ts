@@ -12,6 +12,16 @@ export async function getAiStatus(supabase: SupabaseClient, outletId: string | n
   return data as AiStatus
 }
 
+// 자동 작성(서버가 보도자료로 쓰는 기사) 이번 달 건수·비용. 요금제 한도에는 넣지 않고 따로 보여 주기만 한다 (supabase/ai-usage-auto.sql, 실행 전이면 null)
+export type AiAuto = { count: number; cost: number }
+export async function getAiAuto(supabase: SupabaseClient, outletId: string | null): Promise<AiAuto | null> {
+  if (!outletId) return null
+  const { data, error } = await supabase.rpc('ai_usage_auto', { o: outletId })
+  if (error || !data) return null
+  const d = data as { count?: number; cost?: number | string }
+  return { count: Number(d.count ?? 0), cost: Number(d.cost ?? 0) }
+}
+
 export type AiReserve = { ok: true; id: number | null; used?: number; limit?: number | null; overLimit?: boolean; legacy?: boolean } | { ok: false; used: number; limit: number; scope: 'member' | 'outlet' }
 
 // AI를 쓰기 직전에 한 건을 잡는다 (한도를 다 썼고 추가 사용이 꺼져 있으면 ok:false)

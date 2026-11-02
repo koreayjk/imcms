@@ -14,11 +14,14 @@ export default async function AiUsagePage() {
   const { t, lang } = await getT()
   if (!isStaff) redirect('/newsroom')
 
-  const [{ data, error }, { data: outlets }, { data: groups }] = await Promise.all([
+  const [{ data, error }, { data: outlets }, { data: groups }, { data: autoRows }] = await Promise.all([
     supabase.rpc('ai_usage_overview'),
     supabase.from('outlets').select('id, publisher_id, ai_monthly_limit'),
     supabase.from('publishers').select('id, name'),
+    // 자동 작성 건수·비용 (한도에는 넣지 않고 따로 보여 준다. SQL 실행 전이면 비어 있다)
+    supabase.rpc('ai_usage_auto_overview'),
   ])
+  const autoBy = new Map(((autoRows ?? []) as { outlet_id: string; auto_count: number; auto_cost_usd: number | string }[]).map((r) => [r.outlet_id, r]))
   const groupName = new Map((groups ?? []).map((g) => [g.id as string, g.name as string]))
   const outletMeta = new Map((outlets ?? []).map((o: any) => [o.id as string, o]))
   const rows: PlanRowData[] = ((data ?? []) as Overview[]).map((r) => {
@@ -35,6 +38,8 @@ export default async function AiUsagePage() {
       overCount: r.over_count,
       costWon: Math.round(Number(r.cost_usd) * WON),
       extraWon: Math.ceil(r.over_count / 100) * EXTRA_AI_FEE,
+      autoCount: autoBy.get(r.outlet_id)?.auto_count ?? 0,
+      autoWon: Math.round(Number(autoBy.get(r.outlet_id)?.auto_cost_usd ?? 0) * WON),
     }
   })
   const near = rows.filter((r) => r.limit != null && r.used >= r.limit * 0.8)
@@ -45,8 +50,8 @@ export default async function AiUsagePage() {
       <header className="mb-5">
         <h1 className="text-[22px] font-bold tracking-tight">{t('요금제 · AI 사용량', 'Plans · AI usage')}</h1>
         <p className="mt-1 text-[13px] text-muted">
-          {t(`${month} AI 사용량입니다(초안 1번·법적 검수 1번을 각각 1회로 세고, 매달 1일 한국 시간으로 새로 셉니다). 요금제 기본 한도는 베이직 300 · 스탠다드 900 · 프리미엄 2,000회이고, 한도 칸에 숫자를 적으면 그 값이 우선합니다.
-          “넘어도 계속”을 끄면 한도를 다 쓴 매체는 다음 달까지 AI 초안·법적 검수를 쓸 수 없습니다(원문 그대로 만들기, 검수 없이 승인신청은 됩니다).`, `AI usage for ${month}. Each AI draft and each legal check counts as one use, and the count resets on the 1st of every month (Korea time). Default plan limits are Basic 300, Standard 900 and Premium 2,000 uses per month; a number entered in the limit field takes priority.
+          {t(`${month} AI 사용량입니다(초안 1번·법적 검수 1번을 각각 1회로 세고, 매달 1일 한국 시간으로 새로 셉니다. 서버가 보도자료로 자동으로 쓰는 기사는 한도에 넣지 않고 “자동 작성”으로 따로 보여 줍니다). 요금제 기본 한도는 베이직 300 · 스탠다드 900 · 프리미엄 2,000회이고, 한도 칸에 숫자를 적으면 그 값이 우선합니다.
+          “넘어도 계속”을 끄면 한도를 다 쓴 매체는 다음 달까지 AI 초안·법적 검수를 쓸 수 없습니다(원문 그대로 만들기, 검수 없이 승인신청은 됩니다).`, `AI usage for ${month}. Each AI draft and each legal check counts as one use, and the count resets on the 1st of every month (Korea time). Stories the server writes automatically from press releases do not count toward the limit; they are shown separately as “Auto-written”. Default plan limits are Basic 300, Standard 900 and Premium 2,000 uses per month; a number entered in the limit field takes priority.
           If “Continue past limit” is off, an outlet that has used up its limit cannot use AI drafts or legal checks until next month (creating a story from the original text and submitting for review without a check still work).`)}
         </p>
       </header>
