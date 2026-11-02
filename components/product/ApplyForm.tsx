@@ -9,7 +9,7 @@ import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
 import PolicyDoc from './PolicyDoc'
 import { HOME_LAYOUTS } from '@/lib/home-layouts'
-import { MIGRATION_QUESTIONS } from '@/lib/apply-questions'
+import { NEW_OUTLET, questionsFor } from '@/lib/apply-questions'
 
 const input =
   'w-full rounded-md border border-[#D5D8DD] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#A3A8B0] focus:border-[#1D3461]'
@@ -62,6 +62,8 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
   // 희망하는 홈페이지 모양 ('' = 상담 후 정함)
   const [design, setDesign] = useState('')
   // 이전·연동 질문 답 (단일 선택은 key → 값, 여러 개 고르는 질문은 key → 값 목록). 오류로 다시 그려져도 남도록 상태로 둔다
+  const [outletCount, setOutletCount] = useState('')
+  const isNew = outletCount === NEW_OUTLET
   const [ans, setAns] = useState<Record<string, string>>({})
   const [multi, setMulti] = useState<Record<string, string[]>>({})
   const [agree, setAgree] = useState(false)
@@ -176,7 +178,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
           <input id="domain" name="domain" maxLength={120} inputMode="url" placeholder="mynews.co.kr" className={input} />
         </Field>
         <Field id="outlet_count" label="운영 중인 매체 수">
-          <select id="outlet_count" name="outlet_count" defaultValue="" className={input}>
+          <select id="outlet_count" name="outlet_count" value={outletCount} onChange={(e) => setOutletCount(e.target.value)} className={input}>
             <option value="">선택</option>
             <option>창간 준비 중</option>
             <option>1개</option>
@@ -194,10 +196,10 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
       <fieldset className="rounded-md border border-[#E4E6EA] bg-[#FAFBFC] p-4 sm:p-5">
         <legend className="px-1 text-[13px] font-semibold text-[#14171C]">기존 사이트 이전·연동 확인 <span className="text-[#D6402B]">*</span></legend>
         <p className="mb-4 text-[12.5px] leading-[1.6] text-[#5B616B]">
-          이전과 개통에 필요한 정보를 미리 확인하는 질문입니다. <b className="font-semibold text-[#14171C]">잘 모르면 “모르겠음”을 고르고 넘어가셔도 됩니다.</b> 새로 창간하는 경우는 “해당 없음”이나 “아직 없음”을 고르세요. 모르는 것은 상담 때 같이 확인해 드립니다.
+          이전과 개통에 필요한 정보를 미리 확인하는 질문입니다. <b className="font-semibold text-[#14171C]">잘 모르면 “모르겠음”을 고르고 넘어가셔도 됩니다.</b> 모르는 것은 상담 때 같이 확인해 드립니다.{isNew ? ' 창간 준비 중이시라 꼭 필요한 질문만 보여 드립니다.' : ' 새로 창간하시는 경우 “운영 중인 매체 수”에서 “창간 준비 중”을 고르면 질문이 줄어듭니다.'}
         </p>
         <div className="space-y-5">
-          {MIGRATION_QUESTIONS.map((q) => (
+          {questionsFor(isNew).map((q) => (
             <div key={q.key}>
               {q.multi ? (
                 <fieldset>

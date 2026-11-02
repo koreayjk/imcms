@@ -3,7 +3,11 @@
 //   처음부터 알 수 있어 업체(ND소프트 등)에 보낼 문의를 정확히 쓸 수 있다.
 //   모든 질문은 필수이고, 잘 모르면 "모르겠음"(새로 창간이면 "해당 없음")을 골라 바로 넘어갈 수 있다.
 //   저장 칸을 따로 만들지 않고 신청서 요청사항 맨 앞에 적어 운영팀이 고객 상담 화면에서 바로 본다.
-export type ApplyQuestion = { key: string; label: string; hint?: string; options: string[]; multi?: boolean }
+// forNew: 창간 준비 중인 신청자에게도 묻는 질문 (나머지는 이미 운영 중인 사이트가 있어야 의미가 있어서 가린다)
+export type ApplyQuestion = { key: string; label: string; hint?: string; options: string[]; multi?: boolean; forNew?: boolean }
+
+export const NEW_OUTLET = '창간 준비 중'
+export const questionsFor = (isNew: boolean) => MIGRATION_QUESTIONS.filter((q) => !isNew || q.forNew)
 
 export const MIGRATION_QUESTIONS: ApplyQuestion[] = [
   {
@@ -14,6 +18,7 @@ export const MIGRATION_QUESTIONS: ApplyQuestion[] = [
   },
   {
     key: 'q_domain',
+    forNew: true,
     label: '도메인 관리',
     hint: '도메인을 어디서 샀고 누가 관리하나요?',
     options: ['직접 관리 (가비아·후이즈 등)', '지금 업체가 대행해 줌', '아직 도메인이 없음', '모르겠음'],
@@ -45,6 +50,7 @@ export const MIGRATION_QUESTIONS: ApplyQuestion[] = [
   },
   {
     key: 'q_brand',
+    forNew: true,
     label: '로고 · 대표 색 · 광고 배너 위치 자료',
     hint: '홈페이지를 지금 모습대로 맞추려면 필요합니다.',
     options: ['지금 전달할 수 있음', '상담할 때 전달하겠음', '로고 제작이 필요함', '모르겠음'],
@@ -53,8 +59,9 @@ export const MIGRATION_QUESTIONS: ApplyQuestion[] = [
 
 // 신청서에서 받은 값을 확인하고, 요청사항 맨 앞에 붙일 글을 만든다
 export function parseMigrationAnswers(form: FormData): { error?: string; block?: string } {
-  const lines: string[] = []
-  for (const q of MIGRATION_QUESTIONS) {
+  const isNew = String(form.get('outlet_count') ?? '') === NEW_OUTLET
+  const lines: string[] = isNew ? ['(창간 준비 중: 기존 사이트 관련 질문은 건너뜀)'] : []
+  for (const q of questionsFor(isNew)) {
     if (q.multi) {
       const picked = form.getAll(q.key).map(String).filter((v) => q.options.includes(v))
       if (!picked.length) return { error: `“${q.label}”에서 하나 이상 골라 주세요. 잘 모르겠으면 “모르겠음”을 고르세요.` }
