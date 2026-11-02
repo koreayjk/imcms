@@ -9,6 +9,7 @@ import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
 import PolicyDoc from './PolicyDoc'
 import { HOME_LAYOUTS } from '@/lib/home-layouts'
+import { MIGRATION_QUESTIONS } from '@/lib/apply-questions'
 
 const input =
   'w-full rounded-md border border-[#D5D8DD] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#A3A8B0] focus:border-[#1D3461]'
@@ -60,6 +61,9 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
   const [billing, setBilling] = useState<Billing>('monthly')
   // 희망하는 홈페이지 모양 ('' = 상담 후 정함)
   const [design, setDesign] = useState('')
+  // 이전·연동 질문 답 (단일 선택은 key → 값, 여러 개 고르는 질문은 key → 값 목록). 오류로 다시 그려져도 남도록 상태로 둔다
+  const [ans, setAns] = useState<Record<string, string>>({})
+  const [multi, setMulti] = useState<Record<string, string[]>>({})
   const [agree, setAgree] = useState(false)
   const [agreeTerms, setAgreeTerms] = useState(false)
 
@@ -186,6 +190,47 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
           </Field>
         </div>
       </div>
+      {/* ─── 이전·연동 확인 (필수: 모르면 '모르겠음') ─── */}
+      <fieldset className="rounded-md border border-[#E4E6EA] bg-[#FAFBFC] p-4 sm:p-5">
+        <legend className="px-1 text-[13px] font-semibold text-[#14171C]">기존 사이트 이전·연동 확인 <span className="text-[#D6402B]">*</span></legend>
+        <p className="mb-4 text-[12.5px] leading-[1.6] text-[#5B616B]">
+          이전과 개통에 필요한 정보를 미리 확인하는 질문입니다. <b className="font-semibold text-[#14171C]">잘 모르면 “모르겠음”을 고르고 넘어가셔도 됩니다.</b> 새로 창간하는 경우는 “해당 없음”이나 “아직 없음”을 고르세요. 모르는 것은 상담 때 같이 확인해 드립니다.
+        </p>
+        <div className="space-y-5">
+          {MIGRATION_QUESTIONS.map((q) => (
+            <div key={q.key}>
+              {q.multi ? (
+                <fieldset>
+                  <legend className="mb-1 text-[13px] font-semibold text-[#14171C]">{q.label} <span className="text-[#D6402B]">*</span></legend>
+                  {q.hint && <p className="mb-2 text-[12px] leading-snug text-[#5B616B]">{q.hint}</p>}
+                  <div className="flex flex-wrap gap-2">
+                    {q.options.map((o) => {
+                      const on = (multi[q.key] ?? []).includes(o)
+                      return (
+                        <label key={o} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-[13.5px] transition ${on ? 'border-[#1D3461] bg-[#EFF2F7] ring-1 ring-[#1D3461]' : 'border-[#D5D8DD] bg-white hover:border-[#14171C]'}`}>
+                          <input type="checkbox" checked={on} onChange={(e) => setMulti((m) => ({ ...m, [q.key]: e.target.checked ? [...(m[q.key] ?? []), o] : (m[q.key] ?? []).filter((x) => x !== o) }))} className="accent-[#1D3461]" />
+                          {o}
+                        </label>
+                      )
+                    })}
+                  </div>
+                  {(multi[q.key] ?? []).map((o) => <input key={o} type="hidden" name={q.key} value={o} />)}
+                </fieldset>
+              ) : (
+                <>
+                  <label htmlFor={q.key} className="mb-1 block text-[13px] font-semibold text-[#14171C]">{q.label} <span className="text-[#D6402B]">*</span></label>
+                  {q.hint && <p className="mb-1.5 text-[12px] leading-snug text-[#5B616B]">{q.hint}</p>}
+                  <select id={q.key} name={q.key} value={ans[q.key] ?? ''} onChange={(e) => setAns((a) => ({ ...a, [q.key]: e.target.value }))} className={input}>
+                    <option value="">선택해 주세요</option>
+                    {q.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </fieldset>
+
       {/* ─── 홈페이지 모양 ─── */}
       <fieldset>
         <legend className="mb-1 text-[13px] font-semibold text-[#14171C]">홈페이지 모양 <span className="font-normal text-[#5B616B]">(선택)</span></legend>

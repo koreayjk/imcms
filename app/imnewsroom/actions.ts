@@ -9,6 +9,7 @@ import { noticeMail, sendMails } from '@/lib/mail'
 import { quoteUrl } from '@/lib/quote'
 import { ONBOARDING_URL } from '@/lib/onboarding-guide'
 import { paymentDbSecret } from '@/lib/toss'
+import { parseMigrationAnswers } from '@/lib/apply-questions'
 
 export type ApplyState = { ok?: boolean; error?: string }
 
@@ -28,8 +29,11 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
   const domain = get('domain', 120).replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase()
   // 희망하는 홈페이지 모양 (신청서에서 고른 것): 따로 저장 칸 없이 요청사항 맨 앞에 적어 운영팀이 바로 본다
   const design = HOME_LAYOUTS.find((l) => l.ready && l.key === get('design', 20))
-  const typed = String(form.get('message') ?? '').trim().slice(0, 1900)
-  const message = (design ? `[희망 홈페이지 모양] ${design.name} · ${design.label}${typed ? `\n\n${typed}` : ''}` : typed).slice(0, 2000)
+  // 이전·연동 질문(신청서 필수 칸): 요청사항 맨 앞에 적어 운영팀이 바로 본다 (모르면 '모르겠음'을 고른다)
+  const mig = parseMigrationAnswers(form)
+  const head = [design && `[희망 홈페이지 모양] ${design.name} · ${design.label}`, mig.block].filter(Boolean).join('\n\n')
+  const typed = String(form.get('message') ?? '').trim().slice(0, Math.max(0, 1990 - head.length))
+  const message = (head ? `${head}${typed ? `\n\n${typed}` : ''}` : typed).slice(0, 2000)
   const plan = planById(get('plan', 20))
   const billing: Billing = get('billing', 10) === 'monthly' ? 'monthly' : 'annual'
 
@@ -39,6 +43,7 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
   if (phone.replace(/\D/g, '').length < 9) return { error: '연락받을 전화번호를 확인해 주세요.' }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: '청구서와 안내를 받을 이메일 주소를 적어주세요.' }
   if (domain && !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain)) return { error: '도메인을 확인해 주세요. 예: mynews.co.kr' }
+  if (mig.error) return { error: mig.error }
   if (form.get('agree') !== 'on') return { error: '개인정보 수집·이용에 동의해야 신청할 수 있습니다.' }
   if (form.get('agree_terms') !== 'on') return { error: '서비스 이용약관에 동의해야 신청할 수 있습니다.' }
 
