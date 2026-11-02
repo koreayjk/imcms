@@ -84,3 +84,26 @@ grant execute on function public.auto_press_recent_titles(text, int) to anon, au
 
 select o.name, cardinality(c.require_words) req, cardinality(c.block_words) blk
 from auto_press_outlets c join outlets o on o.id = c.outlet_id order by o.name;
+
+-- 지역 공식 출처는 필수 단어 검사를 면제한다 (Breaking BCS: 시청·대학·도서관 소식은 제목에 지역 이름이 없어도 지역 소식)
+alter table auto_press_outlets add column if not exists trusted_sources text[] not null default '{}';
+update auto_press_outlets c set trusted_sources = array['us-cstx-news','us-bryan-news','us-agrilife','us-bcslibrary','us-tamu-today']
+from outlets o where o.id = c.outlet_id and o.name = 'Breaking BCS';
+
+create or replace function public.auto_press_plan(secret text, p_outlet uuid)
+returns jsonb language plpgsql security definer set search_path = public, private as $$
+declare r jsonb;
+begin
+  if not public.press_cron_check(secret) then raise exception 'forbidden'; end if;
+  select jsonb_build_object(
+    'outlet', jsonb_build_object('id', o.id, 'name', o.name, 'domain', o.domain, 'site', o.site, 'created_at', o.created_at),
+    'cfg', jsonb_build_object('enabled', c.enabled, 'daily_limit', c.daily_limit, 'tz', c.tz, 'start_hour', c.start_hour, 'end_hour', c.end_hour, 'byline', c.byline, 'author_id', c.author_id,
+                              'require_words', to_jsonb(c.require_words), 'block_words', to_jsonb(c.block_words), 'trusted_sources', to_jsonb(c.trusted_sources)),
+    'today', (select count(*) from articles a where a.outlet_id = o.id and a.auto_generated
+              and (a.created_at at time zone c.tz)::date = (now() at time zone c.tz)::date),
+    'categories', coalesce((select jsonb_agg(jsonb_build_object('id', k.id, 'slug', k.slug, 'name', k.name) order by k.sort_order) from categories k where k.outlet_id = o.id), '[]'::jsonb)
+  ) into r
+  from outlets o join auto_press_outlets c on c.outlet_id = o.id
+  where o.id = p_outlet;
+  return r;
+end $$;

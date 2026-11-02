@@ -42,6 +42,11 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'us-prn-consumer', name: 'PR Newswire · Consumer & lifestyle', outlet: 'PR Newswire', url: 'https://www.prnewswire.com/rss/consumer-products-latest-news/consumer-products-latest-news-list.rss', kind: 'us' },
   { key: 'us-prn-all', name: 'PR Newswire · All news', outlet: 'PR Newswire', url: 'https://www.prnewswire.com/rss/news-releases-list.rss', kind: 'us' },
   { key: 'us-tamu-today', name: 'Texas A&M Today', outlet: 'Texas A&M University', url: 'https://today.tamu.edu/feed/', kind: 'us', local: true },
+  // 브라조스 밸리(브라이언·칼리지스테이션) 지역 공식 출처: 시청·대학·도서관 소식 (영문 매체 Breaking BCS 용)
+  { key: 'us-cstx-news', name: 'City of College Station · News', outlet: 'City of College Station', url: 'https://www.cstx.gov/news/rss', kind: 'us', local: true },
+  { key: 'us-bryan-news', name: 'City of Bryan · News', outlet: 'City of Bryan', url: 'https://www.bryantx.gov/news/rss', kind: 'us', local: true },
+  { key: 'us-agrilife', name: 'Texas A&M AgriLife Today', outlet: 'Texas A&M AgriLife Today', url: 'https://agrilifetoday.tamu.edu/feed/', kind: 'us', local: true },
+  { key: 'us-bcslibrary', name: 'Bryan + College Station Public Library System', outlet: 'Bryan + College Station Public Library System', url: 'https://www.bcslibrary.org/feed/', kind: 'us', local: true },
   { key: 'us-txgov', name: 'Office of the Texas Governor', outlet: 'Office of the Texas Governor', url: 'https://gov.texas.gov/news/rss', kind: 'us', local: true },
   { key: 'us-fda', name: 'U.S. FDA · Press releases', outlet: 'U.S. Food and Drug Administration', url: 'https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml', kind: 'us' },
   { key: 'nw-hospital', name: '뉴스와이어 · 의료와 병원', url: 'https://api.newswire.co.kr/rss/industry/1007', kind: 'newswire' },
