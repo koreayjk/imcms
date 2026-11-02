@@ -22,7 +22,11 @@ function decode(s: string) {
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
     .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&nbsp;/g, ' ').replace(/&middot;/g, '·').replace(/&amp;/g, '&')
+    .replace(/&nbsp;|&ensp;|&emsp;|&thinsp;/g, ' ').replace(/&middot;/g, '·').replace(/&hellip;/g, '…').replace(/&ndash;|&mdash;/g, '-')
+    .replace(/&lsquo;|&rsquo;/g, "'").replace(/&ldquo;|&rdquo;/g, '"')
+    // 메일 광고에 많이 들어 있는 눈에 안 보이는 글자 (폭 없는 공백 등)
+    .replace(/&(?:zwnj|zwj|shy|lrm|rlm);/g, '').replace(/[\u200B-\u200F\u2060\uFEFF\u00AD\u034F]/g, '')
+    .replace(/&amp;/g, '&')
 }
 
 export function escapeHtml(s: string) {
@@ -276,6 +280,9 @@ export function foreignBody(page: string) {
 export function htmlToText(html: string) {
   return decode(
     html
+      // 메일(HTML 전용)에는 머리글·스타일·스크립트·주석이 들어 있어 글자로 남지 않게 통째로 뺀다
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<(head|style|script|title)\b[\s\S]*?<\/\1\s*>/gi, '')
       .replace(/<img[^>]*>/gi, '')
       .replace(/<p><em>▲[\s\S]*?<\/em><\/p>/g, '')
       .replace(/<\/(p|h\d|li|blockquote)>|<br\s*\/?>/gi, '\n\n')
