@@ -15,7 +15,7 @@ import { buildSite, type OutletRow } from './sites'
 
 export type Plan = {
   outlet: OutletRow
-  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[] }
+  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
   today: number
   categories: { id: string; slug: string; name: string }[]
 }
@@ -68,7 +68,8 @@ function rankCandidates(plan: Plan, cands: Cand[], recentTitles: string[] = []) 
     const req = (plan.cfg.require_words ?? []).map((w) => w.toLowerCase())
     const blk = (plan.cfg.block_words ?? []).map((w) => w.toLowerCase())
     if (blk.some((w) => hay.includes(w))) continue
-    if (req.length && !req.some((w) => hay.includes(w))) continue
+    const trusted = (plan.cfg.trusted_sources ?? []).some((k) => c.source_key === k || c.source_key.startsWith(k))
+    if (req.length && !trusted && !req.some((w) => hay.includes(w))) continue
     if (recentTitles.some((t) => similar(t, c.title))) continue
     const hits = lc.filter((k) => hay.includes(k)).length
     const titleHit = lc.some((k) => c.title.toLowerCase().includes(k))
