@@ -4,11 +4,11 @@
 import { ISSUER, PRODUCT } from './product'
 import { ANNUAL_FREE, ANNUAL_MONTHS, BETA_MONTHS, EXTRA_AI_FEE, EXTRA_OUTLET_FEES, PRESS_MAIL_ADDON_FEE, PRESS_MAIL_TRIAL, SETUP_FEE, SETUP_WAIVER_MONTHS, won } from './pricing'
 
-export const TERMS_VERSION = '2026-10-24'
-export const TERMS_EFFECTIVE = '2026년 10월 24일'
+export const TERMS_VERSION = '2026-11-02'
+export const TERMS_EFFECTIVE = '2026년 11월 2일'
 // 예전 버전 (고객이 동의한 그 문안을 나중에 보여 줄 수 있게 버전마다 본문을 남긴다: app/imnewsroom/terms/[version])
 //   약관을 고칠 때는 지금 본문을 lib/terms-archive/ 에 버전 이름으로 옮기고 여기에 더한다
-export const TERMS_ARCHIVE = ['2026-10-02', '2026-10-13'] as const
+export const TERMS_ARCHIVE = ['2026-10-02', '2026-10-13', '2026-10-24'] as const
 
 export const PRIVACY_VERSION = '2026-10-13'
 export const PRIVACY_EFFECTIVE = '2026년 10월 13일'
@@ -59,7 +59,7 @@ export function termsSections(): PolicySection[] {
     {
       title: '제5조 (서비스의 내용과 변경)',
       body: [
-        '요금제마다 제공하는 범위(AI 초안·법적 검수 횟수, 저장 용량, 배너·팝업 디자인 건수, 뉴스레터 제공 여부·월 발송 횟수·회당 인원 등)는 소개 페이지 요금표를 따릅니다. 전송량은 일반적인 언론사 사용 기준으로 제한하지 않습니다.',
+        '요금제마다 제공하는 범위(AI 초안·법적 검수 횟수, 저장 용량, 월 전송량, 뉴스레터 제공 여부·월 발송 횟수·회당 인원 등)는 소개 페이지 요금표를 따릅니다.',
         `“보도자료 메일 자동 수신”(고객사 담당자의 메일로 온 보도자료를 보도자료함에 모으고 첨부 파일의 글자를 읽어 본문에 넣는 기능)은 부가 서비스입니다. 프리미엄·엔터프라이즈 요금제에는 포함되고, 베이직·스탠다드 요금제에서는 고객사가 신청한 매체에서만 쓸 수 있습니다. 신청하기 전에는 메일 ${PRESS_MAIL_TRIAL}통까지 무료로 체험할 수 있고, 체험이 끝나면 신청할 때까지 새로 오는 메일은 받지 않습니다(이미 받은 보도자료는 계속 쓸 수 있습니다). 하루에 받을 수 있는 메일 수에는 한도가 있으며, 첨부파일은 한 통에 합계 15MB까지, 문서의 글자 읽기는 글자로 된 문서에 한하고 사진 속 글자나 문서 안의 사진은 가져오지 않을 수 있습니다.`,
         '회사는 서비스를 더 좋게 하기 위해 기능을 추가·변경할 수 있습니다. 고객사가 쓰던 기능을 없애거나 크게 바꿀 때는 미리 알립니다.',
       ],
@@ -99,7 +99,7 @@ export function termsSections(): PolicySection[] {
       title: '제9조 (사용량 한도)',
       body: [
         `AI 사용(기사 초안 1번, 법적 검수 1번을 각각 1회로 셉니다)이 그 달 한도를 넘으면, 고객사는 100회마다 ${won(EXTRA_AI_FEE)}을 추가로 내고 계속 쓰거나 다음 달까지 기다리는 것 중에서 고를 수 있습니다. 한도에 가까워지면 서비스 화면으로 알려 드립니다.`,
-        '저장 용량이 요금제 범위를 넘거나, 전송량이 일반적인 언론사 사용 수준(한 달 1TB 안팎)을 여러 달 계속 크게 넘으면 회사는 먼저 알리고 맞는 요금제로 바꾸는 것을 협의합니다. 해킹·비정상적인 자동 접속 등 고객사 책임이 아닌 일시적 초과분은 청구하지 않습니다.',
+        '저장 용량이나 월 전송량이 요금제 범위를 넘으면 회사는 먼저 고객사에 알리고 맞는 요금제로 바꾸는 것을 협의합니다. 해킹·비정상적인 자동 접속 등 고객사 책임이 아닌 일시적 초과분은 청구하지 않습니다.',
       ],
     },
     {
