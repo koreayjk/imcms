@@ -92,7 +92,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
         <p className="mt-2 text-[14.5px] leading-relaxed text-[#5B616B]">
           {chosen.name} · {BILLING_LABEL[billing]}{pay ? ` · 첫 결제 ${won(pay.total)}` : ''}{design ? ` · ${HOME_LAYOUTS.find((l) => l.key === design)?.name ?? ''} 홈페이지` : ''}
           <br />
-          적어주신 연락처로 영업일 기준 이틀 안에 연락드려 개통 일정과 계약 서류를 안내합니다.
+          영업일 기준 이틀 안에 이메일이나 카카오톡으로 연락드려 개통 일정과 계약 서류를 안내합니다.
           <br />
           첫 이용료는 정식 오픈 전에 청구서로 먼저 받고 납부를 확인한 뒤 오픈합니다(오픈 전 취소 시 전액 환불). 신청만 한 지금은 비용이 생기지 않습니다.
         </p>
@@ -169,7 +169,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
         <Field id="contact_name" label="신청자 이름" required>
           <input id="contact_name" name="contact_name" required maxLength={40} autoComplete="name" className={input} />
         </Field>
-        <Field id="phone" label="연락처" required>
+        <Field id="phone" label="연락처" required hint="카카오톡으로 연락드릴 때 쓰는 번호입니다. 안내는 이메일과 카카오톡으로 드립니다.">
           <input id="phone" name="phone" required type="tel" inputMode="tel" maxLength={30} autoComplete="tel" placeholder="010-0000-0000" className={input} />
         </Field>
         <Field id="email" label="이메일" required hint="청구서와 개통 안내를 받을 주소">
