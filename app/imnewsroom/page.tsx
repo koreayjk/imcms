@@ -486,9 +486,14 @@ export default async function ProductHome() {
                 </li>
               ))}
             </ul>
-            <p className="mt-8 text-center text-[13.5px] leading-[1.8] text-[#5B616B]">
-              신청서에서 원하는 모양을 고르실 수 있습니다. 처음 개통할 때 맞춰 드리며, 모양 설정은 세팅 작업에 들어 있습니다.
-            </p>
+            <div className="mx-auto mt-12 max-w-[860px] rounded-[28px] bg-[#16294D] px-7 py-9 text-center text-white sm:px-12 sm:py-12">
+              <p className="text-[26px] font-extrabold leading-[1.3] tracking-[-0.04em] [text-wrap:balance] sm:text-[36px]">
+                기본 디자인을 고르시면,<br />개통 전에 원하시는 디자인으로 맞춰 드립니다.
+              </p>
+              <p className="mx-auto mt-5 max-w-[34em] text-[16px] leading-[1.85] text-white/80 sm:text-[18px]">
+                신청서에서 마음에 드는 기본 모양을 고르세요. 바꾸고 싶은 부분이나 추가하고 싶은 칸이 있으면 개통 전에 말씀해 주세요. 오픈 전에 수정해서 확인받은 뒤 개통합니다. 모양 설정과 수정은 세팅 작업에 포함되어 있습니다.
+              </p>
+            </div>
           </div>
         </section>
 
