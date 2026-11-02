@@ -9,6 +9,8 @@ export type AiDraft = {
   review_notes: string[]
   // 기사 키워드(태그) 3~5개 (기사 작성 가이드)
   keywords?: string[]
+  // 섹션 후보를 알려 줬을 때 AI가 고른 섹션 이름 (자동 기사용)
+  category?: string
 }
 
 // ───────── 쓸 수 있는 모델과 가격 (100만 토큰당 달러, 비용 표시용) ─────────
@@ -196,6 +198,7 @@ const SCHEMA = {
     paragraphs: { type: 'array', items: { type: 'string' } },
     review_notes: { type: 'array', items: { type: 'string' } },
     keywords: { type: 'array', items: { type: 'string' } },
+    category: { type: 'string' },
   },
   required: ['title', 'subtitle', 'paragraphs', 'review_notes', 'keywords'],
   additionalProperties: false,
@@ -208,10 +211,19 @@ export class AiDraftError extends Error {}
 
 // foreign: 해외 언론 기사 (출처를 밝힌 한국어 기사로 새로 쓴다)
 //   topic: 해외 언론 묶음 (이스라엘 / 교육·유학) — 독자와 주의할 점이 달라진다
-export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; us?: boolean; topic?: ForeignTopic; link?: string }
+export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; us?: boolean; topic?: ForeignTopic; link?: string; categories?: string[] }
 export type DraftResult = { draft: AiDraft; model: AiModel; ms: number; inputTokens: number; outputTokens: number; costUsd: number }
 
 function userPrompt(input: DraftInput) {
+  const cat = input.categories?.length
+    ? (input.us
+      ? `\n\nSection choices: ${input.categories.join(' | ')}\nIn the "category" field, write exactly one of these section names that fits the story best, or an empty string if none fits.`
+      : `\n\n섹션 후보: ${input.categories.join(' | ')}\n"category"에 위 섹션 이름 중 이 기사에 가장 알맞은 하나를 그대로 쓰세요. 맞는 것이 없으면 빈 문자열.`)
+    : ''
+  return userPromptBase(input) + cat
+}
+
+function userPromptBase(input: DraftInput) {
   if (input.us) {
     return `Source: ${input.source}${input.link ? `\nSource URL: ${input.link}` : ''}\n\n<source headline>\n${input.title}\n</source headline>\n\n<source text>\n${input.text}\n</source text>`
   }
@@ -237,7 +249,7 @@ function parseDraft(text: string | undefined): AiDraft {
     if (!d.title || !paragraphs.length) throw new Error('empty')
     const keywords = Array.from(new Set((d.keywords ?? []).map((k) => String(k).replace(/^#/, '').trim()).filter((k) => k && k.length <= 30))).slice(0, 5)
     // 제목 끝 마침표는 뺀다 (기사 작성 가이드)
-    return { title: String(d.title).trim().replace(/\.+$/, ''), subtitle: String(d.subtitle ?? ''), paragraphs, review_notes: (d.review_notes ?? []).map(String), keywords }
+    return { title: String(d.title).trim().replace(/\.+$/, ''), subtitle: String(d.subtitle ?? ''), paragraphs, review_notes: (d.review_notes ?? []).map(String), keywords, category: d.category ? String(d.category).trim() : undefined }
   } catch {
     throw new AiDraftError('AI 응답을 읽지 못했습니다. 다시 시도해 주세요.')
   }

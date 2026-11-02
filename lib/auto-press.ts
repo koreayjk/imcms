@@ -15,7 +15,7 @@ import { buildSite, type OutletRow } from './sites'
 
 export type Plan = {
   outlet: OutletRow
-  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; byline: string; author_id: string | null }
+  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[] }
   today: number
   categories: { id: string; slug: string; name: string }[]
 }
@@ -26,8 +26,27 @@ export function localHour(tz: string, at = new Date()) {
   return h % 24
 }
 
+// 사람이 먼저 봐야 하는 주제는 자동으로 쓰지 않는다 (왕실 불경, 성폭력, 자살 등)
+const SENSITIVE = /lese[- ]?majest|royalist|monarch|rape|sexual assault|suicide|child abuse|불경죄|왕정|왕실|성폭행|성폭력|자살/i
+
+// 제목 비교용 단어 (영문은 4자 이상 단어, 한글은 두 글자씩)
+function tokens(t: string) {
+  const s = t.toLowerCase()
+  const out = new Set<string>()
+  for (const w of s.match(/[a-z0-9]{4,}/g) ?? []) out.add(w)
+  for (const w of s.match(/[가-힣]{2,}/g) ?? []) for (let i = 0; i < w.length - 1; i++) out.add(w.slice(i, i + 2))
+  return out
+}
+function similar(a: string, b: string) {
+  const x = tokens(a), y = tokens(b)
+  if (x.size < 3 || y.size < 3) return false
+  let n = 0
+  for (const t of x) if (y.has(t)) n++
+  return n / (x.size + y.size - n) >= 0.5
+}
+
 // 이 매체가 쓸 수 있는 출처인지 + 얼마나 잘 맞는지(점수). 보도자료함 '추천' 탭과 같은 기준
-function rankCandidates(plan: Plan, cands: Cand[]) {
+function rankCandidates(plan: Plan, cands: Cand[], recentTitles: string[] = []) {
   const names = plan.categories.map((c) => c.name)
   const site = buildSite(plan.outlet, plan.categories.map((c) => ({ slug: c.slug, name: c.name })))
   const english = site.lang === 'en'
@@ -45,6 +64,12 @@ function rankCandidates(plan: Plan, cands: Cand[]) {
     const src = allowed.get(c.source_key)
     if (!src) continue
     const hay = `${c.title} ${c.summary ?? ''}`.toLowerCase()
+    if (SENSITIVE.test(hay)) continue
+    const req = (plan.cfg.require_words ?? []).map((w) => w.toLowerCase())
+    const blk = (plan.cfg.block_words ?? []).map((w) => w.toLowerCase())
+    if (blk.some((w) => hay.includes(w))) continue
+    if (req.length && !req.some((w) => hay.includes(w))) continue
+    if (recentTitles.some((t) => similar(t, c.title))) continue
     const hits = lc.filter((k) => hay.includes(k)).length
     const titleHit = lc.some((k) => c.title.toLowerCase().includes(k))
     let ok = false
@@ -67,9 +92,14 @@ function rankCandidates(plan: Plan, cands: Cand[]) {
   return scored.sort((a, b) => b.score - a.score).map((x) => x.c)
 }
 
+const SKIP_CAT = /오피니언|칼럼|사설|인터뷰|기고|opinion|editorial|column|interview/i
+const selectableCategories = (plan: Plan) => plan.categories.filter((c) => !SKIP_CAT.test(c.name))
+
 function pickCategory(plan: Plan, draft: AiDraft) {
-  const skip = /오피니언|칼럼|사설|인터뷰|기고|opinion|editorial|column|interview/i
-  const pool = plan.categories.filter((c) => !skip.test(c.name))
+  const pool = selectableCategories(plan)
+  const asked = draft.category?.trim().toLowerCase()
+  const byAi = asked ? pool.find((c) => c.name.trim().toLowerCase() === asked) : null
+  if (byAi) return byAi.id
   const hay = `${draft.title} ${(draft.keywords ?? []).join(' ')} ${draft.paragraphs[0] ?? ''}`.toLowerCase()
   let best: { id: string; score: number } | null = null
   for (const c of pool) {
@@ -139,7 +169,8 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
 
   const { data: raw, error: ce } = await supabase.rpc('auto_press_candidates', { secret, p_outlet: outletId, p_days: 4, p_limit: 400 })
   if (ce) return { outlet: name, status: 'failed', message: `보도자료 읽기 실패: ${ce.message}` }
-  const ranked = rankCandidates(p, (raw ?? []) as Cand[])
+  const { data: rt } = await supabase.rpc('auto_press_recent_titles', { secret, p_days: 3 })
+  const ranked = rankCandidates(p, (raw ?? []) as Cand[], ((rt ?? []) as { title: string }[]).map((x) => x.title))
   if (!ranked.length) { await note(null, false, '맞는 보도자료가 없습니다 (최근 4일)'); return { outlet: name, status: 'skipped', message: '맞는 보도자료 없음' } }
 
   const site = buildSite(p.outlet, p.categories.map((c) => ({ slug: c.slug, name: c.name })))
@@ -160,7 +191,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
 
       // 2) AI 기사
       const left = 52_000 - (Date.now() - started)
-      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link }, Math.min(30_000, left - 18_000))
+      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: selectableCategories(p).map((c) => c.name) }, Math.min(30_000, left - 18_000))
       const draft: AiDraft = dr.draft
       let cost = dr.costUsd
 
