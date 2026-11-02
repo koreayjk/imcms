@@ -25,22 +25,22 @@ export type PlanEn = {
 export const PLANS_EN: PlanEn[] = [
   {
     id: 'basic', name: 'Basic', for: 'A small independent newsroom publishing every day', monthly: 79,
-    specs: [['Publications', '1'], ['AI drafts & reviews', '300 / month'], ['Storage (photos + video)', '30 GB'], ['Bandwidth', 'No cap*'], ['Banner & popup design', '3 / month'], ['Newsletter', 'Not included']],
+    specs: [['Publications', '1'], ['AI drafts & reviews', '300 / month'], ['Storage (photos + video)', '30 GB'], ['Bandwidth', 'No cap*'], ['Newsletter', 'Not included']],
     extras: [],
   },
   {
     id: 'standard', name: 'Standard', for: 'A growing news site with several sections and steady output', monthly: 109, pick: true,
-    specs: [['Publications', '1'], ['AI drafts & reviews', '900 / month'], ['Storage (photos + video)', '60 GB'], ['Bandwidth', 'No cap*'], ['Banner & popup design', '5 / month'], ['Newsletter', 'Weekly · 2,000 recipients']],
+    specs: [['Publications', '1'], ['AI drafts & reviews', '900 / month'], ['Storage (photos + video)', '60 GB'], ['Bandwidth', 'No cap*'], ['Newsletter', 'Weekly · 2,000 recipients']],
     extras: ['Homepage customization support'],
   },
   {
     id: 'premium', name: 'Premium', for: 'High-traffic sites and publishers running more than one title', monthly: 169,
-    specs: [['Publications', '2 (more available)'], ['AI drafts & reviews', '2,000 / month'], ['Storage (photos + video)', '100 GB'], ['Bandwidth', 'No cap*'], ['Banner & popup design', '10 / month'], ['Newsletter', 'Twice weekly · 5,000 recipients']],
+    specs: [['Publications', '2 (more available)'], ['AI drafts & reviews', '2,000 / month'], ['Storage (photos + video)', '100 GB'], ['Bandwidth', 'No cap*'], ['Newsletter', 'Twice weekly · 5,000 recipients']],
     extras: ['Homepage customization support', 'Group dashboard and one-click publishing to several titles', `3rd title onward: $${EXTRA_OUTLET_USD} / month each (Basic specs)`, 'Priority support'],
   },
   {
     id: 'enterprise', name: 'Enterprise', for: 'Large publishers and networks', monthly: null,
-    specs: [['Publications', 'Custom'], ['AI drafts & reviews', 'Custom'], ['Storage (photos + video)', 'Custom'], ['Bandwidth', 'Custom'], ['Banner & popup design', 'By request'], ['Newsletter', 'Custom']],
+    specs: [['Publications', 'Custom'], ['AI drafts & reviews', 'Custom'], ['Storage (photos + video)', 'Custom'], ['Bandwidth', 'Custom'], ['Newsletter', 'Custom']],
     extras: ['Dedicated support contact'],
   },
 ]
