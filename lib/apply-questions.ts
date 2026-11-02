@@ -7,7 +7,9 @@
 export type ApplyQuestion = { key: string; label: string; hint?: string; options: string[]; multi?: boolean; forNew?: boolean }
 
 export const NEW_OUTLET = '창간 준비 중'
-export const questionsFor = (isNew: boolean) => MIGRATION_QUESTIONS.filter((q) => !isNew || q.forNew)
+// 창간 준비 중이면서 도메인 칸이 비어 있으면(도메인이 아직 없음) 도메인 관리 질문도 필요 없다
+export const questionsFor = (isNew: boolean, hasDomain = true) =>
+  MIGRATION_QUESTIONS.filter((q) => !isNew || (q.forNew && (q.key !== 'q_domain' || hasDomain)))
 
 export const MIGRATION_QUESTIONS: ApplyQuestion[] = [
   {
@@ -60,8 +62,9 @@ export const MIGRATION_QUESTIONS: ApplyQuestion[] = [
 // 신청서에서 받은 값을 확인하고, 요청사항 맨 앞에 붙일 글을 만든다
 export function parseMigrationAnswers(form: FormData): { error?: string; block?: string } {
   const isNew = String(form.get('outlet_count') ?? '') === NEW_OUTLET
-  const lines: string[] = isNew ? ['(창간 준비 중: 기존 사이트 관련 질문은 건너뜀)'] : []
-  for (const q of questionsFor(isNew)) {
+  const hasDomain = String(form.get('domain') ?? '').trim() !== ''
+  const lines: string[] = isNew ? [`(창간 준비 중: 기존 사이트 관련 질문은 건너뜀${hasDomain ? '' : ', 도메인 칸이 비어 있어 도메인 관리 질문도 건너뜀'})`] : []
+  for (const q of questionsFor(isNew, hasDomain)) {
     if (q.multi) {
       const picked = form.getAll(q.key).map(String).filter((v) => q.options.includes(v))
       if (!picked.length) return { error: `“${q.label}”에서 하나 이상 골라 주세요. 잘 모르겠으면 “모르겠음”을 고르세요.` }

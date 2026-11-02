@@ -63,6 +63,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
   const [design, setDesign] = useState('')
   // 이전·연동 질문 답 (단일 선택은 key → 값, 여러 개 고르는 질문은 key → 값 목록). 오류로 다시 그려져도 남도록 상태로 둔다
   const [outletCount, setOutletCount] = useState('')
+  const [domain, setDomain] = useState('')
   const isNew = outletCount === NEW_OUTLET
   const [ans, setAns] = useState<Record<string, string>>({})
   const [multi, setMulti] = useState<Record<string, string[]>>({})
@@ -175,7 +176,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
           <input id="email" name="email" required type="email" maxLength={120} autoComplete="email" className={input} />
         </Field>
         <Field id="domain" label="도메인" hint="없으면 비워 두세요. 도메인 고르기와 구입도 안내해 드립니다.">
-          <input id="domain" name="domain" maxLength={120} inputMode="url" placeholder="mynews.co.kr" className={input} />
+          <input id="domain" name="domain" value={domain} onChange={(e) => setDomain(e.target.value)} maxLength={120} inputMode="url" placeholder="mynews.co.kr" className={input} />
         </Field>
         <Field id="outlet_count" label="운영 중인 매체 수">
           <select id="outlet_count" name="outlet_count" value={outletCount} onChange={(e) => setOutletCount(e.target.value)} className={input}>
@@ -199,7 +200,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
           이전과 개통에 필요한 정보를 미리 확인하는 질문입니다. <b className="font-semibold text-[#14171C]">잘 모르면 “모르겠음”을 고르고 넘어가셔도 됩니다.</b> 모르는 것은 상담 때 같이 확인해 드립니다.{isNew ? ' 창간 준비 중이시라 꼭 필요한 질문만 보여 드립니다.' : ' 새로 창간하시는 경우 “운영 중인 매체 수”에서 “창간 준비 중”을 고르면 질문이 줄어듭니다.'}
         </p>
         <div className="space-y-5">
-          {questionsFor(isNew).map((q) => (
+          {questionsFor(isNew, domain.trim() !== '').map((q) => (
             <div key={q.key}>
               {q.multi ? (
                 <fieldset>
