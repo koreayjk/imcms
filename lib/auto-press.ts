@@ -84,7 +84,11 @@ function rankCandidates(plan: Plan, cands: Cand[], recentTitles: string[] = []) 
       const tp = foreignTopicOf(c.source_key)
       if (tp) { ok = topics.includes(tp); base = 3 }
       else if (fieldOfSource(c.source_key)) { ok = fields.includes(fieldOfSource(c.source_key)!); base = 2 }
-      else { ok = titleHit; base = 0 }
+      else {
+        // 일반 출처(정부·지자체 등): 추천 키워드가 제목에 있거나, 매체의 필수 단어(지역 등)가 있거나, 이 매체가 믿는 출처면 쓴다
+        ok = titleHit || trusted || (req.length > 0 && req.some((w) => hay.includes(w)))
+        base = 0
+      }
     }
     if (!ok) continue
     // 제목이 너무 짧거나 광고성인 것은 뒤로
@@ -93,7 +97,7 @@ function rankCandidates(plan: Plan, cands: Cand[], recentTitles: string[] = []) 
   return scored.sort((a, b) => b.score - a.score).map((x) => x.c)
 }
 
-const SKIP_CAT = /오피니언|칼럼|사설|인터뷰|기고|opinion|editorial|column|interview/i
+const SKIP_CAT = /오피니언|칼럼|사설|인터뷰|기고|기자수첩|포토|기획|특집|opinion|editorial|column|interview/i
 const selectableCategories = (plan: Plan) => plan.categories.filter((c) => !SKIP_CAT.test(c.name))
 
 function pickCategory(plan: Plan, draft: AiDraft) {
