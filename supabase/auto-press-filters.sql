@@ -107,3 +107,35 @@ begin
   where o.id = p_outlet;
   return r;
 end $$;
+
+-- 후보 목록: 영문 매체는 us-* 출처만, 한국어 매체는 us-* 를 뺀다 (최근 글이 많은 미국 보도자료가 600건 한도를 채워 지자체·뉴스와이어가 밀려나던 문제)
+drop function if exists public.auto_press_candidates(text, uuid, int, int);
+create or replace function public.auto_press_candidates(secret text, p_outlet uuid, p_days int default 4, p_limit int default 600, p_english boolean default null)
+returns table (id uuid, source_key text, source_name text, title text, link text, summary text, body_html text, image_url text, published_at timestamptz)
+language plpgsql security definer set search_path = public, private as $$
+begin
+  if not public.press_cron_check(secret) then raise exception 'forbidden'; end if;
+  return query
+    select r.id, r.source_key, r.source_name, r.title, r.link, r.summary, r.body_html, r.image_url, r.published_at
+    from press_releases r
+    where coalesce(r.published_at, r.fetched_at) > now() - make_interval(days => p_days)
+      and r.source_key not in ('manual', 'email')
+      and (p_english is null or (p_english and r.source_key like 'us-%') or (not p_english and r.source_key not like 'us-%'))
+      and not exists (select 1 from articles a where a.outlet_id = p_outlet and a.press_release_id = r.id)
+      and not exists (select 1 from auto_press_log l where l.outlet_id = p_outlet and l.press_release_id = r.id and not l.ok)
+      and not exists (select 1 from articles a2 join press_releases p2 on p2.id = a2.press_release_id
+                      where a2.auto_generated and a2.created_at > now() - interval '7 days'
+                        and (a2.press_release_id = r.id or lower(p2.title) = lower(r.title)))
+    order by coalesce(r.published_at, r.fetched_at) desc
+    limit p_limit;
+end $$;
+revoke all on function public.auto_press_candidates(text, uuid, int, int, boolean) from public;
+grant execute on function public.auto_press_candidates(text, uuid, int, int, boolean) to anon, authenticated;
+
+-- 뉴스폭탄 (경기서부권) 자동 작성 등록
+insert into auto_press_outlets (outlet_id, byline, author_id, require_words, trusted_sources)
+select o.id, '이호현', 'ca8c43d4-d552-4bae-b300-76777268b259',
+  array['안산','화성','평택','시흥','수원','군포','의왕','안양','광명','부천','경기도','경기서부'],
+  array['lg-ansan','nw-hospital','nw-elderly','nw-welfare','nw-medicine','nw-pharma','nw-device','nw-edu','nw-university','nw-secondary','nw-primary','nw-academy','nw-elearning','nw-vocational','nw-preschool']
+from outlets o where o.name = '뉴스폭탄'
+on conflict (outlet_id) do update set enabled = true, byline = excluded.byline, author_id = excluded.author_id, require_words = excluded.require_words, trusted_sources = excluded.trusted_sources;
