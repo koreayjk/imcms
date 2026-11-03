@@ -198,6 +198,36 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/www/openmuan/new/report/report?idx=${id}&mode=view`,
     body: /<div class="board_cont">([\s\S]*?)(?=<\/div>\s*<\/div>\s*<!-- 버튼)/i,
   },
+  'lg-dangjin': {
+    id: /BBSMSTR_000000000014\/selectBoardArticle\.do\?nttId=(\d+)/,
+    link: (id, o) => `${o}/cop/bbs/BBSMSTR_000000000014/selectBoardArticle.do?nttId=${id}`,
+    body: /<div class="bbs_detail_cont">([\s\S]*?)<\/div>/i,
+  },
+  'lg-namdong': {
+    id: /bbsMsgDetail\.do\?msg_seq=(\d+)&bcd=press_release/,
+    link: (id, o) => `${o}/main/bbs/bbsMsgDetail.do?msg_seq=${id}&bcd=press_release`,
+    body: /<div class="detail">([\s\S]*?)<\/div>/i,
+  },
+  'lg-bupyeong': {
+    id: /bbsMsgDetail\.do\?msg_seq=(\d+)&bcd=report/,
+    link: (id, o) => `${o}/bbs/bbsMsgDetail.do?msg_seq=${id}&bcd=report`,
+    body: /<div class="detail">([\s\S]*?)<\/div>/i,
+  },
+  'lg-michuhol': {
+    id: /view\.do\?sq=(\d+)&board_code=news_item/,
+    link: (id, o) => `${o}/main/board/view.do?sq=${id}&board_code=news_item`,
+    body: /<div class="content editor_content">\s*<div class="content editor_content">([\s\S]*?)<\/div>/i,
+  },
+  'lg-gwangjin': {
+    id: /B0000002\/view\.do\?nttId=(\d+)/,
+    link: (id, o) => `${o}/portal/bbs/B0000002/view.do?nttId=${id}&menuNo=200191`,
+    body: /<div id="dbData"[^>]*>([\s\S]*?)<\/div>/i,
+  },
+  'lg-gangseo': {
+    id: /\/gs040201\/(\d+)/,
+    link: (id, o) => `${o}/gs040201/${id}`,
+    body: /<div class="view-content"[^>]*>([\s\S]*?)<div class="board-page-wrap">/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
@@ -299,6 +329,24 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     if (!hit) continue
     const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(b))?.[1] ?? '')
     rows.push({ source_key: key, source_name: label, guid: `${key}:${hit.id}`, title: hit.title, link: cfg.link(hit.id, origin), summary: null, body_html: null, published_at: date })
+  }
+  if (rows.length) return rows
+  // 표가 아니라 <li>·카드 목록인 사이트: 글 주소 규칙에 맞는 링크를 모두 찾고, 날짜는 그 링크 뒤쪽에서 읽는다
+  const found = new Map<string, { title: string; date: string | null }>()
+  const anchors = Array.from(page.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi))
+  anchors.forEach((m, i) => {
+    const id = cfg.id.exec(decode(m[1]))?.[1]
+    const t = text(m[2]).replace(/\s*첨부파일$/, '')
+    if (!id || !t || /^\d+$/.test(t) || t.length < 4) return
+    const end = (m.index ?? 0) + m[0].length
+    const next = anchors.slice(i + 1).find((x) => cfg.id.test(decode(x[1])) && text(x[2]).length >= 4)
+    const tail = page.slice(end, Math.min(next?.index ?? end + 1500, end + 1500))
+    const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(tail))?.[1] ?? '')
+    const prev = found.get(id)
+    if (!prev || t.length > prev.title.length) found.set(id, { title: t, date: date ?? prev?.date ?? null })
+  })
+  for (const [id, v] of found) {
+    rows.push({ source_key: key, source_name: label, guid: `${key}:${id}`, title: v.title, link: cfg.link(id, origin), summary: null, body_html: null, published_at: v.date })
   }
   return rows
 }
