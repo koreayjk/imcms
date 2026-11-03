@@ -605,7 +605,7 @@ export default async function ProductHome() {
               <ul className="mt-7 space-y-3">
                 <Check>해운 운임지수(SCFI·KCCI) 주간 그래프 — 편집국이 매주 값만 입력</Check>
                 <Check>“국제물류 전문뉴스”, “케어 전문뉴스”처럼 매체별 전문 섹션 묶음</Check>
-                <Check>분야 키워드로 보도자료 추천, 분야별 보도자료 출처 연결</Check>
+                <Check>분야 키워드로 보도자료 맞춤 선별, 분야별 보도자료 출처 연결</Check>
                 <Check>도메인 연결 전에도 매체마다 따로 된 주소로 미리 확인</Check>
               </ul>
             </Reveal>
