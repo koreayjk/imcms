@@ -33,3 +33,23 @@ B형(`/portal/…`로 묶었던 25곳)은 사실 서로 다른 게시판 제품 
 - 목록은 읽히는데 본문 칸을 더 찾아야 하는 곳: 서울 동작구(`/portal/bbs/B0000171/view.do?nttId=…`), 서울 광진구(목록이 `<li>`).
 - `goTo.view('list','글번호','게시판번호','메뉴번호')` 자바스크립트 방식(폼 전송): 경기 오산시·광주시. 평택시와 같은 방식이라 상세 열기 방법을 풀어야 한다.
 - 그 밖의 제각각: 부산 사하·연제(표 목록이 스크립트로 채워짐), 과천·이천, 목포·순천, 진주·김해(`.web?amode=view&idx=`).
+
+## 광역 17곳 조사 (2026-11-03)
+| 광역 | 보도자료 목록 주소 | 상태 |
+|---|---|---|
+| 경기도 | 경기도뉴스포털 | 수집 중(`lg-gg-do`) |
+| 충청북도 | `/www/selectBbsNttList.do?bbsNo=65&key=429` | 수집 중(`lg-chungbuk`) |
+| 인천광역시 | `/IC010205` (카드형 `<li>`, 상세 `/IC010205/view?repSeq=…`, 본문 `.board-view-contents`) | 수집 추가(`lg-incheon`) |
+| 충청남도 | `/cnportal/cnapcPressList/cnapcPress/list.do?menuNo=500498` (표, 상세 `view.do?nttId=…`) | 목록 구조 확인, 본문 칸 미확인 |
+| 대구광역시 | `info.daegu.go.kr/newshome/mtnmain.php?mtnkey=scatelist&mkey=26` | 하루 한 건짜리 **모음 글**(여러 보도자료 표)이라 개별 기사용으로 부적합, 보류 |
+| 울산광역시 | `/u/rep/contents.ulsan?mId=001004003001000000` (표, `./view.do?mId&bbsId&dataId`) | 목록은 읽히나 상세 주소가 오류(404), 보류 |
+| 서울특별시 | 주소 못 찾음(`/news/news_report.do`는 '서울소식' 일반 페이지) | 보류 |
+| 광주광역시 | `/boardList.do?boardId=BD_0000000027&pageId=www789` (카드형) | 구조 확인 필요 |
+| 대전광역시 | `/drh/board/boardNormalList.do?boardId=normal_0189&menuSeq=1632` | 구조 확인 필요 |
+| 경상북도 | `/page/link.do?mn=10107&pageNo=10004` | 구조 확인 필요 |
+| 제주특별자치도 | `/news/bodo.htm` | 구조 확인 필요 |
+| 전라남도 | `/M7116/boardList.do?menuId=jeonnam0202000000` | 구조 확인 필요 |
+| 부산광역시 | `/nbnews` | SSL 연결 오류 |
+| 세종특별자치시 | 추측한 주소가 공지사항 게시판 | 보도자료 주소 찾아야 함 |
+| 강원특별자치도 | 추측 주소 오류 페이지 | 주소 찾아야 함 |
+| 전북특별자치도 | 추측 주소 빈 페이지 | 주소 찾아야 함 |
