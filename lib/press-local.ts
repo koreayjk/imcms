@@ -3,7 +3,7 @@
 //   서버(수집 크론·보도자료 열기)에서만 쓴다. 요청은 매시간 몇 번뿐이고, 로그인·차단 우회는 하지 않는다 (막히면 그 출처는 건너뛴다)
 import type { PressRow } from './press'
 
-export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek'
+export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt'
 
 const decode = (s: string) =>
   s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
@@ -120,4 +120,36 @@ export function parsePyeongtaekList(page: string): PressRow[] {
     rows.push({ source_key: 'lg-pyeongtaek', source_name: '평택시 보도자료', guid: `lg-pyeongtaek:${id}`, title, link: PYEONGTAEK_LIST, summary: summary.slice(0, 400) || null, body_html: null, published_at: date })
   }
   return rows
+}
+
+// ───────── 표준 게시판형 (selectBbsNttList.do) — 충북·서산·영월·동두천·양평·은평·영등포 등 ─────────
+//   목록 주소만 다르고 목록 모양(./selectBbsNttView.do?key=…&bbsNo=…&nttNo=…)이 같다. 상세의 본문 칸 이름만 사이트마다 달라 여러 이름을 차례로 찾는다
+export function parseNttList(page: string, key: string, label: string, listUrl: string): PressRow[] {
+  const rows: PressRow[] = []
+  for (const tr of page.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const b = tr[1]
+    const a = /<a[^>]+href="([^"]*selectBbsNttView\.do[^"]*)"[^>]*>([\s\S]*?)<\/a>/i.exec(b)
+    if (!a) continue
+    const href = decode(a[1])
+    const ntt = /nttNo=(\d+)/.exec(href)?.[1]
+    const bbs = /bbsNo=(\d+)/.exec(href)?.[1]
+    const k = /[?&]key=(\d+)/.exec(href)?.[1]
+    const title = text(a[2])
+    if (!ntt || !bbs || !k || !title) continue
+    const date = kstDate(/<time[^>]*datetime="([^"]+)"/i.exec(b)?.[1] ?? /(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(b))?.[1] ?? '')
+    const link = new URL(`./selectBbsNttView.do?key=${k}&bbsNo=${bbs}&nttNo=${ntt}`, listUrl).toString()
+    rows.push({ source_key: key, source_name: label, guid: `${key}:${bbs}:${ntt}`, title, link, summary: null, body_html: null, published_at: date })
+  }
+  return rows
+}
+
+export function parseNttDetail(page: string, base: string, label: string) {
+  const m = /<(div|td)[^>]*class="[^"]*\b(?:contenttext|bbs_content|p-table__content|viewcontent|view_content|nttCn)\b[^"]*"[^>]*>([\s\S]*?)<\/\1>/i.exec(page)
+  if (!m) return null
+  const inner = m[2]
+  const imgs = Array.from(inner.matchAll(/<img[^>]+src="([^"]+)"[^>]*>/gi), (x) => { try { return new URL(decode(x[1]), base).toString() } catch { return '' } })
+    .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
+  const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
+  const paras = paragraphs(inner.replace(/&nbsp;/gi, ' '))
+  return paras.length ? build(paras, uniq, label) : null
 }
