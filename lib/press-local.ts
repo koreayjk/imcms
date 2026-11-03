@@ -3,7 +3,7 @@
 //   서버(수집 크론·보도자료 열기)에서만 쓴다. 요청은 매시간 몇 번뿐이고, 로그인·차단 우회는 하지 않는다 (막히면 그 출처는 건너뛴다)
 import type { PressRow } from './press'
 
-export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt' | 'board' | 'incheon'
+export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt' | 'board' | 'incheon' | 'seoul'
 
 const decode = (s: string) =>
   s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
@@ -163,6 +163,11 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/portal/bbs/view/B0000151/${id}.do?menuNo=200474`,
     body: /<div[^>]*id="dbdata"[^>]*>([\s\S]*?)<\/div>/i,
   },
+  'lg-seoul': {
+    id: /nttNo=(\d+)/,
+    link: (id, o) => `${o}/news/news_report.do?bbsNo=158&nttNo=${id}`,
+    body: /<div id="scrabArea"[^>]*>([\s\S]*?)<\/div>/i,
+  },
   'lg-incheon': {
     id: /\/IC010205\/view\?repSeq=([A-Z0-9_]+)/,
     link: (id, o) => `${o}/IC010205/view?repSeq=${id}`,
@@ -173,6 +178,25 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/site/main/board/press/${id}`,
     body: /<div[^>]*class="[^"]*bbs_view_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
   },
+}
+
+// 서울특별시 (목록 표, 글 열기는 fnTbbsView(글번호) → ?bbsNo=158&nttNo=글번호). 본문은 한글(HWP) 문서 보기 틀이라 HTML에는 첫머리 요약(제목+핵심 줄)만 있다
+export function parseSeoulList(page: string, key: string, label: string, listUrl: string): PressRow[] {
+  const base = new URL(listUrl)
+  const bbsNo = /const bbsNo = "(\d+)"/.exec(page)?.[1] ?? '158'
+  const rows: PressRow[] = []
+  for (const tr of page.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const b = tr[1]
+    const a = /fnTbbsView\('(\d+)'\)[^>]*>([\s\S]*?)<\/a>/i.exec(b)
+    if (!a) continue
+    const title = text(a[2])
+    if (!title || /사후동정|동정\)/.test(title)) continue
+    const dept = text(/<td class="sib-lst-type-basic-tablet-hidden">(?:(?!<\/td>)[\s\S])*?<\/td>\s*<td[^>]*>\s*\d{4}/i.exec(b)?.[0]?.replace(/\d{4}[\s\S]*$/, '') ?? '')
+    const date = kstDate(/(\d{4}-\d{2}-\d{2})/.exec(text(b))?.[1] ?? '')
+    rows.push({ source_key: key, source_name: label, guid: `${key}:${a[1]}`, title, link: `${base.origin}${base.pathname}?bbsNo=${bbsNo}&nttNo=${a[1]}`, summary: null, body_html: null, published_at: date })
+    void dept
+  }
+  return rows
 }
 
 // 인천광역시 (목록이 <li> 카드형: 제목 strong.subject, 제공일자 dd)
