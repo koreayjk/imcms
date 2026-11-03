@@ -228,6 +228,41 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/gs040201/${id}`,
     body: /<div class="view-content"[^>]*>([\s\S]*?)<div class="board-page-wrap">/i,
   },
+  'lg-dongjak': {
+    id: /B0000171\/view\.do\?nttId=(\d+)/,
+    link: (id, o) => `${o}/portal/bbs/B0000171/view.do?nttId=${id}&menuNo=200647`,
+    body: /<div class="dbData">([\s\S]*?)<\/div>/i,
+  },
+  'lg-mokpo': {
+    id: /report_material\?idx=(\d+)&mode=view/,
+    link: (id, o) => `${o}/www/mokpo_news/press_release/report_material?idx=${id}&mode=view`,
+    body: /<div class="text_viewbox">([\s\S]*?)<\/div>/i,
+  },
+  'lg-naju': {
+    id: /coverage\?idx=(\d+)&mode=view/,
+    link: (id, o) => `${o}/www/administration/reporting/coverage?idx=${id}&mode=view`,
+    body: /<div class='view_box' id='con_ko'>([\s\S]*?)<\/div>/i,
+  },
+  'lg-chuncheon': {
+    id: /press-release\/\?bbsId=BBSMSTR_000000000335&nttId=(\d+)/,
+    link: (id, o) => `${o}/mayor/newsroom/press-release/?bbsId=BBSMSTR_000000000335&nttId=${id}&flag=view`,
+    body: /<div class="board-view-con">([\s\S]*?)<div class="contents-bottom/i,
+  },
+  'lg-gwangsan': {
+    id: /boardView\.do\?pageId=www16&boardId=REPORT_NEW&seq=(\d+)/,
+    link: (id, o) => `${o}/boardView.do?pageId=www16&boardId=REPORT_NEW&seq=${id}&movePage=1`,
+    body: /<div class="boardContents[^"]*">([\s\S]*?)<\/div>/i,
+  },
+  'lg-nowon': {
+    id: /opView\('(\d+)'\)/,
+    link: (id, o) => `${o}/www/user/bbs/BD_selectBbs.do?q_bbsCode=1027&q_bbscttSn=${id}`,
+    body: /<div class="article-body">([\s\S]*?)<div class="article-view-btn">/i,
+  },
+  'lg-paju': {
+    id: /jsView\('1023',\s*'(\d+)'/,
+    link: (id, o) => `${o}/user/board/BD_board.view.do?seq=${id}&bbsCd=1023`,
+    body: /<div class="article-body">([\s\S]*?)(?=<div id="content-info"|<div class="article-view-btn">)/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
@@ -322,8 +357,8 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     const a = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
     let hit: { id: string; title: string } | null = null
     for (const m of b.matchAll(a)) {
-      const id = cfg.id.exec(decode(m[1]))?.[1]
-      const t = text(m[2]).replace(/\s*첨부파일$/, '')
+      const id = cfg.id.exec(decode(m[0]))?.[1]
+      const t = text(m[2]).replace(/\s*첨부파일$/, '').replace(/\s+N$/, '')
       if (id && t && !/^\d+$/.test(t)) { hit = { id, title: t }; break }
     }
     if (!hit) continue
@@ -335,11 +370,11 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
   const found = new Map<string, { title: string; date: string | null }>()
   const anchors = Array.from(page.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi))
   anchors.forEach((m, i) => {
-    const id = cfg.id.exec(decode(m[1]))?.[1]
-    const t = text(m[2]).replace(/\s*첨부파일$/, '')
+    const id = cfg.id.exec(decode(m[0]))?.[1]
+    const t = text(m[2]).replace(/\s*첨부파일$/, '').replace(/\s+N$/, '')
     if (!id || !t || /^\d+$/.test(t) || t.length < 4) return
     const end = (m.index ?? 0) + m[0].length
-    const next = anchors.slice(i + 1).find((x) => cfg.id.test(decode(x[1])) && text(x[2]).length >= 4)
+    const next = anchors.slice(i + 1).find((x) => cfg.id.test(decode(x[0])) && text(x[2]).length >= 4)
     const tail = page.slice(end, Math.min(next?.index ?? end + 1500, end + 1500))
     const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(tail))?.[1] ?? '')
     const prev = found.get(id)
