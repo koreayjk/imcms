@@ -263,6 +263,21 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/user/board/BD_board.view.do?seq=${id}&bbsCd=1023`,
     body: /<div class="article-body">([\s\S]*?)(?=<div id="content-info"|<div class="article-view-btn">)/i,
   },
+  'lg-jongno': {
+    id: /viewMove\('(\d+)'\)/,
+    link: (id, o) => `${o}/portal/bbs/selectBoardArticle.do?bbsId=BBSMSTR_000000001618&menuNo=388338&menuId=388338&nttId=${id}`,
+    body: /<td[^>]*>((?:(?!<td)[\s\S])*?)<div data-hjsonver=/i,
+  },
+  'lg-yeongdo': {
+    id: /idx=(\d+)&amode=view/,
+    link: (id, o) => `${o}/00000/00007/00011.web?gcode=1027&idx=${id}&amode=view&`,
+    body: /<div class="substanceautolink">([\s\S]*?)<\/div>/i,
+  },
+  'lg-jinju': {
+    id: /idx=(\d+)&amode=view/,
+    link: (id, o) => `${o}/00138.web?gcode=1004&idx=${id}&amode=view&`,
+    body: /<div class="substanceautolink">([\s\S]*?)<\/div>/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
