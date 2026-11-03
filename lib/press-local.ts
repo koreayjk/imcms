@@ -3,7 +3,7 @@
 //   서버(수집 크론·보도자료 열기)에서만 쓴다. 요청은 매시간 몇 번뿐이고, 로그인·차단 우회는 하지 않는다 (막히면 그 출처는 건너뛴다)
 import type { PressRow } from './press'
 
-export type LocalKind = 'ansan' | 'gnews'
+export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek'
 
 const decode = (s: string) =>
   s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
@@ -98,4 +98,26 @@ export function parseGnewsDetail(page: string, label = '경기도뉴스포털') 
   const imgs = Array.from(page.matchAll(/data-url="(\/UP_FILES\/[^"]+\.(?:jpe?g|png))"/gi), (m) => m[1])
   const images = imgs.filter((u, n) => imgs.indexOf(u) === n).map((u) => ({ src: `${GNEWS}${u.split(';')[0].replace(/ /g, '%20')}` }))
   return paras.length ? build(paras, images, label) : null
+}
+
+// ───────── 평택시 홈페이지 (보도자료 bcIdx=90) ─────────
+//   목록은 그대로 읽히지만 상세 열기는 폼 전송(POST)이라 본문·사진은 가져오지 못한다. 목록의 제목·날짜·요약까지만 보도자료함에 쌓는다
+const PYEONGTAEK = 'https://www.pyeongtaek.go.kr'
+export const PYEONGTAEK_LIST = `${PYEONGTAEK}/pyeongtaek/board/post/list.do?bcIdx=90&mid=0402010000`
+
+export function parsePyeongtaekList(page: string): PressRow[] {
+  const rows: PressRow[] = []
+  for (const li of page.matchAll(/<li[^>]*>\s*<a[^>]+data-req-get-p-idx="(\d+)"[^>]*>([\s\S]*?)<\/a>\s*<\/li>/gi)) {
+    const id = li[1]
+    const b = li[2]
+    const title = text(/<span class="list_title">([\s\S]*?)<\/span>/i.exec(b)?.[1] ?? '')
+    if (!title) continue
+    const date = kstDate(/<span class="list_data">[\s\S]*?(\d{4}[-.]\d{2}[-.]\d{2})/i.exec(b)?.[1] ?? '')
+    // 요약 앞의 "2026. 11. 3. 부서 031-… 담당자 031-…" 같은 머리말은 뺀다
+    let summary = text(/<span class="list_txt">([\s\S]*?)<\/span>/i.exec(b)?.[1] ?? '')
+    const at = summary.indexOf(title.slice(0, 6))
+    if (at > 0) summary = summary.slice(at)
+    rows.push({ source_key: 'lg-pyeongtaek', source_name: '평택시 보도자료', guid: `lg-pyeongtaek:${id}`, title, link: PYEONGTAEK_LIST, summary: summary.slice(0, 400) || null, body_html: null, published_at: date })
+  }
+  return rows
 }
