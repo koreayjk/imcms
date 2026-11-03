@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { PRESS_SOURCES, findPressSource, isForeignSource, isUsSource, type PressSource } from './press-sources'
-import { parseAnsanDetail, parseAnsanList, parseGnewsDetail, parseGnewsList, parseNttDetail, parseNttList, parsePyeongtaekList } from './press-local'
+import { parseAnsanDetail, parseAnsanList, parseBoardDetail, parseBoardList, parseGnewsDetail, parseGnewsList, parseNttDetail, parseNttList, parsePyeongtaekList } from './press-local'
 
 const UA = 'Mozilla/5.0 (compatible; IMCMS-PressReader/1.0)'
 const STALE_MS = 10 * 60 * 1000
@@ -89,7 +89,7 @@ export async function collectSource(s: PressSource): Promise<CollectResult> {
     // 지자체 게시판: 목록 페이지를 읽어 제목·날짜·상세 주소를 뽑는다 (본문은 열 때 가져온다)
     if (s.kind === 'gov') {
       const page = await fetchText(s.url, 15000)
-      const rows = (s.adapter === 'ansan' ? parseAnsanList(page) : s.adapter === 'pyeongtaek' ? parsePyeongtaekList(page) : s.adapter === 'ntt' ? parseNttList(page, s.key, s.name, s.url) : parseGnewsList(page, s.key, s.name)).slice(0, 40)
+      const rows = (s.adapter === 'ansan' ? parseAnsanList(page) : s.adapter === 'pyeongtaek' ? parsePyeongtaekList(page) : s.adapter === 'ntt' ? parseNttList(page, s.key, s.name, s.url) : s.adapter === 'board' ? parseBoardList(page, s.key, s.name, s.url) : parseGnewsList(page, s.key, s.name)).slice(0, 40)
       if (!rows.length) throw new Error('목록에서 글을 찾지 못했습니다 (페이지 모양이 바뀌었을 수 있음)')
       return { key: s.key, ok: true, message: null, rows }
     }
@@ -230,7 +230,7 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease):
     try {
       const page = await fetchText(r.link, 12000)
       const label = r.source_name.replace(/ 보도자료.*$/, '')
-      const parsed = src.adapter === 'ansan' ? parseAnsanDetail(page, label) : src.adapter === 'ntt' ? parseNttDetail(page, new URL(r.link).origin, label) : parseGnewsDetail(page, label)
+      const parsed = src.adapter === 'ansan' ? parseAnsanDetail(page, label) : src.adapter === 'ntt' ? parseNttDetail(page, new URL(r.link).origin, label) : src.adapter === 'board' ? parseBoardDetail(page, r.source_key, new URL(r.link).origin, label) : parseGnewsDetail(page, label)
       if (!parsed) return r
       await supabase.from('press_releases').update({ body_html: parsed.html, image_url: parsed.image }).eq('id', r.id)
       return { ...r, body_html: parsed.html, image_url: parsed.image }

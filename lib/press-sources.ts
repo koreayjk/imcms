@@ -8,7 +8,7 @@ export type PressSource = {
   //   us: 미국(영문) 출처. 영문 매체(site.lang = en)만 본다. 목록은 RSS, 전문은 기사 페이지에서 읽고, AI가 영어 기사로 새로 쓴다
   kind: 'newswire' | 'rss' | 'foreign' | 'us' | 'gov'
   // gov: 지자체 게시판을 직접 읽는 출처 (press-local.ts). adapter 가 읽는 방법을 정한다
-  adapter?: 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt'
+  adapter?: 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt' | 'board'
   // 미국 출처 중 매체 지역·기관 소식: 추천 탭에 키워드 없이도 늘 보인다 (전국 뉴스와이어는 추천 키워드가 제목에 있을 때만)
   local?: boolean
   // 해외 언론: 기사에 밝힐 매체 이름
@@ -136,6 +136,9 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'lg-yangpyeong', name: '양평군 보도자료', url: 'https://www.yp21.go.kr/www/selectBbsNttList.do?bbsNo=2&key=1112', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-eunpyeong', name: '서울 은평구 보도자료', url: 'https://www.ep.go.kr/www/selectBbsNttList.do?bbsNo=48&key=762', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-yeongdeungpo', name: '서울 영등포구 보도자료', url: 'https://www.ydp.go.kr/www/selectBbsNttList.do?bbsNo=45&key=2868', kind: 'gov', adapter: 'ntt' },
+  // 사이트마다 모양이 다른 게시판 (규칙은 press-local.ts 의 BOARDS)
+  { key: 'lg-jungnang', name: '서울 중랑구 보도자료', url: 'https://www.jungnang.go.kr/portal/bbs/list/B0000151.do?menuNo=200474', kind: 'gov', adapter: 'board' },
+  { key: 'lg-mapo', name: '서울 마포구 보도자료', url: 'https://www.mapo.go.kr/site/main/board/press/list', kind: 'gov', adapter: 'board' },
   { key: 'lg-gg-sigun', name: '경기도뉴스포털 · 시군 보도자료', url: 'https://gnews.gg.go.kr/briefing/brief_sigun.do', kind: 'gov', adapter: 'gnews' },
   { key: 'lg-gg-do', name: '경기도뉴스포털 · 경기도 보도자료', url: 'https://gnews.gg.go.kr/briefing/brief_gongbo.do', kind: 'gov', adapter: 'gnews' },
   // 정책브리핑(korea.kr) RSS는 2026-07-01에 서비스가 중단되어 뺐다 (저작권 보호를 이유로 제공 방식 변경).
