@@ -163,6 +163,11 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/portal/bbs/view/B0000151/${id}.do?menuNo=200474`,
     body: /<div[^>]*id="dbdata"[^>]*>([\s\S]*?)<\/div>/i,
   },
+  'lg-chungnam': {
+    id: /cnapcPress\/view\.do\?nttId=(\d+)/,
+    link: (id, o) => `${o}/cnportal/cnapcPressList/cnapcPress/view.do?nttId=${id}&menuNo=500498`,
+    body: /<div class="board-view-inner">\s*<div class="content">([\s\S]*?)<\/div>/i,
+  },
   'lg-seoul': {
     id: /nttNo=(\d+)/,
     link: (id, o) => `${o}/news/news_report.do?bbsNo=158&nttNo=${id}`,

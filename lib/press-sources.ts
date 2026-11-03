@@ -141,6 +141,7 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'lg-mapo', name: '서울 마포구 보도자료', url: 'https://www.mapo.go.kr/site/main/board/press/list', kind: 'gov', adapter: 'board' },
   { key: 'lg-incheon', name: '인천광역시 보도자료', url: 'https://www.incheon.go.kr/IC010205', kind: 'gov', adapter: 'incheon' },
   { key: 'lg-seoul', name: '서울특별시 보도자료', url: 'https://www.seoul.go.kr/news/news_report.do', kind: 'gov', adapter: 'seoul' },
+  { key: 'lg-chungnam', name: '충청남도 보도자료', url: 'https://www.chungnam.go.kr/cnportal/cnapcPressList/cnapcPress/list.do?menuNo=500498', kind: 'gov', adapter: 'board' },
   { key: 'lg-gg-sigun', name: '경기도뉴스포털 · 시군 보도자료', url: 'https://gnews.gg.go.kr/briefing/brief_sigun.do', kind: 'gov', adapter: 'gnews' },
   { key: 'lg-gg-do', name: '경기도뉴스포털 · 경기도 보도자료', url: 'https://gnews.gg.go.kr/briefing/brief_gongbo.do', kind: 'gov', adapter: 'gnews' },
   // 정책브리핑(korea.kr) RSS는 2026-07-01에 서비스가 중단되어 뺐다 (저작권 보호를 이유로 제공 방식 변경).
