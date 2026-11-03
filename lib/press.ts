@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { PRESS_SOURCES, findPressSource, isForeignSource, isUsSource, type PressSource } from './press-sources'
+import { parseAnsanDetail, parseAnsanList, parseGnewsDetail, parseGnewsList } from './press-local'
 
 const UA = 'Mozilla/5.0 (compatible; IMCMS-PressReader/1.0)'
 const STALE_MS = 10 * 60 * 1000
@@ -85,6 +86,13 @@ export type CollectResult = { key: string; ok: boolean; message: string | null; 
 // 출처 하나의 RSS를 읽어 저장할 행으로 바꾼다 (저장은 호출한 쪽에서)
 export async function collectSource(s: PressSource): Promise<CollectResult> {
   try {
+    // 지자체 게시판: 목록 페이지를 읽어 제목·날짜·상세 주소를 뽑는다 (본문은 열 때 가져온다)
+    if (s.kind === 'gov') {
+      const page = await fetchText(s.url, 15000)
+      const rows = (s.adapter === 'ansan' ? parseAnsanList(page) : parseGnewsList(page, s.key, s.name)).slice(0, 40)
+      if (!rows.length) throw new Error('목록에서 글을 찾지 못했습니다 (페이지 모양이 바뀌었을 수 있음)')
+      return { key: s.key, ok: true, message: null, rows }
+    }
     const items = parseRss(await fetchText(s.url)).slice(0, 40)
     const rows = items.map((i) => ({
       source_key: s.key,
@@ -215,7 +223,20 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease):
       return r
     }
   }
-  if (findPressSource(r.source_key)?.kind !== 'newswire') return r
+  const src = findPressSource(r.source_key)
+  if (src?.kind === 'gov') {
+    if (r.body_html) return r
+    try {
+      const page = await fetchText(r.link, 12000)
+      const parsed = src.adapter === 'ansan' ? parseAnsanDetail(page, r.source_name.replace(/ 보도자료.*$/, '')) : parseGnewsDetail(page, r.source_name.replace(/ 보도자료.*$/, ''))
+      if (!parsed) return r
+      await supabase.from('press_releases').update({ body_html: parsed.html, image_url: parsed.image }).eq('id', r.id)
+      return { ...r, body_html: parsed.html, image_url: parsed.image }
+    } catch {
+      return r
+    }
+  }
+  if (src?.kind !== 'newswire') return r
   const missedPhotos = !!r.body_html && r.image_url === null && !/<img\b|data-youtube-video/.test(r.body_html)
   if (r.body_html && !missedPhotos) return r
   try {
