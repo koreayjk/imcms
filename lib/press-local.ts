@@ -3,7 +3,7 @@
 //   서버(수집 크론·보도자료 열기)에서만 쓴다. 요청은 매시간 몇 번뿐이고, 로그인·차단 우회는 하지 않는다 (막히면 그 출처는 건너뛴다)
 import type { PressRow } from './press'
 
-export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt' | 'board'
+export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt' | 'board' | 'incheon'
 
 const decode = (s: string) =>
   s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
@@ -163,11 +163,32 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/portal/bbs/view/B0000151/${id}.do?menuNo=200474`,
     body: /<div[^>]*id="dbdata"[^>]*>([\s\S]*?)<\/div>/i,
   },
+  'lg-incheon': {
+    id: /\/IC010205\/view\?repSeq=([A-Z0-9_]+)/,
+    link: (id, o) => `${o}/IC010205/view?repSeq=${id}`,
+    body: /<div[^>]*class="[^"]*board-view-contents[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+  },
   'lg-mapo': {
     id: /\/site\/main\/board\/press\/(\d+)/,
     link: (id, o) => `${o}/site/main/board/press/${id}`,
     body: /<div[^>]*class="[^"]*bbs_view_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
   },
+}
+
+// 인천광역시 (목록이 <li> 카드형: 제목 strong.subject, 제공일자 dd)
+export function parseIncheonList(page: string, key: string, label: string, listUrl: string): PressRow[] {
+  const origin = new URL(listUrl).origin
+  const rows: PressRow[] = []
+  for (const li of page.matchAll(/<li>\s*<a[^>]+href="(\/IC010205\/view\?repSeq=([A-Z0-9_]+)[^"]*)"[^>]*>([\s\S]*?)<\/a>\s*<\/li>/gi)) {
+    const id = li[2]
+    const b = li[3]
+    const title = text(/<strong class="subject">([\s\S]*?)<\/strong>/i.exec(b)?.[1] ?? '')
+    if (!title) continue
+    const summary = text(/<div class="txt">([\s\S]*?)<\/div>/i.exec(b)?.[1] ?? '').slice(0, 300) || null
+    const date = kstDate(/제공일자<\/dt>\s*<dd>([^<]*)</i.exec(b)?.[1] ?? '')
+    rows.push({ source_key: key, source_name: label, guid: `${key}:${id}`, title, link: `${origin}/IC010205/view?repSeq=${id}`, summary, body_html: null, published_at: date })
+  }
+  return rows
 }
 
 export function parseBoardList(page: string, key: string, label: string, listUrl: string): PressRow[] {
