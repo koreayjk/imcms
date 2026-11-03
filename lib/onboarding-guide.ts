@@ -48,7 +48,12 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     days: '3~5일',
     title: '로고·색·법정 표기·섹션 정리',
     we: ['받은 자료로 로고, 대표 색, 제호, 발행인·편집인, 인터넷신문 등록번호, 청소년보호책임자, 연락처를 넣고 섹션(메뉴)과 홈 모양을 정리합니다.'],
-    you: ['로고 파일(배경 투명 PNG), 대표 색, 메뉴 구성, 하단에 넣을 법정 표기 정보를 보내 주세요.'],
+    you: [
+      '아래 두 가지 중 편하신 쪽을 고르세요.',
+      '① 저희에게 보내 주세요: 로고 파일(배경 투명 PNG), 대표 색, 메뉴 구성, 하단에 넣을 법정 표기 정보(제호·등록번호·등록일·발행인·편집인·청소년보호책임자·주소·전화)를 이메일이나 카카오톡으로 보내 주시면 저희가 넣습니다.',
+      '② 직접 넣으세요: 편집국 왼쪽 메뉴 “설정” → 위쪽 “매체 정보” 탭에서 입력하고 저장합니다. 로고는 “로고” 칸에서 이미지를 올리고, 대표색은 “색” 칸, 법정 표기는 “하단 표시 정보” 칸(* 표시는 꼭 필요한 항목)에 적습니다. 메뉴(섹션)는 왼쪽 메뉴 “섹션”에서 만들고 순서를 정합니다. 입력한 모습은 미리보기 링크로 확인하실 수 있습니다.',
+      '직접 넣으시다 막히면 화면을 캡처해 보내 주세요. 저희가 대신 넣어 드립니다.',
+    ],
     result: '홈페이지가 매체 얼굴로 꾸며지고 법정 표기가 갖춰집니다.',
     keys: ['brand', 'sections'],
   },
@@ -144,7 +149,12 @@ const ONBOARDING_EN: Record<string, Omit<OnboardingStep, 'id' | 'keys'>> = {
     days: 'Days 3-5',
     title: 'Logo, colors, legal notices and sections',
     we: ['Using the materials you send, we enter your logo, brand color, masthead name, publisher and editor names, online newspaper registration number, youth protection officer and contact details, then set up the sections (menu) and the look of the home page.'],
-    you: ['Send your logo file (PNG with a transparent background), brand color, menu structure, and the legal notice information to show in the footer.'],
+    you: [
+      'Choose whichever is easier for you.',
+      '1) Send it to us: email or message us your logo file (PNG with a transparent background), brand color, menu structure and the legal notice information for the footer (masthead name, registration number and date, publisher, editor, youth protection officer, address, phone), and we will enter it.',
+      '2) Enter it yourself: in the newsroom open "Settings" in the left menu, then the "Outlet info" tab, and save. Upload the logo in the "Logo" section, set the brand color in "Colors", and fill the legal notices in "Footer information" (fields marked * are required). Create the menu sections and set their order under "Sections" in the left menu. You can check the result through the preview link.',
+      'If you get stuck, send us a screenshot and we will enter it for you.',
+    ],
     result: 'The website is styled as your outlet and the legally required notices are in place.',
   },
   import: {
