@@ -44,15 +44,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     keys: ['invite'],
   },
   {
-    id: 'domain',
-    days: '2~3일',
-    title: '도메인 연결',
-    we: ['연결에 필요한 값(A·CNAME)을 안내하고, 연결이 끝나면 매체 주소로 열리는지 확인합니다.'],
-    you: ['도메인을 구입하신 업체에서 DNS 설정을 바꿔 주세요 (약 10분). 아이디·비밀번호는 저희에게 보내지 않으셔도 됩니다.'],
-    result: '매체 주소(예: www.○○○.co.kr)로 홈페이지가 열립니다.',
-    keys: ['domain'],
-  },
-  {
     id: 'brand',
     days: '3~5일',
     title: '로고·색·법정 표기·섹션 정리',
@@ -97,6 +88,16 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     keys: ['training'],
   },
   {
+    id: 'domain',
+    days: '8~9일',
+    title: '도메인 연결 (테스트가 모두 끝난 뒤)',
+    we: ['기사 옮기기·디자인 점검·사용법 안내가 끝나고 테스트까지 마친 뒤에 연결합니다. 그 전에는 미리보기 링크로 확인하시면 됩니다.', '연결에 필요한 값(A·CNAME)을 안내하고, 연결이 끝나면 매체 주소로 열리는지 확인합니다. 지금 다른 프로그램으로 홈페이지를 운영 중이면 그 홈페이지를 그대로 켜 둔 채 준비하고, 도메인은 전환하는 날 한 번만 바꿉니다.'],
+    you: ['지금은 하실 일이 없습니다. 테스트가 끝나 연결할 때가 되면 알려 드리고, 그때 도메인을 구입하신 업체에서 DNS 설정을 바꿔 주세요 (약 10분). 아이디·비밀번호는 저희에게 보내지 않으셔도 됩니다.'],
+    result: '매체 주소(예: www.○○○.co.kr)로 홈페이지가 열립니다.',
+    keys: ['domain'],
+    doneIfAny: ['open_switch'],
+  },
+  {
     id: 'launch',
     days: '오픈일',
     title: '정식 오픈과 검색 등록',
@@ -133,10 +134,10 @@ const ONBOARDING_EN: Record<string, Omit<OnboardingStep, 'id' | 'keys'>> = {
     result: 'You can enter the newsroom with the publisher account.',
   },
   domain: {
-    days: 'Days 2-3',
-    title: 'Connect your domain',
-    we: ['We give you the values needed for the connection (A and CNAME records) and, once connected, confirm that your outlet\'s address opens the website.'],
-    you: ['Change the DNS settings at the company where you bought the domain (about 10 minutes). You do not need to send us your ID or password.'],
+    days: 'Days 8-9',
+    title: 'Connect your domain (after all testing is done)',
+    we: ['We connect the domain after the migration, design review and training are finished and testing is complete. Until then you review the website through the preview link.', 'We give you the values needed for the connection (A and CNAME records) and, once connected, confirm that your outlet\'s address opens the website. If you run a website on another program today, we keep it running while we prepare, and the domain is switched only once, on the changeover day.'],
+    you: ['There is nothing to do right now. When testing is done and it is time to connect, we will tell you; then change the DNS settings at the company where you bought the domain (about 10 minutes). You do not need to send us your ID or password.'],
     result: 'The website opens at your outlet\'s address (e.g. www.example.com).',
   },
   brand: {
