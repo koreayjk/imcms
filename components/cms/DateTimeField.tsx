@@ -34,26 +34,28 @@ export default function DateTimeField({ id, value, onChange, className = 'field-
     const nh = (nh12 % 12) + (npm ? 12 : 0)
     onChange(`${ny}-${pad(nmo)}-${pad(nd)}T${pad(nh)}:${pad(nmi)}`)
   }
-  const sel = 'field-input w-auto py-1.5 pr-7'
+  // .field-input 은 width:100% 이고 Tailwind 유틸리티보다 우선하므로, 폭은 style 로 직접 준다
+  const sel = 'field-input py-1.5 pr-7'
+  const selStyle = { width: 'auto' } as const
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5" title={title} role="group" aria-label="Date and time">
-      <select id={id} value={mo} onChange={(e) => set({ mo: Number(e.target.value) })} className={sel} aria-label="Month">
+      <select id={id} value={mo} onChange={(e) => set({ mo: Number(e.target.value) })} className={sel} style={selStyle} aria-label="Month">
         {MONTHS.map((n, i) => <option key={n} value={i + 1}>{n}</option>)}
       </select>
-      <select value={Math.min(d, daysIn)} onChange={(e) => set({ d: Number(e.target.value) })} className={sel} aria-label="Day">
+      <select value={Math.min(d, daysIn)} onChange={(e) => set({ d: Number(e.target.value) })} className={sel} style={selStyle} aria-label="Day">
         {Array.from({ length: daysIn }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
       </select>
-      <select value={y} onChange={(e) => set({ y: Number(e.target.value) })} className={sel} aria-label="Year">
+      <select value={y} onChange={(e) => set({ y: Number(e.target.value) })} className={sel} style={selStyle} aria-label="Year">
         {years.sort().map((n) => <option key={n} value={n}>{n}</option>)}
       </select>
       <span aria-hidden className="text-muted">·</span>
-      <select value={h12} onChange={(e) => set({ h12: Number(e.target.value) })} className={sel} aria-label="Hour">
+      <select value={h12} onChange={(e) => set({ h12: Number(e.target.value) })} className={sel} style={selStyle} aria-label="Hour">
         {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
       </select>
-      <select value={mi} onChange={(e) => set({ mi: Number(e.target.value) })} className={sel} aria-label="Minute">
+      <select value={mi} onChange={(e) => set({ mi: Number(e.target.value) })} className={sel} style={selStyle} aria-label="Minute">
         {Array.from({ length: 60 }, (_, i) => i).map((n) => <option key={n} value={n}>{pad(n)}</option>)}
       </select>
-      <select value={pm ? 'pm' : 'am'} onChange={(e) => set({ pm: e.target.value === 'pm' })} className={sel} aria-label="AM or PM">
+      <select value={pm ? 'pm' : 'am'} onChange={(e) => set({ pm: e.target.value === 'pm' })} className={sel} style={selStyle} aria-label="AM or PM">
         <option value="am">AM</option>
         <option value="pm">PM</option>
       </select>
