@@ -268,7 +268,7 @@ export default async function ProductHome() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: PRODUCT_JSONLD }} />
       <IslandNav
         logo={<Logo />}
-        items={[{ href: '#multi', label: '기능' }, { href: '#designs', label: '디자인 샘플' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: `${PRODUCT.path}/start`, label: '창간 가이드' }, { href: '#faq', label: '자주 묻는 질문' }]}
+        items={[{ href: '#multi', label: '기능' }, { href: '#designs', label: '디자인 샘플' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: `${PRODUCT.path}/start`, label: '창간 가이드' }, { href: `${PRODUCT.path}/migration`, label: '타사 이전' }, { href: '#faq', label: '자주 묻는 질문' }]}
         loginHref={appLink('/login')}
         trialHref={appLink('/trial')}
       />
@@ -952,6 +952,8 @@ export default async function ProductHome() {
             <Link href={appLink('/login')} className="hover:text-[#0F1115]">편집국 로그인</Link>
             <a href="#apply" className="hover:text-[#0F1115]">서비스 신청</a>
             <Link href={`${PRODUCT.path}/start`} className="hover:text-[#0F1115]">창간 가이드</Link>
+            <Link href={`${PRODUCT.path}/migration`} className="hover:text-[#0F1115]">타사 이전</Link>
+            <Link href={`${PRODUCT.path}/domain`} className="hover:text-[#0F1115]">도메인 구입 안내</Link>
             <Link href={`${PRODUCT.path}/terms`} className="hover:text-[#0F1115]">이용약관</Link>
             <Link href={`${PRODUCT.path}/privacy`} className="font-semibold text-[#5B616B] hover:text-[#0F1115]">개인정보처리방침</Link>
             <Link href={`${PRODUCT.path}/en`} hrefLang="en" className="hover:text-[#0F1115]">English</Link>
