@@ -278,6 +278,11 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/00138.web?gcode=1004&idx=${id}&amode=view&`,
     body: /<div class="substanceautolink">([\s\S]*?)<\/div>/i,
   },
+  'lg-seongnam': {
+    id: /fn_move_form\('(\d+)'\)/,
+    link: (id, o) => `${o}/bbs010501/${id}`,
+    body: /<div class="board-view-content">([\s\S]*?)<\/div>/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
@@ -390,7 +395,7 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     if (!id || !t || /^\d+$/.test(t) || t.length < 4) return
     const end = (m.index ?? 0) + m[0].length
     const next = anchors.slice(i + 1).find((x) => cfg.id.test(decode(x[0])) && text(x[2]).length >= 4)
-    const tail = page.slice(end, Math.min(next?.index ?? end + 1500, end + 1500))
+    const tail = page.slice(end, Math.min(next?.index ?? end + 3000, end + 3000))
     const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(tail))?.[1] ?? '')
     const prev = found.get(id)
     if (!prev || t.length > prev.title.length) found.set(id, { title: t, date: date ?? prev?.date ?? null })
