@@ -57,3 +57,6 @@ B형(`/portal/…`로 묶었던 25곳)은 사실 서로 다른 게시판 제품 
 ## 서울·부산 (2026-11-03 추가 조사)
 - **서울특별시**: `https://www.seoul.go.kr/news/news_report.do` 가 보도자료 목록(게시판 번호 158). 글 열기 `?bbsNo=158&nttNo=글번호`. 본문은 한글(HWP) 문서 보기 틀이라 HTML에는 첫머리 요약(`#scrabArea`: 제목 + 핵심 줄)만 있다 → 수집은 제목·날짜·요약 수준(`lg-seoul`). "시장 사후동정" 글은 제외.
 - **부산광역시**: 이 환경(Supabase 서버)에서는 `www.busan.go.kr` 의 https 연결이 SSL 오류(인증서 문제)다. http 로는 열리는데 `/nbnews` 는 '통합 공지사항'이라 보도·해명자료 주소가 아니다. 보도·해명자료 게시판 주소는 아직 못 찾았다(검색 결과: `/nbanser/글번호`, `/promoboard/글번호` 형태의 글 주소만 확인).
+
+## 충남 (2026-11-03)
+- 목록은 표(`td-subj` 링크 `/cnportal/cnapcPressList/cnapcPress/view.do?nttId=…&menuNo=500498`), 상세 본문은 `<li class="board-view-li"><div class="board-view-inner"><div class="content">…` 안(줄바꿈 `<br>`). `BOARDS['lg-chungnam']` 으로 등록(`lg-chungnam`).
