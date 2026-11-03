@@ -75,7 +75,7 @@ export default async function ArticlePage(props: Props) {
   }
   const data = await getArticleData(site, params.id)
   if (!data) notFound()
-  const { article: a, related, relatedLinks, mostViewed, latest, source } = data
+  const { article: a, related, relatedLinks, mostViewed, latest, more, source } = data
   const section = a.category ? findSection(site, a.category.slug) : undefined
   const base = siteBaseUrl(site, (await headers()).get('host'))
 
@@ -85,7 +85,7 @@ export default async function ArticlePage(props: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: newsArticleJsonLd(site, a, base, `${base}/news/${a.id}`) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleBreadcrumbJsonLd(site, a, base) }} />
       {!a.id.startsWith('demo-') && <ViewCounter id={a.id} />}
-      <div className="mx-auto grid grid-cols-1 max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-10">
+      <div data-fit-grid className="mx-auto grid grid-cols-1 max-w-[1200px] gap-12 px-4 py-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-10">
         <ArticleMain
           a={a}
           bodyHtml={sanitizeBody(a.body)}
@@ -97,6 +97,7 @@ export default async function ArticlePage(props: Props) {
           source={source}
           related={related}
           relatedLinks={relatedLinks}
+          more={more}
           topAd={<AdArea site={site} slot="article_top" className="mb-6" />}
           bottomAd={<AdArea site={site} slot="article_bottom" className="mt-9" />}
         />

@@ -8,6 +8,7 @@ import Thumb from './Thumb'
 import OptImg from './OptImg'
 import { optimizeBodyImages } from '@/lib/image-url'
 import ShareButton from './ShareButton'
+import FitRows from './FitRows'
 import type { SiteLang } from '@/lib/sites'
 import { enLongDate, siteText } from '@/lib/site-text'
 
@@ -16,7 +17,7 @@ import { enLongDate, siteText } from '@/lib/site-text'
 // 발행 뒤 1시간이 넘어 고친 기사만 "수정" 시각을 보여 준다
 const modifiedAt = (a: PublicArticle) => (a.updated_at && a.published_at && Date.parse(a.updated_at) - Date.parse(a.published_at) > 3_600_000 ? a.updated_at : null)
 
-export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], bottomAd, topAd, lang, tz, comments }: {
+export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], more = [], bottomAd, topAd, lang, tz, comments }: {
   a: PublicArticle
   bodyHtml: string
   sectionName?: string
@@ -25,6 +26,8 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
   related?: PublicArticle[]
   // 본문 아래 '관련기사' 글 목록 (태그가 겹치는 기사)
   relatedLinks?: PublicArticle[]
+  // 본문 아래 '다른 기사' 후보: 오른쪽 칸(광고·많이 본 기사)이 더 길 때 그 높이만큼만 보여 빈자리를 채운다 (PC 화면)
+  more?: PublicArticle[]
   bottomAd?: ReactNode
   topAd?: ReactNode
   lang?: SiteLang
@@ -162,6 +165,26 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
             ))}
           </ul>
         </section>
+      )}
+
+      {more.length >= 4 && (
+        <FitRows min={0} className="lg:[&>*+*]:mt-6">
+          {Array.from({ length: Math.floor(more.length / 4) }, (_, i) => more.slice(i * 4, i * 4 + 4)).map((row, i) => (
+            <div key={row[0].id} className={i === 0 ? 'mt-10' : ''}>
+              {i === 0 && <SectionHeading lang={lang} title={lang === 'en' ? 'More stories' : '다른 기사 더 보기'} />}
+              <ul className="grid grid-cols-2 gap-x-5 gap-y-6 lg:grid-cols-4">
+                {row.map((r) => (
+                  <li key={r.id}>
+                    <Link href={`/news/${r.id}`} className="headline-link group block">
+                      <Thumb src={r.thumbnail_url} alt={r.title} ratio="3 / 2" />
+                      <p className="headline-text mt-2.5 line-clamp-2 text-[14.5px] font-semibold leading-[1.45]">{r.title}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </FitRows>
       )}
     </article>
   )

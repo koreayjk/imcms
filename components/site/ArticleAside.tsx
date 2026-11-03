@@ -11,7 +11,7 @@ import { siteText } from '@/lib/site-text'
 export default function ArticleAside({ site, mostViewed, latest }: { site: SiteConfig; mostViewed: PublicArticle[]; latest: PublicArticle[] }) {
   const t = siteText(site)
   return (
-    <aside className="space-y-10">
+    <aside data-fit-side className="space-y-10">
       <MostViewed items={mostViewed} lang={site.lang} />
       <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
       {latest.length > 0 && (
