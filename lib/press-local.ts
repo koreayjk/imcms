@@ -3,7 +3,7 @@
 //   서버(수집 크론·보도자료 열기)에서만 쓴다. 요청은 매시간 몇 번뿐이고, 로그인·차단 우회는 하지 않는다 (막히면 그 출처는 건너뛴다)
 import type { PressRow } from './press'
 
-export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt'
+export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt' | 'board'
 
 const decode = (s: string) =>
   s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
@@ -148,6 +148,54 @@ export function parseNttDetail(page: string, base: string, label: string) {
   if (!m) return null
   const inner = m[2]
   const imgs = Array.from(inner.matchAll(/<img[^>]+src="([^"]+)"[^>]*>/gi), (x) => { try { return new URL(decode(x[1]), base).toString() } catch { return '' } })
+    .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
+  const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
+  const paras = paragraphs(inner.replace(/&nbsp;/gi, ' '))
+  return paras.length ? build(paras, uniq, label) : null
+}
+
+// ───────── 사이트마다 모양이 다른 게시판 (서울 중랑구·마포구 등) ─────────
+//   표(<tr>) 목록에서 글 주소 규칙(href)에 맞는 링크를 제목으로 읽고, 상세는 본문 칸(body)만 읽는다. 사이트별 규칙은 아래 BOARDS 에 둔다
+type BoardCfg = { id: RegExp; link: (id: string, origin: string) => string; body: RegExp }
+export const BOARDS: Record<string, BoardCfg> = {
+  'lg-jungnang': {
+    id: /\/portal\/bbs\/view\/B0000151\/(\d+)\.do/,
+    link: (id, o) => `${o}/portal/bbs/view/B0000151/${id}.do?menuNo=200474`,
+    body: /<div[^>]*id="dbdata"[^>]*>([\s\S]*?)<\/div>/i,
+  },
+  'lg-mapo': {
+    id: /\/site\/main\/board\/press\/(\d+)/,
+    link: (id, o) => `${o}/site/main/board/press/${id}`,
+    body: /<div[^>]*class="[^"]*bbs_view_body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+  },
+}
+
+export function parseBoardList(page: string, key: string, label: string, listUrl: string): PressRow[] {
+  const cfg = BOARDS[key]
+  if (!cfg) return []
+  const origin = new URL(listUrl).origin
+  const rows: PressRow[] = []
+  for (const tr of page.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const b = tr[1]
+    const a = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
+    let hit: { id: string; title: string } | null = null
+    for (const m of b.matchAll(a)) {
+      const id = cfg.id.exec(decode(m[1]))?.[1]
+      const t = text(m[2])
+      if (id && t) { hit = { id, title: t }; break }
+    }
+    if (!hit) continue
+    const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(b))?.[1] ?? '')
+    rows.push({ source_key: key, source_name: label, guid: `${key}:${hit.id}`, title: hit.title, link: cfg.link(hit.id, origin), summary: null, body_html: null, published_at: date })
+  }
+  return rows
+}
+
+export function parseBoardDetail(page: string, key: string, origin: string, label: string) {
+  const cfg = BOARDS[key]
+  const inner = cfg ? cfg.body.exec(page)?.[1] : null
+  if (!inner) return null
+  const imgs = Array.from(inner.matchAll(/<img[^>]+src="([^"]+)"[^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
     .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
   const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
   const paras = paragraphs(inner.replace(/&nbsp;/gi, ' '))
