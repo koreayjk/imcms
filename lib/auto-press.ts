@@ -172,7 +172,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
   if (!aiReady()) { await note(null, false, 'AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)가 설정되지 않았습니다'); return { outlet: name, status: 'failed', message: 'AI 키 없음' } }
   if (!p.cfg.author_id) { await note(null, false, '기자 계정(author_id)이 비어 있습니다'); return { outlet: name, status: 'failed', message: '기자 계정 없음' } }
 
-  const { data: raw, error: ce } = await supabase.rpc('auto_press_candidates', { secret, p_outlet: outletId, p_days: 4, p_limit: 400 })
+  const { data: raw, error: ce } = await supabase.rpc('auto_press_candidates', { secret, p_outlet: outletId, p_days: 4, p_limit: 600, p_english: p.outlet.site?.lang === 'en' })
   if (ce) return { outlet: name, status: 'failed', message: `보도자료 읽기 실패: ${ce.message}` }
   const { data: rt } = await supabase.rpc('auto_press_recent_titles', { secret, p_days: 3 })
   const ranked = rankCandidates(p, (raw ?? []) as Cand[], ((rt ?? []) as { title: string }[]).map((x) => x.title))
