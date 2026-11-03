@@ -44,11 +44,11 @@ B형(`/portal/…`로 묶었던 25곳)은 사실 서로 다른 게시판 제품 
 | 대구광역시 | `info.daegu.go.kr/newshome/mtnmain.php?mtnkey=scatelist&mkey=26` | 하루 한 건짜리 **모음 글**(여러 보도자료 표)이라 개별 기사용으로 부적합, 보류 |
 | 울산광역시 | `/u/rep/contents.ulsan?mId=001004003001000000` (표, `./view.do?mId&bbsId&dataId`) | 목록은 읽히나 상세 주소가 오류(404), 보류 |
 | 서울특별시 | 주소 못 찾음(`/news/news_report.do`는 '서울소식' 일반 페이지) | 보류 |
-| 광주광역시 | `/boardList.do?boardId=BD_0000000027&pageId=www789` (카드형) | 구조 확인 필요 |
-| 대전광역시 | `/drh/board/boardNormalList.do?boardId=normal_0189&menuSeq=1632` | 구조 확인 필요 |
-| 경상북도 | `/page/link.do?mn=10107&pageNo=10004` | 구조 확인 필요 |
-| 제주특별자치도 | `/news/bodo.htm` | 구조 확인 필요 |
-| 전라남도 | `/M7116/boardList.do?menuId=jeonnam0202000000` | 구조 확인 필요 |
+| 광주광역시 | `/boardList.do?boardId=BD_0000000027&pageId=www789` | 2026-07 광주·전남이 **전남광주통합특별시**로 합쳐져 옛 사이트 보도자료는 6월 30일에서 멈춤. 통합 새 사이트 주소를 찾아야 함 |
+| 대전광역시 | `/drh/board/boardNormalList.do?boardId=normal_0189&menuSeq=1632` | **수집 중** (`lg-daejeon`, 표 + 본문 `div.board_txt`) |
+| 경상북도 | `/page/link.do?mn=10107&pageNo=10004` | **수집 중** (`lg-gyeongbuk`). 상세는 POST 전용이지만 목록 카드(`div.cont`)에 본문 전체가 있어 목록만 읽음 |
+| 제주특별자치도 | `/news/bodo/list.htm` | **수집 중** (`lg-jeju`, 카드형 + 본문 `#articleContents`) |
+| 전라남도 | `/M7116/boardList.do?menuId=jeonnam0202000000` | 광주와 같이 통합되어 7월 1일에서 멈춤. 통합 새 사이트 주소 필요 |
 | 부산광역시 | `/nbnews` | SSL 연결 오류 |
 | 세종특별자치시 | 추측한 주소가 공지사항 게시판 | 보도자료 주소 찾아야 함 |
 | 강원특별자치도 | 추측 주소 오류 페이지 | 주소 찾아야 함 |

@@ -3,7 +3,7 @@
 //   서버(수집 크론·보도자료 열기)에서만 쓴다. 요청은 매시간 몇 번뿐이고, 로그인·차단 우회는 하지 않는다 (막히면 그 출처는 건너뛴다)
 import type { PressRow } from './press'
 
-export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt' | 'board' | 'incheon' | 'seoul'
+export type LocalKind = 'ansan' | 'gnews' | 'pyeongtaek' | 'ntt' | 'board' | 'incheon' | 'seoul' | 'jeju' | 'gyeongbuk'
 
 const decode = (s: string) =>
   s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
@@ -178,6 +178,16 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/IC010205/view?repSeq=${id}`,
     body: /<div[^>]*class="[^"]*board-view-contents[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
   },
+  'lg-daejeon': {
+    id: /boardNormalView\.do\?[^"]*ntatcSeq=(\d+)/,
+    link: (id, o) => `${o}/drh/board/boardNormalView.do?boardId=normal_0189&menuSeq=1632&ntatcSeq=${id}`,
+    body: /<div class="board_txt">([\s\S]*?)(?=<\/div>\s*<\/div>\s*<div class="kogl_type")/i,
+  },
+  'lg-jeju': {
+    id: /act=view&seq=(\d+)/,
+    link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
+    body: /<div id="articleContents"[^>]*>([\s\S]*?)<\/div>\s*<div class="news-info">/i,
+  },
   'lg-mapo': {
     id: /\/site\/main\/board\/press\/(\d+)/,
     link: (id, o) => `${o}/site/main/board/press/${id}`,
@@ -220,6 +230,43 @@ export function parseIncheonList(page: string, key: string, label: string, listU
   return rows
 }
 
+// 제주특별자치도 (목록이 <li class="board-news__article"> 카드형: 제목 strong, 날짜 "부서 | YYYY-MM-DD")
+export function parseJejuList(page: string, key: string, label: string, listUrl: string): PressRow[] {
+  const origin = new URL(listUrl).origin
+  const rows: PressRow[] = []
+  for (const li of page.matchAll(/<li[^>]*board-news__article[^>]*>([\s\S]*?)<\/li>/gi)) {
+    const b = li[1]
+    const id = /act=view(?:&amp;|&)seq=(\d+)/.exec(b)?.[1]
+    const title = text(/<strong[^>]*>([\s\S]*?)<\/strong>/i.exec(b)?.[1] ?? '').replace(/^<브리핑[^>]*>\s*/, '')
+    if (!id || !title) continue
+    rows.push({ source_key: key, source_name: label, guid: `${key}:${id}`, title, link: `${origin}/news/bodo/list.htm?act=view&seq=${id}`, summary: null, body_html: null, published_at: kstDate(text(b)) })
+  }
+  return rows
+}
+
+// 경상북도 (상세가 폼 전송(POST)이라 열 수 없지만, 목록 카드에 본문 전체가 들어 있다)
+export function parseGyeongbukList(page: string, key: string, label: string, listUrl: string): PressRow[] {
+  const rows: PressRow[] = []
+  for (const li of page.matchAll(/<li>\s*<a[^>]*boardList\.view\('(\d+)'\)[^>]*>([\s\S]*?)<\/a>\s*<\/li>/gi)) {
+    const b = li[2]
+    const title = text(/<p class="txt-xlarge">([\s\S]*?)<\/p>/i.exec(b)?.[1] ?? '')
+    const body = text(/<div class="cont">([\s\S]*?)<\/div>/i.exec(b)?.[1] ?? '')
+    if (!title) continue
+    const sentences = body.split(/(?<=[다요])\.\s+/).map((s) => s.trim()).filter(Boolean)
+    const paras: string[] = []
+    for (let i = 0; i < sentences.length; i += 3) paras.push(sentences.slice(i, i + 3).join('. ').replace(/\.?$/, '.'))
+    const img = /<img[^>]+src="([^"]+)"/i.exec(b)?.[1]
+    const pic = img && !/ico|btn|blank|noimg/i.test(img) ? (() => { try { return new URL(decode(img), listUrl).toString() } catch { return '' } })() : ''
+    const built = paras.length ? build(paras, pic ? [{ src: pic }] : [], label) : null
+    rows.push({
+      source_key: key, source_name: label, guid: `${key}:${li[1]}`, title, link: listUrl,
+      summary: body.slice(0, 300) || null, body_html: built?.html ?? null,
+      published_at: kstDate(text(/<div class="classify">([\s\S]*?)<\/div>/i.exec(b)?.[1] ?? '')),
+    })
+  }
+  return rows
+}
+
 export function parseBoardList(page: string, key: string, label: string, listUrl: string): PressRow[] {
   const cfg = BOARDS[key]
   if (!cfg) return []
@@ -245,7 +292,7 @@ export function parseBoardDetail(page: string, key: string, origin: string, labe
   const cfg = BOARDS[key]
   const inner = cfg ? cfg.body.exec(page)?.[1] : null
   if (!inner) return null
-  const imgs = Array.from(inner.matchAll(/<img[^>]+src="([^"]+)"[^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
+  const imgs = Array.from(inner.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
     .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
   const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
   const paras = paragraphs(inner.replace(/&nbsp;/gi, ' '))
