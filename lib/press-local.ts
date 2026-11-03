@@ -183,6 +183,11 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/drh/board/boardNormalView.do?boardId=normal_0189&menuSeq=1632&ntatcSeq=${id}`,
     body: /<div class="board_txt">([\s\S]*?)(?=<\/div>\s*<\/div>\s*<div class="kogl_type")/i,
   },
+  'lg-ulsan-donggu': {
+    id: /selectBoardArticle\.do\?bbsId=BBSMSTR_000000000322&nttId=(\d+)/,
+    link: (id, o) => `${o}/cop/bbs/selectBoardArticle.do?bbsId=BBSMSTR_000000000322&nttId=${id}`,
+    body: /<div class="bbs_detail_content">([\s\S]*?)(?:<!--\[data-hwpjson\]|<\/div>)/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
@@ -279,7 +284,7 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     for (const m of b.matchAll(a)) {
       const id = cfg.id.exec(decode(m[1]))?.[1]
       const t = text(m[2])
-      if (id && t) { hit = { id, title: t }; break }
+      if (id && t && !/^\d+$/.test(t)) { hit = { id, title: t }; break }
     }
     if (!hit) continue
     const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(b))?.[1] ?? '')
