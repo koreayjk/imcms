@@ -120,7 +120,7 @@ export default function ApplyFormEn() {
         <Field id="email" label="Email" required hint="For invoices and onboarding"><input id="email" name="email" required type="email" maxLength={120} autoComplete="email" className={input} /></Field>
         <Field id="phone" label="Phone" hint="Optional"><input id="phone" name="phone" type="tel" inputMode="tel" maxLength={30} autoComplete="tel" placeholder="+1 555 000 0000" className={input} /></Field>
         <Field id="country" label="Country" required><input id="country" name="country" required maxLength={60} autoComplete="country-name" className={input} /></Field>
-        <Field id="domain" label="Domain" hint="Leave blank if you don't have one yet. We can help you choose one."><input id="domain" name="domain" maxLength={120} inputMode="url" placeholder="mynews.com" className={input} /></Field>
+        <Field id="domain" label="Domain" hint="Leave blank if you don't have one yet. You buy the domain yourself, in your own name and at your own cost; we guide you through buying it and connect it to your website for you."><input id="domain" name="domain" maxLength={120} inputMode="url" placeholder="mynews.com" className={input} /></Field>
         <Field id="outlet_count" label="How many titles do you run?">
           <select id="outlet_count" name="outlet_count" defaultValue="" className={input}>
             <option value="">Select</option><option>Launching soon</option><option>1</option><option>2-5</option><option>6+</option>

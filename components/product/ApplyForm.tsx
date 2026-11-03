@@ -175,7 +175,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
         <Field id="email" label="이메일" required hint="청구서와 개통 안내를 받을 주소">
           <input id="email" name="email" required type="email" maxLength={120} autoComplete="email" className={input} />
         </Field>
-        <Field id="domain" label="도메인" hint="없으면 비워 두세요. 도메인 고르기와 구입도 안내해 드립니다.">
+        <Field id="domain" label="도메인" hint={<>없으면 비워 두세요. 도메인은 대표님 명의로 직접 구입하시고(비용은 고객 부담), 구입 방법은 <a href={`${PRODUCT.path}/domain`} target="_blank" rel="noopener" className="font-semibold text-[#1D3461] underline underline-offset-2">도메인 구입 안내</a>에서 자세히 알려 드립니다. 구입하신 뒤 연결은 저희가 합니다.</>}>
           <input id="domain" name="domain" value={domain} onChange={(e) => setDomain(e.target.value)} maxLength={120} inputMode="url" placeholder="mynews.co.kr" className={input} />
         </Field>
         <Field id="outlet_count" label="운영 중인 매체 수">

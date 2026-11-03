@@ -97,7 +97,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     days: '8~9일',
     title: '도메인 연결 (테스트가 모두 끝난 뒤)',
     we: ['기사 옮기기·디자인 점검·사용법 안내가 끝나고 테스트까지 마친 뒤에 연결합니다. 그 전에는 미리보기 링크로 확인하시면 됩니다.', '연결에 필요한 값(A·CNAME)을 안내하고, 연결이 끝나면 매체 주소로 열리는지 확인합니다. 지금 다른 프로그램으로 홈페이지를 운영 중이면 그 홈페이지를 그대로 켜 둔 채 준비하고, 도메인은 전환하는 날 한 번만 바꿉니다.'],
-    you: ['지금은 하실 일이 없습니다. 테스트가 끝나 연결할 때가 되면 알려 드리고, 그때 도메인을 구입하신 업체에서 DNS 설정을 바꿔 주세요 (약 10분). 아이디·비밀번호는 저희에게 보내지 않으셔도 됩니다.'],
+    you: ['도메인이 아직 없으시면 미리 구입해 두세요. 대표님 명의로 직접 구입하고 비용도 대표님이 부담하며, 방법은 https://imnewsroom.com/domain 에서 단계별로 안내합니다. 구입만 하시고 설정은 바꾸지 마세요.', '테스트가 끝나 연결할 때가 되면 알려 드리고, 그때 도메인을 구입하신 업체에서 DNS 설정을 바꿔 주세요 (약 10분). 아이디·비밀번호는 저희에게 보내지 않으셔도 됩니다.'],
     result: '매체 주소(예: www.○○○.co.kr)로 홈페이지가 열립니다.',
     keys: ['domain'],
     doneIfAny: ['open_switch'],
@@ -142,7 +142,7 @@ const ONBOARDING_EN: Record<string, Omit<OnboardingStep, 'id' | 'keys'>> = {
     days: 'Days 8-9',
     title: 'Connect your domain (after all testing is done)',
     we: ['We connect the domain after the migration, design review and training are finished and testing is complete. Until then you review the website through the preview link.', 'We give you the values needed for the connection (A and CNAME records) and, once connected, confirm that your outlet\'s address opens the website. If you run a website on another program today, we keep it running while we prepare, and the domain is switched only once, on the changeover day.'],
-    you: ['There is nothing to do right now. When testing is done and it is time to connect, we will tell you; then change the DNS settings at the company where you bought the domain (about 10 minutes). You do not need to send us your ID or password.'],
+    you: ['If you do not have a domain yet, buy one in advance. You buy it yourself, in your own name and at your own cost; see https://imnewsroom.com/domain for step-by-step instructions. Only buy it; do not change any settings yet.', 'When testing is done and it is time to connect, we will tell you; then change the DNS settings at the company where you bought the domain (about 10 minutes). You do not need to send us your ID or password.'],
     result: 'The website opens at your outlet\'s address (e.g. www.example.com).',
   },
   brand: {
