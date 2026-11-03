@@ -18,7 +18,7 @@ export const maxDuration = 30
 
 const PAGE_SIZE = 30
 
-type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[] }> }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
@@ -74,6 +74,9 @@ export default async function PressPage(props: Props) {
   // 전체 탭에서 체크한 출처 (체크한 출처의 자료만 보인다)
   const validSel = new Set([...PRESS_SOURCES.map((x) => x.key), MANUAL_SOURCE, 'email'])
   const selected = tab === 'all' ? Array.from(new Set([searchParams.s ?? []].flat().map(String).filter((k) => validSel.has(k)))) : []
+  // 이 매체의 섹션: 맞춤 자료 위에 고정 버튼으로 보이고, 누르면 그 섹션 이름에서 나온 단어가 제목에 있는 자료만 본다
+  const sectionPills = Array.from(new Set(sectionNames.map((n) => n.trim()).filter(Boolean))).map((name) => ({ name, kws: pressHintsFromSections([name]).keywords })).filter((x) => x.kws.length > 0)
+  const sec = tab === 'rec' ? sectionPills.find((x) => x.name === searchParams.sec) : undefined
   const q = searchParams.q?.trim().slice(0, 50) || undefined
   const page = Math.max(1, Number(searchParams.page) || 1)
 
@@ -84,6 +87,7 @@ export default async function PressPage(props: Props) {
   // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
   query = pressScope(query, ctx)
   if (src) query = query.eq('source_key', src)
+  if (sec) query = query.or(usableKeywords(sec.kws).map((k) => `title.ilike.*${k}*`).join(','))
   else if (selected.length) query = query.in('source_key', selected)
   if (english) query = query.or(`source_key.like.us-*,source_key.in.(${MANUAL_SOURCE},email)`)
   else query = query.not('source_key', 'like', 'us-%')
@@ -152,7 +156,7 @@ export default async function PressPage(props: Props) {
 
   const href = (p: Record<string, string | undefined>) => {
     const sp = new URLSearchParams()
-    Object.entries({ tab: tab === 'all' ? 'all' : undefined, src, q, ...p }).forEach(([k, v]) => v && sp.set(k, v))
+    Object.entries({ tab: tab === 'all' ? 'all' : undefined, src, q, sec: sec?.name, ...p }).forEach(([k, v]) => v && sp.set(k, v))
     if (tab === 'all') selected.forEach((k) => sp.append('s', k))
     const s = sp.toString()
     return `/press${s ? `?${s}` : ''}`
@@ -181,7 +185,7 @@ export default async function PressPage(props: Props) {
               ].map((tb) => (
                 <Link
                   key={tb.key}
-                  href={href({ tab: tb.key === 'all' ? 'all' : undefined, page: undefined })}
+                  href={href({ tab: tb.key === 'all' ? 'all' : undefined, page: undefined, sec: undefined })}
                   aria-current={tab === tb.key ? 'page' : undefined}
                   className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 py-3.5 text-[14px] md:px-4 ${tab === tb.key ? 'border-ink font-bold text-ink' : 'border-transparent text-muted hover:text-ink'}`}
                 >
@@ -203,6 +207,13 @@ export default async function PressPage(props: Props) {
             <Link href={href({ src: undefined, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${!src ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>{t('모든 출처', 'All sources')}</Link>
             <Link href={href({ src: 'email', page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === 'email' ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>{t('메일', 'Email')}</Link>
             <Link href={href({ src: MANUAL_SOURCE, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === MANUAL_SOURCE ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>{t('직접 등록', 'Added manually')}</Link>
+            {sectionPills.length > 0 && <span aria-hidden className="mx-1 self-center text-line">|</span>}
+            {sectionPills.map((x) => (
+              <Link key={x.name} href={href({ sec: sec?.name === x.name ? undefined : x.name, page: undefined })} title={t('섹션 이름으로 고른 자료', 'Matched from this section’s name')} className={`rounded-full border px-3 py-1 text-[12px] ${sec?.name === x.name ? 'border-ink bg-ink text-white' : 'border-dashed border-line text-muted hover:border-ink hover:text-ink'}`}>
+                {x.name}
+              </Link>
+            ))}
+            {recSources && recSources.size > 0 && <span aria-hidden className="mx-1 self-center text-line">|</span>}
             {PRESS_SOURCES.filter((s) => !recSources || recSources.has(s.key)).map((s) => (
               <Link key={s.key} href={href({ src: s.key, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === s.key ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>
                 {s.name.replace('뉴스와이어 · ', '')}
