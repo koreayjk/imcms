@@ -5,7 +5,7 @@ import { getCmsContext } from '@/lib/cms'
 import { pressScope } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_FIELDS, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
+import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_FIELDS, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, isRegionSection, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
 import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
@@ -75,7 +75,7 @@ export default async function PressPage(props: Props) {
   const validSel = new Set([...PRESS_SOURCES.map((x) => x.key), MANUAL_SOURCE, 'email'])
   const selected = tab === 'all' ? Array.from(new Set([searchParams.s ?? []].flat().map(String).filter((k) => validSel.has(k)))) : []
   // 이 매체의 섹션: 맞춤 자료 위에 고정 버튼으로 보이고, 누르면 그 섹션 이름에서 나온 단어가 제목에 있는 자료만 본다
-  const sectionPills = Array.from(new Set(sectionNames.map((n) => n.trim()).filter(Boolean))).map((name) => ({ name, kws: pressHintsFromSections([name]).keywords })).filter((x) => x.kws.length > 0)
+  const sectionPills = Array.from(new Set(sectionNames.map((n) => n.trim()).filter(Boolean))).map((name) => { const kws = pressHintsFromSections([name]).keywords; return { name, kws: kws.length ? kws : isRegionSection(name) ? [name] : [] } }).filter((x) => x.kws.length > 0)
   const sec = tab === 'rec' ? sectionPills.find((x) => x.name === searchParams.sec) : undefined
   const q = searchParams.q?.trim().slice(0, 50) || undefined
   const page = Math.max(1, Number(searchParams.page) || 1)
@@ -87,7 +87,8 @@ export default async function PressPage(props: Props) {
   // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
   query = pressScope(query, ctx)
   if (src) query = query.eq('source_key', src)
-  if (sec) query = query.or(usableKeywords(sec.kws).map((k) => `title.ilike.*${k}*`).join(','))
+  // 섹션 버튼은 자동으로 고른 자료만 거르고, 메일·직접 등록 자료는 그대로 둔다
+  if (sec) query = query.or([`source_key.in.(${MANUAL_SOURCE},email)`, ...usableKeywords(sec.kws).map((k) => `title.ilike.*${k}*`)].join(','))
   else if (selected.length) query = query.in('source_key', selected)
   if (english) query = query.or(`source_key.like.us-*,source_key.in.(${MANUAL_SOURCE},email)`)
   else query = query.not('source_key', 'like', 'us-%')
