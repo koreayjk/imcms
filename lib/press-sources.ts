@@ -142,6 +142,7 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'lg-incheon', name: '인천광역시 보도자료', url: 'https://www.incheon.go.kr/IC010205', kind: 'gov', adapter: 'incheon' },
   { key: 'lg-seoul', name: '서울특별시 보도자료', url: 'https://www.seoul.go.kr/news/news_report.do', kind: 'gov', adapter: 'seoul' },
   { key: 'lg-chungnam', name: '충청남도 보도자료', url: 'https://www.chungnam.go.kr/cnportal/cnapcPressList/cnapcPress/list.do?menuNo=500498', kind: 'gov', adapter: 'board' },
+  { key: 'lg-hanam', name: '하남시 보도자료', url: 'https://www.hanam.go.kr/www/selectBbsNttList.do?bbsNo=1164&key=10221', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-daejeon', name: '대전광역시 보도자료', url: 'https://www.daejeon.go.kr/drh/board/boardNormalList.do?boardId=normal_0189&menuSeq=1632', kind: 'gov', adapter: 'board' },
   { key: 'lg-jeju', name: '제주특별자치도 보도자료', url: 'https://www.jeju.go.kr/news/bodo/list.htm', kind: 'gov', adapter: 'jeju' },
   { key: 'lg-gyeongbuk', name: '경상북도 보도자료', url: 'https://www.gb.go.kr/page/link.do?mn=10107&pageNo=10004', kind: 'gov', adapter: 'gyeongbuk' },
