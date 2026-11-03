@@ -23,7 +23,7 @@ function kstDate(s: string): string | null {
 function paragraphs(inner: string): string[] {
   const cleaned = inner.replace(/<(script|style)[\s\S]*?<\/\1>/gi, '').replace(/<img[^>]*>/gi, '')
   const parts = /<p[\s>]/i.test(cleaned)
-    ? Array.from(cleaned.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi), (m) => m[1])
+    ? Array.from(cleaned.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi), (m) => m[1]).flatMap((x) => x.split(/(?:<br\s*\/?>\s*){2,}/i))
     : cleaned.split(/<br\s*\/?>|\n\s*\n/i)
   return parts.map((p) => text(p)).filter((p) => p.length > 1)
 }
@@ -188,6 +188,16 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/cop/bbs/selectBoardArticle.do?bbsId=BBSMSTR_000000000322&nttId=${id}`,
     body: /<div class="bbs_detail_content">([\s\S]*?)(?:<!--\[data-hwpjson\]|<\/div>)/i,
   },
+  'lg-uiwang': {
+    id: /\/UWKORINFO0201\/(\d+)\//,
+    link: (id, o) => `${o}/UWKORINFO0201/${id}/`,
+    body: /<div class="txtWrap">([\s\S]*?)<div class="bbs-nav">/i,
+  },
+  'lg-muan': {
+    id: /report\?idx=(\d+)&mode=view/,
+    link: (id, o) => `${o}/www/openmuan/new/report/report?idx=${id}&mode=view`,
+    body: /<div class="board_cont">([\s\S]*?)(?=<\/div>\s*<\/div>\s*<!-- 버튼)/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
@@ -283,7 +293,7 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     let hit: { id: string; title: string } | null = null
     for (const m of b.matchAll(a)) {
       const id = cfg.id.exec(decode(m[1]))?.[1]
-      const t = text(m[2])
+      const t = text(m[2]).replace(/\s*첨부파일$/, '')
       if (id && t && !/^\d+$/.test(t)) { hit = { id, title: t }; break }
     }
     if (!hit) continue

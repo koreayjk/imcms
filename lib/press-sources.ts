@@ -145,6 +145,8 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'lg-hanam', name: '하남시 보도자료', url: 'https://www.hanam.go.kr/www/selectBbsNttList.do?bbsNo=1164&key=10221', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-geumcheon', name: '서울 금천구 보도자료', url: 'https://www.geumcheon.go.kr/portal/selectBbsNttList.do?bbsNo=8&key=297', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-ulsan-donggu', name: '울산 동구 보도자료', url: 'https://www.donggu.ulsan.kr/cop/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000322', kind: 'gov', adapter: 'board' },
+  { key: 'lg-uiwang', name: '의왕시 보도자료', url: 'https://www.uiwang.go.kr/UWKORINFO0201', kind: 'gov', adapter: 'board' },
+  { key: 'lg-muan', name: '무안군 보도자료', url: 'https://www.muan.go.kr/www/openmuan/new/report', kind: 'gov', adapter: 'board' },
   { key: 'lg-daejeon', name: '대전광역시 보도자료', url: 'https://www.daejeon.go.kr/drh/board/boardNormalList.do?boardId=normal_0189&menuSeq=1632', kind: 'gov', adapter: 'board' },
   { key: 'lg-jeju', name: '제주특별자치도 보도자료', url: 'https://www.jeju.go.kr/news/bodo/list.htm', kind: 'gov', adapter: 'jeju' },
   { key: 'lg-gyeongbuk', name: '경상북도 보도자료', url: 'https://www.gb.go.kr/page/link.do?mn=10107&pageNo=10004', kind: 'gov', adapter: 'gyeongbuk' },
