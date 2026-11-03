@@ -5,11 +5,11 @@ import { getCmsContext } from '@/lib/cms'
 import { pressScope } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
+import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_FIELDS, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
 import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
-import { refreshNow, setPressSource } from './actions'
+import { refreshNow, savePressSources } from './actions'
 
 // 정책브리핑 등 국내 사이트는 해외 접속을 막기도 하므로 서울 리전에서 가져온다
 export const preferredRegion = 'icn1'
@@ -95,9 +95,19 @@ export default async function PressPage(props: Props) {
   // 편집장이 전체 탭에서 직접 골라 넣은 출처 (이 매체가 볼 수 있는 출처만)
   const pickedKeys = (outletSite?.pressSources ?? []).filter((k) => PRESS_SOURCES.some((x) => x.key === k))
   const recBase = Array.from(new Set([MANUAL_SOURCE, 'email', ...foreignKeys, ...fieldKeys, ...pickedKeys]))
-  const inRec = (k: string) => pickedKeys.includes(k) || fieldKeys.includes(k) || foreignKeys.includes(k) || (english && usLocal.includes(k))
+  const canPick = ctx.isEditorPlus || ctx.isStaff
   const usLocal = Array.from(new Set([...PRESS_SOURCES.filter((x) => x.local).map((x) => x.key), ...pickedKeys]))
   const usWire = PRESS_SOURCES.filter((x) => !x.local && !pickedKeys.includes(x.key)).map((x) => x.key)
+  // 전체 탭 "맞춤 자료 만들기"에서 체크할 출처 묶음 (이 매체가 볼 수 있는 출처만, 해외 언론 묶음은 매체 설정에서 켜므로 뺀다)
+  const pickGroups: { label: string; items: typeof PRESS_SOURCES }[] = (english
+    ? [
+        { label: t('지역·기관 소식', 'Local & institutions'), items: PRESS_SOURCES.filter((x) => x.local) },
+        { label: t('전국 뉴스', 'National news'), items: PRESS_SOURCES.filter((x) => !x.local) },
+      ]
+    : [
+        ...PRESS_FIELDS.map((f) => ({ label: f.label, items: PRESS_SOURCES.filter((x) => f.sources.includes(x.key)) })),
+        { label: t('정부·공공기관·지자체', 'Government & public agencies'), items: PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key)) },
+      ]).filter((g) => g.items.length > 0)
   // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만. 키워드만 있는 매체는 모든 출처에서 제목이 맞는 것을 고르므로 출처 버튼을 늘어놓지 않는다(출처별로 보려면 전체 탭)
   const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...pickedKeys, ...(titleHit.length ? generalKeys : [])]) : new Set([...foreignKeys, ...pickedKeys])
   // 추천 분야·키워드를 아직 정하지 않은 한국어 매체 (추천 탭에 안내를 보인다)
@@ -158,7 +168,7 @@ export default async function PressPage(props: Props) {
           <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-line px-2 md:px-5">
             <nav className="flex max-w-full overflow-x-auto" aria-label={t('보기', 'View')}>
               {[
-                { key: 'rec', label: lang === 'en' ? `Recommended (related to ${outlet?.name ?? 'outlet'})` : `추천 (${outlet?.name ?? '매체'} 관련)` },
+                { key: 'rec', label: lang === 'en' ? `My feed (${outlet?.name ?? 'outlet'})` : `맞춤 자료 (${outlet?.name ?? '매체'})` },
                 { key: 'all', label: t('전체', 'All') },
               ].map((tb) => (
                 <Link
@@ -186,38 +196,46 @@ export default async function PressPage(props: Props) {
             <Link href={href({ src: MANUAL_SOURCE, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === MANUAL_SOURCE ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>{t('직접 등록', 'Added manually')}</Link>
             {PRESS_SOURCES.filter((s) => tab === 'all' || !recSources || recSources.has(s.key)).map((s) => (
               <Link key={s.key} href={href({ src: s.key, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === s.key ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>
-                {tab === 'all' && inRec(s.key) && <span aria-hidden className="mr-0.5 text-[#B7791F]">★</span>}{s.name.replace('뉴스와이어 · ', '')}
+                {s.name.replace('뉴스와이어 · ', '')}
               </Link>
             ))}
           </div>
 
-          {src && src !== 'email' && src !== MANUAL_SOURCE && (() => {
-            const cur = PRESS_SOURCES.find((x) => x.key === src)
-            if (!cur) return null
-            const picked = pickedKeys.includes(src)
-            const auto = inRec(src) && !picked
-            return (
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-[#FAFAF7] px-4 py-2.5 text-[12.5px] md:px-5">
-                <p className="text-muted">
-                  <b className="text-ink">{cur.name}</b>{' '}
-                  {auto ? t('은(는) 이 매체의 분야로 이미 추천에 들어 있습니다.', 'is already in recommendations through this outlet’s fields.') : picked ? t('은(는) 편집장이 골라 추천에 들어 있습니다.', 'is in recommendations (chosen by the editor).') : t('은(는) 추천에 들어 있지 않습니다. 추천에 넣으면 추천 탭과 AI 자동 작성에서 이 출처의 자료를 씁니다.', 'is not in recommendations. Add it to see its releases in the Recommended tab and use them for AI auto-writing.')}
-                </p>
-                {!auto && (ctx.isEditorPlus || ctx.isStaff) && (
-                  <form action={setPressSource}>
-                    <input type="hidden" name="key" value={src} />
-                    <input type="hidden" name="on" value={picked ? '0' : '1'} />
-                    <input type="hidden" name="back" value={href({})} />
-                    <PendingButton pending={t('저장 중…', 'Saving…')} className={picked ? 'btn-secondary px-3 py-1 text-[12px]' : 'btn-primary px-3 py-1 text-[12px]'}>{picked ? t('추천에서 빼기', 'Remove from recommendations') : t('추천에 넣기', 'Add to recommendations')}</PendingButton>
-                  </form>
-                )}
-                {!auto && !(ctx.isEditorPlus || ctx.isStaff) && <span className="text-[12px] text-muted">{t('편집장이 바꿀 수 있습니다', 'The editor can change this')}</span>}
-              </div>
-            )
-          })()}
-          {searchParams.msg && <p className="border-b border-line bg-[#FFF8E6] px-4 py-2.5 text-[12.5px] text-[#6B4E00] md:px-5">{searchParams.msg.slice(0, 200)}</p>}
-          {tab === 'all' && !src && (ctx.isEditorPlus || ctx.isStaff) && (
-            <p className="border-b border-line px-4 py-2.5 text-[12px] text-muted md:px-5">{t('★ 는 이미 추천에 들어 있는 출처입니다. 출처 버튼을 누르면 그 출처를 추천에 넣거나 뺄 수 있습니다.', '★ marks sources already in recommendations. Click a source to add or remove it.')}</p>
+          {tab === 'all' && pickGroups.length > 0 && (
+            <details open className="group border-b border-line bg-[#FAFAF7]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[13px] font-semibold md:px-5 [&::-webkit-details-marker]:hidden">
+                <span>{t('★ 맞춤 자료 만들기', '★ Build my feed')} <span className="ml-1 font-normal text-muted">{t('받고 싶은 분야에 체크하면 왼쪽 “맞춤 자료”에 모입니다', 'Check the sources you want and they appear in “My feed”')}</span></span>
+                <span className="text-[12px] font-normal text-muted group-open:hidden">{t('열기', 'Open')}</span>
+                <span className="hidden text-[12px] font-normal text-muted group-open:inline">{t('닫기', 'Close')}</span>
+              </summary>
+              <form action={savePressSources} className="px-4 pb-4 md:px-5">
+                <input type="hidden" name="back" value={href({})} />
+                <div className="space-y-3">
+                  {pickGroups.map((g) => (
+                    <fieldset key={g.label}>
+                      <legend className="mb-1.5 text-[12px] font-bold text-muted">{g.label}</legend>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                        {g.items.map((x) => {
+                          const auto = fieldKeys.includes(x.key)
+                          return (
+                            <label key={x.key} title={auto ? t('이 매체의 분야 설정으로 이미 들어 있습니다', 'Already included by this outlet’s fields') : undefined} className={`flex items-center gap-1.5 text-[13px] ${auto ? 'text-muted' : ''}`}>
+                              <input type="checkbox" name="src" value={x.key} defaultChecked={auto || pickedKeys.includes(x.key)} disabled={auto || !canPick} />
+                              {x.name.replace('뉴스와이어 · ', '')}
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </fieldset>
+                  ))}
+                </div>
+                <div className="mt-3.5 flex flex-wrap items-center gap-3">
+                  {canPick ? <PendingButton pending={t('저장 중…', 'Saving…')} className="btn-primary px-4 py-1.5 text-[13px]">{t('맞춤 자료에 저장', 'Save to My feed')}</PendingButton> : <span className="text-[12px] text-muted">{t('편집장이 바꿀 수 있습니다', 'The editor can change this')}</span>}
+                  <span className="text-[12px] text-muted">{t('회색 글씨는 매체 분야 설정으로 이미 들어 있는 출처입니다. AI 자동 작성도 이 자료를 씁니다.', 'Grey items are already included by the outlet’s field settings. AI auto-writing also uses these.')}</span>
+                </div>
+              </form>
+            </details>
           )}
+          {searchParams.msg && <p className="border-b border-line bg-[#FFF8E6] px-4 py-2.5 text-[12.5px] text-[#6B4E00] md:px-5">{searchParams.msg.slice(0, 200)}</p>}
 
           {tab === 'rec' && auto && !noRecSetup && (
             <p className="border-b border-line bg-[#F1F6FF] px-4 py-3 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">
@@ -254,7 +272,7 @@ export default async function PressPage(props: Props) {
             </ul>
           ) : (
             <p className="px-5 py-20 text-center text-[14px] text-muted">
-              {q ? (lang === 'en' ? `No press releases match ‘${q}’.` : `‘${q}’에 해당하는 보도자료가 없습니다.`) : tab === 'rec' ? t('관련 키워드에 맞는 보도자료가 아직 없습니다. “전체” 탭도 확인해 보세요.', 'No press releases match your keywords yet. Check the “All” tab too.') : t('아직 가져온 보도자료가 없습니다.', 'No press releases have been collected yet.')}
+              {q ? (lang === 'en' ? `No press releases match ‘${q}’.` : `‘${q}’에 해당하는 보도자료가 없습니다.`) : tab === 'rec' ? t('맞춤 자료에 맞는 보도자료가 아직 없습니다. “전체” 탭에서 받고 싶은 출처를 골라 보세요.', 'Nothing matches your feed yet. Pick sources in the “All” tab.') : t('아직 가져온 보도자료가 없습니다.', 'No press releases have been collected yet.')}
             </p>
           )}
 

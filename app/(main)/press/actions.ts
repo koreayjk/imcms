@@ -21,18 +21,14 @@ export async function refreshNow() {
   revalidatePath('/press')
 }
 
-// 전체 탭에서 고른 출처를 이 매체의 추천에 넣거나 뺀다 (편집장 이상)
-export async function setPressSource(formData: FormData) {
+// 전체 탭에서 체크한 출처를 이 매체의 "맞춤 자료"로 저장한다 (편집장 이상). 체크하지 않은 출처는 빠진다.
+export async function savePressSources(formData: FormData) {
   const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
   const { t } = await getT()
-  const key = String(formData.get('key') ?? '')
-  const on = String(formData.get('on') ?? '') === '1'
   const back = String(formData.get('back') ?? '/press?tab=all')
   const go = (msg?: string) => redirect(back.startsWith('/press') ? (msg ? `${back}${back.includes('?') ? '&' : '?'}msg=${encodeURIComponent(msg)}` : back) : '/press')
   if (!outletId || (!isEditorPlus && !isStaff)) return go(t('편집장 이상만 바꿀 수 있습니다.', 'Only Editors-in-Chief and above can change this.'))
-  const { data } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
-  const cur = cleanPressSources(((data?.site ?? {}) as OutletSiteSettings).pressSources)
-  const next = cleanPressSources(on ? [...cur, key] : cur.filter((k) => k !== key))
+  const next = cleanPressSources(formData.getAll('src').map(String))
   const { error } = await supabase.rpc('outlet_press_sources_save', { o: outletId, p_sources: next })
   if (error) {
     if (/outlet_press_sources_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return go(t('이 기능을 쓰려면 운영팀이 Supabase에서 press-sources-pick.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run press-sources-pick.sql in Supabase.'))
@@ -40,7 +36,7 @@ export async function setPressSource(formData: FormData) {
   }
   revalidateTag('sites', { expire: 0 })
   revalidatePath('/press')
-  return go()
+  return go(t('저장했습니다. 왼쪽 “맞춤 자료”에 반영됩니다.', 'Saved. Your selection now appears in “My feed”.'))
 }
 
 // 보도자료 사진을 우리 저장소로 옮긴다 (원본 사이트가 사진을 지워도 기사가 깨지지 않게)
