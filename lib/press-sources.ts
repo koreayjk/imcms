@@ -6,7 +6,9 @@ export type PressSource = {
   // foreign: 해외 언론(영문) 기사. 목록은 RSS 요약만, 전문은 열 때 기사 페이지에서 읽는다.
   //          보도자료가 아니므로 AI는 번역하지 않고 출처를 밝힌 한국어 기사로 새로 쓴다 (매체 설정 '해외 언론 자료 받기'를 켠 매체만 본다)
   //   us: 미국(영문) 출처. 영문 매체(site.lang = en)만 본다. 목록은 RSS, 전문은 기사 페이지에서 읽고, AI가 영어 기사로 새로 쓴다
-  kind: 'newswire' | 'rss' | 'foreign' | 'us'
+  kind: 'newswire' | 'rss' | 'foreign' | 'us' | 'gov'
+  // gov: 지자체 게시판을 직접 읽는 출처 (press-local.ts). adapter 가 읽는 방법을 정한다
+  adapter?: 'ansan' | 'gnews'
   // 미국 출처 중 매체 지역·기관 소식: 추천 탭에 키워드 없이도 늘 보인다 (전국 뉴스와이어는 추천 키워드가 제목에 있을 때만)
   local?: boolean
   // 해외 언론: 기사에 밝힐 매체 이름
@@ -123,6 +125,10 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'kc-kidok', name: '교계 · 기독신문', outlet: '기독신문', url: 'https://www.kidok.com/rss/allArticle.xml', kind: 'foreign' },
   { key: 'kc-newsnjoy', name: '교계 · 뉴스앤조이', outlet: '뉴스앤조이', url: 'https://www.newsnjoy.or.kr/rss/allArticle.xml', kind: 'foreign' },
   { key: 'kc-christiandaily', name: '교계 · 기독일보', outlet: '기독일보', url: 'https://www.christiandaily.co.kr/rss', kind: 'foreign' },
+  // 지자체 보도자료 (게시판을 직접 읽는다): 안산시, 경기도뉴스포털(경기도 본청 + 31개 시군 — 화성·평택 포함, 제목·담당부서에 시군 이름이 나온다)
+  { key: 'lg-ansan', name: '안산시 보도자료', url: 'https://www.ansan.go.kr/www/common/bbs/selectPageListBbs.do?bbs_code=B0238', kind: 'gov', adapter: 'ansan' },
+  { key: 'lg-gg-sigun', name: '경기도뉴스포털 · 시군 보도자료', url: 'https://gnews.gg.go.kr/briefing/brief_sigun.do', kind: 'gov', adapter: 'gnews' },
+  { key: 'lg-gg-do', name: '경기도뉴스포털 · 경기도 보도자료', url: 'https://gnews.gg.go.kr/briefing/brief_gongbo.do', kind: 'gov', adapter: 'gnews' },
   // 정책브리핑(korea.kr) RSS는 2026-07-01에 서비스가 중단되어 뺐다 (저작권 보호를 이유로 제공 방식 변경).
   //   이미 받아 둔 'kr-press' 보도자료는 보도자료함에 그대로 남는다. 정부 보도자료는 부처 메일 구독 → 보도자료 메일함으로 받는다
 ]
