@@ -95,8 +95,8 @@ export default async function PressPage(props: Props) {
   const recBase = [MANUAL_SOURCE, 'email', ...foreignKeys, ...fieldKeys]
   const usLocal = PRESS_SOURCES.filter((x) => x.local).map((x) => x.key)
   const usWire = PRESS_SOURCES.filter((x) => !x.local).map((x) => x.key)
-  // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만
-  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : titleHit.length ? null : new Set(foreignKeys)
+  // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만. 키워드만 있는 매체는 모든 출처에서 제목이 맞는 것을 고르므로 출처 버튼을 늘어놓지 않는다(출처별로 보려면 전체 탭)
+  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : new Set(foreignKeys)
   // 추천 분야·키워드를 아직 정하지 않은 한국어 매체 (추천 탭에 안내를 보인다)
   const noRecSetup = !english && !fields.length && !titleHit.length
   if (english) {
