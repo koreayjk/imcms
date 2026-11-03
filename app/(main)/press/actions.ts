@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
@@ -11,7 +11,7 @@ import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 import { duplicateNotes } from '@/lib/duplicate-check'
 import { aiNoticeText, withAiNotice } from '@/lib/ai-notice'
-import type { OutletSiteSettings } from '@/lib/sites'
+import { cleanPressSources, type OutletSiteSettings } from '@/lib/sites'
 
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
 
@@ -19,6 +19,28 @@ export async function refreshNow() {
   const { supabase } = await getCmsContext()
   await refreshPress(supabase, true)
   revalidatePath('/press')
+}
+
+// 전체 탭에서 고른 출처를 이 매체의 추천에 넣거나 뺀다 (편집장 이상)
+export async function setPressSource(formData: FormData) {
+  const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
+  const { t } = await getT()
+  const key = String(formData.get('key') ?? '')
+  const on = String(formData.get('on') ?? '') === '1'
+  const back = String(formData.get('back') ?? '/press?tab=all')
+  const go = (msg?: string) => redirect(back.startsWith('/press') ? (msg ? `${back}${back.includes('?') ? '&' : '?'}msg=${encodeURIComponent(msg)}` : back) : '/press')
+  if (!outletId || (!isEditorPlus && !isStaff)) return go(t('편집장 이상만 바꿀 수 있습니다.', 'Only Editors-in-Chief and above can change this.'))
+  const { data } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
+  const cur = cleanPressSources(((data?.site ?? {}) as OutletSiteSettings).pressSources)
+  const next = cleanPressSources(on ? [...cur, key] : cur.filter((k) => k !== key))
+  const { error } = await supabase.rpc('outlet_press_sources_save', { o: outletId, p_sources: next })
+  if (error) {
+    if (/outlet_press_sources_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return go(t('이 기능을 쓰려면 운영팀이 Supabase에서 press-sources-pick.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run press-sources-pick.sql in Supabase.'))
+    return go(error.message.replace(/^.*?:\s*/, ''))
+  }
+  revalidateTag('sites', { expire: 0 })
+  revalidatePath('/press')
+  return go()
 }
 
 // 보도자료 사진을 우리 저장소로 옮긴다 (원본 사이트가 사진을 지워도 기사가 깨지지 않게)

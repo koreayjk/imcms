@@ -9,7 +9,7 @@ import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fiel
 import { buildSite, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
-import { refreshNow } from './actions'
+import { refreshNow, setPressSource } from './actions'
 
 // 정책브리핑 등 국내 사이트는 해외 접속을 막기도 하므로 서울 리전에서 가져온다
 export const preferredRegion = 'icn1'
@@ -17,7 +17,7 @@ export const maxDuration = 30
 
 const PAGE_SIZE = 30
 
-type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string }> }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
@@ -92,23 +92,26 @@ export default async function PressPage(props: Props) {
   const foreignKeys = PRESS_SOURCES.filter((x) => foreignTopicOf(x.key)).map((x) => x.key)
   const fieldKeys = PRESS_SOURCES.filter((x) => { const f = fieldOfSource(x.key); return !!f && fields.includes(f) }).map((x) => x.key)
   const generalKeys = PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key)).map((x) => x.key)
-  const recBase = [MANUAL_SOURCE, 'email', ...foreignKeys, ...fieldKeys]
-  const usLocal = PRESS_SOURCES.filter((x) => x.local).map((x) => x.key)
-  const usWire = PRESS_SOURCES.filter((x) => !x.local).map((x) => x.key)
+  // 편집장이 전체 탭에서 직접 골라 넣은 출처 (이 매체가 볼 수 있는 출처만)
+  const pickedKeys = (outletSite?.pressSources ?? []).filter((k) => PRESS_SOURCES.some((x) => x.key === k))
+  const recBase = Array.from(new Set([MANUAL_SOURCE, 'email', ...foreignKeys, ...fieldKeys, ...pickedKeys]))
+  const inRec = (k: string) => pickedKeys.includes(k) || fieldKeys.includes(k) || foreignKeys.includes(k) || (english && usLocal.includes(k))
+  const usLocal = Array.from(new Set([...PRESS_SOURCES.filter((x) => x.local).map((x) => x.key), ...pickedKeys]))
+  const usWire = PRESS_SOURCES.filter((x) => !x.local && !pickedKeys.includes(x.key)).map((x) => x.key)
   // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만. 키워드만 있는 매체는 모든 출처에서 제목이 맞는 것을 고르므로 출처 버튼을 늘어놓지 않는다(출처별로 보려면 전체 탭)
-  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : new Set(foreignKeys)
+  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...pickedKeys, ...(titleHit.length ? generalKeys : [])]) : new Set([...foreignKeys, ...pickedKeys])
   // 추천 분야·키워드를 아직 정하지 않은 한국어 매체 (추천 탭에 안내를 보인다)
-  const noRecSetup = !english && !fields.length && !titleHit.length
+  const noRecSetup = !english && !fields.length && !titleHit.length && !pickedKeys.length
   if (english) {
     // 영문 매체: 지역·기관 소식은 늘, 전국 뉴스와이어는 추천 키워드가 제목에 있을 때만
     if (tab === 'rec') query = query.or([`source_key.in.(${[MANUAL_SOURCE, 'email', ...usLocal].join(',')})`, ...(titleHit.length && usWire.length ? [`and(source_key.in.(${usWire.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
   } else if (tab === 'rec' && fields.length) {
     query = query.or([`source_key.in.(${recBase.join(',')})`, ...(titleHit.length && generalKeys.length ? [`and(source_key.in.(${generalKeys.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
   } else if (tab === 'rec' && titleHit.length) {
-    query = query.or([`source_key.in.(${recBase.filter((k) => !fieldOfSource(k)).join(',')})`, ...titleHit].join(','))
+    query = query.or([`source_key.in.(${recBase.join(',')})`, ...titleHit].join(','))
   } else if (tab === 'rec') {
     // 분야도 키워드도 정하지 않은 매체: 모든 출처를 다 보여 주지 않고 메일·직접 등록(과 켠 해외 언론)만 추천에 넣는다
-    query = query.in('source_key', recBase.filter((k) => !fieldOfSource(k)))
+    query = query.in('source_key', recBase)
   }
 
   const [{ data: rows, count }, { data: logs }, { data: todayUses }] = await Promise.all([
@@ -183,10 +186,38 @@ export default async function PressPage(props: Props) {
             <Link href={href({ src: MANUAL_SOURCE, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === MANUAL_SOURCE ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>{t('직접 등록', 'Added manually')}</Link>
             {PRESS_SOURCES.filter((s) => tab === 'all' || !recSources || recSources.has(s.key)).map((s) => (
               <Link key={s.key} href={href({ src: s.key, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === s.key ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>
-                {s.name.replace('뉴스와이어 · ', '')}
+                {tab === 'all' && inRec(s.key) && <span aria-hidden className="mr-0.5 text-[#B7791F]">★</span>}{s.name.replace('뉴스와이어 · ', '')}
               </Link>
             ))}
           </div>
+
+          {src && src !== 'email' && src !== MANUAL_SOURCE && (() => {
+            const cur = PRESS_SOURCES.find((x) => x.key === src)
+            if (!cur) return null
+            const picked = pickedKeys.includes(src)
+            const auto = inRec(src) && !picked
+            return (
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-[#FAFAF7] px-4 py-2.5 text-[12.5px] md:px-5">
+                <p className="text-muted">
+                  <b className="text-ink">{cur.name}</b>{' '}
+                  {auto ? t('은(는) 이 매체의 분야로 이미 추천에 들어 있습니다.', 'is already in recommendations through this outlet’s fields.') : picked ? t('은(는) 편집장이 골라 추천에 들어 있습니다.', 'is in recommendations (chosen by the editor).') : t('은(는) 추천에 들어 있지 않습니다. 추천에 넣으면 추천 탭과 AI 자동 작성에서 이 출처의 자료를 씁니다.', 'is not in recommendations. Add it to see its releases in the Recommended tab and use them for AI auto-writing.')}
+                </p>
+                {!auto && (ctx.isEditorPlus || ctx.isStaff) && (
+                  <form action={setPressSource}>
+                    <input type="hidden" name="key" value={src} />
+                    <input type="hidden" name="on" value={picked ? '0' : '1'} />
+                    <input type="hidden" name="back" value={href({})} />
+                    <PendingButton pending={t('저장 중…', 'Saving…')} className={picked ? 'btn-secondary px-3 py-1 text-[12px]' : 'btn-primary px-3 py-1 text-[12px]'}>{picked ? t('추천에서 빼기', 'Remove from recommendations') : t('추천에 넣기', 'Add to recommendations')}</PendingButton>
+                  </form>
+                )}
+                {!auto && !(ctx.isEditorPlus || ctx.isStaff) && <span className="text-[12px] text-muted">{t('편집장이 바꿀 수 있습니다', 'The editor can change this')}</span>}
+              </div>
+            )
+          })()}
+          {searchParams.msg && <p className="border-b border-line bg-[#FFF8E6] px-4 py-2.5 text-[12.5px] text-[#6B4E00] md:px-5">{searchParams.msg.slice(0, 200)}</p>}
+          {tab === 'all' && !src && (ctx.isEditorPlus || ctx.isStaff) && (
+            <p className="border-b border-line px-4 py-2.5 text-[12px] text-muted md:px-5">{t('★ 는 이미 추천에 들어 있는 출처입니다. 출처 버튼을 누르면 그 출처를 추천에 넣거나 뺄 수 있습니다.', '★ marks sources already in recommendations. Click a source to add or remove it.')}</p>
+          )}
 
           {tab === 'rec' && auto && !noRecSetup && (
             <p className="border-b border-line bg-[#F1F6FF] px-4 py-3 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">
