@@ -104,11 +104,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const underHeadline = [...pinnedUnder, ...take(Math.max(0, 4 - pinnedUnder.length))].slice(0, 4)
   const major = fill(pinned.major, hasImage)
   // 오른쪽 광고(최대 10개)가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 오른쪽 높이에 맞춰 연다. 기사가 모자라면 있는 만큼만)
-  const usedBeforeMore = new Set(used)
-  const majorMore = site.homeLayout === 'bands' ? [] : take(36)
-  const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
-  // 포토뉴스 띠: 편집판 '포토뉴스' 칸을 채운 경우만 (사진 없는 기사는 뺀다). 색은 매체 설정(photoColor), 없으면 대표색
-  const photos = pinned.photo.filter((a): a is PublicArticle => !!a && !!a.thumbnail_url)
+  // 이슈 PICK(4)·포토뉴스(12): 편집판에서 비워 둔 자리는 아직 홈에 안 나온 최신 기사로 자동 배치
+  //   이슈 PICK은 사진 있는 기사 먼저. 포토뉴스는 사진 있는 기사만 (사진 없는 고정 기사는 뺀다)
+  const picks = fill(pinned.pick, hasImage)
+  const pinnedPhotos = pinned.photo.filter((a): a is PublicArticle => !!a)
+  const photos = [...pinnedPhotos.filter(hasImage), ...take(Math.max(0, pinned.photo.length - pinnedPhotos.length), hasImage)]
   const photoBand = photos.length > 0 ? (
     <PhotoNews
       items={photos.map((a) => ({ id: a.id, title: a.title, excerpt: a.excerpt, thumb: a.thumbnail_url, author: a.author_name }))}
@@ -118,6 +118,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
     />
   ) : null
+  const usedBeforeMore = new Set(used)
+  const majorMore = site.homeLayout === 'bands' ? [] : take(36)
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
   const bandsMode = site.homeLayout === 'bands' && !!site.bands?.length
