@@ -15,7 +15,7 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 // '2026-11-03' / '2026.11.03' → 한국 시간 정오(날짜만 있는 글은 시각을 정오로 둔다)
 function kstDate(s: string): string | null {
-  const m = /(\d{4})[-.](\d{2})[-.](\d{2})/.exec(s)
+  const m = /(\d{4})[-./](\d{2})[-./](\d{2})/.exec(s)
   return m ? new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00+09:00`).toISOString() : null
 }
 
@@ -329,6 +329,16 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/main/community/notify/report.asp?page=v&gotopage=1&seq=${id}`,
     body: /<div class="con">([\s\S]*?)<\/div>/i,
   },
+  'lg-suwon': {
+    id: /jsView\('1043',\s*'(\d+)'/,
+    link: (id, o) => `${o}/web/board/BD_board.view.do?seq=${id}&bbsCd=1043`,
+    body: /<td[^>]*class="p-table__content[^"]*"[^>]*>([\s\S]*?)<\/td>/i,
+  },
+  'lg-gwangmyeong': {
+    id: /opView\('(\d+)'\)/,
+    link: (id, o) => `${o}/pt/user/bbs/BD_selectBbs.do?q_bbsCode=2606&q_bbscttSn=${id}`,
+    body: /<div class="nvcon-box">([\s\S]*?)<\/div>/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
@@ -439,7 +449,7 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
       if (id && t && !/^\d+$/.test(t)) { hit = { id, title: t }; break }
     }
     if (!hit) continue
-    const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(b))?.[1] ?? '')
+    const date = kstDate(/(\d{4}[-./]\d{2}[-./]\d{2})/.exec(text(b))?.[1] ?? '')
     rows.push({ source_key: key, source_name: label, guid: `${key}:${hit.id}`, title: hit.title, link: cfg.link(hit.id, origin), summary: null, body_html: null, published_at: date })
   }
   if (rows.length) return rows
@@ -453,7 +463,7 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     const end = (m.index ?? 0) + m[0].length
     const next = anchors.slice(i + 1).find((x) => cfg.id.test(decode(x[0])) && text(x[2]).length >= 4)
     const tail = page.slice(end, Math.min(next?.index ?? end + 3000, end + 3000))
-    const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(tail))?.[1] ?? '')
+    const date = kstDate(/(\d{4}[-./]\d{2}[-./]\d{2})/.exec(text(tail))?.[1] ?? '')
     const prev = found.get(id)
     if (!prev || t.length > prev.title.length) found.set(id, { title: t, date: date ?? prev?.date ?? null })
   })

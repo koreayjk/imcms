@@ -182,6 +182,8 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'lg-seo-incheon', name: '인천 서구 보도자료', url: 'https://www.seo.incheon.kr/open_content/main/community/news/report.jsp', kind: 'gov', adapter: 'board' },
   { key: 'lg-ganghwa', name: '강화군 보도자료', url: 'https://www.ganghwa.go.kr/open_content/main/ganghwa/news/report.jsp', kind: 'gov', adapter: 'board' },
   { key: 'lg-yeonsu', name: '인천 연수구 보도자료', url: 'https://www.yeonsu.go.kr/main/community/notify/report.asp', kind: 'gov', adapter: 'board' },
+  { key: 'lg-suwon', name: '수원시 보도자료', url: 'https://www.suwon.go.kr/web/board/BD_board.list.do?bbsCd=1043', kind: 'gov', adapter: 'board' },
+  { key: 'lg-gwangmyeong', name: '광명시 보도자료', url: 'https://www.gm.go.kr/pt/user/bbs/BD_selectBbsList.do?q_bbsCode=2606', kind: 'gov', adapter: 'board' },
   { key: 'lg-daejeon', name: '대전광역시 보도자료', url: 'https://www.daejeon.go.kr/drh/board/boardNormalList.do?boardId=normal_0189&menuSeq=1632', kind: 'gov', adapter: 'board' },
   { key: 'lg-jeju', name: '제주특별자치도 보도자료', url: 'https://www.jeju.go.kr/news/bodo/list.htm', kind: 'gov', adapter: 'jeju' },
   { key: 'lg-gyeongbuk', name: '경상북도 보도자료', url: 'https://www.gb.go.kr/page/link.do?mn=10107&pageNo=10004', kind: 'gov', adapter: 'gyeongbuk' },
