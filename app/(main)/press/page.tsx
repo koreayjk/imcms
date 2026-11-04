@@ -120,8 +120,8 @@ export default async function PressPage(props: Props) {
         { label: t('정부·공공기관·지자체', 'Government & public agencies'), items: toItems(PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key))) },
       ]).filter((g) => g.items.length > 0)
   pickGroups.unshift({ label: t('내가 넣은 자료', 'My own'), items: [{ key: 'email', name: t('메일', 'Email'), saved: false, auto: false }, { key: MANUAL_SOURCE, name: t('직접 등록', 'Added manually'), saved: false, auto: false }] })
-  // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만. 키워드만 있는 매체는 모든 출처에서 제목이 맞는 것을 고르므로 출처 버튼을 늘어놓지 않는다(출처별로 보려면 전체 탭)
-  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...pickedKeys, ...(titleHit.length ? generalKeys : [])]) : new Set([...foreignKeys, ...pickedKeys])
+  // 맞춤 자료 탭 위 출처 버튼: 매체 분야의 출처 + 켠 해외 언론 + 편집장이 체크해 넣은 출처만. 정부·지자체처럼 제목 키워드로 골라 오는 출처는 버튼으로 늘어놓지 않는다(출처별로 보려면 전체 탭)
+  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : new Set([...fieldKeys, ...foreignKeys, ...pickedKeys])
   // 추천 분야·키워드를 아직 정하지 않은 한국어 매체 (추천 탭에 안내를 보인다)
   const noRecSetup = !english && !fields.length && !titleHit.length && !pickedKeys.length
   if (english) {
