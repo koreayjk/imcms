@@ -299,6 +299,21 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/03360/00023/00025.web?gcode=1172&idx=${id}&amode=view&`,
     body: /(?:<div class="substanceautolink">|\*\]\]>\*\/<\/script>)([\s\S]*?)<\/div>/i,
   },
+  'lg-seocho': {
+    id: /View\.do\?cbIdx=61&bcIdx=(\d+)/,
+    link: (id, o) => `${o}/site/seocho/ex/bbs/View.do?cbIdx=61&bcIdx=${id}`,
+    body: /<div class="view_contents">([\s\S]*?)<\/div>/i,
+  },
+  'lg-gangnam': {
+    id: /\/B_000031\/(\d+)\/view\.do/,
+    link: (id, o) => `${o}/board/B_000031/${id}/view.do?mid=ID01_0313`,
+    body: /<div class="post-content">([\s\S]*?)<\/div>/i,
+  },
+  'lg-gangdong': {
+    id: /\/web\/newportal\/press\/(\d+)/,
+    link: (id, o) => `${o}/web/newportal/press/${id}`,
+    body: /<td colspan="4" style="border-left:0px">([\s\S]*?)<\/td>/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
