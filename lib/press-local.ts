@@ -21,7 +21,7 @@ function kstDate(s: string): string | null {
 
 // 본문 HTML → 문단 (<p>·줄바꿈 단위). 글꼴·색 같은 꾸밈은 모두 버린다
 function paragraphs(inner: string): string[] {
-  const cleaned = inner.replace(/<(script|style)[\s\S]*?<\/\1>/gi, '').replace(/<img[^>]*>/gi, '')
+  const cleaned = inner.replace(/<(script|style)[\s\S]*?<\/\1>/gi, '').replace(/<img[^>]*>/gi, '').replace(/<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '')
   const parts = /<p[\s>]/i.test(cleaned)
     ? Array.from(cleaned.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi), (m) => m[1]).flatMap((x) => x.split(/(?:<br\s*\/?>\s*){2,}/i))
     : cleaned.split(/<br\s*\/?>|\n\s*\n/i)
@@ -313,6 +313,21 @@ export const BOARDS: Record<string, BoardCfg> = {
     id: /\/web\/newportal\/press\/(\d+)/,
     link: (id, o) => `${o}/web/newportal/press/${id}`,
     body: /<td colspan="4" style="border-left:0px">([\s\S]*?)<\/td>/i,
+  },
+  'lg-seo-incheon': {
+    id: /bbsMsgDetail\.do\?msg_seq=(\d+)&bcd=report/,
+    link: (id, o) => `${o}/open_content/main/bbs/bbsMsgDetail.do?msg_seq=${id}&bcd=report`,
+    body: /<div class="con">([\s\S]*?)<\/div>/i,
+  },
+  'lg-ganghwa': {
+    id: /bbsMsgDetail\.do\?msg_seq=(\d+)&bcd=report/,
+    link: (id, o) => `${o}/open_content/main/bbs/bbsMsgDetail.do?msg_seq=${id}&bcd=report`,
+    body: /<div class="con">([\s\S]*?)<\/div>/i,
+  },
+  'lg-yeonsu': {
+    id: /report\.asp\?page=v&gotopage=\d+&seq=(\d+)/,
+    link: (id, o) => `${o}/main/community/notify/report.asp?page=v&gotopage=1&seq=${id}`,
+    body: /<div class="con">([\s\S]*?)<\/div>/i,
   },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
