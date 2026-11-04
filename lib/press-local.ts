@@ -15,15 +15,15 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 // '2026-11-03' / '2026.11.03' → 한국 시간 정오(날짜만 있는 글은 시각을 정오로 둔다)
 function kstDate(s: string): string | null {
-  const m = /(\d{4})[-.](\d{2})[-.](\d{2})/.exec(s)
+  const m = /(\d{4})[-./](\d{2})[-./](\d{2})/.exec(s)
   return m ? new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00+09:00`).toISOString() : null
 }
 
 // 본문 HTML → 문단 (<p>·줄바꿈 단위). 글꼴·색 같은 꾸밈은 모두 버린다
 function paragraphs(inner: string): string[] {
-  const cleaned = inner.replace(/<(script|style)[\s\S]*?<\/\1>/gi, '').replace(/<img[^>]*>/gi, '')
+  const cleaned = inner.replace(/<(script|style)[\s\S]*?<\/\1>/gi, '').replace(/<img[^>]*>/gi, '').replace(/<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '')
   const parts = /<p[\s>]/i.test(cleaned)
-    ? Array.from(cleaned.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi), (m) => m[1])
+    ? Array.from(cleaned.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi), (m) => m[1]).flatMap((x) => x.split(/(?:<br\s*\/?>\s*){2,}/i))
     : cleaned.split(/<br\s*\/?>|\n\s*\n/i)
   return parts.map((p) => text(p)).filter((p) => p.length > 1)
 }
@@ -183,6 +183,162 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/drh/board/boardNormalView.do?boardId=normal_0189&menuSeq=1632&ntatcSeq=${id}`,
     body: /<div class="board_txt">([\s\S]*?)(?=<\/div>\s*<\/div>\s*<div class="kogl_type")/i,
   },
+  'lg-ulsan-donggu': {
+    id: /selectBoardArticle\.do\?bbsId=BBSMSTR_000000000322&nttId=(\d+)/,
+    link: (id, o) => `${o}/cop/bbs/selectBoardArticle.do?bbsId=BBSMSTR_000000000322&nttId=${id}`,
+    body: /<div class="bbs_detail_content">([\s\S]*?)(?:<!--\[data-hwpjson\]|<\/div>)/i,
+  },
+  'lg-uiwang': {
+    id: /\/UWKORINFO0201\/(\d+)\//,
+    link: (id, o) => `${o}/UWKORINFO0201/${id}/`,
+    body: /<div class="txtWrap">([\s\S]*?)<div class="bbs-nav">/i,
+  },
+  'lg-muan': {
+    id: /report\?idx=(\d+)&mode=view/,
+    link: (id, o) => `${o}/www/openmuan/new/report/report?idx=${id}&mode=view`,
+    body: /<div class="board_cont">([\s\S]*?)(?=<\/div>\s*<\/div>\s*<!-- 버튼)/i,
+  },
+  'lg-dangjin': {
+    id: /BBSMSTR_000000000014\/selectBoardArticle\.do\?nttId=(\d+)/,
+    link: (id, o) => `${o}/cop/bbs/BBSMSTR_000000000014/selectBoardArticle.do?nttId=${id}`,
+    body: /<div class="bbs_detail_cont">([\s\S]*?)<\/div>/i,
+  },
+  'lg-namdong': {
+    id: /bbsMsgDetail\.do\?msg_seq=(\d+)&bcd=press_release/,
+    link: (id, o) => `${o}/main/bbs/bbsMsgDetail.do?msg_seq=${id}&bcd=press_release`,
+    body: /<div class="detail">([\s\S]*?)<\/div>/i,
+  },
+  'lg-bupyeong': {
+    id: /bbsMsgDetail\.do\?msg_seq=(\d+)&bcd=report/,
+    link: (id, o) => `${o}/bbs/bbsMsgDetail.do?msg_seq=${id}&bcd=report`,
+    body: /<div class="detail">([\s\S]*?)<\/div>/i,
+  },
+  'lg-michuhol': {
+    id: /view\.do\?sq=(\d+)&board_code=news_item/,
+    link: (id, o) => `${o}/main/board/view.do?sq=${id}&board_code=news_item`,
+    body: /<div class="content editor_content">\s*<div class="content editor_content">([\s\S]*?)<\/div>/i,
+  },
+  'lg-gwangjin': {
+    id: /B0000002\/view\.do\?nttId=(\d+)/,
+    link: (id, o) => `${o}/portal/bbs/B0000002/view.do?nttId=${id}&menuNo=200191`,
+    body: /<div id="dbData"[^>]*>([\s\S]*?)<\/div>/i,
+  },
+  'lg-gangseo': {
+    id: /\/gs040201\/(\d+)/,
+    link: (id, o) => `${o}/gs040201/${id}`,
+    body: /<div class="view-content"[^>]*>([\s\S]*?)<div class="board-page-wrap">/i,
+  },
+  'lg-dongjak': {
+    id: /B0000171\/view\.do\?nttId=(\d+)/,
+    link: (id, o) => `${o}/portal/bbs/B0000171/view.do?nttId=${id}&menuNo=200647`,
+    body: /<div class="dbData">([\s\S]*?)<\/div>/i,
+  },
+  'lg-mokpo': {
+    id: /report_material\?idx=(\d+)&mode=view/,
+    link: (id, o) => `${o}/www/mokpo_news/press_release/report_material?idx=${id}&mode=view`,
+    body: /<div class="text_viewbox">([\s\S]*?)<\/div>/i,
+  },
+  'lg-naju': {
+    id: /coverage\?idx=(\d+)&mode=view/,
+    link: (id, o) => `${o}/www/administration/reporting/coverage?idx=${id}&mode=view`,
+    body: /<div class='view_box' id='con_ko'>([\s\S]*?)<\/div>/i,
+  },
+  'lg-chuncheon': {
+    id: /press-release\/\?bbsId=BBSMSTR_000000000335&nttId=(\d+)/,
+    link: (id, o) => `${o}/mayor/newsroom/press-release/?bbsId=BBSMSTR_000000000335&nttId=${id}&flag=view`,
+    body: /<div class="board-view-con">([\s\S]*?)<div class="contents-bottom/i,
+  },
+  'lg-gwangsan': {
+    id: /boardView\.do\?pageId=www16&boardId=REPORT_NEW&seq=(\d+)/,
+    link: (id, o) => `${o}/boardView.do?pageId=www16&boardId=REPORT_NEW&seq=${id}&movePage=1`,
+    body: /<div class="boardContents[^"]*">([\s\S]*?)<\/div>/i,
+  },
+  'lg-nowon': {
+    id: /opView\('(\d+)'\)/,
+    link: (id, o) => `${o}/www/user/bbs/BD_selectBbs.do?q_bbsCode=1027&q_bbscttSn=${id}`,
+    body: /<div class="article-body">([\s\S]*?)<div class="article-view-btn">/i,
+  },
+  'lg-paju': {
+    id: /jsView\('1023',\s*'(\d+)'/,
+    link: (id, o) => `${o}/user/board/BD_board.view.do?seq=${id}&bbsCd=1023`,
+    body: /<div class="article-body">([\s\S]*?)(?=<div id="content-info"|<div class="article-view-btn">)/i,
+  },
+  'lg-jongno': {
+    id: /viewMove\('(\d+)'\)/,
+    link: (id, o) => `${o}/portal/bbs/selectBoardArticle.do?bbsId=BBSMSTR_000000001618&menuNo=388338&menuId=388338&nttId=${id}`,
+    body: /<td[^>]*>((?:(?!<td)[\s\S])*?)<div data-hjsonver=/i,
+  },
+  'lg-yeongdo': {
+    id: /idx=(\d+)&amode=view/,
+    link: (id, o) => `${o}/00000/00007/00011.web?gcode=1027&idx=${id}&amode=view&`,
+    body: /<div class="substanceautolink">([\s\S]*?)<\/div>/i,
+  },
+  'lg-jinju': {
+    id: /idx=(\d+)&amode=view/,
+    link: (id, o) => `${o}/00138.web?gcode=1004&idx=${id}&amode=view&`,
+    body: /<div class="substanceautolink">([\s\S]*?)<\/div>/i,
+  },
+  'lg-seongnam': {
+    id: /fn_move_form\('(\d+)'\)/,
+    link: (id, o) => `${o}/bbs010501/${id}`,
+    body: /<div class="board-view-content">([\s\S]*?)<\/div>/i,
+  },
+  'lg-yangcheon': {
+    id: /doBbsFView\('290','(\d+)'/,
+    link: (id, o) => `${o}/site/yangcheon/ex/bbs/View.do?cbIdx=290&bcIdx=${id}`,
+    // 본문이 따로 없고 공유용 메타(og:description)에 전문이 들어 있다 (문단 구분은 &amp;nbsp;)
+    body: /<meta id="mtTitle"[^>]*>\s*<meta property="og:description" content="([^"]*)"/i,
+  },
+  'lg-ulju': {
+    id: /goTo\.view\('list','(\d+)'/,
+    link: (id, o) => `${o}/ulju/bbs/view.do?ptIdx=146&mId=0404020000&bIdx=${id}`,
+    body: /<div class="view_cont[^"]*">\s*<div class="mT10">([\s\S]*?)<\/div>/i,
+  },
+  'lg-gimhae': {
+    id: /idx=(\d+)&amode=view/,
+    link: (id, o) => `${o}/03360/00023/00025.web?gcode=1172&idx=${id}&amode=view&`,
+    body: /(?:<div class="substanceautolink">|\*\]\]>\*\/<\/script>)([\s\S]*?)<\/div>/i,
+  },
+  'lg-seocho': {
+    id: /View\.do\?cbIdx=61&bcIdx=(\d+)/,
+    link: (id, o) => `${o}/site/seocho/ex/bbs/View.do?cbIdx=61&bcIdx=${id}`,
+    body: /<div class="view_contents">([\s\S]*?)<\/div>/i,
+  },
+  'lg-gangnam': {
+    id: /\/B_000031\/(\d+)\/view\.do/,
+    link: (id, o) => `${o}/board/B_000031/${id}/view.do?mid=ID01_0313`,
+    body: /<div class="post-content">([\s\S]*?)<\/div>/i,
+  },
+  'lg-gangdong': {
+    id: /\/web\/newportal\/press\/(\d+)/,
+    link: (id, o) => `${o}/web/newportal/press/${id}`,
+    body: /<td colspan="4" style="border-left:0px">([\s\S]*?)<\/td>/i,
+  },
+  'lg-seo-incheon': {
+    id: /bbsMsgDetail\.do\?msg_seq=(\d+)&bcd=report/,
+    link: (id, o) => `${o}/open_content/main/bbs/bbsMsgDetail.do?msg_seq=${id}&bcd=report`,
+    body: /<div class="con">([\s\S]*?)<\/div>/i,
+  },
+  'lg-ganghwa': {
+    id: /bbsMsgDetail\.do\?msg_seq=(\d+)&bcd=report/,
+    link: (id, o) => `${o}/open_content/main/bbs/bbsMsgDetail.do?msg_seq=${id}&bcd=report`,
+    body: /<div class="con">([\s\S]*?)<\/div>/i,
+  },
+  'lg-yeonsu': {
+    id: /report\.asp\?page=v&gotopage=\d+&seq=(\d+)/,
+    link: (id, o) => `${o}/main/community/notify/report.asp?page=v&gotopage=1&seq=${id}`,
+    body: /<div class="con">([\s\S]*?)<\/div>/i,
+  },
+  'lg-suwon': {
+    id: /jsView\('1043',\s*'(\d+)'/,
+    link: (id, o) => `${o}/web/board/BD_board.view.do?seq=${id}&bbsCd=1043`,
+    body: /<td[^>]*class="p-table__content[^"]*"[^>]*>([\s\S]*?)<\/td>/i,
+  },
+  'lg-gwangmyeong': {
+    id: /opView\('(\d+)'\)/,
+    link: (id, o) => `${o}/pt/user/bbs/BD_selectBbs.do?q_bbsCode=2606&q_bbscttSn=${id}`,
+    body: /<div class="nvcon-box">([\s\S]*?)<\/div>/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
@@ -267,6 +423,17 @@ export function parseGyeongbukList(page: string, key: string, label: string, lis
   return rows
 }
 
+function boardTitle(anchor: string, inner: string): string {
+  let t = text(inner)
+  const w = /wdigm_title\('([\s\S]*?)'\)\s*\)/.exec(inner)
+  if (w) t = text(w[1])
+  if (/(\.{2,3}|…)$/.test(t)) {
+    const full = /\btitle="([^"]+)"/.exec(anchor)?.[1]
+    if (full && !/번글$/.test(full)) t = decode(full).trim()
+  }
+  return t.replace(/\s*첨부파일$/, '').replace(/\s+N$/, '')
+}
+
 export function parseBoardList(page: string, key: string, label: string, listUrl: string): PressRow[] {
   const cfg = BOARDS[key]
   if (!cfg) return []
@@ -277,13 +444,31 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     const a = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
     let hit: { id: string; title: string } | null = null
     for (const m of b.matchAll(a)) {
-      const id = cfg.id.exec(decode(m[1]))?.[1]
-      const t = text(m[2])
-      if (id && t) { hit = { id, title: t }; break }
+      const id = cfg.id.exec(decode(m[0]))?.[1]
+      const t = boardTitle(m[0], m[2])
+      if (id && t && !/^\d+$/.test(t)) { hit = { id, title: t }; break }
     }
     if (!hit) continue
-    const date = kstDate(/(\d{4}[-.]\d{2}[-.]\d{2})/.exec(text(b))?.[1] ?? '')
+    const date = kstDate(/(\d{4}[-./]\d{2}[-./]\d{2})/.exec(text(b))?.[1] ?? '')
     rows.push({ source_key: key, source_name: label, guid: `${key}:${hit.id}`, title: hit.title, link: cfg.link(hit.id, origin), summary: null, body_html: null, published_at: date })
+  }
+  if (rows.length) return rows
+  // 표가 아니라 <li>·카드 목록인 사이트: 글 주소 규칙에 맞는 링크를 모두 찾고, 날짜는 그 링크 뒤쪽에서 읽는다
+  const found = new Map<string, { title: string; date: string | null }>()
+  const anchors = Array.from(page.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi))
+  anchors.forEach((m, i) => {
+    const id = cfg.id.exec(decode(m[0]))?.[1]
+    const t = boardTitle(m[0], m[2])
+    if (!id || !t || /^\d+$/.test(t) || t.length < 4) return
+    const end = (m.index ?? 0) + m[0].length
+    const next = anchors.slice(i + 1).find((x) => cfg.id.test(decode(x[0])) && text(x[2]).length >= 4)
+    const tail = page.slice(end, Math.min(next?.index ?? end + 3000, end + 3000))
+    const date = kstDate(/(\d{4}[-./]\d{2}[-./]\d{2})/.exec(text(tail))?.[1] ?? '')
+    const prev = found.get(id)
+    if (!prev || t.length > prev.title.length) found.set(id, { title: t, date: date ?? prev?.date ?? null })
+  })
+  for (const [id, v] of found) {
+    rows.push({ source_key: key, source_name: label, guid: `${key}:${id}`, title: v.title, link: cfg.link(id, origin), summary: null, body_html: null, published_at: v.date })
   }
   return rows
 }
@@ -295,6 +480,6 @@ export function parseBoardDetail(page: string, key: string, origin: string, labe
   const imgs = Array.from(inner.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
     .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
   const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
-  const paras = paragraphs(inner.replace(/&nbsp;/gi, ' '))
+  const paras = paragraphs(inner.replace(/&amp;nbsp;/gi, '<br><br>').replace(/&amp;(lsquo|rsquo|ldquo|rdquo|middot|hellip|quot|#39);/gi, '&$1;').replace(/&nbsp;/gi, ' '))
   return paras.length ? build(paras, uniq, label) : null
 }

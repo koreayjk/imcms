@@ -1,0 +1,63 @@
+# 지자체 보도자료 수집 진행표 (예약 작업이 계속 갱신한다)
+
+목표: 전국 지자체(광역 17 + 시·군·구 226, 조사 목록은 운영 DB 표 `public.gov_survey` — slug·name·url) 보도자료 **수집**을 가능한 곳 전부 붙인다. 기사 작성과는 무관.
+규칙·요령은 `docs/local-gov-survey.md`, 코드는 `lib/press-local.ts`(BOARDS 규칙표·파서)와 `lib/press-sources.ts`(출처 등록).
+
+## 작업 순서 (한 번에 6~10곳)
+1. 이 문서의 "완료"·"불가"에 없는 slug를 `public.gov_survey`에서 고른다 (시·군·구 우선, 지역 근처끼리 묶기).
+2. 운영 Supabase(프로젝트 `xmkrpjsetdneulyyasrf`)에서 `net.http_get(url, timeout_milliseconds := 25000)` 로 메인/보도자료 목록을 받는다 (샌드박스는 한국 지자체 사이트에 못 간다). 응답은 `net._http_response` 에서 잠시 뒤 읽는다. 임시 테이블을 만들지 말고 `select ... net.http_get(...) from (values ...)` 형태만 쓴다.
+3. 메뉴에서 "보도자료" 링크를 찾는다 → 목록 모양·상세 주소·본문 칸을 확인한다. 같은 모양이면 기존 어댑터를 쓴다: `selectBbsNttList.do` 형은 adapter `ntt`, 나머지는 `board` + `BOARDS` 규칙(id 정규식·link·body).
+4. 로컬에서 실제 마크업 조각으로 파서를 시험하고 `npx tsc --noEmit -p .` 통과를 확인한다.
+5. `lib/press-sources.ts` 에 `lg-*` 출처를 추가하고 커밋·푸시한다 (브랜치 `claude/new-newsroom-launch-lddv9w`, PR #29 에 쌓임). **머지는 하지 않는다** (사람이 한다).
+6. 이 문서를 고쳐 커밋한다: 붙인 곳은 "완료(배포 전)", 불가능한 구조는 "불가"(사유 한 줄), 아직 불확실하면 "재시도"(횟수).
+
+## 하지 않는 것
+- 접속 대기열·봇 확인(쿠키/화면크기 검사)·로그인·차단을 우회하지 않는다. 막히면 "불가"로 적고 넘어간다.
+- 서버 시간 초과(응답 없음)는 한 번 더 시도해 보고(총 2회) 그래도 없으면 "불가(응답 없음)".
+- 한 곳이 어려우면 오래 붙들지 말고 다음 곳으로 간다.
+- 기사 자동 작성 설정은 건드리지 않는다.
+
+## 완료 — 이미 운영 수집 중 (확인됨)
+광역: seoul, incheon, gyeonggi(경기도), chungbuk, chungnam, daejeon, gyeongbuk, jeju (+ 경기도뉴스포털 시군 `lg-gg-sigun`; 양주 gyeonggi-26 은 이 경로로 들어옴)
+시·군·구: gyeonggi-09 안산, gyeonggi-07 평택(목록만), chungnam-05 서산, gangwon-10 영월, gyeonggi-08 동두천, gyeonggi-31 양평, seoul-12 은평, seoul-19 영등포, seoul-14 마포
+
+## 완료 — 코드만 있음, 배포·수집 확인 전 (PR #29)
+gyeonggi-18 하남, seoul-18 금천, ulsan-03 울산동구, gyeonggi-17 의왕, jeonnam-16 무안, chungnam-08 당진, incheon-05 남동, incheon-06 부평, incheon-03 미추홀, seoul-05 광진, seoul-16 강서, seoul-20 동작, jeonnam-01 목포, jeonnam-04 나주, gangwon-01 춘천, gwangju-05 광산, seoul-11 노원, gyeonggi-20 파주, seoul-01 종로, busan-04 영도, gyeongnam-02 진주, gyeonggi-02 성남, seoul-15 양천, ulsan-05 울주, gyeongnam-05 김해, seoul-08 성북, seoul-24 송파, seoul-17 구로, seoul-22 서초, seoul-23 강남, seoul-25 강동
+
+## 완료 — 코드만 있음 (2차, 같은 PR)
+seoul-08·24·17·22·23·25(위에 포함), gyeonggi-12 구리, gyeonggi-13 남양주, gyeonggi-16 군포, gyeonggi-23 김포, gyeonggi-27 포천, gyeonggi-29 연천, gyeonggi-01 수원, gyeonggi-06 광명, incheon-08 서(서해)구, incheon-09 강화, incheon-04 연수
+
+## 완료 — 코드만 있음 (3차, 같은 PR)
+chungbuk-04 보은, chungbuk-05 옥천, chungbuk-10 음성, gangwon-09 횡성, gangwon-02 원주 (ntt 형)
+
+## 등록했으나 운영에서 안 됨
+seoul-07 중랑 (프로덕션 fetch failed)
+
+## 불가 (시도했으나 불가능한 구조 — 다시 하지 않는다)
+- gyeonggi-24 화성: 접속 대기열(NetFunnel)
+- seoul-09 강북: 봇 확인(쿠키·화면 크기 검사)
+- seoul-02 중구, seoul-03 용산, seoul-04 성동, seoul-21 관악: 응답 없음(서버 접속 차단 추정)
+- seoul-06 동대문: 게시판이 4월 12일에서 멈춤
+- jeonnam-03 순천: 상세 주소가 목록으로 돌아옴
+- chungnam-07 계룡, chungnam-01 천안: 목록이 자바스크립트로 불러와져 서버가 못 읽음
+- chungbuk-07 증평: 위와 같은 증상
+- 광역: gwangju·jeonnam(통합특별시 새 사이트 주소 미확인), daegu(모음 글), busan(SSL), ulsan(상세 404), sejong·gangwon·jeonbuk(보도자료 주소 미확인 — 재시도 가능)
+
+## 재시도 (불확실)
+- 전북·전남·경북·경남 1차 점검(2026-11-04): 메인 페이지가 응답 없음(서버 접속 차단 추정, 1회) — gyeongbuk-03 김천·06 영주·09 문경·10 경산·12 청송·13 영양·14 영덕·15 청도·18 칠곡·19 예천·20 봉화·21 울진·22 울릉, gyeongnam-06 밀양·07 거제·09 의령·10 함안·11 창녕·13 남해·14 하동·15 산청·17 거창, jeonbuk-01 전주, jeonnam-07 곡성·13 강진 → 한 번 더 응답 없으면 '불가(응답 없음)'
+- 보도자료 게시판은 찾았으나 최신 글이 오래되어 보류: jeonbuk-04 정읍(5월), jeonbuk-11 임실(4월), jeonbuk-12 순창(4월), ulsan-01 울산 중구(1월), gyeongbuk-05 구미(1월), gyeongnam-03 통영(9월)
+- 게시판은 있으나 목록 글 링크를 못 찾음(메뉴 CMS 형 `index.xxx?menuCd=DOM_…`·`contents.do?S=S01…`): jeonbuk-10 장수(제목이 '언론보도'), jeonbuk-05 남원, gyeongnam-04 사천, jeonnam-11 화순
+- 안내/인트로만 받아 메뉴 못 찾음: gyeongbuk-01 포항·02 경주(`/open_content/ko/index.do`)·04 안동·08 상주·11 의성·17 성주, gyeongnam-01 창원·08 양산·16 함양·12 고성·18 합천, jeonbuk-02 군산·03 익산·06 김제·07 완주·08 진안·09 무주·13 고창·14 부안, jeonnam-02 여수·05 광양·06 담양·09 고흥·10 보성·12 장흥·14 해남·15 영암·17 함평·18 영광·19 장성·20 완도·21 진도·22 신안
+- 충북: chungbuk-01 청주(ntt 목록 bbsNo=40&key=23485 은 읽히나 상세 본문 칸 이름이 달라 못 찾음), chungbuk-02 충주·chungbuk-03 제천(보도자료 메뉴 못 찾음, 제천은 도 보도자료 링크만), chungbuk-08 진천(login.do로 이동), chungbuk-11 단양(응답 없음 1회)
+- 충남: chungnam-03 보령(`/prog/eminwon/kor/AA/sub04_02/list.do`, 목록 `view.do?mgtno=ID` 는 읽히나 상세가 옛 표 구조라 본문 칸 불분명), chungnam-12 청양·chungnam-15 태안(`cop/bbs/BBSMSTR_…/selectBoardList.do` 형, 당진과 같을 가능성 — 목록 행 확인 필요), chungnam-13 홍성·chungnam-02 공주(`prog/bbsArticle`·`prog/saeolNews` 형, 목록 행 못 찾음), chungnam-04 아산(`asan.go.kr/media`), chungnam-09 금산(`/kr/html/sub03/030301.html`), chungnam-06 논산·chungnam-10 부여·chungnam-14 예산(메뉴 못 찾음), chungnam-11 서천(502)
+- 강원: gangwon-04 동해(보도자료 게시판이 3월에서 멈춤 → 불가 후보), gangwon-15 양구(`/user_sub?gfnc=www&mu_idx=232`), gangwon-17 고성(`prog/bbsArticle/BBSMSTR_000000003771/list.do` 목록 행 확인 필요), gangwon-03 강릉·gangwon-05 태백·gangwon-08 홍천·gangwon-12 정선(404/오류 — 주소 다시 확인), gangwon-11 평창(안내 페이지), 응답 없음 1회: gangwon-06 속초, gangwon-07 삼척, gangwon-13 철원, gangwon-16 인제, gangwon-18 양양(안내 페이지)
+- gyeonggi-10 고양(목록은 읽히나 상세 주소 규칙 못 찾음 `fnView('1090',ID,'/news')`), gyeonggi-05 부천(보도자료 최신 글이 5월), gyeonggi-11 과천·gyeonggi-14 오산·gyeonggi-21 이천·gyeonggi-25 광주시(`contents.do` 목록, 글 링크 못 찾음), gyeonggi-04 안양·gyeonggi-15 시흥·gyeonggi-22 안성(첫 화면 안내만, 메뉴 못 찾음)
+- 응답 없음 1회: gyeonggi-03 의정부, gyeonggi-19 용인, gyeonggi-28 여주, incheon-02 동구, incheon-07 계양, incheon-10 옹진(링크 없음), gyeonggi-30 가평(404)
+- chungbuk-06 영동(보도자료 메뉴 없음, 군정뉴스만), chungbuk-09 괴산, gangwon-14 화천, seoul-13 서대문(인코딩), seoul-10 도봉
+- 광역 sejong·gangwon·jeonbuk 보도자료 주소 찾기, busan 주소·SSL 재확인
+
+## 실행 기록
+- 2026-11-04: 진행표 작성. 예약 작업 시작.
+- 2026-11-04 (대화 세션): 경기·인천 1차 점검 — 11곳 추가.
+- 2026-11-04 (대화 세션): 충북·충남·강원 31곳 점검 — 5곳 추가, 나머지 재시도 목록에 사유 기록.
+- 2026-11-04 (대화 세션): 전북·전남·경북·경남 69곳 점검 — 새로 붙인 곳 없음. 대부분 접속 차단/인트로/오래된 게시판. 사유는 '재시도' 목록에 기록.
