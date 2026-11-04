@@ -44,6 +44,10 @@ seoul-07 중랑 (프로덕션 fetch failed)
 - 광역: gwangju·jeonnam(통합특별시 새 사이트 주소 미확인), daegu(모음 글), busan(SSL), ulsan(상세 404), sejong·gangwon·jeonbuk(보도자료 주소 미확인 — 재시도 가능)
 
 ## 재시도 (불확실)
+- 전북·전남·경북·경남 1차 점검(2026-11-04): 메인 페이지가 응답 없음(서버 접속 차단 추정, 1회) — gyeongbuk-03 김천·06 영주·09 문경·10 경산·12 청송·13 영양·14 영덕·15 청도·18 칠곡·19 예천·20 봉화·21 울진·22 울릉, gyeongnam-06 밀양·07 거제·09 의령·10 함안·11 창녕·13 남해·14 하동·15 산청·17 거창, jeonbuk-01 전주, jeonnam-07 곡성·13 강진 → 한 번 더 응답 없으면 '불가(응답 없음)'
+- 보도자료 게시판은 찾았으나 최신 글이 오래되어 보류: jeonbuk-04 정읍(5월), jeonbuk-11 임실(4월), jeonbuk-12 순창(4월), ulsan-01 울산 중구(1월), gyeongbuk-05 구미(1월), gyeongnam-03 통영(9월)
+- 게시판은 있으나 목록 글 링크를 못 찾음(메뉴 CMS 형 `index.xxx?menuCd=DOM_…`·`contents.do?S=S01…`): jeonbuk-10 장수(제목이 '언론보도'), jeonbuk-05 남원, gyeongnam-04 사천, jeonnam-11 화순
+- 안내/인트로만 받아 메뉴 못 찾음: gyeongbuk-01 포항·02 경주(`/open_content/ko/index.do`)·04 안동·08 상주·11 의성·17 성주, gyeongnam-01 창원·08 양산·16 함양·12 고성·18 합천, jeonbuk-02 군산·03 익산·06 김제·07 완주·08 진안·09 무주·13 고창·14 부안, jeonnam-02 여수·05 광양·06 담양·09 고흥·10 보성·12 장흥·14 해남·15 영암·17 함평·18 영광·19 장성·20 완도·21 진도·22 신안
 - 충북: chungbuk-01 청주(ntt 목록 bbsNo=40&key=23485 은 읽히나 상세 본문 칸 이름이 달라 못 찾음), chungbuk-02 충주·chungbuk-03 제천(보도자료 메뉴 못 찾음, 제천은 도 보도자료 링크만), chungbuk-08 진천(login.do로 이동), chungbuk-11 단양(응답 없음 1회)
 - 충남: chungnam-03 보령(`/prog/eminwon/kor/AA/sub04_02/list.do`, 목록 `view.do?mgtno=ID` 는 읽히나 상세가 옛 표 구조라 본문 칸 불분명), chungnam-12 청양·chungnam-15 태안(`cop/bbs/BBSMSTR_…/selectBoardList.do` 형, 당진과 같을 가능성 — 목록 행 확인 필요), chungnam-13 홍성·chungnam-02 공주(`prog/bbsArticle`·`prog/saeolNews` 형, 목록 행 못 찾음), chungnam-04 아산(`asan.go.kr/media`), chungnam-09 금산(`/kr/html/sub03/030301.html`), chungnam-06 논산·chungnam-10 부여·chungnam-14 예산(메뉴 못 찾음), chungnam-11 서천(502)
 - 강원: gangwon-04 동해(보도자료 게시판이 3월에서 멈춤 → 불가 후보), gangwon-15 양구(`/user_sub?gfnc=www&mu_idx=232`), gangwon-17 고성(`prog/bbsArticle/BBSMSTR_000000003771/list.do` 목록 행 확인 필요), gangwon-03 강릉·gangwon-05 태백·gangwon-08 홍천·gangwon-12 정선(404/오류 — 주소 다시 확인), gangwon-11 평창(안내 페이지), 응답 없음 1회: gangwon-06 속초, gangwon-07 삼척, gangwon-13 철원, gangwon-16 인제, gangwon-18 양양(안내 페이지)
@@ -56,3 +60,4 @@ seoul-07 중랑 (프로덕션 fetch failed)
 - 2026-11-04: 진행표 작성. 예약 작업 시작.
 - 2026-11-04 (대화 세션): 경기·인천 1차 점검 — 11곳 추가.
 - 2026-11-04 (대화 세션): 충북·충남·강원 31곳 점검 — 5곳 추가, 나머지 재시도 목록에 사유 기록.
+- 2026-11-04 (대화 세션): 전북·전남·경북·경남 69곳 점검 — 새로 붙인 곳 없음. 대부분 접속 차단/인트로/오래된 게시판. 사유는 '재시도' 목록에 기록.
