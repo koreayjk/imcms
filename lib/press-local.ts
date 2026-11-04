@@ -283,6 +283,22 @@ export const BOARDS: Record<string, BoardCfg> = {
     link: (id, o) => `${o}/bbs010501/${id}`,
     body: /<div class="board-view-content">([\s\S]*?)<\/div>/i,
   },
+  'lg-yangcheon': {
+    id: /doBbsFView\('290','(\d+)'/,
+    link: (id, o) => `${o}/site/yangcheon/ex/bbs/View.do?cbIdx=290&bcIdx=${id}`,
+    // 본문이 따로 없고 공유용 메타(og:description)에 전문이 들어 있다 (문단 구분은 &amp;nbsp;)
+    body: /<meta id="mtTitle"[^>]*>\s*<meta property="og:description" content="([^"]*)"/i,
+  },
+  'lg-ulju': {
+    id: /goTo\.view\('list','(\d+)'/,
+    link: (id, o) => `${o}/ulju/bbs/view.do?ptIdx=146&mId=0404020000&bIdx=${id}`,
+    body: /<div class="view_cont[^"]*">\s*<div class="mT10">([\s\S]*?)<\/div>/i,
+  },
+  'lg-gimhae': {
+    id: /idx=(\d+)&amode=view/,
+    link: (id, o) => `${o}/03360/00023/00025.web?gcode=1172&idx=${id}&amode=view&`,
+    body: /(?:<div class="substanceautolink">|\*\]\]>\*\/<\/script>)([\s\S]*?)<\/div>/i,
+  },
   'lg-jeju': {
     id: /act=view&seq=(\d+)/,
     link: (id, o) => `${o}/news/bodo/list.htm?act=view&seq=${id}`,
@@ -367,6 +383,17 @@ export function parseGyeongbukList(page: string, key: string, label: string, lis
   return rows
 }
 
+function boardTitle(anchor: string, inner: string): string {
+  let t = text(inner)
+  const w = /wdigm_title\('([\s\S]*?)'\)\s*\)/.exec(inner)
+  if (w) t = text(w[1])
+  if (/(\.{2,3}|…)$/.test(t)) {
+    const full = /\btitle="([^"]+)"/.exec(anchor)?.[1]
+    if (full && !/번글$/.test(full)) t = decode(full).trim()
+  }
+  return t.replace(/\s*첨부파일$/, '').replace(/\s+N$/, '')
+}
+
 export function parseBoardList(page: string, key: string, label: string, listUrl: string): PressRow[] {
   const cfg = BOARDS[key]
   if (!cfg) return []
@@ -378,7 +405,7 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     let hit: { id: string; title: string } | null = null
     for (const m of b.matchAll(a)) {
       const id = cfg.id.exec(decode(m[0]))?.[1]
-      const t = text(m[2]).replace(/\s*첨부파일$/, '').replace(/\s+N$/, '')
+      const t = boardTitle(m[0], m[2])
       if (id && t && !/^\d+$/.test(t)) { hit = { id, title: t }; break }
     }
     if (!hit) continue
@@ -391,7 +418,7 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
   const anchors = Array.from(page.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi))
   anchors.forEach((m, i) => {
     const id = cfg.id.exec(decode(m[0]))?.[1]
-    const t = text(m[2]).replace(/\s*첨부파일$/, '').replace(/\s+N$/, '')
+    const t = boardTitle(m[0], m[2])
     if (!id || !t || /^\d+$/.test(t) || t.length < 4) return
     const end = (m.index ?? 0) + m[0].length
     const next = anchors.slice(i + 1).find((x) => cfg.id.test(decode(x[0])) && text(x[2]).length >= 4)
@@ -413,6 +440,6 @@ export function parseBoardDetail(page: string, key: string, origin: string, labe
   const imgs = Array.from(inner.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
     .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
   const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
-  const paras = paragraphs(inner.replace(/&nbsp;/gi, ' '))
+  const paras = paragraphs(inner.replace(/&amp;nbsp;/gi, '<br><br>').replace(/&amp;(lsquo|rsquo|ldquo|rdquo|middot|hellip|quot|#39);/gi, '&$1;').replace(/&nbsp;/gi, ' '))
   return paras.length ? build(paras, uniq, label) : null
 }
