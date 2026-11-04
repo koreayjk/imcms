@@ -18,6 +18,7 @@ type Props = {
   underHeadline: PublicArticle[]
   major: PublicArticle[]
   picks: PublicArticle[]
+  photoBand?: ReactNode
   mostViewed: PublicArticle[]
   bySection: Record<string, PublicArticle[]>
   sections: SectionConfig[]
@@ -58,7 +59,7 @@ function RowHead({ title, href, more }: { title: string; href?: string; more: st
   )
 }
 
-export default function HomeCards({ site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
+export default function HomeCards({ site, headline, subTops, underHeadline, major, picks, photoBand, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
   const L = site.lang
   const t = siteText(site)
   const topCards = [...subTops.slice(0, 2), ...underHeadline].slice(0, 6)
@@ -104,6 +105,8 @@ export default function HomeCards({ site, headline, subTops, underHeadline, majo
           </ul>
         </section>
       )}
+
+      {photoBand}
 
       {middleAd}
 

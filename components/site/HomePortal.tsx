@@ -22,6 +22,7 @@ type Props = {
   breaking: PublicArticle[]
   major: PublicArticle[]
   picks: PublicArticle[]
+  photoBand?: ReactNode
   mostViewed: PublicArticle[]
   bySection: Record<string, PublicArticle[]>
   sections: SectionConfig[]
@@ -32,7 +33,7 @@ type Props = {
   heroSeconds?: number
 }
 
-export default function HomePortal({ site, headline, subTops, underHeadline, breaking, major, picks, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
+export default function HomePortal({ site, headline, subTops, underHeadline, breaking, major, picks, photoBand, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
   const L = site.lang
   const t = siteText(site)
   const boxes = sections.filter((s) => (bySection[s.slug] ?? []).length > 0).slice(0, 8)
@@ -121,6 +122,8 @@ export default function HomePortal({ site, headline, subTops, underHeadline, bre
             </ul>
           </section>
         )}
+
+        {photoBand}
 
         {middleAd}
 

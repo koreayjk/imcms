@@ -8,7 +8,7 @@ import Thumb from './Thumb'
 //   편집판의 '포토뉴스' 칸을 채운 경우에만 홈에 나온다 (app/page.tsx)
 export type PhotoItem = { id: string; title: string; excerpt: string | null; thumb: string | null; author: string | null }
 
-export default function PhotoNews({ items, title, color, prevLabel, nextLabel }: { items: PhotoItem[]; title: string; color: string; prevLabel: string; nextLabel: string }) {
+export default function PhotoNews({ items, title, color, prevLabel, nextLabel, bare }: { items: PhotoItem[]; title: string; color: string; prevLabel: string; nextLabel: string; bare?: boolean }) {
   const box = useRef<HTMLUListElement>(null)
   const [edge, setEdge] = useState({ start: true, end: false })
 
@@ -35,7 +35,7 @@ export default function PhotoNews({ items, title, color, prevLabel, nextLabel }:
   const canScroll = !(edge.start && edge.end)
 
   return (
-    <section aria-label={title} className="mx-auto mb-9 max-w-[1200px] px-4">
+    <section aria-label={title} className={bare ? 'my-6' : 'mx-auto mb-9 max-w-[1200px] px-4'}>
       <div className="relative rounded-md px-4 pb-6 pt-5 sm:px-6" style={{ background: color }}>
         <h2 className="mb-4 text-[18px] font-extrabold tracking-[0.02em] text-white">{title}</h2>
         <ul ref={box} onScroll={measure} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-1">

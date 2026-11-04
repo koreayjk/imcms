@@ -118,6 +118,16 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
     />
   ) : null
+  const photoBandBare = photos.length > 0 ? (
+    <PhotoNews
+      bare
+      items={photos.map((a) => ({ id: a.id, title: a.title, excerpt: a.excerpt, thumb: a.thumbnail_url, author: a.author_name }))}
+      title={t.photoNews}
+      color={site.photoColor ?? site.colors.brand}
+      prevLabel={L === 'en' ? 'Previous photos' : '이전 포토뉴스'}
+      nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
+    />
+  ) : null
   const usedBeforeMore = new Set(used)
   const majorMore = site.homeLayout === 'bands' ? [] : take(36)
 
@@ -159,14 +169,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
       </>
     )
-    const common = { site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras, slides: heroSlides, heroSeconds }
+    const common = { site, headline, subTops, underHeadline, major, picks, photoBand: photoBandBare, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras, slides: heroSlides, heroSeconds }
     return (
       <SiteFrame site={site} home>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
         {layoutKey === 'editorial' ? <HomeEditorial {...common} realtime={realtime} />
           : layoutKey === 'cards' ? <HomeCards {...common} />
           : <HomePortal {...common} breaking={realtime.slice(0, 5)} />}
-        {photoBand}
         {wingFill}
         <AdArea site={site} slot="popup" />
       </SiteFrame>
