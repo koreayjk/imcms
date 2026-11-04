@@ -140,6 +140,26 @@ export function parseNttList(page: string, key: string, label: string, listUrl: 
     const link = new URL(`./selectBbsNttView.do?key=${k}&bbsNo=${bbs}&nttNo=${ntt}`, listUrl).toString()
     rows.push({ source_key: key, source_name: label, guid: `${key}:${bbs}:${ntt}`, title, link, summary: null, body_html: null, published_at: date })
   }
+  if (rows.length) return rows
+  // 표가 아니라 사진 카드(<li class="p-media">·post_title)로 된 목록: 이 게시판(bbsNo)의 글 링크만 읽는다
+  const listBbs = /[?&]bbsNo=(\d+)/.exec(listUrl)?.[1]
+  const seen = new Set<string>()
+  const anchors = Array.from(page.matchAll(/<a\b[^>]*href="([^"]*selectBbsNttView\.do[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi))
+  for (const m of anchors) {
+    const href = decode(m[1])
+    const ntt = /nttNo=(\d+)/.exec(href)?.[1]
+    const bbs = /bbsNo=(\d+)/.exec(href)?.[1]
+    const k = /[?&]key=(\d+)/.exec(href)?.[1]
+    if (!ntt || !bbs || !k || seen.has(ntt) || (listBbs && bbs !== listBbs) || /fact_text/.test(m[0].slice(0, 200))) continue
+    const inner = m[2]
+    const alt = /<img[^>]+alt="([^"]*)"/i.exec(inner)?.[1]?.replace(/\s*이미지\s*$/, '')
+    const title = text(/<span[^>]+class="[^"]*(?:post_title|p-media__title|title)[^"]*"[^>]*>([\s\S]*?)<\/span>/i.exec(inner)?.[1] ?? '') || text(/<(?:strong|h\d)[^>]*>([\s\S]*?)<\/(?:strong|h\d)>/i.exec(inner)?.[1] ?? '') || text(alt ?? '') || text(inner)
+    if (!title || title.length < 4) continue
+    seen.add(ntt)
+    const tail = page.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 600)
+    const date = kstDate(/(\d{4}[-./]\d{2}[-./]\d{2})/.exec(text(inner))?.[1] ?? /(\d{4}[-./]\d{2}[-./]\d{2})/.exec(text(tail))?.[1] ?? '')
+    rows.push({ source_key: key, source_name: label, guid: `${key}:${bbs}:${ntt}`, title, link: new URL(`./selectBbsNttView.do?key=${k}&bbsNo=${bbs}&nttNo=${ntt}`, listUrl).toString(), summary: null, body_html: null, published_at: date })
+  }
   return rows
 }
 
