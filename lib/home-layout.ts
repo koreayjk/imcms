@@ -5,6 +5,7 @@ export const SLOTS = [
   { key: 'under', label: '최신 기사 칸', count: 4, note: '헤드라인 아래·오른쪽 최신 기사 자리. 비우면 최신 기사로 자동 배치', labelEn: 'Latest stories', noteEn: 'The latest-story slots near the headline. If left empty, the latest stories are placed automatically' },
   { key: 'major', label: '주요뉴스', count: 6, note: '비우면 최신 기사로 자동 배치', labelEn: 'Top stories', noteEn: 'If left empty, the latest stories are placed automatically' },
   { key: 'pick', label: '이슈 PICK', count: 4, note: '채운 경우에만 홈페이지에 표시', labelEn: 'Featured picks', noteEn: 'Shown on the home page only when filled' },
+  { key: 'photo', label: '포토뉴스', count: 12, note: '이슈 PICK 아래 색 띠. 채운 경우에만 표시, 4개씩 보이고 화살표로 옆으로 넘김 (사진 있는 기사만)', labelEn: 'Photo news', noteEn: 'A colored band below Featured picks. Shown only when filled; four at a time with arrows (stories with photos only)' },
 ] as const
 
 export const slotLabel = (s: (typeof SLOTS)[number], lang?: 'ko' | 'en') => (lang === 'en' ? s.labelEn : s.label)

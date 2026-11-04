@@ -25,6 +25,7 @@ import HomePortal from '@/components/site/HomePortal'
 import HomeEditorial from '@/components/site/HomeEditorial'
 import HomeCards from '@/components/site/HomeCards'
 import HomeBandsTop from '@/components/site/HomeBandsTop'
+import PhotoNews from '@/components/site/PhotoNews'
 import { siteText } from '@/lib/site-text'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -106,6 +107,17 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const usedBeforeMore = new Set(used)
   const majorMore = site.homeLayout === 'bands' ? [] : take(36)
   const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
+  // 포토뉴스 띠: 편집판 '포토뉴스' 칸을 채운 경우만 (사진 없는 기사는 뺀다). 색은 매체 설정(photoColor), 없으면 대표색
+  const photos = pinned.photo.filter((a): a is PublicArticle => !!a && !!a.thumbnail_url)
+  const photoBand = photos.length > 0 ? (
+    <PhotoNews
+      items={photos.map((a) => ({ id: a.id, title: a.title, excerpt: a.excerpt, thumb: a.thumbnail_url, author: a.author_name }))}
+      title={t.photoNews}
+      color={site.photoColor ?? site.colors.brand}
+      prevLabel={L === 'en' ? 'Previous photos' : '이전 포토뉴스'}
+      nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
+    />
+  ) : null
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
   const bandsMode = site.homeLayout === 'bands' && !!site.bands?.length
@@ -152,6 +164,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         {layoutKey === 'editorial' ? <HomeEditorial {...common} realtime={realtime} />
           : layoutKey === 'cards' ? <HomeCards {...common} />
           : <HomePortal {...common} breaking={realtime.slice(0, 5)} />}
+        {photoBand}
         {wingFill}
         <AdArea site={site} slot="popup" />
       </SiteFrame>
@@ -313,6 +326,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </div>
         </section>
       )}
+
+      {photoBand}
 
       {bandsMode && (
         <HomeBands

@@ -161,7 +161,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           </div>
         ) : (
           <p className="flex h-full min-h-[inherit] items-center justify-center px-3 pt-4 text-center text-[12px] text-muted">
-            {id ? t('발행 취소된 기사입니다. 다른 기사로 바꿔주세요.', 'This story has been unpublished. Replace it with another story.') : slot === 'pick' || (slot === 'headline' && index > 0) ? t('비어 있음', 'Empty') : t('비어 있음 · 자동 배치', 'Empty · filled automatically')}
+            {id ? t('발행 취소된 기사입니다. 다른 기사로 바꿔주세요.', 'This story has been unpublished. Replace it with another story.') : slot === 'pick' || slot === 'photo' || (slot === 'headline' && index > 0) ? t('비어 있음', 'Empty') : t('비어 있음 · 자동 배치', 'Empty · filled automatically')}
           </p>
         )}
       </div>
@@ -182,6 +182,13 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
     </>
   )
 
+  const photos = (
+    <>
+      {head(t('포토뉴스', 'Photo news'), t('이슈 PICK 아래 색 띠로 나옵니다. 채운 경우에만, 사진이 있는 기사만 · 4개씩 보이고 12개까지 옆으로 넘겨 볼 수 있어요', 'A colored band below Featured picks. Only when filled, stories with photos only · four at a time, up to 12 with arrows'))}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{range(12).map((i) => cell('photo', i, { compact: true }))}</div>
+    </>
+  )
+
   const THREE = 'md:grid-cols-[minmax(0,22%)_minmax(0,1fr)_minmax(0,24%)]'
   const canvases: Record<HomeLayoutKey, React.ReactNode> = {
     // 한국 스타일 1: 왼쪽 2 · 가운데 큰 톱 · 오른쪽 실시간 / 주요뉴스 3열
@@ -198,6 +205,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           {auto(t('많이 본 뉴스 (자동)', 'Most read (automatic)'), 'min-h-[120px]')}
         </div>
         {picks}
+        {photos}
       </>
     ),
     // 한국 스타일 2: 속보 띠 · 큰 사진 + 오른쪽 목록 / 이슈 PICK / 주요뉴스 2열
@@ -209,6 +217,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           <div className="grid gap-3">{cell('top', 0)}{cell('top', 1)}<div className="grid grid-cols-2 gap-3">{range(4).map((i) => cell('under', i, { compact: true }))}</div></div>
         </div>
         {picks}
+        {photos}
         {head(t('주요뉴스', 'Top stories'), t('비우면 최신 기사로 자동', 'If empty, filled with the latest stories'))}
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,24%)]">
           <div className="grid gap-3 sm:grid-cols-2">{range(6).map((i) => cell('major', i))}</div>
@@ -226,6 +235,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
         </div>
         {auto(t('섹션별 띠 — 메뉴 순서대로 자동', 'Section bands — automatic, in menu order'), 'mt-3 min-h-[64px]')}
         {picks}
+        {photos}
         {unused(t('“주요뉴스” 자리는 이 홈 모양에서 쓰지 않습니다. 다른 모양으로 바꾸면 전에 놓은 기사가 그대로 쓰여요.', 'The “Top stories” slots are not used in this home layout. If you switch to another layout, the stories you placed earlier are used again.'))}
       </>
     ),
@@ -238,6 +248,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           {auto(t('많이 본 기사 (자동)', 'Most read (automatic)'), 'min-h-[120px]')}
         </div>
         {picks}
+        {photos}
         {head(t('주요뉴스', 'Top stories'), t('앞의 4칸을 씁니다', 'The first 4 slots are used'))}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{range(4).map((i) => cell('major', i))}</div>
         {unused(t('주요뉴스 5·6번 자리는 이 홈 모양에서 쓰지 않습니다.', 'Top stories slots 5 and 6 are not used in this home layout.'))}
@@ -253,6 +264,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           {cell('top', 0)}{cell('top', 1)}{range(4).map((i) => cell('under', i))}
         </div>
         {picks}
+        {photos}
         {auto(t('많이 본 뉴스 (자동)', 'Most read (automatic)'), 'mt-3 min-h-[48px]')}
         {head(t('주요뉴스', 'Top stories'), t('앞의 4칸을 카드로 씁니다', 'The first 4 slots are shown as cards'))}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{range(4).map((i) => cell('major', i))}</div>

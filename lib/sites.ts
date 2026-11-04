@@ -100,6 +100,8 @@ export type SiteConfig = {
   pressFields: PressField[]
   // 보도자료함 "전체" 탭에서 편집장이 직접 골라 추천에 넣은 출처 (press-sources 의 key)
   pressSources?: string[]
+  // 홈 포토뉴스 띠 색 (없으면 매체 대표색). 예: 로고 속 청색 #002F7A
+  photoColor?: string
   // 카카오톡·페이스북 등에 링크를 올릴 때 나오는 대표 이미지 (1200×630 PNG/JPG)
   ogImage?: string
   // 브라우저 탭 아이콘 (편집장이 올린 정사각형 이미지. 없으면 로고)
@@ -256,6 +258,7 @@ export type OutletSiteSettings = {
   pressFields?: PressField[]
   // 편집장이 보도자료함에서 직접 골라 추천에 넣은 출처
   pressSources?: string[]
+  photoColor?: string
   ogImage?: string
   iconUrl?: string
   trial?: boolean
@@ -381,6 +384,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     })(),
     pressFields: pressFields(s, keywords),
     pressSources: cleanPressSources(s.pressSources),
+    photoColor: typeof s.photoColor === 'string' && /^#[0-9a-f]{6}$/i.test(s.photoColor) ? s.photoColor : undefined,
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
     iconUrl: (typeof s.iconUrl === 'string' && s.iconUrl) || undefined,
     trial: s.trial === true,
