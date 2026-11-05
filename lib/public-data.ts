@@ -4,8 +4,8 @@ import { unstable_cache } from 'next/cache'
 import { demoArticles, demoSite } from './demo-articles'
 import { withLayout } from './sites'
 import { isLayoutDemoHost } from './home-layouts'
-import { SITES, applyOpenSchedule, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type OutletRow, type SiteConfig } from './sites'
-import { heroSecondsOf, normalizeLayout, type SlotKey } from './home-layout'
+import { SITES, applyOpenSchedule, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type LogoBlock, type OutletRow, type SiteConfig } from './sites'
+import { heroSecondsOf, logoBlockOf, normalizeLayout, type SlotKey } from './home-layout'
 import { INDEX_WEEKS, type IndexKey, type IndexSeries } from './market-index'
 import { outletTag } from './outlet-cache'
 
@@ -173,6 +173,8 @@ export type HomeData = {
   pinned: Record<SlotKey, (PublicArticle | null)[]>
   // 톱 헤드라인 슬라이드가 넘어가는 간격(초)
   heroSeconds?: number
+  // 홈 편집판에서 채운 기관 로고 블록
+  logoBlock?: LogoBlock
 }
 
 const emptyPinned = () => normalizeLayout({}) as unknown as Record<SlotKey, (PublicArticle | null)[]>
@@ -182,14 +184,15 @@ async function pinnedArticles(scope: NonNullable<Awaited<ReturnType<typeof outle
   const { data } = await scope.supabase.from('home_layouts').select('layout').eq('outlet_id', scope.outletId).maybeSingle()
   const layout = normalizeLayout(data?.layout)
   const heroSeconds = heroSecondsOf(data?.layout)
+  const logoBlock = logoBlockOf(data?.layout)
   const ids = Array.from(new Set(Object.values(layout).flat().filter((x): x is string => !!x)))
-  if (!ids.length) return { pinned: emptyPinned(), heroSeconds }
+  if (!ids.length) return { pinned: emptyPinned(), heroSeconds, logoBlock }
   const { data: rows } = await published(scope).in('id', ids)
   const byId = new Map((rows ?? []).map((r) => [r.id as string, toPublic(r)]))
   const pinned = Object.fromEntries(
     Object.entries(layout).map(([k, list]) => [k, list.map((id) => (id ? byId.get(id) ?? null : null))])
   ) as Record<SlotKey, (PublicArticle | null)[]>
-  return { pinned, heroSeconds }
+  return { pinned, heroSeconds, logoBlock }
 }
 
 async function loadHomeData(site: SiteConfig): Promise<HomeData> {
@@ -229,6 +232,7 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
   return {
     pinned: pinnedRes.pinned,
     heroSeconds: pinnedRes.heroSeconds,
+    logoBlock: pinnedRes.logoBlock,
     latest: (latest.data ?? []).map(toPublic),
     mostViewed: (mostViewed.data ?? []).map(toPublic),
     bySection: Object.fromEntries(tops.map((s, i) => [s.slug, (sections[i].data ?? []).map(toPublic)])),

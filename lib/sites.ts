@@ -473,27 +473,29 @@ import { cleanAdSlots, type AdSlotSettings } from './ad-slot-settings'
 
 // 홈페이지 맨 아래 로고 띠 (협력·후원·제휴 기관 로고가 오른쪽에서 왼쪽으로 흐른다)
 export type LogoItem = { name: string; img: string; url?: string }
-// 홈 중간의 "기관 로고 블록": 로고를 큼직한 상자로 가지런히 늘어놓는다 (한 줄에 3·4·5개). 로고 띠와 같은 설정(logoStrip)에 함께 저장한다
+// 홈 중간의 "기관 로고 블록": 로고를 큼직한 상자로 가지런히 늘어놓는다 (한 줄에 3·4·5개). 홈 편집판 자료(home_layouts.layout.logoBlock)에 저장한다
 export type LogoBlock = { title?: string; cols?: 3 | 4 | 5; items: LogoItem[] }
-export type LogoStrip = { title?: string; speed?: 'slow' | 'normal' | 'fast'; items: LogoItem[]; block?: LogoBlock }
+export type LogoStrip = { title?: string; speed?: 'slow' | 'normal' | 'fast'; items: LogoItem[] }
 const STRIP_IMG_OK = (u: string) => u.startsWith('/sites/') || (!!process.env.NEXT_PUBLIC_SUPABASE_URL && u.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`))
 // 저장·표시 전에 걸러낸다: 로고 이미지는 이 서비스에 올린 것만, 링크는 http(s)만, 최대 40개
+const cleanLogoItems = (list: unknown): LogoItem[] => (Array.isArray(list) ? list : [])
+  .map((x) => ({
+    name: String(x?.name ?? '').trim().slice(0, 40),
+    img: String(x?.img ?? '').trim().slice(0, 500),
+    url: /^https?:\/\/\S+$/.test(String(x?.url ?? '').trim()) ? String(x.url).trim().slice(0, 300) : undefined,
+  }))
+  .filter((x) => x.img && STRIP_IMG_OK(x.img))
+  .slice(0, 40)
 export function cleanLogoStrip(v: unknown): LogoStrip | undefined {
   const o = (v ?? {}) as Partial<LogoStrip>
-  const clean = (list: unknown): LogoItem[] => (Array.isArray(list) ? list : [])
-    .map((x) => ({
-      name: String(x?.name ?? '').trim().slice(0, 40),
-      img: String(x?.img ?? '').trim().slice(0, 500),
-      url: /^https?:\/\/\S+$/.test(String(x?.url ?? '').trim()) ? String(x.url).trim().slice(0, 300) : undefined,
-    }))
-    .filter((x) => x.img && STRIP_IMG_OK(x.img))
-    .slice(0, 40)
-  const items = clean(o.items)
-  const bo = (o.block ?? {}) as Partial<LogoBlock>
-  const blockItems = clean(bo.items)
-  const block: LogoBlock | undefined = blockItems.length
-    ? { title: String(bo.title ?? '').trim().slice(0, 30) || undefined, cols: bo.cols === 3 || bo.cols === 5 ? bo.cols : undefined, items: blockItems }
-    : undefined
-  if (!items.length && !block) return undefined
-  return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, speed: o.speed === 'slow' || o.speed === 'fast' ? o.speed : undefined, items, ...(block ? { block } : {}) }
+  const items = cleanLogoItems(o.items)
+  if (!items.length) return undefined
+  return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, speed: o.speed === 'slow' || o.speed === 'fast' ? o.speed : undefined, items }
+}
+// 기관 로고 블록: 로고가 하나도 없으면 없는 것으로
+export function cleanLogoBlock(v: unknown): LogoBlock | undefined {
+  const o = (v ?? {}) as Partial<LogoBlock>
+  const items = cleanLogoItems(o.items)
+  if (!items.length) return undefined
+  return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, cols: o.cols === 3 || o.cols === 5 ? o.cols : undefined, items }
 }

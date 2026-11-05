@@ -14,7 +14,6 @@ import SearchRegisterGuide from './SearchRegisterGuide'
 import GovPicker from './GovPicker'
 import GovLogoFinder from './GovLogoFinder'
 import LogoStrip from '@/components/site/LogoStrip'
-import LogoBlockEditor from './LogoBlockEditor'
 import { buildSite, cleanLogoStrip, DEFAULT_COLORS, foreignTopics, openTimePassed, pressFields, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { FOREIGN_TOPICS, PRESS_FIELDS } from '@/lib/press-sources'
 import { uploadImage } from '@/components/editor/upload'
@@ -259,7 +258,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-logo', t('로고', 'Logo'), true],
           ['s-colors', t('색', 'Colors'), true],
           ['s-strip', t('로고 띠', 'Logo strip'), true],
-          ['s-block', t('기관 로고 블록', 'Logo block'), true],
           ['s-sections', t('섹션 메뉴', 'Sections'), true],
           ['s-footer', t('하단 표시', 'Footer'), true],
           ['s-press', t('보도자료 맞춤', 'Press feed'), true],
@@ -590,10 +588,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             </div>
           )}
         </div>
-      </Card>
-
-      <Card id="s-block" title={t('기관 로고 블록 (홈 중간)', 'Organization logo block (home middle)')} note={t('협력·후원·관련 기관 로고를 큼직한 상자로 홈 가운데(주요뉴스 근처)에 가지런히 보여 줍니다. 로고 띠와 달리 움직이지 않고 한눈에 보입니다. 로고를 누르면 그 기관 사이트가 새 창으로 열립니다. 비워 두면 나오지 않습니다.', 'Shows partner, sponsor and related organization logos in large boxes in the middle of the home page. Unlike the logo strip it does not move. Clicking a logo opens that organization\'s site in a new window. If left empty, nothing is shown.')}>
-        <LogoBlockEditor strip={s.logoStrip} onChange={(next) => set({ logoStrip: next })} outletId={outlet.id} />
       </Card>
 
       <Card id="s-sections" title={t('메뉴(섹션)', 'Menu (sections)')} note={lang === 'en' ? <>The menu follows the order of the sections created under <a href="/admin/categories" className="underline underline-offset-2">Section menu</a>. Sections marked as “Specialty section” are grouped separately on the right of the menu and appear as specialty section tabs on the home page.</> : <>메뉴는 <a href="/admin/categories" className="underline underline-offset-2">섹션 메뉴</a>에서 만든 섹션 순서 그대로 나옵니다. “전문 섹션”으로 표시하면 메뉴 오른쪽에 따로 모이고, 첫 화면에 전문 섹션 탭으로 나옵니다.</>}>

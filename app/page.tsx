@@ -59,7 +59,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   if (site.preview || isDemo || site.layoutDemo) site = withLayout(site, wanted)
   const t = siteText(site)
   const L = site.lang
-  const [{ latest, mostViewed, bySection, pinned, heroSeconds }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])
+  const [{ latest, mostViewed, bySection, pinned, heroSeconds, logoBlock }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])
 
   if (!latest.length) {
     return (
@@ -134,9 +134,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
     />
   ) : null
-  // 홈 중간 기관 로고 블록 (홈페이지 설정에서 채운 경우만)
-  const partnerBlock = site.logoStrip?.block ? <PartnerBlock block={site.logoStrip.block} en={L === 'en'} /> : null
-  const partnerBlockBare = site.logoStrip?.block ? <PartnerBlock block={site.logoStrip.block} en={L === 'en'} bare /> : null
+  // 홈 중간 기관 로고 블록 (홈 편집판에서 채운 경우만)
+  const partnerBlock = logoBlock ? <PartnerBlock block={logoBlock} en={L === 'en'} /> : null
+  const partnerBlockBare = logoBlock ? <PartnerBlock block={logoBlock} en={L === 'en'} bare /> : null
   const usedBeforeMore = new Set(used)
   const majorMore = site.homeLayout === 'bands' ? [] : take(36)
 

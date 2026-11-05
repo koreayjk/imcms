@@ -4,16 +4,14 @@ import { useState } from 'react'
 import { uploadImage } from '@/components/editor/upload'
 import { useT } from './CmsLang'
 import PartnerBlock from '@/components/site/PartnerBlock'
-import { cleanLogoStrip, type LogoBlock, type LogoStrip } from '@/lib/sites'
+import { cleanLogoBlock, type LogoBlock } from '@/lib/sites'
 
-// 홈페이지 설정 → "기관 로고 블록(홈 중간)": 로고를 올리고, 기관 이름·누르면 갈 주소·순서를 정한다
-//   로고 띠(logoStrip)와 같은 설정에 block 으로 함께 저장된다
-export default function LogoBlockEditor({ strip, onChange, outletId }: { strip: LogoStrip | undefined; onChange: (next: LogoStrip) => void; outletId: string }) {
+// 홈 편집판 → "기관 로고 블록(홈 중간)": 로고를 올리고, 기관 이름·누르면 갈 주소·순서를 정한다 (홈 편집판의 저장 버튼으로 함께 저장)
+export default function LogoBlockEditor({ block, onChange, outletId }: { block: LogoBlock; onChange: (next: LogoBlock) => void; outletId: string }) {
   const t = useT()
   const [uploading, setUploading] = useState(false)
-  const block: LogoBlock = strip?.block ?? { items: [] }
   const items = block.items
-  const put = (patch: Partial<LogoBlock>) => onChange({ ...(strip ?? { items: [] }), block: { ...block, ...patch } })
+  const put = (patch: Partial<LogoBlock>) => onChange({ ...block, ...patch })
   const setItem = (i: number, patch: Partial<LogoBlock['items'][number]>) => put({ items: items.map((x, j) => (j === i ? { ...x, ...patch } : x)) })
   const move = (i: number, d: number) => { const a = [...items]; const [x] = a.splice(i, 1); a.splice(i + d, 0, x); put({ items: a }) }
   const fail = (e: unknown) => window.alert(e instanceof Error ? e.message : t('로고를 올리지 못했습니다.', 'Could not upload the logo.'))
@@ -31,7 +29,7 @@ export default function LogoBlockEditor({ strip, onChange, outletId }: { strip: 
       put({ items: [...items, ...added] })
     } catch (e) { fail(e) } finally { setUploading(false) }
   }
-  const preview = cleanLogoStrip({ items: [], block })?.block
+  const preview = cleanLogoBlock(block)
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_200px]">

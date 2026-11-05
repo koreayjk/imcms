@@ -7,6 +7,8 @@ import { formatDateTime } from '@/lib/format'
 import { HERO_SECONDS, SLOTS, slotLabel, type HomeLayout, type SlotKey } from '@/lib/home-layout'
 import { useT, useCmsLang } from '@/components/cms/CmsLang'
 import { HOME_LAYOUTS, type HomeLayout as HomeLayoutKey } from '@/lib/home-layouts'
+import type { LogoBlock } from '@/lib/sites'
+import LogoBlockEditor from './LogoBlockEditor'
 
 export type BoardArticle = { id: string; title: string; thumbnail_url: string | null; published_at: string | null; category: string | null }
 
@@ -25,12 +27,13 @@ const LAYOUT_EN: Record<string, { name: string; label: string }> = {
 }
 
 // 홈페이지 첫 화면 모양(홈 배치)별로 기사 자리를 그 모양 그대로 놓는다. 회색 칸은 자동으로 채워지는 자리
-export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'standard', initialLayout, initialHeroSeconds = 5, articles, savedAt }: {
+export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'standard', initialLayout, initialHeroSeconds = 5, initialLogoBlock, articles, savedAt }: {
   siteUrl?: string
   homeLayout?: HomeLayoutKey
   outletId: string
   initialLayout: HomeLayout
   initialHeroSeconds?: number
+  initialLogoBlock?: LogoBlock
   articles: BoardArticle[]
   savedAt: string | null
 }) {
@@ -41,6 +44,9 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
   // 톱 헤드라인 슬라이드가 다음 기사로 넘어가는 간격(초)
   const [heroSeconds, setHeroSeconds] = useState(initialHeroSeconds)
   const [baseHero, setBaseHero] = useState(initialHeroSeconds)
+  // 홈 중간 기관 로고 블록 (로고를 올리고 이름·링크·순서를 정한다)
+  const [logoBlock, setLogoBlock] = useState<LogoBlock>(initialLogoBlock ?? { items: [] })
+  const [baseLogos, setBaseLogos] = useState(JSON.stringify(initialLogoBlock ?? { items: [] }))
   const [selected, setSelected] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [over, setOver] = useState<string | null>(null)
@@ -51,7 +57,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
   // 공개 시각이 아직 안 됐거나 없는 기사는 홈페이지에 나오지 않는다 (예약 발행). 배치해도 빈 자리처럼 보이므로 표시해 준다
   const notLive = (a: BoardArticle | undefined) => !!a && (!a.published_at || Date.parse(a.published_at) > Date.now())
   const placed = useMemo(() => new Set(Object.values(layout).flat().filter(Boolean) as string[]), [layout])
-  const dirty = JSON.stringify(layout) !== baseline || heroSeconds !== baseHero
+  const dirty = JSON.stringify(layout) !== baseline || heroSeconds !== baseHero || JSON.stringify(logoBlock) !== baseLogos
   const filtered = articles.filter((a) => !query.trim() || a.title.includes(query.trim()))
 
   useEffect(() => {
@@ -100,7 +106,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
     const { data: { user } } = await supabase.auth.getUser()
     const { error } = await supabase.from('home_layouts').upsert({
       outlet_id: outletId,
-      layout: { ...layout, heroSeconds },
+      layout: { ...layout, heroSeconds, ...(logoBlock.items.length ? { logoBlock } : {}) },
       updated_by: user?.id ?? null,
       updated_at: new Date().toISOString(),
     })
@@ -110,6 +116,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
     } else {
       setBaseline(JSON.stringify(layout))
       setBaseHero(heroSeconds)
+      setBaseLogos(JSON.stringify(logoBlock))
       if (outletId) await refreshOutletPages(outletId).catch(() => {})
       const n = layout.headline.filter(Boolean).length
       setMessage({ ok: true, text: t(`저장했습니다. 홈페이지에 바로 반영됩니다.${n > 1 ? ` (톱 헤드라인 직접 고른 기사 ${n}개)` : ''}`, `Saved. The change goes live on your homepage right away.${n > 1 ? ` (${n} top headline slides)` : ''}`) })
@@ -302,6 +309,11 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
             <p className="mt-2 text-[12px] text-muted">{t('지금 슬라이드에 들어간 기사', 'Stories in the slideshow now')}: {layout.headline.filter(Boolean).length}{t('개', '')}{layout.headline.some((id) => notLive(id ? byId.get(id) : undefined)) && <span className="ml-1 font-semibold text-danger">{t(`(그중 ${layout.headline.filter((id) => notLive(id ? byId.get(id) : undefined)).length}개는 공개 전이라 홈페이지에 안 나옵니다)`, ` (${layout.headline.filter((id) => notLive(id ? byId.get(id) : undefined)).length} not public yet, so hidden on the site)`)}</span>}</p>
           </div>
         )}
+        <div className="mt-6 rounded-lg border border-line bg-[#FAFBFC] p-4">
+          <p className="text-[13.5px] font-bold">{t('기관 로고 블록 (홈 중간)', 'Organization logo block (home middle)')}</p>
+          <p className="mt-0.5 mb-3 text-[12px] text-muted">{t('협력·후원·관련 기관 로고를 큼직한 상자로 홈 가운데에 보여 줍니다. 움직이지 않고 한눈에 보이며, 로고를 누르면 그 기관 사이트가 새 창으로 열립니다. 비워 두면 홈에 나오지 않습니다. 맨 아래 저장 버튼으로 함께 저장됩니다.', 'Shows partner, sponsor and related organization logos in large boxes in the middle of the home page. It does not move, and clicking a logo opens that organization\'s site in a new window. If left empty, nothing is shown. It is saved with the Save button below.')}</p>
+          <LogoBlockEditor block={logoBlock} onChange={setLogoBlock} outletId={outletId} />
+        </div>
       </section>
 
       <aside className="flex max-h-[70vh] flex-col lg:sticky lg:top-6 lg:max-h-[calc(100vh-150px)] rounded-lg border border-line bg-white">
@@ -352,7 +364,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           {dirty && <span className="text-[13px] font-semibold text-draft">{t('저장하지 않은 변경이 있습니다', 'You have unsaved changes')}</span>}
           <div className="ml-auto flex gap-2">
             <a href={siteUrl} target="_blank" rel="noopener" className="btn-secondary">{t('홈페이지 보기 ↗', 'View homepage ↗')}</a>
-            <button type="button" onClick={() => { setLayout(JSON.parse(baseline)); setHeroSeconds(baseHero) }} disabled={!dirty || saving} className="btn-secondary">{t('되돌리기', 'Revert')}</button>
+            <button type="button" onClick={() => { setLayout(JSON.parse(baseline)); setHeroSeconds(baseHero); setLogoBlock(JSON.parse(baseLogos)) }} disabled={!dirty || saving} className="btn-secondary">{t('되돌리기', 'Revert')}</button>
             <button type="button" onClick={save} disabled={!dirty || saving} className="btn-publish px-6">{saving ? t('저장 중…', 'Saving…') : t('저장', 'Save')}</button>
           </div>
         </div>
