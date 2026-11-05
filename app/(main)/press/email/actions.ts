@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
 import { PRESS_MAIL_ADDON_FEE } from '@/lib/pricing'
+import { cleanMailSections } from '@/lib/press-mail-sections'
 
 export type MyInbox = {
   address: string | null
@@ -99,4 +100,25 @@ export async function requestPressAddon(): Promise<{ ok?: boolean; already?: boo
   if (error) return { error: `${(await getT()).t('신청을 저장하지 못했습니다', 'Could not save your request')}: ${error.message}` }
   revalidatePath('/support', 'layout')
   return { ok: true }
+}
+
+// ── 메일 보도자료 섹션 분류 (press-mail-sections.sql) ──
+export async function saveMailSections(outletId: string, conf: unknown): Promise<{ ok?: boolean; error?: string }> {
+  const { supabase, isEditorPlus, isStaff } = await getCmsContext()
+  const { t } = await getT()
+  if (!isEditorPlus && !isStaff) return { error: t('편집장 이상만 고칠 수 있습니다.', 'Only Editors-in-Chief and above can edit this.') }
+  const clean = cleanMailSections(conf)
+  const { error } = await supabase.rpc('outlet_mail_sections_save', { o: outletId, p_conf: clean.sections.length ? clean : null })
+  if (error) {
+    if (/does not exist|schema cache/i.test(error.message)) return { error: t('이 기능을 쓰려면 운영팀이 Supabase에서 press-mail-sections.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run press-mail-sections.sql in Supabase.') }
+    return { error: error.message.replace(/^.*?:\s*/, '') }
+  }
+  revalidatePath('/press/email')
+  return { ok: true }
+}
+
+export async function getMailSectionUsage(outletId: string): Promise<Record<string, number>> {
+  const { supabase } = await getCmsContext()
+  const { data } = await supabase.rpc('outlet_mail_section_usage', { o: outletId })
+  return Object.fromEntries(((data ?? []) as { section: string; n: number }[]).map((r) => [r.section || '', r.n]))
 }
