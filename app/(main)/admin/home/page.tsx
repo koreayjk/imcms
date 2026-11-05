@@ -3,8 +3,9 @@ import { outletHomeUrl } from '@/lib/product'
 import { redirect } from 'next/navigation'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
-import { heroSecondsOf, logoBlockOf, normalizeLayout } from '@/lib/home-layout'
+import { heroSecondsOf, logoBlockOf, logoStripOf, normalizeLayout } from '@/lib/home-layout'
 import { parseHomeLayout } from '@/lib/home-layouts'
+import { cleanLogoStrip } from '@/lib/sites'
 import HomeBoard, { type BoardArticle } from '@/components/cms/HomeBoard'
 
 const FIELDS = 'id, title, thumbnail_url, published_at, category:categories(name)'
@@ -64,7 +65,7 @@ export default async function HomeEditPage() {
           {t('편집판 저장 공간이 아직 없습니다. Supabase에서', 'There is no storage for the front page layout yet. Run')} <code>supabase/home-layout.sql</code>{t('을 실행해 주세요.', ' in Supabase.')}
         </p>
       ) : (
-        <HomeBoard homeLayout={parseHomeLayout((outlet as { site?: { homeLayout?: unknown } | null }).site?.homeLayout)} outletId={outlet.id} siteUrl={outletHomeUrl(outlet as { id: string; domain?: string | null })} initialLayout={layout} initialLogoBlock={logoBlockOf(saved?.layout)} initialHeroSeconds={heroSecondsOf(saved?.layout)} articles={articles} savedAt={saved?.updated_at ?? null} />
+        <HomeBoard homeLayout={parseHomeLayout((outlet as { site?: { homeLayout?: unknown } | null }).site?.homeLayout)} outletId={outlet.id} siteUrl={outletHomeUrl(outlet as { id: string; domain?: string | null })} initialLayout={layout} initialLogoBlock={logoBlockOf(saved?.layout)} initialLogoStrip={logoStripOf(saved?.layout) ?? cleanLogoStrip((outlet as { site?: { logoStrip?: unknown } | null }).site?.logoStrip) ?? undefined} staff={isStaff} initialHeroSeconds={heroSecondsOf(saved?.layout)} articles={articles} savedAt={saved?.updated_at ?? null} />
       )}
     </div>
   )

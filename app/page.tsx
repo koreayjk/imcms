@@ -59,7 +59,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   if (site.preview || isDemo || site.layoutDemo) site = withLayout(site, wanted)
   const t = siteText(site)
   const L = site.lang
-  const [{ latest, mostViewed, bySection, pinned, heroSeconds, logoBlock }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])
+  const [{ latest, mostViewed, bySection, pinned, heroSeconds, logoBlock, logoStrip }, indexSeries] = await Promise.all([getHomeData(site), getIndexSeries(site)])
 
   if (!latest.length) {
     return (
@@ -135,6 +135,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     />
   ) : null
   // 홈 중간 기관 로고 블록 (홈 편집판에서 채운 경우만)
+  // 로고 띠: 홈 편집판에 저장한 값이 있으면 그것이 우선(비우면 없음), 없으면 옛 설정값
+  const frameSite = { ...site, logoStrip: logoStrip === undefined ? site.logoStrip : logoStrip ?? undefined }
   const partnerBlock = logoBlock ? <PartnerBlock block={logoBlock} en={L === 'en'} /> : null
   const partnerBlockBare = logoBlock ? <PartnerBlock block={logoBlock} en={L === 'en'} bare /> : null
   const usedBeforeMore = new Set(used)
@@ -180,7 +182,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     )
     const common = { site, headline, subTops, underHeadline, major, picks, photoBand: photoBandBare, partnerBlock: partnerBlockBare, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras, slides: heroSlides, heroSeconds }
     return (
-      <SiteFrame site={site} home>
+      <SiteFrame site={frameSite} home>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
         {layoutKey === 'editorial' ? <HomeEditorial {...common} realtime={realtime} />
           : layoutKey === 'cards' ? <HomeCards {...common} />
@@ -192,7 +194,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   }
 
   return (
-    <SiteFrame site={site} home>
+    <SiteFrame site={frameSite} home>
       {/* 매체 이름·로고 구조화 데이터 (구글 검색·구글 뉴스용, 화면에는 안 보임) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
       <div className="mx-auto max-w-[1200px] px-4">

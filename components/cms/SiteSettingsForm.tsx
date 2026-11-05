@@ -11,10 +11,7 @@ import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
 import { saveSelfSiteSettings } from '@/app/(main)/admin/settings/site-actions'
 import { OPEN_ZONES, formatZoned, isoToZoned, zonedToIso } from '@/lib/zoned-time'
 import SearchRegisterGuide from './SearchRegisterGuide'
-import GovPicker from './GovPicker'
-import GovLogoFinder from './GovLogoFinder'
-import LogoStrip from '@/components/site/LogoStrip'
-import { buildSite, cleanLogoStrip, DEFAULT_COLORS, openTimePassed, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { buildSite, DEFAULT_COLORS, openTimePassed, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { uploadImage } from '@/components/editor/upload'
 import SiteHeader from '@/components/site/SiteHeader'
 import SiteFooter from '@/components/site/SiteFooter'
@@ -168,25 +165,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     [outlet.id, name, domain, s, sections, t]
   )
   const vars = { '--brand': preview.colors.brand, '--brand-dark': preview.colors.brandDark, '--gold': preview.colors.gold, '--gold-ink': preview.colors.goldInk } as CSSProperties
-  // 로고 띠 편집
-  const stripItems = s.logoStrip?.items ?? []
-  const putStrip = (items: typeof stripItems) => set({ logoStrip: { ...(s.logoStrip ?? {}), items } })
-  const setStripItem = (i: number, patch: Partial<(typeof stripItems)[number]>) => putStrip(stripItems.map((x, j) => (j === i ? { ...x, ...patch } : x)))
-  const moveStripItem = (i: number, d: number) => { const a = [...stripItems]; const [x] = a.splice(i, 1); a.splice(i + d, 0, x); putStrip(a) }
-  async function pickStripLogo(i: number, files: FileList | null) {
-    const f = files?.[0]; if (!f) return
-    setUploading(true)
-    try { setStripItem(i, { img: await uploadImage(f, outlet.id) }) } catch (e) { window.alert(e instanceof Error ? e.message : t('로고를 올리지 못했습니다.', 'Could not upload the logo.')) } finally { setUploading(false) }
-  }
-  async function addStripLogos(files: FileList | null) {
-    if (!files?.length) return
-    setUploading(true)
-    try {
-      const added: typeof stripItems = []
-      for (const f of Array.from(files).slice(0, 40 - stripItems.length)) added.push({ name: f.name.replace(/\.[^.]+$/, '').slice(0, 40), img: await uploadImage(f, outlet.id) })
-      putStrip([...stripItems, ...added])
-    } catch (e) { window.alert(e instanceof Error ? e.message : t('로고를 올리지 못했습니다.', 'Could not upload the logo.')) } finally { setUploading(false) }
-  }
   const openLocal = isoToZoned(s.openAt, s.openTz ?? 'Asia/Seoul')
   const missing = LEGAL.filter((f) => f.required && !s.legal?.[f.k]?.trim())
 
@@ -248,7 +226,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-icon', t('탭 아이콘', 'Tab icon'), true],
           ['s-logo', t('로고', 'Logo'), true],
           ['s-colors', t('색', 'Colors'), true],
-          ['s-strip', t('로고 띠', 'Logo strip'), true],
           ['s-sections', t('섹션 메뉴', 'Sections'), true],
           ['s-footer', t('하단 표시', 'Footer'), true],
           ['s-open', t('오픈 준비', 'Opening soon'), !self],
@@ -506,58 +483,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               </button>
             ))}
           </div>
-        </div>
-      </Card>
-
-      <Card id="s-strip" title={t('로고 띠 (협력·후원 기관)', 'Logo strip (partners & sponsors)')} note={t('홈페이지 맨 아래에 로고가 오른쪽에서 왼쪽으로 천천히 흐릅니다. 마우스를 올리면 멈추고, 로고를 누르면 그 기관 사이트가 새 창으로 열립니다. 비워 두면 나오지 않습니다.', 'At the very bottom of the website, logos scroll slowly from right to left. They pause on hover, and clicking a logo opens that organization\'s site in a new window. If left empty, nothing is shown.')}>
-        <div className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
-            <Field label={t('띠 제목 (선택)', 'Strip title (optional)')} hint={t('예: 함께하는 기관', 'e.g. Our partners')}>
-              <input value={s.logoStrip?.title ?? ''} maxLength={30} onChange={(e) => set({ logoStrip: { ...(s.logoStrip ?? { items: [] }), title: e.target.value } })} className="field-input" />
-            </Field>
-            <Field label={t('흐르는 속도', 'Scroll speed')}>
-              <select value={s.logoStrip?.speed ?? 'normal'} onChange={(e) => set({ logoStrip: { ...(s.logoStrip ?? { items: [] }), speed: e.target.value as 'slow' | 'normal' | 'fast' } })} className="field-input">
-                <option value="slow">{t('느리게', 'Slow')}</option><option value="normal">{t('보통', 'Normal')}</option><option value="fast">{t('빠르게', 'Fast')}</option>
-              </select>
-            </Field>
-          </div>
-          <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {(s.logoStrip?.items ?? []).map((it, i) => (
-              <li key={i} className="flex flex-col gap-1.5 rounded-lg border border-line p-2 text-[13px]">
-                <div className="flex items-center gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <span className="grid h-10 w-20 shrink-0 place-items-center rounded border border-line bg-white p-1">{it.img ? <img src={it.img} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[11px] text-muted">{t('없음', 'None')}</span>}</span>
-                  <input value={it.name} maxLength={40} onChange={(e) => setStripItem(i, { name: e.target.value })} placeholder={t('기관 이름', 'Organization name')} className="field-input min-w-0 flex-1 py-1.5" aria-label={t('기관 이름', 'Organization name')} />
-                </div>
-                <input value={it.url ?? ''} maxLength={300} onChange={(e) => setStripItem(i, { url: e.target.value })} inputMode="url" placeholder={t('누르면 갈 주소  https://기관-홈페이지.com', 'Link address  https://organization-website.com')} className={`field-input w-full py-1.5 ${it.url?.trim() ? '' : 'border-draft'}`} aria-label={t('누르면 갈 주소', 'Link address')} />
-                <div className="flex items-center justify-between gap-1">
-                  <label className="btn-secondary cursor-pointer px-2.5 py-1 text-[12px]">
-                    {it.img ? t('로고 바꾸기', 'Change logo') : t('로고 올리기', 'Upload logo')}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { void pickStripLogo(i, e.target.files); e.target.value = '' }} />
-                  </label>
-                  <span className="flex gap-1">
-                    <button type="button" disabled={i === 0} onClick={() => moveStripItem(i, -1)} className="rounded border border-line px-2 py-0.5 disabled:opacity-30" aria-label={t('앞으로', 'Move earlier')}>←</button>
-                    <button type="button" disabled={i === (s.logoStrip?.items.length ?? 0) - 1} onClick={() => moveStripItem(i, 1)} className="rounded border border-line px-2 py-0.5 disabled:opacity-30" aria-label={t('뒤로', 'Move later')}>→</button>
-                    <button type="button" onClick={() => set({ logoStrip: { ...(s.logoStrip ?? { items: [] }), items: (s.logoStrip?.items ?? []).filter((_, j) => j !== i) } })} className="rounded border border-line px-2 py-0.5 text-danger" aria-label={t('빼기', 'Remove')}>×</button>
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-          {!self && <GovPicker items={stripItems} onChange={putStrip} />}
-          {!self && <GovLogoFinder items={stripItems} onChange={putStrip} outletId={outlet.id} />}
-          {(s.logoStrip?.items.length ?? 0) < 40 && (
-            <label className="btn-secondary inline-block cursor-pointer px-4 py-2 text-[13px]">
-              {t('+ 로고 올려 추가', '+ Upload logos to add')} {uploading && t('(올리는 중…)', '(uploading…)')}
-              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { void addStripLogos(e.target.files); e.target.value = '' }} />
-            </label>
-          )}
-          <p className="text-[12px] text-muted">{t('로고 이미지는 가로로 긴 모양(가로 140 × 세로 64 정도) 배경이 흰색이거나 투명한 파일이 가장 보기 좋습니다. 최대 40개까지 넣을 수 있습니다. 로고를 올리면 줄마다 “누르면 갈 주소” 칸이 생깁니다. 주소(https://…)를 적으면 로고를 눌렀을 때 그 사이트가 새 창으로 열리고, 비워 두면 눌러도 이동하지 않습니다(빈 칸은 주황색 테두리로 표시).', 'Logo images look best when they are wide (about 140 × 64) with a white or transparent background. You can add up to 40. Each uploaded logo gets a “Link address” field. If you enter an address (https://…), clicking the logo opens that site in a new window; if left empty, clicking does nothing (empty fields are shown with an orange border).')}</p>
-          {cleanLogoStrip(s.logoStrip) && (
-            <div className="pointer-events-none overflow-hidden rounded-lg border border-line" aria-hidden>
-              <LogoStrip strip={cleanLogoStrip(s.logoStrip)!} />
-            </div>
-          )}
         </div>
       </Card>
 

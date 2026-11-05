@@ -23,10 +23,17 @@ export function normalizeLayout(raw: unknown): HomeLayout {
   ) as HomeLayout
 }
 
-import { cleanLogoBlock, type LogoBlock } from './sites'
+import { cleanLogoBlock, cleanLogoStrip, type LogoBlock, type LogoStrip } from './sites'
 
 // 홈 편집판 자료에 함께 저장한 기관 로고 블록 (없으면 undefined)
 export const logoBlockOf = (raw: unknown): LogoBlock | undefined => cleanLogoBlock(raw && typeof raw === 'object' ? (raw as Record<string, unknown>).logoBlock : undefined)
+
+// 홈 편집판에서 정한 로고 띠: 편집판에서 한 번이라도 저장했으면 그 값이 우선한다. 저장 안 했으면 undefined(설정에 있던 예전 로고 띠를 쓴다), 저장했는데 비웠으면 null(로고 띠 없음)
+export function logoStripOf(raw: unknown): LogoStrip | null | undefined {
+  const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
+  if (!o || !('logoStrip' in o)) return undefined
+  return cleanLogoStrip(o.logoStrip) ?? null
+}
 
 // 톱 헤드라인 슬라이드가 다음 기사로 넘어가는 간격(초). 편집판에서 정하고, 편집판 자료(layout)에 heroSeconds 로 함께 저장한다
 export const HERO_SECONDS = [3, 4, 5, 6, 8, 10, 15] as const
