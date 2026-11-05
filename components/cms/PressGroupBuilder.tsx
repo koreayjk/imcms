@@ -10,7 +10,8 @@ import { PRESS_TIER_DEFAULTS, PRESS_TIER_MAX_KEYWORDS, PRESS_TIER_MAX_LIMIT, typ
 //   ① 위쪽 그룹 카드에서 담을 그룹을 누른다 → ② 아래 출처(광역·시·군·구)를 체크하면 그 자리에서 바로 그 그룹에 담긴다 (새로고침 없이, 저장은 뒤에서 알아서)
 //   그룹마다 "하나당 최신 몇 건"을 정하고 키워드도 담을 수 있다. 편집장 이상만 그룹을 고친다. 나머지는 "목록 보기"(체크한 출처 자료만 아래에 보기)만 쓴다
 export type PickItem = { key: string; name: string; auto: boolean; saved: boolean }
-export type PickGroup = { label: string; items: PickItem[]; region?: boolean }
+// region: 접고 펴는 묶음(위 체크로 아래 전부 선택). section: 'local' 지자체 / 'world' 해외 뉴스(미국 외)
+export type PickGroup = { label: string; items: PickItem[]; region?: boolean; section?: 'local' | 'world' }
 
 export default function PressGroupBuilder({ outletId, canPick, initial, groups, selected, q, suggestions }: {
   outletId: string | null
@@ -36,6 +37,9 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
 
   const names = new Map(groups.flatMap((g) => g.items.map((x) => [x.key, x.name] as [string, string])))
   const owner = new Map(tiers.flatMap((g, i) => g.sources.map((k) => [k, i] as [string, number])))
+  const kwOwner = new Map(tiers.flatMap((g, i) => g.keywords.map((k) => [k, i] as [string, number])))
+  // 키워드 후보: 이 매체 섹션·설정 키워드 + 이미 그룹에 담은 키워드(직접 입력한 것 포함)
+  const kwList = Array.from(new Set([...suggestions, ...tiers.flatMap((g) => g.keywords)]))
   const grouping = mode === 'group' && canPick && !!outletId
 
   // 저장은 마지막 바뀐 뒤 0.6초 쉬었다가 한 번에 (저장하는 동안 또 바뀌면 끝나고 한 번 더)
@@ -68,6 +72,12 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
   })))
   const toggleOne = (key: string) => assign([key], owner.get(key) !== active)
   const toggleMany = (keys: string[]) => assign(keys, !keys.every((k) => owner.get(k) === active))
+  const toggleKeyword = (k: string) => update((cur) => cur.map((g, i) => {
+    const has = g.keywords.includes(k)
+    const mineNow = kwOwner.get(k) === active
+    if (i === active) return { ...g, keywords: mineNow ? g.keywords.filter((x) => x !== k) : [...g.keywords.filter((x) => x !== k), k].slice(-PRESS_TIER_MAX_KEYWORDS) }
+    return has ? { ...g, keywords: g.keywords.filter((x) => x !== k) } : g
+  }))
   const removeSource = (gi: number, k: string) => update((cur) => cur.map((g, i) => (i === gi ? { ...g, sources: g.sources.filter((x) => x !== k) } : g)))
   const removeKeyword = (gi: number, k: string) => update((cur) => cur.map((g, i) => (i === gi ? { ...g, keywords: g.keywords.filter((x) => x !== k) } : g)))
   const addKeywords = (raw: string) => {
@@ -202,14 +212,6 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
               {status === 'error' && <span className="font-semibold text-danger">{err}</span>}
             </span>
           </div>
-          {suggestions.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="text-[12px] text-muted">{t('이 매체 섹션 키워드:', 'Section keywords:')}</span>
-              {suggestions.map((s) => (
-                <button key={s} type="button" onClick={() => addKeywords(s)} className="rounded-full border border-dashed border-line px-2.5 py-0.5 text-[12px] text-muted hover:border-ink hover:text-ink">{s}</button>
-              ))}
-            </div>
-          )}
         </>
       ) : (
         <p className="mb-2 text-[12.5px] leading-relaxed text-muted">{t('체크한 출처의 자료만 아래에 보입니다.', 'Only releases from the checked sources are listed below.')}{selected.length > 0 && <> <button type="button" onClick={() => go([])} className="font-semibold underline">{t('선택 해제', 'Clear')}</button></>}</p>
@@ -222,10 +224,33 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
             <div className="flex flex-wrap gap-x-4 gap-y-1.5">{g.items.map(renderItem)}</div>
           </fieldset>
         ))}
-        {groups.some((g) => g.region) && (
+        {grouping && kwList.length > 0 && (
+          <fieldset>
+            <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('키워드', 'Keywords')} <span className="font-normal">{t('제목·요약에 이 단어가 있는 자료 (모든 출처에서 찾습니다)', 'Releases whose title or summary contains the word (searched in all sources)')}</span></legend>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              {kwList.map((k) => {
+                const g = kwOwner.get(k)
+                return (
+                  <label key={k} className="flex cursor-pointer items-center gap-1.5 text-[13px]">
+                    <input type="checkbox" checked={g !== undefined} onChange={() => toggleKeyword(k)} />
+                    {k}
+                    {g !== undefined && <span className={`rounded px-1.5 text-[10.5px] font-bold leading-4 ${g === active ? 'bg-ink text-white' : 'bg-line text-ink'}`}>{g + 1}</span>}
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
+        )}
+        {groups.some((g) => g.region && g.section !== 'world') && (
           <fieldset>
             <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('지자체', 'Local government')} <span className="font-normal">{t('광역을 체크하면 아래 시·군·구가 모두 체크됩니다. 빼고 싶은 곳만 체크를 풀어 주세요.', 'Check a region to select all its cities and districts, then uncheck the ones you don’t want.')}</span></legend>
-            <div className="grid gap-1.5">{groups.filter((g) => g.region).map(renderRegion)}</div>
+            <div className="grid gap-1.5">{groups.filter((g) => g.region && g.section !== 'world').map(renderRegion)}</div>
+          </fieldset>
+        )}
+        {groups.some((g) => g.region && g.section === 'world') && (
+          <fieldset>
+            <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('해외 뉴스 (미국 외)', 'World news (non-US)')} <span className="font-normal">{t('나라·분야별로 묶었습니다. 위 체크로 한꺼번에 선택하고 일부만 뺄 수 있습니다.', 'Grouped by country/topic. Check the top box to select all, then uncheck any.')}</span></legend>
+            <div className="grid gap-1.5">{groups.filter((g) => g.region && g.section === 'world').map(renderRegion)}</div>
           </fieldset>
         )}
       </div>
