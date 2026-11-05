@@ -296,8 +296,8 @@ export default async function PressPage(props: Props) {
                 close: t('닫기', 'Close'),
                 regionHint: t('광역을 체크하면 아래 시·군·구가 모두 체크됩니다. 빼고 싶은 곳만 체크를 풀어 주세요.', 'Check a region to select all its cities and districts, then uncheck the ones you don’t want.'),
                 regionAll: t('전체 선택', 'Select all'),
-                tierHint: t('체크한 출처를 그룹에 담기 →', 'Put checked sources into a group →'),
-                tierAdd: [1, 2, 3, 4].map((n) => t(`그룹 ${n}에 넣기`, `Add to group ${n}`)),
+                tierHint: t('① 체크한 출처를 그룹에 담기 → (건수는 위쪽 “맞춤 자료 그룹 설정”에서 바꿉니다)', '① Put checked sources into a group → (change the counts in “Custom feed groups” above)'),
+                tierAdd: [1, 2, 3, 4].map((n) => t(`그룹 ${n}에 넣기 · 출처당 ${(outletSite?.pressTiers ?? [])[n - 1]?.limit ?? [10, 5, 3, 1][n - 1]}건`, `Add to group ${n} · ${(outletSite?.pressTiers ?? [])[n - 1]?.limit ?? [10, 5, 3, 1][n - 1]} per source`)),
                 tierRemove: t('그룹에서 빼기', 'Remove from groups'),
                 tierMark: t('맞춤 자료 그룹 번호 (그룹마다 출처 하나당 보이는 최신 건수가 다릅니다)', 'My feed group number (each group shows a different number of latest items per source)'),
               }}
