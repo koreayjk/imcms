@@ -41,7 +41,7 @@ export default async function OnboardingListPage() {
   }
   const progress = (id: string) => {
     const states = stepStates(doneBy.get(id) ?? {}, true)
-    return { finished: states.filter((s) => s === 'done').length, total: states.length, doing: STEPS[states.findIndex((s) => s === 'doing')]?.title }
+    return { finished: states.filter((s) => s === 'done').length, total: states.length, doing: STEPS[states.lastIndexOf('doing')]?.title }
   }
   const ongoing = outlets.filter((o) => isPrepNow(o.site ?? {}))
     .sort((a, b) => (unseen.get(b.id) ?? 0) - (unseen.get(a.id) ?? 0))

@@ -25,7 +25,7 @@ function StepCard({ s, i, tag }: { s: Pick<OnboardingStep, 'title' | 'days' | 'w
     <Reveal>
                   <div className="pn-shell break-inside-avoid"><div className="pn-core p-6 print:p-3 sm:p-8">
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span className="text-[13px] font-bold tabular-nums text-[#8C929B]">{i + 1}단계</span>
+                      <span className="text-[13px] font-bold tabular-nums text-[#8C929B]">{i + 1}단계 / 총 {ONBOARDING_STEPS.length}단계</span>
                       {tag && <span className="rounded-full bg-[#FFF1E6] px-2.5 py-0.5 text-[12px] font-semibold text-[#B54708]">{tag}</span>}
                       <h2 className="text-[20px] font-extrabold tracking-[-0.03em] text-[#1D3461] print:text-[15px] sm:text-[23px]">{s.title}</h2>
                       <span className="rounded-full bg-[#EEF2F8] px-3 py-1 text-[12.5px] font-semibold text-[#1D3461] sm:ml-auto">보통 {s.days}</span>

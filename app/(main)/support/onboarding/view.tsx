@@ -91,6 +91,7 @@ export default async function OnboardingView({ outletId, staff }: { outletId: st
                 <li key={s.id} className={`rounded-2xl bg-white p-5 ring-1 ${st === 'doing' ? 'ring-[#2F6BF0]/50' : 'ring-black/5'} ${st === 'done' && !staff ? 'opacity-90' : ''}`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`rounded px-1.5 py-0.5 text-[11.5px] font-bold ${b.className}`}>{t(b.label, b.en)}</span>
+                    <span className="text-[12.5px] font-bold tabular-nums text-muted">{t(`${i + 1}단계 / 총 ${STEPS.length}단계`, `Step ${i + 1} of ${STEPS.length}`)}</span>
                     <h2 className="text-[16px] font-extrabold">{s.title}</h2>
                     <span className="ml-auto text-[12.5px] text-muted">{t('보통', 'Typically')} {s.days}</span>
                   </div>

@@ -26,6 +26,15 @@ export function stepView(s: OnboardingStep, fresh: boolean) {
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
+    id: 'training',
+    days: '5~7일',
+    title: '사용법 안내',
+    we: ['편집국 고객센터의 이용안내와 기사 작성 가이드(기사 쓰기·승인, 보도자료, 홈 편집, 광고 사용법)를 안내해 드리고, 막히는 부분은 업무요청으로 바로 답해 드립니다.', '원하시면 통화나 화면 공유로 30분 안팎 함께 보며 1:1로 안내합니다.'],
+    you: ['고객센터 이용안내와 작성 가이드를 한 번 훑어봐 주세요. 특히 기사 작성 가이드는 네이버 뉴스제휴 평가 기준이 담겨 있어 꼭 읽어 주세요.', '1:1 안내를 원하시면 편하신 시간을 알려 주세요. 기자·편집장도 함께하시면 좋습니다.'],
+    result: '직접 기사를 쓰고 승인·발행할 수 있습니다.',
+    keys: ['training'],
+  },
+  {
     id: 'apply',
     days: '신청 당일 ~ 2일',
     title: '신청 접수와 상담',
@@ -82,15 +91,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     result: '원하시는 모습의 홈페이지로 확정되고, 이후 오픈까지 그 디자인으로 진행됩니다.',
     keys: ['design_collect', 'design_apply'],
     doneIfAny: ['training', 'open_switch'],
-  },
-  {
-    id: 'training',
-    days: '5~7일',
-    title: '사용법 안내',
-    we: ['편집국 고객센터의 이용안내와 기사 작성 가이드(기사 쓰기·승인, 보도자료, 홈 편집, 광고 사용법)를 안내해 드리고, 막히는 부분은 업무요청으로 바로 답해 드립니다.', '원하시면 통화나 화면 공유로 30분 안팎 함께 보며 1:1로 안내합니다.'],
-    you: ['고객센터 이용안내와 작성 가이드를 한 번 훑어봐 주세요. 특히 기사 작성 가이드는 네이버 뉴스제휴 평가 기준이 담겨 있어 꼭 읽어 주세요.', '1:1 안내를 원하시면 편하신 시간을 알려 주세요. 기자·편집장도 함께하시면 좋습니다.'],
-    result: '직접 기사를 쓰고 승인·발행할 수 있습니다.',
-    keys: ['training'],
   },
   {
     id: 'domain',
@@ -206,7 +206,7 @@ export const onboardingSteps = (lang?: 'ko' | 'en'): OnboardingStep[] => (lang =
 
 export type StepState = 'done' | 'doing' | 'todo'
 
-// 끝낸 항목(done) 으로 단계별 상태를 계산한다: 앞에서부터 모두 끝난 단계는 done, 처음 끝나지 않은 단계는 doing, 나머지는 todo
+// 끝낸 항목(done) 으로 단계별 상태를 계산한다: 끝난 단계는 done, (사용법 안내를 뺀) 처음 끝나지 않은 단계는 doing, 나머지는 todo
 //   opened=true 는 개설된 매체(접수·상담 단계는 끝난 것으로 본다)
 export function stepStates(done: Record<string, unknown> | null | undefined, opened: boolean): StepState[] {
   const d = done ?? {}
@@ -214,6 +214,8 @@ export function stepStates(done: Record<string, unknown> | null | undefined, ope
   return ONBOARDING_STEPS.map((s) => {
     const complete = s.keys.length === 0 ? opened : s.keys.every((k) => d[k]) || !!s.doneIfAny?.some((k) => d[k])
     if (complete) return 'done'
+    // 사용법 안내(1단계)는 개설 직후부터 고객이 따로 시작할 수 있어서, 다른 단계 순서와 상관없이 끝나기 전까지 "진행 중"으로 본다
+    if (s.id === 'training') return 'doing'
     if (!seenDoing) { seenDoing = true; return 'doing' }
     return 'todo'
   })
