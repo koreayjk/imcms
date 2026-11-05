@@ -92,9 +92,14 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     slots.map((a) => a ?? take(1, pred)[0] ?? take(1)[0] ?? null).filter((a): a is PublicArticle => !!a)
 
   // 톱 헤드라인: 편집판에서 고른 기사(최대 10개). 2개 이상이면 홈 가운데에서 자동으로 넘어가는 슬라이드가 된다
-  const heroSlides = pinned.headline.filter((a): a is PublicArticle => !!a)
+  const pinnedHero = pinned.headline.filter((a): a is PublicArticle => !!a)
   const headline =
-    heroSlides[0] ?? take(1, (a) => a.is_featured && hasImage(a))[0] ?? take(1, hasImage)[0] ?? take(1)[0]
+    pinnedHero[0] ?? take(1, (a) => a.is_featured && hasImage(a))[0] ?? take(1, hasImage)[0] ?? take(1)[0]
+  // 슬라이드: 편집판에서 고른 기사가 먼저, 비어 있으면 사진 있는 최신 기사로 모두 5장까지 자동으로 채운다 (기사가 모자라면 있는 만큼)
+  const HERO_AUTO = 5
+  const heroSlides = pinnedHero.length
+    ? [...pinnedHero, ...take(Math.max(0, HERO_AUTO - pinnedHero.length), hasImage)]
+    : [headline, ...take(HERO_AUTO - 1, hasImage)]
   const subTops = fill(pinned.top, hasImage)
   // 실시간 뉴스: PC는 왼쪽 두 기사 높이에 맞춰 7건, 휴대폰은 5건
   const realtime = take(7)

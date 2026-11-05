@@ -112,7 +112,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
       setBaseHero(heroSeconds)
       if (outletId) await refreshOutletPages(outletId).catch(() => {})
       const n = layout.headline.filter(Boolean).length
-      setMessage({ ok: true, text: t(`저장했습니다. 홈페이지에 바로 반영됩니다.${n > 1 ? ` (톱 헤드라인 슬라이드 ${n}개)` : ''}`, `Saved. The change goes live on your homepage right away.${n > 1 ? ` (${n} top headline slides)` : ''}`) })
+      setMessage({ ok: true, text: t(`저장했습니다. 홈페이지에 바로 반영됩니다.${n > 1 ? ` (톱 헤드라인 직접 고른 기사 ${n}개)` : ''}`, `Saved. The change goes live on your homepage right away.${n > 1 ? ` (${n} top headline slides)` : ''}`) })
     }
   }
 
@@ -161,7 +161,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
           </div>
         ) : (
           <p className="flex h-full min-h-[inherit] items-center justify-center px-3 pt-4 text-center text-[12px] text-muted">
-            {id ? t('발행 취소된 기사입니다. 다른 기사로 바꿔주세요.', 'This story has been unpublished. Replace it with another story.') : (slot === 'headline' && index > 0) ? t('비어 있음', 'Empty') : t('비어 있음 · 자동 배치', 'Empty · filled automatically')}
+            {id ? t('발행 취소된 기사입니다. 다른 기사로 바꿔주세요.', 'This story has been unpublished. Replace it with another story.') : (slot === 'headline' && index > 4) ? t('비어 있음', 'Empty') : t('비어 있음 · 자동 배치', 'Empty · filled automatically')}
           </p>
         )}
       </div>
@@ -289,7 +289,7 @@ export default function HomeBoard({ outletId, siteUrl = '/', homeLayout = 'stand
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
               <div>
                 <p className="text-[13.5px] font-bold">{t('톱 헤드라인 슬라이드', 'Top headline slideshow')}</p>
-                <p className="mt-0.5 text-[12px] text-muted">{t('위 “톱 헤드라인 1”에 이어 아래 칸에 기사를 더 넣으면(최대 10개) 홈 가운데에서 자동으로 한 장씩 넘어갑니다. 1개만 두면 넘어가지 않습니다.', 'Add more stories in the slots below, after “Top headline 1” (up to 10), and the center of the home page advances one by one automatically. With just one, it stays still.')}</p>
+                <p className="mt-0.5 text-[12px] text-muted">{t('위 “톱 헤드라인 1”에 이어 아래 칸에 기사를 직접 넣을 수 있습니다(최대 10개). 비워 두면 사진 있는 최신 기사로 모두 5장까지 자동으로 채워져, 홈 가운데에서 한 장씩 넘어갑니다.', 'You can add stories in the slots below, after “Top headline 1” (up to 10). If left empty, the latest stories with photos fill it automatically up to 5 slides, and the center of the home page advances one by one.')}</p>
               </div>
               <label className="flex items-center gap-2 text-[13px]">
                 <span className="font-semibold">{t('넘어가는 간격', 'Advance every')}</span>

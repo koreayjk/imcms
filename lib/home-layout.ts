@@ -1,6 +1,6 @@
 // labelEn / noteEn: 편집국 영어 화면용 (한국어 label·note 는 그대로). 화면에서는 slotLabel(s, lang) / slotNote(s, lang)
 export const SLOTS = [
-  { key: 'headline', label: '톱 헤드라인', count: 10, note: '홈페이지 가장 큰 기사 (2개 이상 채우면 자동으로 넘어가는 슬라이드)', labelEn: 'Top headline', noteEn: 'The biggest story on the home page (fill 2 or more to make an auto-advancing slideshow)' },
+  { key: 'headline', label: '톱 헤드라인', count: 10, note: '홈페이지 가장 큰 기사 (비우면 사진 있는 최신 기사 5장이 자동으로 넘어가는 슬라이드)', labelEn: 'Top headline', noteEn: 'The biggest story on the home page (if empty, the 5 latest stories with photos advance automatically as a slideshow)' },
   { key: 'top', label: '톱 왼쪽', count: 2, note: '헤드라인 왼쪽 사진 기사', labelEn: 'Top left', noteEn: 'Photo stories to the left of the headline' },
   { key: 'under', label: '최신 기사 칸', count: 4, note: '헤드라인 아래·오른쪽 최신 기사 자리. 비우면 최신 기사로 자동 배치', labelEn: 'Latest stories', noteEn: 'The latest-story slots near the headline. If left empty, the latest stories are placed automatically' },
   { key: 'major', label: '주요뉴스', count: 6, note: '비우면 최신 기사로 자동 배치', labelEn: 'Top stories', noteEn: 'If left empty, the latest stories are placed automatically' },
