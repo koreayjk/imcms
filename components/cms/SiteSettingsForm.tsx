@@ -260,7 +260,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-strip', t('로고 띠', 'Logo strip'), true],
           ['s-sections', t('섹션 메뉴', 'Sections'), true],
           ['s-footer', t('하단 표시', 'Footer'), true],
-          ['s-press', t('보도자료 맞춤', 'Press feed'), true],
+          ['s-press', t('보도자료 맞춤', 'Press feed'), !self],
           ['s-open', t('오픈 준비', 'Opening soon'), !self],
           ['s-domain', t('도메인', 'Domain'), !self],
           ['s-search', t('검색 노출', 'Search'), !self],
@@ -345,6 +345,8 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               )}
               {s.aiNotice?.on && <p className="text-[12px] text-muted">{t('비워 두면 위의 기본 문구를 씁니다. 바꿀 때는 문구에 “AI”나 “인공지능”을 넣어 주세요. 본문 끝에 “※ 문구” 모양으로 들어갑니다.', 'If left blank, the default text above is used. If you change it, include “AI” or “artificial intelligence” in the text. It is added at the end of the story in the form “※ text”.')}</p>}
             </div>
+            {/* 해외 언론 묶음은 운영팀이 정한다 (편집장 설정 화면에는 보이지 않고, 이미 정해진 값은 그대로 저장된다) */}
+            {!self && (
             <fieldset className="space-y-1.5 text-[13.5px]">
               <legend className="font-bold">{t('해외 언론 자료 받기', 'Receive international press material')}</legend>
               <p className="text-[12px] text-muted">{t('보도자료함에 영문 기사 요약을 함께 보여주고, AI가 출처를 밝힌 한국어 기사 초안으로 씁니다. 매체 분야에 맞는 묶음만 고르세요.', 'Shows English story summaries in the press release inbox, and AI writes a Korean story draft that credits the source. Choose only the groups that fit your outlet\'s field.')}</p>
@@ -364,6 +366,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
                 )
               })}
             </fieldset>
+            )}
             {!self && <Field label={t('쇼핑몰 주소', 'Shop URL')} hint={t("SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')", 'Address linked from the SHOP menu and strip (shows “Opening soon” if empty)')}><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>}
           </div>
         </div>
@@ -636,6 +639,8 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         {missing.length > 0 && <p className="mt-3 rounded bg-draft/10 px-3 py-2 text-[12.5px] text-[#6B5F22]">⚠ {t('아직 비어 있는 필수 항목:', 'Required fields still empty:')} {missing.map((m) => legalLabel(m)).join(', ')}</p>}
       </Card>
 
+      {/* 보도자료 맞춤 분야·키워드는 운영팀 화면에서만 (편집장은 보도자료함 "전체" 탭에서 출처를 골라 맞춤 자료를 만든다) */}
+      {!self && (
       <Card id="s-press" title={t('보도자료 맞춤', 'Press release feed')} note={t('보도자료함 ‘맞춤 자료’ 탭에 보여줄 자료를 정합니다. ‘전체’ 탭에는 언제나 모든 자료가 나옵니다.', 'Choose what appears in the “My feed” tab of the press release inbox. The “All” tab always shows everything.')}>
         <fieldset className="space-y-1.5 text-[13.5px]">
           <legend className="font-bold">{t('매체 분야', 'Outlet field')}</legend>
@@ -658,6 +663,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <textarea value={s.pressKeywords ?? ''} onChange={(e) => set({ pressKeywords: e.target.value })} rows={3} placeholder={t('예: 요양, 돌봄, 복지, 병원', 'e.g. 요양, 돌봄, 복지, 병원 (enter the words as they appear in Korean titles)')} className="field-input resize-y" />
         </div>
       </Card>
+      )}
 
       {!self && (
         <>
