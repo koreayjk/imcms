@@ -131,25 +131,33 @@ export type SiteConfig = {
 
 export type SiteLang = 'ko' | 'en'
 
-// 보도자료함 맞춤 자료: 4개 그룹, 그룹마다 키워드 하나당 가져올 최신 건수 (기본 10·5·3·1)
-export type PressTier = { keywords: string[]; limit: number }
+// 보도자료함 맞춤 자료: 4개 그룹. 그룹마다 담은 키워드·출처(예: 경기도 > 하남시) 하나당 가져올 최신 건수 (기본 10·5·3·1)
+//   출처는 "전체" 탭 출처 고르기에서, 키워드는 맞춤 탭의 그룹 설정에서 담는다
+export type PressTier = { keywords: string[]; sources: string[]; limit: number }
 export const PRESS_TIER_DEFAULTS = [10, 5, 3, 1]
 export const PRESS_TIER_MAX_KEYWORDS = 8
+export const PRESS_TIER_MAX_SOURCES = 70
 export const PRESS_TIER_MAX_LIMIT = 30
 export function cleanPressTiers(v: unknown): PressTier[] {
   const arr = Array.isArray(v) ? v : []
-  const seen = new Set<string>()   // 같은 키워드는 앞 그룹에만 둔다
+  const known = new Set([...PRESS_SOURCES.map((x) => x.key), 'email', 'manual'])
+  const seenKw = new Set<string>()   // 같은 키워드·출처는 앞 그룹에만 둔다
+  const seenSrc = new Set<string>()
   return PRESS_TIER_DEFAULTS.map((def, i) => {
-    const g = (arr[i] ?? {}) as { keywords?: unknown; limit?: unknown }
+    const g = (arr[i] ?? {}) as { keywords?: unknown; sources?: unknown; limit?: unknown }
     const keywords = (Array.isArray(g.keywords) ? g.keywords : [])
       .map((k) => String(k ?? '').replace(/[,()*%\\"]/g, '').trim().slice(0, 30))
-      .filter((k) => { if (!k || seen.has(k)) return false; seen.add(k); return true })
+      .filter((k) => { if (!k || seenKw.has(k)) return false; seenKw.add(k); return true })
       .slice(0, PRESS_TIER_MAX_KEYWORDS)
+    const sources = (Array.isArray(g.sources) ? g.sources : [])
+      .map((k) => String(k ?? ''))
+      .filter((k) => { if (!known.has(k) || seenSrc.has(k)) return false; seenSrc.add(k); return true })
+      .slice(0, PRESS_TIER_MAX_SOURCES)
     const n = Math.round(Number(g.limit))
-    return { keywords, limit: Number.isFinite(n) && n >= 1 ? Math.min(n, PRESS_TIER_MAX_LIMIT) : def }
+    return { keywords, sources, limit: Number.isFinite(n) && n >= 1 ? Math.min(n, PRESS_TIER_MAX_LIMIT) : def }
   })
 }
-export const hasPressTiers = (t?: PressTier[] | null) => !!t?.some((g) => g.keywords.length)
+export const hasPressTiers = (t?: PressTier[] | null) => !!t?.some((g) => g.keywords.length || g.sources.length)
 
 // public/sites/<폴더>/og.png 가 있는 매체: 로고가 이 폴더에 있으면 대표 이미지도 자동으로 쓴다
 const OG_DIRS = ['thecaretimes', 'shippingtimes', 'israeltoday']
