@@ -50,6 +50,11 @@ export default function PressTierSettings({ outletId, initial, suggestions, acti
       </button>
       {open && (
         <div className="space-y-4 px-4 pb-5 md:px-5">
+          <ol className="list-decimal space-y-0.5 rounded-md bg-[#F8F9FA] py-2.5 pl-7 pr-3 text-[12.5px] leading-relaxed">
+            <li>{t('“전체” 탭 출처 고르기에서 출처를 체크하고 “그룹 N에 넣기”를 누릅니다. (중요한 출처일수록 그룹 1)', 'In the “All” tab, check sources and press “Add to group N” (more important sources go to group 1).')}</li>
+            <li>{t('여기서 그룹마다 “하나당 최신 몇 건”을 정하고, 필요하면 키워드도 담습니다. 저장을 누르세요.', 'Here, set “latest N per item” for each group, add keywords if needed, and press Save.')}</li>
+            <li>{t('“맞춤 자료” 탭에서 그룹 1→4 순서로 모여 보입니다.', 'See the result in the “My feed” tab, groups 1→4 in order.')}</li>
+          </ol>
           <p className="text-[12.5px] leading-relaxed text-muted">
             {t('키워드와 출처를 4개 그룹으로 나눠 담으세요. 그룹마다 “하나당 최신 몇 건”을 정하면, 자료가 많은 곳이 다른 곳을 밀어내지 않고 중요도 순서대로 골고루 모입니다. 출처(예: 경기도 > 하남시)는 “전체” 탭의 출처 고르기에서 체크해 “그룹 N에 넣기”로 담고, 여기서는 키워드를 담고 건수를 정하고 출처를 뺄 수 있습니다. 키워드는 최근 14일 제목·요약에 있는 자료, 출처는 최근 30일 자료만 보입니다.', 'Put keywords and sources into 4 groups and set how many latest items each brings. A busy one can’t crowd out the others, and groups appear in order of importance. Add sources (e.g. Gyeonggi > Hanam) in the “All” tab with “Add to group N”; here you can add keywords, set counts and remove sources. Keywords match the last 14 days of titles/summaries, sources show the last 30 days.')}
           </p>

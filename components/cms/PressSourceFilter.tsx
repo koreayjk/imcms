@@ -4,6 +4,12 @@ import { useRef } from 'react'
 
 // 보도자료함 "전체" 탭의 출처 체크 목록
 //   체크하면 바로 그 출처의 자료만 아래에 보인다 (누구나). 편집장 이상은 체크한 출처를 맞춤 자료에 넣거나 뺄 수 있다.
+// 서버 동작에 "무슨 버튼을 눌렀는지(mode)"를 직접 담아 보낸다 (버튼의 name·value 는 서버 동작 호출에서 빠질 수 있다)
+const withMode = (action: (formData: FormData) => void | Promise<void>, mode: string) => async (formData: FormData) => {
+  formData.set('mode', mode)
+  await action(formData)
+}
+
 export type PickGroup = { label: string; items: { key: string; name: string; saved: boolean; auto: boolean; tier?: number }[]; region?: boolean }
 
 export default function PressSourceFilter({ groups, selected, q, canPick, saveAction, tierAction, text }: {
@@ -48,8 +54,8 @@ export default function PressSourceFilter({ groups, selected, q, canPick, saveAc
           {selected.length > 0 && <a href={q ? `/press?tab=all&q=${encodeURIComponent(q)}` : '/press?tab=all'} className="btn-secondary px-3 py-1.5 text-[12.5px]">{text.clear}</a>}
           {canPick ? (
             <>
-              <button type="submit" name="mode" value="add" formAction={saveAction} formMethod="post" disabled={!selected.length} className="btn-primary px-3 py-1.5 text-[12.5px] disabled:opacity-40">{text.add}</button>
-              <button type="submit" name="mode" value="remove" formAction={saveAction} formMethod="post" disabled={!selected.length} className="btn-secondary px-3 py-1.5 text-[12.5px] disabled:opacity-40">{text.remove}</button>
+              <button type="submit" formAction={withMode(saveAction, 'add')} disabled={!selected.length} className="btn-primary px-3 py-1.5 text-[12.5px] disabled:opacity-40">{text.add}</button>
+              <button type="submit" formAction={withMode(saveAction, 'remove')} disabled={!selected.length} className="btn-secondary px-3 py-1.5 text-[12.5px] disabled:opacity-40">{text.remove}</button>
             </>
           ) : <span className="text-[12px] text-muted">{text.editorOnly}</span>}
           <span className="text-[12px] text-muted">{text.only}</span>
@@ -58,9 +64,9 @@ export default function PressSourceFilter({ groups, selected, q, canPick, saveAc
           <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-md border border-line bg-white px-3 py-2.5">
             <span className="text-[12.5px] font-bold">{text.tierHint}</span>
             {text.tierAdd.map((label, i) => (
-              <button key={i} type="submit" name="mode" value={`g${i + 1}`} formAction={tierAction} formMethod="post" disabled={!selected.length} className="btn-secondary px-3 py-1.5 text-[12.5px] disabled:opacity-40">{label}</button>
+              <button key={i} type="submit" formAction={withMode(tierAction, `g${i + 1}`)} disabled={!selected.length} className="btn-secondary px-3 py-1.5 text-[12.5px] disabled:opacity-40">{label}</button>
             ))}
-            <button type="submit" name="mode" value="ungroup" formAction={tierAction} formMethod="post" disabled={!selected.length} className="px-2 py-1.5 text-[12.5px] text-muted underline disabled:opacity-40">{text.tierRemove}</button>
+            <button type="submit" formAction={withMode(tierAction, 'ungroup')} disabled={!selected.length} className="px-2 py-1.5 text-[12.5px] text-muted underline disabled:opacity-40">{text.tierRemove}</button>
           </div>
         )}
       </form>
