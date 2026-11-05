@@ -22,7 +22,7 @@
 시·군·구: gyeonggi-09 안산, gyeonggi-07 평택(목록만), chungnam-05 서산, gangwon-10 영월, gyeonggi-08 동두천, gyeonggi-31 양평, seoul-12 은평, seoul-19 영등포, seoul-14 마포
 
 ## 완료 — 코드만 있음, 배포·수집 확인 전 (PR #29)
-gyeonggi-18 하남, seoul-18 금천, ulsan-03 울산동구, gyeonggi-17 의왕, jeonnam-16 무안, chungnam-08 당진, incheon-05 남동, incheon-06 부평, incheon-03 미추홀, seoul-05 광진, seoul-16 강서, seoul-20 동작, jeonnam-01 목포, jeonnam-04 나주, gangwon-01 춘천, gwangju-05 광산, seoul-11 노원, gyeonggi-20 파주, seoul-01 종로, busan-04 영도, gyeongnam-02 진주, gyeonggi-02 성남, seoul-15 양천, ulsan-05 울주, gyeongnam-05 김해, seoul-08 성북, seoul-24 송파, seoul-17 구로, seoul-22 서초, seoul-23 강남, seoul-25 강동
+gyeonggi-18 하남, seoul-18 금천, ulsan-03 울산동구, gyeonggi-17 의왕, jeonnam-16 무안, chungnam-08 당진, incheon-05 남동, incheon-06 부평, incheon-03 미추홀, seoul-05 광진, seoul-16 강서, seoul-20 동작, jeonnam-01 목포, jeonnam-04 나주, gangwon-01 춘천, gwangju-05 광산, seoul-11 노원, gyeonggi-20 파주, busan-04 영도, gyeongnam-02 진주, gyeonggi-02 성남, seoul-15 양천, ulsan-05 울주, gyeongnam-05 김해, seoul-08 성북, seoul-24 송파, seoul-17 구로, seoul-22 서초, seoul-23 강남, seoul-25 강동
 
 ## 완료 — 코드만 있음 (2차, 같은 PR)
 seoul-08·24·17·22·23·25(위에 포함), gyeonggi-12 구리, gyeonggi-13 남양주, gyeonggi-16 군포, gyeonggi-23 김포, gyeonggi-27 포천, gyeonggi-29 연천, gyeonggi-01 수원, gyeonggi-06 광명, incheon-08 서(서해)구, incheon-09 강화, incheon-04 연수
@@ -30,15 +30,13 @@ seoul-08·24·17·22·23·25(위에 포함), gyeonggi-12 구리, gyeonggi-13 남
 ## 완료 — 코드만 있음 (3차, 같은 PR)
 chungbuk-04 보은, chungbuk-05 옥천, chungbuk-10 음성, gangwon-09 횡성, gangwon-02 원주 (ntt 형)
 
-## 등록했으나 운영에서 안 됨
-seoul-07 중랑 (프로덕션 fetch failed)
-
 ## 운영 수집 확인 결과 (2026-11-04 19:12 UTC, PR #29 배포 후 첫 수집)
 - 정상(목록 읽힘, 10건 안팎) 55곳: 위 '완료' 목록 대부분 + 광역 8
 - 운영(Vercel)에서 접속 실패 `fetch failed`: lg-jungnang 중랑, lg-jongno 종로, lg-gwangsan 광산, lg-boeun 보은 — Supabase에서는 열리지만 운영 서버에서는 막힘(서버 IP 차단 추정). 우회하지 않는다. 다음 수집에서도 실패하면 '불가(운영 서버 차단)'.
 - 목록 모양이 카드형이라 못 읽던 곳(하남·남양주·옥천·포천·연천·김포): 카드 목록 읽기 추가(PR 대기)
 
 ## 불가 (시도했으나 불가능한 구조 — 다시 하지 않는다)
+- seoul-07 중랑, seoul-01 종로: Supabase에서는 열리지만 운영 서버(Vercel)에서 2회 연속 `fetch failed` — 서버 접속 차단 추정. 코드(`lg-jungnang`, `lg-jongno`)는 남겨 두었고(차단이 풀리면 그대로 수집), 다시 시도하지 않는다.
 - gyeonggi-24 화성: 접속 대기열(NetFunnel)
 - seoul-09 강북: 봇 확인(쿠키·화면 크기 검사)
 - seoul-02 중구, seoul-03 용산, seoul-04 성동, seoul-21 관악: 응답 없음(서버 접속 차단 추정)
@@ -66,3 +64,4 @@ seoul-07 중랑 (프로덕션 fetch failed)
 - 2026-11-04 (대화 세션): 경기·인천 1차 점검 — 11곳 추가.
 - 2026-11-04 (대화 세션): 충북·충남·강원 31곳 점검 — 5곳 추가, 나머지 재시도 목록에 사유 기록.
 - 2026-11-04 (대화 세션): 전북·전남·경북·경남 69곳 점검 — 새로 붙인 곳 없음. 대부분 접속 차단/인트로/오래된 게시판. 사유는 '재시도' 목록에 기록.
+- 2026-11-05: PR #30 배포 후 수집 — 62/65곳 정상. 중랑·종로는 '불가(운영 서버 차단)'로 이동. 제주는 1회 일시 실패(재확인).

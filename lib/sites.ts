@@ -98,6 +98,8 @@ export type SiteConfig = {
   pressForeignTopics?: ForeignTopic[]
   // 보도자료함 추천 탭에 넣을 분야 (의료·복지 / 해운·물류·무역 / 교육)
   pressFields: PressField[]
+  // 보도자료함 "맞춤 자료" 그룹 (1~4단계): 그룹마다 키워드 하나당 최신 N건 (기본 10·5·3·1). 하나도 안 정했으면 예전 추천 방식
+  pressTiers?: PressTier[]
   // 보도자료함 "전체" 탭에서 편집장이 직접 골라 추천에 넣은 출처 (press-sources 의 key)
   pressSources?: string[]
   // 홈 포토뉴스 띠 색 (없으면 매체 대표색). 예: 로고 속 청색 #002F7A
@@ -128,6 +130,26 @@ export type SiteConfig = {
 }
 
 export type SiteLang = 'ko' | 'en'
+
+// 보도자료함 맞춤 자료: 4개 그룹, 그룹마다 키워드 하나당 가져올 최신 건수 (기본 10·5·3·1)
+export type PressTier = { keywords: string[]; limit: number }
+export const PRESS_TIER_DEFAULTS = [10, 5, 3, 1]
+export const PRESS_TIER_MAX_KEYWORDS = 8
+export const PRESS_TIER_MAX_LIMIT = 30
+export function cleanPressTiers(v: unknown): PressTier[] {
+  const arr = Array.isArray(v) ? v : []
+  const seen = new Set<string>()   // 같은 키워드는 앞 그룹에만 둔다
+  return PRESS_TIER_DEFAULTS.map((def, i) => {
+    const g = (arr[i] ?? {}) as { keywords?: unknown; limit?: unknown }
+    const keywords = (Array.isArray(g.keywords) ? g.keywords : [])
+      .map((k) => String(k ?? '').replace(/[,()*%\\"]/g, '').trim().slice(0, 30))
+      .filter((k) => { if (!k || seen.has(k)) return false; seen.add(k); return true })
+      .slice(0, PRESS_TIER_MAX_KEYWORDS)
+    const n = Math.round(Number(g.limit))
+    return { keywords, limit: Number.isFinite(n) && n >= 1 ? Math.min(n, PRESS_TIER_MAX_LIMIT) : def }
+  })
+}
+export const hasPressTiers = (t?: PressTier[] | null) => !!t?.some((g) => g.keywords.length)
 
 // public/sites/<폴더>/og.png 가 있는 매체: 로고가 이 폴더에 있으면 대표 이미지도 자동으로 쓴다
 const OG_DIRS = ['thecaretimes', 'shippingtimes', 'israeltoday']
@@ -256,6 +278,8 @@ export type OutletSiteSettings = {
   pressForeignTopics?: ForeignTopic[]
   // 보도자료 추천 분야 (없으면 추천 키워드로 짐작)
   pressFields?: PressField[]
+  // 보도자료함 맞춤 자료 그룹 (outlet_press_tiers_save 로만 저장 — supabase/press-tiers.sql)
+  pressTiers?: PressTier[]
   // 편집장이 보도자료함에서 직접 골라 추천에 넣은 출처
   pressSources?: string[]
   photoColor?: string
@@ -383,6 +407,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
       return { pressForeign: topics.length > 0, pressForeignTopics: topics }
     })(),
     pressFields: pressFields(s, keywords),
+    pressTiers: cleanPressTiers(s.pressTiers),
     pressSources: cleanPressSources(s.pressSources),
     photoColor: typeof s.photoColor === 'string' && /^#[0-9a-f]{6}$/i.test(s.photoColor) ? s.photoColor : undefined,
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
