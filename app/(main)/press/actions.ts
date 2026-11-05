@@ -11,9 +11,25 @@ import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 import { duplicateNotes } from '@/lib/duplicate-check'
 import { aiNoticeText, withAiNotice } from '@/lib/ai-notice'
-import type { OutletSiteSettings } from '@/lib/sites'
+import { cleanPressTiers, type OutletSiteSettings } from '@/lib/sites'
 
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
+
+// 보도자료함 맞춤 자료 그룹 저장 (편집장 이상). 키워드를 하나도 안 정하면 그룹 설정을 지운다 (supabase/press-tiers.sql)
+export async function savePressTiers(outletId: string, tiers: unknown): Promise<{ error?: string; ok?: string }> {
+  const { supabase, isEditorPlus, isStaff } = await getCmsContext()
+  const { t } = await getT()
+  if (!isEditorPlus && !isStaff) return { error: t('편집장 이상만 고칠 수 있습니다.', 'Only Editors-in-Chief and above can edit this.') }
+  if (!outletId) return { error: t('매체를 먼저 골라 주세요.', 'Choose an outlet first.') }
+  const clean = cleanPressTiers(tiers)
+  const { error } = await supabase.rpc('outlet_press_tiers_save', { o: outletId, p_tiers: clean.some((g) => g.keywords.length) ? clean : null })
+  if (error) {
+    if (/outlet_press_tiers_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return { error: t('이 기능을 쓰려면 운영팀이 Supabase에서 press-tiers.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run press-tiers.sql in Supabase.') }
+    return { error: error.message.replace(/^.*?:\s*/, '') }
+  }
+  revalidatePath('/press')
+  return { ok: clean.some((g) => g.keywords.length) ? t('저장했습니다. 맞춤 자료에 바로 반영됩니다.', 'Saved. Your custom feed is updated.') : t('그룹 설정을 지웠습니다. 예전 추천 방식으로 돌아갑니다.', 'Groups cleared. The feed is back to the default recommendation.') }
+}
 
 export async function refreshNow() {
   const { supabase } = await getCmsContext()

@@ -6,9 +6,10 @@ import { pressScope } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
 import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
-import { buildSite, type OutletRow } from '@/lib/sites'
+import { buildSite, hasPressTiers, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
+import PressTierSettings from '@/components/cms/PressTierSettings'
 import { refreshNow } from './actions'
 
 // 정책브리핑 등 국내 사이트는 해외 접속을 막기도 하므로 서울 리전에서 가져온다
@@ -16,6 +17,9 @@ export const preferredRegion = 'icn1'
 export const maxDuration = 30
 
 const PAGE_SIZE = 30
+// 맞춤 자료(그룹) 모드: 최근 14일 안의 자료만
+const TIER_DAYS = 14
+type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; tier?: number; kw?: string }
 
 type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string }> }
 
@@ -111,22 +115,46 @@ export default async function PressPage(props: Props) {
     query = query.in('source_key', recBase.filter((k) => !fieldOfSource(k)))
   }
 
-  const [{ data: rows, count }, { data: logs }, { data: todayUses }] = await Promise.all([
-    query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
+  // 맞춤 자료(그룹) 모드: 추천 탭에서, 검색·출처 고르기 없이, 그룹을 정한 매체
+  //   그룹 1→4 순서로, 키워드마다 따로 최신 N건씩 가져와 합친다 (자료가 많은 키워드가 다른 키워드를 밀어내지 않게). 같은 자료는 앞 그룹에만 둔다
+  const tiers = outletSite?.pressTiers ?? []
+  const tiered = tab === 'rec' && !q && !src && hasPressTiers(tiers)
+  const tierRows = async (): Promise<{ data: PressRow[]; count: number }> => {
+    const since = new Date(Date.now() - TIER_DAYS * 86400e3).toISOString()
+    const jobs = tiers.flatMap((g, ti) => usableKeywords(g.keywords).map((k) => ({ ti, k, limit: g.limit })))
+    const results = await Promise.all(jobs.map(async (j) => {
+      let qy = pressScope(supabase.from('press_releases').select('id, source_key, source_name, title, summary, link, published_at'), ctx)
+      qy = english ? qy.or(`source_key.like.us-*,source_key.in.(${MANUAL_SOURCE},email)`) : qy.not('source_key', 'like', 'us-%')
+      if (!english) for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) qy = qy.not('source_key', 'like', `${ft.prefix}%`)
+      const { data } = await qy
+        .or(`title.ilike.*${j.k}*,summary.ilike.*${j.k}*`)
+        .or(`published_at.gte.${since},and(published_at.is.null,fetched_at.gte.${since})`)
+        .order('published_at', { ascending: false, nullsFirst: false })
+        .limit(j.limit)
+      return ((data ?? []) as PressRow[]).map((r) => ({ ...r, tier: j.ti, kw: j.k }))
+    }))
+    const seen = new Set<string>()
+    const merged = results.flat().filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+    return { data: merged, count: merged.length }
+  }
+
+  const [{ data: rowsRaw, count }, { data: logs }, { data: todayUses }] = await Promise.all([
+    tiered ? tierRows() : query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
     supabase.from('press_fetch_log').select('*'),
     outletId
       ? supabase.from('articles').select('id, press_release:press_releases(source_key)').eq('outlet_id', outletId).not('press_release_id', 'is', null).gte('created_at', kstMidnightIso())
       : Promise.resolve({ data: [] as any[] }),
   ])
 
-  const ids = (rows ?? []).map((r) => r.id)
+  const rows = (rowsRaw ?? []) as PressRow[]
+  const ids = rows.map((r) => r.id)
   const { data: used } = ids.length && outletId
     ? await supabase.from('articles').select('press_release_id').eq('outlet_id', outletId).in('press_release_id', ids)
     : { data: [] as { press_release_id: string }[] }
   const usedSet = new Set((used ?? []).map((u) => u.press_release_id))
   const newswireToday = (todayUses ?? []).filter((a: any) => a.press_release?.source_key?.startsWith('nw-')).length
   const logByKey = new Map((logs ?? []).map((l) => [l.source_key as string, l]))
-  const pages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
+  const pages = tiered ? 1 : Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
   // 수집 실패 이유는 한국어로 저장되므로, 영어 화면에서는 보여 줄 때 바꾼다
   const failText = (m: string | null) => lang === 'en' ? (m === '응답 시간 초과' ? 'Response timed out' : m === '알 수 없는 오류' ? 'Unknown error' : m) : m
 
@@ -188,14 +216,22 @@ export default async function PressPage(props: Props) {
             ))}
           </div>
 
-          {tab === 'rec' && auto && !noRecSetup && (
+          {tab === 'rec' && outletId && (ctx.isEditorPlus || ctx.isStaff) && (
+            <PressTierSettings outletId={outletId} initial={tiers} active={hasPressTiers(tiers)} suggestions={Array.from(new Set([...sectionNames, ...keywords])).slice(0, 40)} />
+          )}
+          {tiered && (
+            <p className="border-b border-line bg-[#F1F6FF] px-4 py-2.5 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">
+              {t(`내가 정한 그룹대로 최근 ${TIER_DAYS}일 자료를 모았습니다. 그룹 1이 가장 위, 키워드마다 정한 건수만큼만 나옵니다. 더 보려면 “전체” 탭을 보세요.`, `Collected by your groups from the last ${TIER_DAYS} days. Group 1 comes first, each keyword limited to its count. See the “All” tab for more.`)}
+            </p>
+          )}
+          {tab === 'rec' && auto && !noRecSetup && !tiered && (
             <p className="border-b border-line bg-[#F1F6FF] px-4 py-3 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">
               {t('추천 키워드를 따로 정하지 않아 이 매체의 섹션 이름으로 관련 보도자료를 골랐습니다', 'No keywords are set, so releases were matched to this outlet’s section names')}
               {auto.keywords.length > 0 && <> ({auto.keywords.slice(0, 8).join(', ')}{auto.keywords.length > 8 ? ' …' : ''})</>}.
               {outletId && <> <Link href={ctx.isStaff ? `/admin/outlets/${outletId}/site#s-press` : '/admin/settings#s-press'} className="font-semibold underline">{t('직접 정하기', 'Set your own')}</Link></>}
             </p>
           )}
-          {tab === 'rec' && noRecSetup && (
+          {tab === 'rec' && noRecSetup && !tiered && (
             <p className="border-b border-line bg-[#FFF8E6] px-4 py-3 text-[12.5px] leading-relaxed text-[#6B4E00] md:px-5">
               {t('이 매체의 추천 분야·키워드가 아직 없어 메일·직접 등록 자료만 보입니다. ', 'No recommended fields or keywords are set for this outlet yet, so only email and manually added releases are shown. ')}
               {outletId && <Link href={ctx.isStaff ? `/admin/outlets/${outletId}/site#s-press` : '/admin/settings#s-press'} className="font-semibold underline">{t('홈페이지 설정 → 보도자료 추천 키워드에서 정하기', 'Set them in Website settings → press keywords')}</Link>}
@@ -203,14 +239,20 @@ export default async function PressPage(props: Props) {
             </p>
           )}
 
-          {rows?.length ? (
+          {rows.length ? (
             <ul className="divide-y divide-line">
-              {rows.map((r) => (
+              {rows.map((r, i) => (
                 <li key={r.id}>
+                  {tiered && (i === 0 || rows[i - 1].tier !== r.tier) && (
+                    <p className="bg-[#F8F9FA] px-4 py-1.5 text-[12px] font-bold text-ink md:px-5">
+                      {t(`그룹 ${(r.tier ?? 0) + 1} · 키워드당 최신 ${tiers[r.tier ?? 0]?.limit}건`, `Group ${(r.tier ?? 0) + 1} · latest ${tiers[r.tier ?? 0]?.limit} per keyword`)}
+                    </p>
+                  )}
                   <Link href={`/press/${r.id}`} className="block px-4 py-4 hover:bg-[#F8F9FA] md:px-5">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-muted">
                       {r.source_key === MANUAL_SOURCE && <span className="rounded bg-ink px-1.5 py-0.5 text-white">{t('직접 등록', 'Added manually')}</span>}
                       {r.source_key === 'email' && <span className="rounded bg-review px-1.5 py-0.5 text-white">{t('메일', 'Email')}</span>}
+                      {tiered && r.kw && <span className="rounded bg-ink/10 px-1.5 py-0.5 font-semibold text-ink">{r.kw}</span>}
                       <span className="rounded bg-line/70 px-1.5 py-0.5">{r.source_name}</span>
                       <time className="tabular-nums" dateTime={r.published_at ?? undefined}>{formatShort(r.published_at, lang)}</time>
                       {usedSet.has(r.id) && <span className="rounded bg-published/10 px-1.5 py-0.5 font-semibold text-published">{t('기사화됨', 'Story created')}</span>}
