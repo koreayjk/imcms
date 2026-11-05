@@ -5,7 +5,7 @@ import { getCmsContext } from '@/lib/cms'
 import { pressScope } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_FIELDS, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, isRegionSection, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
+import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_FIELDS, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, isRegionSection, pressHintsFromSections, REGIONS, regionOfSource, usableKeywords } from '@/lib/press-sources'
 import { buildSite, hasPressTiers, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
@@ -121,7 +121,10 @@ export default async function PressPage(props: Props) {
       ]
     : [
         ...PRESS_FIELDS.map((f) => ({ label: f.label, items: toItems(PRESS_SOURCES.filter((x) => f.sources.includes(x.key))) })),
-        { label: t('정부·공공기관·지자체', 'Government & public agencies'), items: toItems(PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key))) },
+        // 중앙정부·공공기관 (지자체 묶음에 들지 않은 일반 출처)
+        { label: t('정부·공공기관', 'Government & public agencies'), items: toItems(PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key) && !regionOfSource(x.key))) },
+        // 지자체는 광역(특별시·광역시·도)별로 묶는다: 광역을 체크하면 아래 시·군·구가 모두 체크되고, 일부만 뺄 수 있다
+        ...REGIONS.map((r) => ({ label: r.label, region: true, items: toItems(r.sources.map((k) => PRESS_SOURCES.find((x) => x.key === k)).filter((x): x is (typeof PRESS_SOURCES)[number] => !!x)) })),
       ]).filter((g) => g.items.length > 0)
   pickGroups.unshift({ label: t('내가 넣은 자료', 'My own'), items: [{ key: 'email', name: t('메일', 'Email'), saved: false, auto: false }, { key: MANUAL_SOURCE, name: t('직접 등록', 'Added manually'), saved: false, auto: false }] })
   // 맞춤 자료 탭 위 출처 버튼: 매체 분야의 출처 + 켠 해외 언론 + 편집장이 체크해 넣은 출처만. 정부·지자체처럼 제목 키워드로 골라 오는 출처는 버튼으로 늘어놓지 않는다(출처별로 보려면 전체 탭)
@@ -269,6 +272,8 @@ export default async function PressPage(props: Props) {
                 editorOnly: t('맞춤 자료에 넣기는 편집장이 합니다', 'The editor adds sources to My feed'),
                 open: t('열기', 'Open'),
                 close: t('닫기', 'Close'),
+                regionHint: t('광역을 체크하면 아래 시·군·구가 모두 체크됩니다. 빼고 싶은 곳만 체크를 풀어 주세요.', 'Check a region to select all its cities and districts, then uncheck the ones you don’t want.'),
+                regionAll: t('전체 선택', 'Select all'),
               }}
             />
           )}

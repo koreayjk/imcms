@@ -258,3 +258,23 @@ export function pressHintsFromSections(names: string[]): { keywords: string[]; f
 export function usableKeywords(words: string[]) {
   return words.map((w) => w.replace(/[,()*%\\]/g, '').trim()).filter((w) => w && !(/^[\x00-\x7F]+$/.test(w) && w.length < 4))
 }
+
+// ───────── 지자체 출처를 광역(특별시·광역시·도)별로 묶기 (보도자료함 "출처 고르기") ─────────
+//   광역을 체크하면 그 아래 시·군·구 출처가 모두 체크되고, 그중 일부만 뺄 수 있다. 여기에 없는 lg-* 출처는 묶음 없이 '정부·공공기관·지자체'에 남는다
+export const REGIONS: { key: string; label: string; sources: string[] }[] = [
+  { key: 'seoul', label: '서울특별시', sources: ['lg-seoul', 'lg-jongno', 'lg-gwangjin', 'lg-dongjak', 'lg-nowon', 'lg-gangseo', 'lg-geumcheon', 'lg-yangcheon', 'lg-sungbuk', 'lg-songpa', 'lg-guro', 'lg-seocho', 'lg-gangnam', 'lg-gangdong', 'lg-eunpyeong', 'lg-yeongdeungpo', 'lg-mapo', 'lg-jungnang'] },
+  { key: 'busan', label: '부산광역시', sources: ['lg-yeongdo'] },
+  { key: 'incheon', label: '인천광역시', sources: ['lg-incheon', 'lg-namdong', 'lg-bupyeong', 'lg-michuhol', 'lg-seo-incheon', 'lg-ganghwa', 'lg-yeonsu'] },
+  { key: 'gwangju', label: '광주광역시', sources: ['lg-gwangsan'] },
+  { key: 'daejeon', label: '대전광역시', sources: ['lg-daejeon'] },
+  { key: 'ulsan', label: '울산광역시', sources: ['lg-ulsan-donggu', 'lg-ulju'] },
+  { key: 'gyeonggi', label: '경기도', sources: ['lg-gg-do', 'lg-gg-sigun', 'lg-suwon', 'lg-seongnam', 'lg-ansan', 'lg-pyeongtaek', 'lg-dongducheon', 'lg-yangpyeong', 'lg-hanam', 'lg-uiwang', 'lg-paju', 'lg-guri', 'lg-namyangju', 'lg-gunpo', 'lg-gimpo', 'lg-pocheon', 'lg-yeoncheon', 'lg-gwangmyeong'] },
+  { key: 'gangwon', label: '강원특별자치도', sources: ['lg-chuncheon', 'lg-wonju', 'lg-hoengseong', 'lg-yeongwol'] },
+  { key: 'chungbuk', label: '충청북도', sources: ['lg-chungbuk', 'lg-boeun', 'lg-okcheon', 'lg-eumseong'] },
+  { key: 'chungnam', label: '충청남도', sources: ['lg-chungnam', 'lg-seosan', 'lg-dangjin'] },
+  { key: 'jeonnam', label: '전라남도', sources: ['lg-mokpo', 'lg-naju', 'lg-muan'] },
+  { key: 'gyeongbuk', label: '경상북도', sources: ['lg-gyeongbuk'] },
+  { key: 'gyeongnam', label: '경상남도', sources: ['lg-jinju', 'lg-gimhae'] },
+  { key: 'jeju', label: '제주특별자치도', sources: ['lg-jeju'] },
+]
+export const regionOfSource = (key: string) => REGIONS.find((r) => r.sources.includes(key))?.key
