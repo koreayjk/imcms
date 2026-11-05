@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
-import { foreignTopicOf, isForeignSource, isUsSource } from '@/lib/press-sources'
+import { findPressSource, foreignTopicOf, isForeignSource, isUsSource } from '@/lib/press-sources'
 import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, pressTextForAi, refreshPress, sourceLabel, textToParagraphs, type PressRelease } from '@/lib/press'
 import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
@@ -220,6 +220,92 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai', for
   if (error || !article) redirect(`/press/${id}?error=${encodeURIComponent(`${t('기사를 만들지 못했습니다', 'Could not create the story')}: ${error?.message ?? ''}`)}`)
 
   redirect(`/articles/${article.id}/edit`)
+}
+
+// 보도자료 여러 건을 AI로 기사로 만들어 "승인대기"로 보낸다 (한 건씩 부른다. 화면이 순서대로 불러 진행 상황을 보여 준다)
+//   기사 하나를 만드는 기존 흐름(createArticleFromPress 'ai')과 같은 규칙: 이번 달 AI 한도, 중복 확인, AI 활용 표시, 바이라인.
+//   사진은 언론이 쓰라고 내는 자료(정부·지자체, 뉴스와이어)의 원문 사진만 넣고, 해외·미국 언론 사진은 넣지 않는다 (사용 권리를 확인하지 못하면 넣지 않는다).
+//   법적 검수는 하지 않는다 (기사를 열어 AI 법적 검수를 누르거나 편집장이 승인할 때 확인) — 확인할 점 메모에 남긴다
+export type BulkResult = { ok: boolean; id: string; title?: string; articleId?: string; error?: string; stop?: boolean }
+export async function createAiReviewArticle(id: string): Promise<BulkResult> {
+  const { supabase, user, profile, outletId } = await getCmsContext()
+  const { t } = await getT()
+  if (!outletId) return { ok: false, id, error: t('매체를 먼저 골라 주세요.', 'Choose an outlet first.'), stop: true }
+  const { data } = await supabase.from('press_releases').select('*').eq('id', id).maybeSingle()
+  if (!data) return { ok: false, id, error: t('보도자료를 찾을 수 없습니다.', 'Press release not found.') }
+  const { data: dupRow } = await supabase.from('articles').select('id').eq('outlet_id', outletId).eq('press_release_id', id).limit(1)
+  if (dupRow?.length) return { ok: false, id, title: (data as PressRelease).title, error: t('이미 기사로 만든 보도자료입니다.', 'A story was already created from this release.') }
+  const r = await ensureFullBody(supabase, data as PressRelease)
+  const original = r.body_html?.trim() || `<p>${escapeHtml(r.summary ?? '')}</p>`
+
+  const slot = await reserveAi(supabase, outletId)
+  if (!slot.ok) {
+    const msg = slot.scope === 'member'
+      ? t(`이번 달 내 AI 사용 한도(${slot.limit}회)를 다 썼습니다.`, `You have used all of your AI drafts for this month (limit: ${slot.limit}).`)
+      : aiLimitMessage({ used: slot.used, limit: slot.limit, overage: false })
+    return { ok: false, id, title: r.title, error: msg, stop: true }
+  }
+  let draft
+  try {
+    const result = await draftFromPressRelease({ title: r.title, text: pressTextForAi(original) || r.summary || '', source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link })
+    await finishAi(supabase, slot.id, result)
+    draft = result.draft
+  } catch (e) {
+    await releaseAi(supabase, slot.id)
+    return { ok: false, id, title: r.title, error: e instanceof AiDraftError ? e.message : t('AI 기사 작성에 실패했습니다.', 'AI drafting failed.') }
+  }
+
+  const kind = findPressSource(r.source_key)?.kind
+  const photosOk = !isForeignSource(r.source_key) && (kind === 'gov' || kind === 'newswire')
+  const paras = draft.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`)
+  const blocks = photosOk ? photoBlocks(original) : []
+  let body = [paras[0], ...blocks, ...paras.slice(1)].join('')
+  let thumbnail: string | null = null
+  const srcs = Array.from(new Set(Array.from(body.matchAll(/<img[^>]+src="([^"]+)"/g), (m) => m[1]))).slice(0, 4)
+  const ours = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/`
+  for (const src of srcs) {
+    const copied = src.startsWith(ours) ? src : await copyImage(supabase, src, outletId)
+    if (copied) body = body.split(`src="${src}"`).join(`src="${copied}"`)
+    thumbnail ??= copied ?? src
+  }
+
+  const { data: outlet } = await supabase.from('outlets').select('name, site').eq('id', outletId).single()
+  const englishOutlet = (outlet as { site?: { lang?: string } | null } | null)?.site?.lang === 'en'
+  if (!englishOutlet) {
+    const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${profile?.full_name ?? ''} 기자]&nbsp;`
+    body = body.startsWith('<p>') ? body.replace(/^<p>/, `<p>${byline}`) : `<p>${byline}</p>${body}`
+  }
+  const notice = aiNoticeText((outlet as { site?: OutletSiteSettings | null } | null)?.site)
+  if (notice) body = withAiNotice(body, notice)
+
+  const notes: string[] = []
+  const dup = await duplicateNotes(supabase, outletId, draft.title, r.id).catch(() => [] as string[])
+  notes.push(...dup.map((n) => `• ${n}`))
+  if (draft.review_notes.length) notes.push(...draft.review_notes.map((n) => `• ${n}`))
+  notes.push(`• ${t('보도자료함에서 일괄로 만든 AI 초안입니다. AI 법적 검수는 아직 하지 않았으니, 기사를 열어 검수한 뒤 승인해 주세요.', 'Bulk AI draft from the press inbox. The AI legal review has not been run; open the story and run it before approving.')}`)
+  notes.push(`• ${t('원문', 'Original')}(${sourceLabel(r)}): ${r.link}`)
+  notes.push(`• ${notice ? t('본문 끝에 AI 활용 표시 문구를 넣었습니다(매체 설정).', 'An AI-use disclosure was added at the end of the story (outlet setting).') : t('AI 초안입니다. 거의 그대로 내보낸다면 본문에 AI 활용 사실을 밝혀 주세요.', 'This is an AI draft. If you publish it largely as-is, disclose the use of AI in the story body.')}`)
+
+  const row: Record<string, unknown> = {
+    title: draft.title,
+    body,
+    excerpt: draft.subtitle || (r.summary ? firstSentences(r.summary) : null),
+    thumbnail_url: thumbnail,
+    outlet_id: outletId,
+    author_id: user.id,
+    status: 'in_review',
+    press_release_id: r.id,
+    ai_notes: notes.join('\n'),
+  }
+  if (draft.keywords?.length) row.tags = draft.keywords
+  let { data: article, error } = await supabase.from('articles').insert(row).select('id').single()
+  if (error && /ai_notes/.test(error.message)) {
+    delete row.ai_notes
+    ;({ data: article, error } = await supabase.from('articles').insert(row).select('id').single())
+  }
+  if (error || !article) return { ok: false, id, title: draft.title, error: `${t('기사를 저장하지 못했습니다', 'Could not save the story')}: ${error?.message ?? ''}` }
+  revalidatePath('/articles')
+  return { ok: true, id, title: draft.title, articleId: article.id }
 }
 
 export type ManualPressState = { error?: string }
