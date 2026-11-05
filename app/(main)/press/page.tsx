@@ -10,11 +10,12 @@ import { buildSite, hasPressTiers, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
 import PressGroupBuilder, { type PickGroup } from '@/components/cms/PressGroupBuilder'
+import PressBulkList, { type BulkRow } from '@/components/cms/PressBulkList'
 import { refreshNow } from './actions'
 
 // 정책브리핑 등 국내 사이트는 해외 접속을 막기도 하므로 서울 리전에서 가져온다
 export const preferredRegion = 'icn1'
-export const maxDuration = 30
+export const maxDuration = 60   // 보도자료 일괄 AI 기사 만들기(서버 동작)는 한 건에 30초 넘게 걸리기도 한다
 
 const PAGE_SIZE = 30
 // 맞춤 자료(그룹) 모드: 최근 14일 안의 자료만
@@ -23,7 +24,7 @@ const TIER_SRC_DAYS = 30
 const TIER_LEGACY_LIMIT = 3
 type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; tier?: number; kw?: string }
 
-type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; g?: string }> }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
@@ -175,10 +176,18 @@ export default async function PressPage(props: Props) {
   const allRowsFull = (rowsRaw ?? []) as PressRow[]
   // 맞춤 자료 탭의 제목 검색: 이미 모은 자료 안에서 거른다
   const allRows = tiered && q ? allRowsFull.filter((r) => r.title.toLowerCase().includes(q.toLowerCase())) : allRowsFull
-  // 그룹을 정한 맞춤 자료: 그룹별로 몇 건인지, 고른 그룹만 보기 (그룹 1~4. 그룹 밖 자료(내가 넣은 것·★)는 "모두"에서만)
-  const groupCounts = [0, 1, 2, 3].map((i) => allRows.filter((r) => r.tier === i).length)
-  const gSel = tiered && hasFeed ? Math.max(0, Math.min(4, Math.round(Number(searchParams.g)) || 0)) : 0
-  const rows = gSel ? allRows.filter((r) => r.tier === gSel - 1) : allRows
+  // 맞춤 자료의 지역별 보기: 담은 출처가 어느 광역(특별시·광역시·도)인지, 해외 뉴스인지, 그 밖인지로 나눠 보여 준다
+  const regionKeyOf = (key: string) => regionOfSource(key) ?? (key === 'email' || key === MANUAL_SOURCE ? 'own' : foreignTopicOf(key) || isUsSource(key) ? 'world' : 'etc')
+  const REGION_CHIPS = [
+    ...REGIONS.map((r) => ({ key: r.key, label: r.label })),
+    { key: 'world', label: t('해외 뉴스', 'World news') },
+    { key: 'etc', label: t('정부·공공기관·분야', 'Government & fields') },
+    { key: 'own', label: t('내가 넣은 자료', 'My own') },
+  ]
+  const regionCounts = new Map<string, number>()
+  for (const r of allRows) regionCounts.set(regionKeyOf(r.source_key), (regionCounts.get(regionKeyOf(r.source_key)) ?? 0) + 1)
+  const rgSel = tiered && hasFeed && REGION_CHIPS.some((c) => c.key === searchParams.rg && (regionCounts.get(c.key) ?? 0) > 0) ? String(searchParams.rg) : ''
+  const rows = rgSel ? allRows.filter((r) => regionKeyOf(r.source_key) === rgSel) : allRows
   const ids = rows.map((r) => r.id)
   const { data: used } = ids.length && outletId
     ? await supabase.from('articles').select('press_release_id').eq('outlet_id', outletId).in('press_release_id', ids)
@@ -251,15 +260,14 @@ export default async function PressPage(props: Props) {
           )}
           {searchParams.msg && <p className="border-b border-line bg-[#FFF8E6] px-4 py-2.5 text-[12.5px] text-[#6B4E00] md:px-5">{searchParams.msg.slice(0, 200)}</p>}
 
-          {tiered && hasPressTiers(tiers) && (
+          {tiered && hasFeed && (
             <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-[#F1F6FF] px-4 py-2.5 text-[12.5px] text-[#27456F] md:px-5">
-              <span className="mr-1 font-semibold">{t('그룹별로 보기', 'View by group')}</span>
-              {[{ n: 0, label: t('모두', 'All') }, ...[1, 2, 3, 4].map((n) => ({ n, label: t(`그룹 ${n}`, `Group ${n}`) }))].map((x) => {
-                const cnt = x.n ? groupCounts[x.n - 1] : groupCounts.reduce((a2, c) => a2 + c, 0)
-                return (
-                  <Link key={x.n} href={x.n ? `/press?g=${x.n}` : '/press'} aria-current={gSel === x.n ? 'true' : undefined} className={`rounded-full border px-3 py-1 text-[12px] ${gSel === x.n ? 'border-ink bg-ink text-white' : 'border-[#27456F]/30 bg-white text-[#27456F] hover:border-ink'}`}>{x.label} <span className="tabular-nums opacity-70">{cnt}</span></Link>
-                )
-              })}
+              <span className="mr-1 font-semibold">{t('지역별로 보기', 'View by region')}</span>
+              {[{ key: '', label: t('모두', 'All') }, ...REGION_CHIPS.filter((c) => (regionCounts.get(c.key) ?? 0) > 0)].map((c) => (
+                <Link key={c.key || 'all'} href={c.key ? `/press?rg=${c.key}` : '/press'} aria-current={rgSel === c.key ? 'true' : undefined} className={`rounded-full border px-3 py-1 text-[12px] ${rgSel === c.key ? 'border-ink bg-ink text-white' : 'border-[#27456F]/30 bg-white text-[#27456F] hover:border-ink'}`}>
+                  {c.label} <span className="tabular-nums opacity-70">{c.key ? regionCounts.get(c.key) : allRows.length}</span>
+                </Link>
+              ))}
               <span className="ml-1 text-[#27456F]/80">{t('맞춤 자료는 “전체” 탭에서 정합니다.', 'Set up My feed in the “All” tab.')}</span>
             </div>
           )}
@@ -272,30 +280,25 @@ export default async function PressPage(props: Props) {
             </div>
           )}
           {rows.length ? (
-            <ul className="divide-y divide-line">
-              {rows.map((r, i) => (
-                <li key={r.id}>
-                  {tiered && (i === 0 || rows[i - 1].tier !== r.tier) && (
-                    <p className="bg-[#F8F9FA] px-4 py-1.5 text-[12px] font-bold text-ink md:px-5">
-                      {r.tier === 4 ? t(`그룹 없이 넣은 출처(★) · 출처당 최신 ${TIER_LEGACY_LIMIT}건`, `Sources added without a group (★) · latest ${TIER_LEGACY_LIMIT} per source`)
-                        : t(`그룹 ${(r.tier ?? 0) + 1} · 키워드·출처당 최신 ${tiers[r.tier ?? 0]?.limit}건`, `Group ${(r.tier ?? 0) + 1} · latest ${tiers[r.tier ?? 0]?.limit} per keyword/source`)}
-                    </p>
-                  )}
-                  <Link href={`/press/${r.id}`} className="block px-4 py-4 hover:bg-[#F8F9FA] md:px-5">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-muted">
-                      {r.source_key === MANUAL_SOURCE && <span className="rounded bg-ink px-1.5 py-0.5 text-white">{t('직접 등록', 'Added manually')}</span>}
-                      {r.source_key === 'email' && <span className="rounded bg-review px-1.5 py-0.5 text-white">{t('메일', 'Email')}</span>}
-                      {tiered && r.kw && <span className="rounded bg-ink/10 px-1.5 py-0.5 font-semibold text-ink">{r.kw}</span>}
-                      <span className="rounded bg-line/70 px-1.5 py-0.5">{r.source_name}</span>
-                      <time className="tabular-nums" dateTime={r.published_at ?? undefined}>{formatShort(r.published_at, lang)}</time>
-                      {usedSet.has(r.id) && <span className="rounded bg-published/10 px-1.5 py-0.5 font-semibold text-published">{t('기사화됨', 'Story created')}</span>}
-                    </div>
-                    <p className="mt-1.5 text-[15px] font-semibold leading-snug">{r.title}</p>
-                    {r.summary && <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted">{r.summary}</p>}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <PressBulkList rows={rows.map((r, i): BulkRow => ({
+              id: r.id,
+              title: r.title,
+              summary: r.summary,
+              sourceName: r.source_name,
+              date: formatShort(r.published_at, lang),
+              dateIso: r.published_at,
+              used: usedSet.has(r.id),
+              badges: [
+                ...(r.source_key === MANUAL_SOURCE ? [t('직접 등록', 'Added manually')] : []),
+                ...(r.source_key === 'email' ? [t('메일', 'Email')] : []),
+                ...(tiered && r.kw ? [r.kw] : []),
+              ],
+              head: tiered && (i === 0 || rows[i - 1].tier !== r.tier)
+                ? (r.tier === 4
+                  ? t(`그룹 없이 넣은 출처(★) · 출처당 최신 ${TIER_LEGACY_LIMIT}건`, `Sources added without a group (★) · latest ${TIER_LEGACY_LIMIT} per source`)
+                  : t(`그룹 ${(r.tier ?? 0) + 1} · 키워드·출처당 최신 ${tiers[r.tier ?? 0]?.limit}건`, `Group ${(r.tier ?? 0) + 1} · latest ${tiers[r.tier ?? 0]?.limit} per keyword/source`))
+                : null,
+            }))} />
           ) : (
             <p className="px-5 py-20 text-center text-[14px] text-muted">
               {q ? (lang === 'en' ? `No press releases match ‘${q}’.` : `‘${q}’에 해당하는 보도자료가 없습니다.`) : tab === 'rec' ? (hasFeed ? t('고른 그룹에 해당하는 최근 보도자료가 아직 없습니다.', 'No recent releases match your groups yet.') : '') : t('아직 가져온 보도자료가 없습니다.', 'No press releases have been collected yet.')}
