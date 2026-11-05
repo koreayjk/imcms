@@ -19,6 +19,7 @@ type Props = {
   major: PublicArticle[]
   picks: PublicArticle[]
   photoBand?: ReactNode
+  partnerBlock?: ReactNode
   mostViewed: PublicArticle[]
   bySection: Record<string, PublicArticle[]>
   sections: SectionConfig[]
@@ -59,7 +60,7 @@ function RowHead({ title, href, more }: { title: string; href?: string; more: st
   )
 }
 
-export default function HomeCards({ site, headline, subTops, underHeadline, major, picks, photoBand, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
+export default function HomeCards({ site, headline, subTops, underHeadline, major, picks, photoBand, partnerBlock, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
   const L = site.lang
   const t = siteText(site)
   const topCards = [...subTops.slice(0, 2), ...underHeadline].slice(0, 6)
@@ -109,6 +110,7 @@ export default function HomeCards({ site, headline, subTops, underHeadline, majo
       {photoBand}
 
       {middleAd}
+      {partnerBlock}
 
       {/* ── 많이 본 기사 ── */}
       {mostViewed.length > 0 && (

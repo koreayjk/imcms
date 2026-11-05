@@ -20,6 +20,7 @@ type Props = {
   major: PublicArticle[]
   picks: PublicArticle[]
   photoBand?: ReactNode
+  partnerBlock?: ReactNode
   mostViewed: PublicArticle[]
   bySection: Record<string, PublicArticle[]>
   sections: SectionConfig[]
@@ -36,7 +37,7 @@ function Kicker({ a }: { a: PublicArticle }) {
   return a.category ? <span className={`block ${kicker}`}>{a.category.name}</span> : null
 }
 
-export default function HomeEditorial({ site, headline, subTops, underHeadline, realtime, major, picks, photoBand, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
+export default function HomeEditorial({ site, headline, subTops, underHeadline, realtime, major, picks, photoBand, partnerBlock, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
   const L = site.lang
   const t = siteText(site)
   const leftItems = subTops.slice(0, 2)
@@ -146,6 +147,7 @@ export default function HomeEditorial({ site, headline, subTops, underHeadline, 
       {photoBand}
 
       {middleAd}
+      {partnerBlock}
 
       {/* ── 주요 기사 4칸 ── */}
       {major.length > 0 && (

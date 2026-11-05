@@ -26,6 +26,7 @@ import HomeEditorial from '@/components/site/HomeEditorial'
 import HomeCards from '@/components/site/HomeCards'
 import HomeBandsTop from '@/components/site/HomeBandsTop'
 import PhotoNews from '@/components/site/PhotoNews'
+import PartnerBlock from '@/components/site/PartnerBlock'
 import { siteText } from '@/lib/site-text'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -133,6 +134,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
     />
   ) : null
+  // 홈 중간 기관 로고 블록 (홈페이지 설정에서 채운 경우만)
+  const partnerBlock = site.logoStrip?.block ? <PartnerBlock block={site.logoStrip.block} en={L === 'en'} /> : null
+  const partnerBlockBare = site.logoStrip?.block ? <PartnerBlock block={site.logoStrip.block} en={L === 'en'} bare /> : null
   const usedBeforeMore = new Set(used)
   const majorMore = site.homeLayout === 'bands' ? [] : take(36)
 
@@ -174,7 +178,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
       </>
     )
-    const common = { site, headline, subTops, underHeadline, major, picks, photoBand: photoBandBare, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras, slides: heroSlides, heroSeconds }
+    const common = { site, headline, subTops, underHeadline, major, picks, photoBand: photoBandBare, partnerBlock: partnerBlockBare, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras, slides: heroSlides, heroSeconds }
     return (
       <SiteFrame site={site} home>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
@@ -320,6 +324,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         {!bandsMode && <AdArea site={site} slot="home_middle" className="pb-8" />}
       </div>
       <AdArea site={site} slot="popup" />
+
+      {partnerBlock}
 
       {/* ── 이슈 PICK (편집판에서 채운 경우만) ── */}
       {picks.length > 0 && (

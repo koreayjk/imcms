@@ -23,6 +23,7 @@ type Props = {
   major: PublicArticle[]
   picks: PublicArticle[]
   photoBand?: ReactNode
+  partnerBlock?: ReactNode
   mostViewed: PublicArticle[]
   bySection: Record<string, PublicArticle[]>
   sections: SectionConfig[]
@@ -33,7 +34,7 @@ type Props = {
   heroSeconds?: number
 }
 
-export default function HomePortal({ site, headline, subTops, underHeadline, breaking, major, picks, photoBand, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
+export default function HomePortal({ site, headline, subTops, underHeadline, breaking, major, picks, photoBand, partnerBlock, mostViewed, bySection, sections, middleAd, sideExtras, slides, heroSeconds }: Props) {
   const L = site.lang
   const t = siteText(site)
   const boxes = sections.filter((s) => (bySection[s.slug] ?? []).length > 0).slice(0, 8)
@@ -126,6 +127,7 @@ export default function HomePortal({ site, headline, subTops, underHeadline, bre
         {photoBand}
 
         {middleAd}
+        {partnerBlock}
 
         {/* ── 주요뉴스 + 섹션 박스 + 오른쪽 많이 본 뉴스 ── */}
         <div data-fit-grid className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
