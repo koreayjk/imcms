@@ -9,9 +9,8 @@ import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_FIELDS, PRESS_SOURCES as ALL
 import { buildSite, hasPressTiers, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
-import PressSourceFilter, { type PickGroup } from '@/components/cms/PressSourceFilter'
-import PressTierSettings from '@/components/cms/PressTierSettings'
-import { refreshNow, savePressSources, savePressTierSources } from './actions'
+import PressGroupBuilder, { type PickGroup } from '@/components/cms/PressGroupBuilder'
+import { refreshNow } from './actions'
 
 // 정책브리핑 등 국내 사이트는 해외 접속을 막기도 하므로 서울 리전에서 가져온다
 export const preferredRegion = 'icn1'
@@ -25,7 +24,7 @@ const TIER_OWN_LIMIT = 10
 const TIER_LEGACY_LIMIT = 3
 type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; tier?: number; kw?: string }
 
-type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string }> }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; g?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
@@ -116,8 +115,7 @@ export default async function PressPage(props: Props) {
   const usLocal = Array.from(new Set([...PRESS_SOURCES.filter((x) => x.local).map((x) => x.key), ...pickedKeys]))
   const usWire = PRESS_SOURCES.filter((x) => !x.local && !pickedKeys.includes(x.key)).map((x) => x.key)
   // 전체 탭 "맞춤 자료 만들기"에서 체크할 출처 묶음 (이 매체가 볼 수 있는 출처만, 해외 언론 묶음은 매체 설정에서 켜므로 뺀다)
-  const tierOf = new Map<string, number>((outletSite?.pressTiers ?? []).flatMap((g, i) => g.sources.map((k) => [k, i + 1] as [string, number])))
-  const toItems = (xs: typeof PRESS_SOURCES): PickGroup['items'] => xs.map((x) => ({ key: x.key, name: x.name.replace('뉴스와이어 · ', ''), saved: pickedKeys.includes(x.key), auto: fieldKeys.includes(x.key), tier: tierOf.get(x.key) }))
+  const toItems = (xs: typeof PRESS_SOURCES): PickGroup['items'] => xs.map((x) => ({ key: x.key, name: x.name.replace('뉴스와이어 · ', ''), saved: pickedKeys.includes(x.key), auto: fieldKeys.includes(x.key) }))
   const pickGroups: PickGroup[] = (english
     ? [
         { label: t('지역·기관 소식', 'Local & institutions'), items: toItems(PRESS_SOURCES.filter((x) => x.local)) },
@@ -130,7 +128,7 @@ export default async function PressPage(props: Props) {
         // 지자체는 광역(특별시·광역시·도)별로 묶는다: 광역을 체크하면 아래 시·군·구가 모두 체크되고, 일부만 뺄 수 있다
         ...REGIONS.map((r) => ({ label: r.label, region: true, items: toItems(r.sources.map((k) => PRESS_SOURCES.find((x) => x.key === k)).filter((x): x is (typeof PRESS_SOURCES)[number] => !!x)) })),
       ]).filter((g) => g.items.length > 0)
-  pickGroups.unshift({ label: t('내가 넣은 자료', 'My own'), items: [{ key: 'email', name: t('메일', 'Email'), saved: false, auto: false, tier: tierOf.get('email') }, { key: MANUAL_SOURCE, name: t('직접 등록', 'Added manually'), saved: false, auto: false, tier: tierOf.get(MANUAL_SOURCE) }] })
+  pickGroups.unshift({ label: t('내가 넣은 자료', 'My own'), items: [{ key: 'email', name: t('메일', 'Email'), saved: false, auto: false }, { key: MANUAL_SOURCE, name: t('직접 등록', 'Added manually'), saved: false, auto: false }] })
   // 맞춤 자료 탭 위 출처 버튼: 매체 분야의 출처 + 켠 해외 언론 + 편집장이 체크해 넣은 출처만. 정부·지자체처럼 제목 키워드로 골라 오는 출처는 버튼으로 늘어놓지 않는다(출처별로 보려면 전체 탭)
   const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : new Set([...fieldKeys, ...foreignKeys, ...pickedKeys])
   // 추천 분야·키워드를 아직 정하지 않은 한국어 매체 (추천 탭에 안내를 보인다)
@@ -195,7 +193,11 @@ export default async function PressPage(props: Props) {
       : Promise.resolve({ data: [] as any[] }),
   ])
 
-  const rows = (rowsRaw ?? []) as PressRow[]
+  const allRows = (rowsRaw ?? []) as PressRow[]
+  // 그룹을 정한 맞춤 자료: 그룹별로 몇 건인지, 고른 그룹만 보기 (그룹 1~4. 그룹 밖 자료(내가 넣은 것·★)는 "모두"에서만)
+  const groupCounts = [0, 1, 2, 3].map((i) => allRows.filter((r) => r.tier === i).length)
+  const gSel = tiered ? Math.max(0, Math.min(4, Math.round(Number(searchParams.g)) || 0)) : 0
+  const rows = gSel ? allRows.filter((r) => r.tier === gSel - 1) : allRows
   const ids = rows.map((r) => r.id)
   const { data: used } = ids.length && outletId
     ? await supabase.from('articles').select('press_release_id').eq('outlet_id', outletId).in('press_release_id', ids)
@@ -275,43 +277,29 @@ export default async function PressPage(props: Props) {
           </div>}
 
           {tab === 'all' && pickGroups.length > 0 && (
-            <PressSourceFilter
+            <PressGroupBuilder
+              outletId={outletId}
+              canPick={canPick}
+              initial={tiers}
               groups={pickGroups}
               selected={selected}
               q={q}
-              canPick={canPick}
-              saveAction={savePressSources}
-              tierAction={savePressTierSources}
-              text={{
-                title: t('출처 고르기', 'Pick sources'),
-                hint: t('체크하면 그 출처의 자료만 아래에 보입니다', 'Check sources to see only their releases below'),
-                clear: t('선택 해제', 'Clear'),
-                add: t('★ 맞춤 자료에 넣기', '★ Add to My feed'),
-                remove: t('맞춤 자료에서 빼기', 'Remove from My feed'),
-                only: t('★는 이미 맞춤 자료에 들어 있는 출처입니다. 체크한 뒤 버튼을 누르면 왼쪽 “맞춤 자료”에 모입니다. AI 자동 작성도 이 자료를 씁니다.', '★ marks sources already in My feed. Check sources and use the buttons to add them to “My feed”. AI auto-writing also uses them.'),
-                savedMark: t('맞춤 자료에 들어 있음', 'In My feed'),
-                autoMark: t('(분야 설정)', '(field setting)'),
-                editorOnly: t('맞춤 자료에 넣기는 편집장이 합니다', 'The editor adds sources to My feed'),
-                open: t('열기', 'Open'),
-                close: t('닫기', 'Close'),
-                regionHint: t('광역을 체크하면 아래 시·군·구가 모두 체크됩니다. 빼고 싶은 곳만 체크를 풀어 주세요.', 'Check a region to select all its cities and districts, then uncheck the ones you don’t want.'),
-                regionAll: t('전체 선택', 'Select all'),
-                tierHint: t('① 체크한 출처를 그룹에 담기 → (건수는 위쪽 “맞춤 자료 그룹 설정”에서 바꿉니다)', '① Put checked sources into a group → (change the counts in “Custom feed groups” above)'),
-                tierAdd: [1, 2, 3, 4].map((n) => t(`그룹 ${n}에 넣기 · 출처당 ${(outletSite?.pressTiers ?? [])[n - 1]?.limit ?? [10, 5, 3, 1][n - 1]}건`, `Add to group ${n} · ${(outletSite?.pressTiers ?? [])[n - 1]?.limit ?? [10, 5, 3, 1][n - 1]} per source`)),
-                tierRemove: t('그룹에서 빼기', 'Remove from groups'),
-                tierMark: t('맞춤 자료 그룹 번호 (그룹마다 출처 하나당 보이는 최신 건수가 다릅니다)', 'My feed group number (each group shows a different number of latest items per source)'),
-              }}
+              suggestions={Array.from(new Set([...sectionNames, ...keywords])).slice(0, 40)}
             />
           )}
           {searchParams.msg && <p className="border-b border-line bg-[#FFF8E6] px-4 py-2.5 text-[12.5px] text-[#6B4E00] md:px-5">{searchParams.msg.slice(0, 200)}</p>}
 
-          {outletId && (ctx.isEditorPlus || ctx.isStaff) && (
-            <PressTierSettings outletId={outletId} initial={tiers} active={hasPressTiers(tiers)} sourceNames={Object.fromEntries([...PRESS_SOURCES.map((x) => [x.key, x.name.replace('뉴스와이어 · ', '')]), ['email', t('메일', 'Email')], [MANUAL_SOURCE, t('직접 등록', 'Added manually')]])} suggestions={Array.from(new Set([...sectionNames, ...keywords])).slice(0, 40)} />
-          )}
           {tiered && (
-            <p className="border-b border-line bg-[#F1F6FF] px-4 py-2.5 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">
-              {t(`내가 정한 그룹대로 모았습니다 (키워드는 최근 ${TIER_DAYS}일, 출처는 최근 ${TIER_SRC_DAYS}일). 그룹 1이 가장 위, 키워드·출처마다 정한 건수만큼만 나옵니다. 출처는 “전체” 탭에서 담습니다.`, `Collected by your groups (keywords: last ${TIER_DAYS} days, sources: last ${TIER_SRC_DAYS} days). Group 1 comes first, each keyword/source limited to its count. Add sources in the “All” tab.`)}
-            </p>
+            <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-[#F1F6FF] px-4 py-2.5 text-[12.5px] text-[#27456F] md:px-5">
+              <span className="mr-1 font-semibold">{t('그룹별로 보기', 'View by group')}</span>
+              {[{ n: 0, label: t('모두', 'All') }, ...[1, 2, 3, 4].map((n) => ({ n, label: t(`그룹 ${n}`, `Group ${n}`) }))].map((x) => {
+                const cnt = x.n ? groupCounts[x.n - 1] : groupCounts.reduce((a2, c) => a2 + c, 0)
+                return (
+                  <Link key={x.n} href={x.n ? `/press?g=${x.n}` : '/press'} aria-current={gSel === x.n ? 'true' : undefined} className={`rounded-full border px-3 py-1 text-[12px] ${gSel === x.n ? 'border-ink bg-ink text-white' : 'border-[#27456F]/30 bg-white text-[#27456F] hover:border-ink'}`}>{x.label} <span className="tabular-nums opacity-70">{cnt}</span></Link>
+                )
+              })}
+              <span className="ml-1 text-[#27456F]/80">{t('맞춤 자료는 “전체” 탭에서 정합니다.', 'Set up My feed in the “All” tab.')}</span>
+            </div>
           )}
           {tab === 'rec' && auto && !noRecSetup && !tiered && (
             <p className="border-b border-line bg-[#F1F6FF] px-4 py-3 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">

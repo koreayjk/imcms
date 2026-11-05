@@ -22,57 +22,27 @@ export async function savePressTiers(outletId: string, tiers: unknown): Promise<
   if (!isEditorPlus && !isStaff) return { error: t('편집장 이상만 고칠 수 있습니다.', 'Only Editors-in-Chief and above can edit this.') }
   if (!outletId) return { error: t('매체를 먼저 골라 주세요.', 'Choose an outlet first.') }
   const clean = cleanPressTiers(tiers)
-  const { error } = await supabase.rpc('outlet_press_tiers_save', { o: outletId, p_tiers: clean.some((g) => g.keywords.length) ? clean : null })
+  const { error } = await supabase.rpc('outlet_press_tiers_save', { o: outletId, p_tiers: clean.some((g) => g.keywords.length || g.sources.length) ? clean : null })
   if (error) {
     if (/outlet_press_tiers_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return { error: t('이 기능을 쓰려면 운영팀이 Supabase에서 press-tiers.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run press-tiers.sql in Supabase.') }
     return { error: error.message.replace(/^.*?:\s*/, '') }
   }
-  revalidatePath('/press')
-  return { ok: clean.some((g) => g.keywords.length) ? t('저장했습니다. 맞춤 자료에 바로 반영됩니다.', 'Saved. Your custom feed is updated.') : t('그룹 설정을 지웠습니다. 예전 추천 방식으로 돌아갑니다.', 'Groups cleared. The feed is back to the default recommendation.') }
+  // 그룹에 담은 출처는 "그룹 없이 ★로 넣은 출처"에서 뺀다 (한 출처가 두 곳에 있지 않게)
+  const grouped = new Set(clean.flatMap((g) => g.sources))
+  if (grouped.size) {
+    const { data } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
+    const cur = cleanPressSources(((data?.site ?? {}) as OutletSiteSettings).pressSources)
+    const left = cur.filter((k) => !grouped.has(k))
+    if (left.length !== cur.length) await supabase.rpc('outlet_press_sources_save', { o: outletId, p_sources: left })
+  }
+  // 화면은 이미 바뀌어 있으므로 다시 불러오지 않는다 (맞춤 자료 탭은 열 때 새로 읽는다)
+  return { ok: clean.some((g) => g.keywords.length || g.sources.length) ? t('저장했습니다.', 'Saved.') : t('그룹 설정을 지웠습니다. 예전 추천 방식으로 돌아갑니다.', 'Groups cleared. The feed is back to the default recommendation.') }
 }
 
 export async function refreshNow() {
   const { supabase } = await getCmsContext()
   await refreshPress(supabase, true)
   revalidatePath('/press')
-}
-
-// 전체 탭에서 체크한 출처를 맞춤 자료의 그룹 1~4에 넣거나 그룹에서 뺀다 (편집장 이상)
-//   mode: g1~g4 (그 그룹에 넣기, 다른 그룹에 있던 것은 옮겨 온다) / ungroup (모든 그룹에서 빼기)
-//   그룹에 넣은 출처는 "그룹 없이 맞춤 자료에 넣은 출처(★)"에서는 빠진다 (한 출처가 두 곳에 있지 않게)
-export async function savePressTierSources(formData: FormData) {
-  const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
-  const { t } = await getT()
-  const sp = new URLSearchParams({ tab: 'all' })
-  const q = String(formData.get('q') ?? '').slice(0, 50)
-  if (q) sp.set('q', q)
-  formData.getAll('s').map(String).filter((k) => /^[\w-]{1,40}$/.test(k)).slice(0, 80).forEach((k) => sp.append('s', k))
-  const back = `/press?${sp.toString()}`
-  const go = (msg?: string) => redirect(msg ? `${back}&msg=${encodeURIComponent(msg)}` : back)
-  if (!outletId || (!isEditorPlus && !isStaff)) return go(t('편집장 이상만 바꿀 수 있습니다.', 'Only Editors-in-Chief and above can change this.'))
-  const mode = String(formData.get('mode') ?? '')
-  const target = /^g[1-4]$/.test(mode) ? Number(mode.slice(1)) - 1 : mode === 'ungroup' ? -1 : null
-  if (target === null) return go(t('잘못된 요청입니다.', 'Invalid request.'))
-  const picked = formData.getAll('s').map(String)
-  const keys = cleanPressTiers([{ sources: picked }])[0].sources
-  if (!keys.length) return go(t('그룹에 넣거나 뺄 출처를 먼저 체크해 주세요.', 'Check the sources first.'))
-  const { data } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
-  const site = (data?.site ?? {}) as OutletSiteSettings
-  const tiers = cleanPressTiers(site.pressTiers)
-  const next = tiers.map((g, i) => ({ ...g, sources: [...g.sources.filter((k) => !keys.includes(k)), ...(i === target ? keys : [])] }))
-  const { error } = await supabase.rpc('outlet_press_tiers_save', { o: outletId, p_tiers: next.some((g) => g.keywords.length || g.sources.length) ? next : null })
-  if (error) {
-    if (/outlet_press_tiers_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return go(t('이 기능을 쓰려면 운영팀이 Supabase에서 press-tiers.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run press-tiers.sql in Supabase.'))
-    return go(error.message.replace(/^.*?:\s*/, ''))
-  }
-  if (target >= 0) {
-    const cur = cleanPressSources(site.pressSources)
-    const left = cur.filter((k) => !keys.includes(k))
-    if (left.length !== cur.length) await supabase.rpc('outlet_press_sources_save', { o: outletId, p_sources: left })
-  }
-  revalidateTag('sites', { expire: 0 })
-  revalidatePath('/press')
-  return go(target < 0 ? t('그룹에서 뺐습니다.', 'Removed from groups.') : t(`그룹 ${target + 1}에 넣었습니다. 왼쪽 “맞춤 자료” 탭에서 볼 수 있습니다.`, `Added to group ${target + 1}. See it in the “My feed” tab.`))
 }
 
 // 전체 탭에서 체크한 출처를 이 매체의 "맞춤 자료"에 넣거나 뺀다 (편집장 이상)
