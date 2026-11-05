@@ -4,15 +4,16 @@ import { useRef } from 'react'
 
 // 보도자료함 "전체" 탭의 출처 체크 목록
 //   체크하면 바로 그 출처의 자료만 아래에 보인다 (누구나). 편집장 이상은 체크한 출처를 맞춤 자료에 넣거나 뺄 수 있다.
-export type PickGroup = { label: string; items: { key: string; name: string; saved: boolean; auto: boolean }[]; region?: boolean }
+export type PickGroup = { label: string; items: { key: string; name: string; saved: boolean; auto: boolean; tier?: number }[]; region?: boolean }
 
-export default function PressSourceFilter({ groups, selected, q, canPick, saveAction, text }: {
+export default function PressSourceFilter({ groups, selected, q, canPick, saveAction, tierAction, text }: {
   groups: PickGroup[]
   selected: string[]
   q?: string
   canPick: boolean
   saveAction: (formData: FormData) => void | Promise<void>
-  text: { title: string; hint: string; clear: string; add: string; remove: string; only: string; savedMark: string; autoMark: string; editorOnly: string; open: string; close: string; regionHint?: string; regionAll?: string }
+  tierAction: (formData: FormData) => void | Promise<void>
+  text: { title: string; hint: string; clear: string; add: string; remove: string; only: string; savedMark: string; autoMark: string; editorOnly: string; open: string; close: string; regionHint?: string; regionAll?: string; tierHint: string; tierAdd: string[]; tierRemove: string; tierMark: string }
 }) {
   const form = useRef<HTMLFormElement>(null)
   return (
@@ -53,6 +54,15 @@ export default function PressSourceFilter({ groups, selected, q, canPick, saveAc
           ) : <span className="text-[12px] text-muted">{text.editorOnly}</span>}
           <span className="text-[12px] text-muted">{text.only}</span>
         </div>
+        {canPick && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-md border border-line bg-white px-3 py-2.5">
+            <span className="text-[12.5px] font-bold">{text.tierHint}</span>
+            {text.tierAdd.map((label, i) => (
+              <button key={i} type="submit" name="mode" value={`g${i + 1}`} formAction={tierAction} formMethod="post" disabled={!selected.length} className="btn-secondary px-3 py-1.5 text-[12.5px] disabled:opacity-40">{label}</button>
+            ))}
+            <button type="submit" name="mode" value="ungroup" formAction={tierAction} formMethod="post" disabled={!selected.length} className="px-2 py-1.5 text-[12.5px] text-muted underline disabled:opacity-40">{text.tierRemove}</button>
+          </div>
+        )}
       </form>
     </details>
   )
@@ -66,6 +76,7 @@ function Item({ x, checked, text }: { x: PickGroup['items'][number]; checked: bo
       <input type="checkbox" name="s" value={x.key} defaultChecked={checked} />
       {x.name}
       {x.saved && <span className="text-[#B7791F]" title={text.savedMark}>★</span>}
+      {x.tier && <span className="rounded bg-ink px-1.5 text-[10.5px] font-bold leading-4 text-white" title={text.tierMark}>{x.tier}</span>}
       {x.auto && <span className="text-[11px] text-muted">{text.autoMark}</span>}
     </label>
   )
@@ -76,6 +87,7 @@ function Region({ g, selected, text }: { g: PickGroup; selected: string[]; text:
   const box = useRef<HTMLDivElement>(null)
   const on = g.items.filter((x) => selected.includes(x.key)).length
   const saved = g.items.filter((x) => x.saved).length
+  const grouped = g.items.filter((x) => x.tier).length
   const toggleAll = (checked: boolean) => {
     box.current?.querySelectorAll<HTMLInputElement>('input[name="s"]').forEach((el) => { el.checked = checked })
   }
@@ -93,6 +105,7 @@ function Region({ g, selected, text }: { g: PickGroup; selected: string[]; text:
         <span className="font-semibold">{g.label}</span>
         <span className="text-[12px] text-muted">{on > 0 ? `${on}/${g.items.length}` : g.items.length}</span>
         {saved > 0 && <span className="text-[#B7791F]" title={text.savedMark}>★ {saved}</span>}
+        {grouped > 0 && <span className="rounded bg-ink px-1.5 text-[10.5px] font-bold leading-4 text-white" title={text.tierMark}>{grouped}</span>}
       </summary>
       <div ref={box} className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line px-3 py-2.5">
         {g.items.map((x) => <Item key={x.key} x={x} checked={selected.includes(x.key)} text={text} />)}

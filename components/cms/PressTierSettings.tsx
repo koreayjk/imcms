@@ -7,10 +7,10 @@ import { useT } from '@/components/cms/CmsLang'
 import { PRESS_TIER_DEFAULTS, PRESS_TIER_MAX_KEYWORDS, PRESS_TIER_MAX_LIMIT, type PressTier } from '@/lib/sites'
 
 // 보도자료함 맞춤 자료 설정 (편집장 이상): 키워드를 4개 그룹으로 나누고, 그룹마다 키워드 하나당 가져올 최신 건수를 정한다
-export default function PressTierSettings({ outletId, initial, suggestions, active }: { outletId: string; initial: PressTier[]; suggestions: string[]; active: boolean }) {
+export default function PressTierSettings({ outletId, initial, suggestions, active, sourceNames }: { outletId: string; initial: PressTier[]; suggestions: string[]; active: boolean; sourceNames: Record<string, string> }) {
   const t = useT()
   const router = useRouter()
-  const [tiers, setTiers] = useState<PressTier[]>(() => PRESS_TIER_DEFAULTS.map((d, i) => ({ keywords: initial[i]?.keywords ?? [], limit: initial[i]?.limit ?? d })))
+  const [tiers, setTiers] = useState<PressTier[]>(() => PRESS_TIER_DEFAULTS.map((d, i) => ({ keywords: initial[i]?.keywords ?? [], sources: initial[i]?.sources ?? [], limit: initial[i]?.limit ?? d })))
   const [target, setTarget] = useState(0)
   const [draft, setDraft] = useState<string[]>(['', '', '', ''])
   const [open, setOpen] = useState(false)
@@ -29,8 +29,9 @@ export default function PressTierSettings({ outletId, initial, suggestions, acti
     }))
   }
   const remove = (gi: number, k: string) => setTiers((cur) => cur.map((g, i) => (i === gi ? { ...g, keywords: g.keywords.filter((x) => x !== k) } : g)))
+  const removeSource = (gi: number, k: string) => setTiers((cur) => cur.map((g, i) => (i === gi ? { ...g, sources: g.sources.filter((x) => x !== k) } : g)))
   const setLimit = (gi: number, n: number) => setTiers((cur) => cur.map((g, i) => (i === gi ? { ...g, limit: Math.max(1, Math.min(PRESS_TIER_MAX_LIMIT, n || 1)) } : g)))
-  const total = tiers.reduce((sum, g) => sum + g.keywords.length * g.limit, 0)
+  const total = tiers.reduce((sum, g) => sum + (g.keywords.length + g.sources.length) * g.limit, 0)
 
   const save = () => start(async () => {
     const r = await savePressTiers(outletId, tiers)
@@ -50,7 +51,7 @@ export default function PressTierSettings({ outletId, initial, suggestions, acti
       {open && (
         <div className="space-y-4 px-4 pb-5 md:px-5">
           <p className="text-[12.5px] leading-relaxed text-muted">
-            {t('키워드를 4개 그룹으로 나눠 담으세요. 그룹마다 “키워드 하나당 최신 몇 건”을 정하면, 자료가 많은 키워드가 다른 키워드를 밀어내지 않고 중요도 순서대로 골고루 모입니다. 최근 14일, 제목·요약에 키워드가 있는 자료만 보입니다.', 'Put keywords into 4 groups and set how many latest items each keyword brings per group. A busy keyword can’t crowd out the others, and groups appear in order of importance. Only releases from the last 14 days whose title or summary contains the keyword are shown.')}
+            {t('키워드와 출처를 4개 그룹으로 나눠 담으세요. 그룹마다 “하나당 최신 몇 건”을 정하면, 자료가 많은 곳이 다른 곳을 밀어내지 않고 중요도 순서대로 골고루 모입니다. 출처(예: 경기도 > 하남시)는 “전체” 탭의 출처 고르기에서 체크해 “그룹 N에 넣기”로 담고, 여기서는 키워드를 담고 건수를 정하고 출처를 뺄 수 있습니다. 키워드는 최근 14일 제목·요약에 있는 자료, 출처는 최근 30일 자료만 보입니다.', 'Put keywords and sources into 4 groups and set how many latest items each brings. A busy one can’t crowd out the others, and groups appear in order of importance. Add sources (e.g. Gyeonggi > Hanam) in the “All” tab with “Add to group N”; here you can add keywords, set counts and remove sources. Keywords match the last 14 days of titles/summaries, sources show the last 30 days.')}
           </p>
 
           {suggestions.length > 0 && (
@@ -78,13 +79,19 @@ export default function PressTierSettings({ outletId, initial, suggestions, acti
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-[13px] font-bold">{t(`그룹 ${gi + 1}`, `Group ${gi + 1}`)}</h3>
                   <label className="flex items-center gap-1.5 text-[12px] text-muted">
-                    {t('키워드당 최신', 'Latest per keyword')}
+                    {t('하나당 최신', 'Latest per item')}
                     <input type="number" min={1} max={PRESS_TIER_MAX_LIMIT} value={g.limit} onChange={(e) => setLimit(gi, Number(e.target.value))} className="field-input w-16 py-0.5 text-center" />
                     {t('건', '')}
                   </label>
                 </div>
                 <div className="mt-2 flex min-h-8 flex-wrap gap-1.5">
-                  {g.keywords.length === 0 && <span className="py-1 text-[12px] text-muted">{t('비어 있음', 'Empty')}</span>}
+                  {g.keywords.length === 0 && g.sources.length === 0 && <span className="py-1 text-[12px] text-muted">{t('비어 있음', 'Empty')}</span>}
+                  {g.sources.map((k) => (
+                    <span key={k} className="inline-flex items-center gap-1 rounded-full border border-ink/30 bg-white py-0.5 pl-2.5 pr-1 text-[12px]" title={t('출처', 'Source')}>
+                      <span className="text-[10.5px] text-muted">{t('출처', 'src')}</span> {sourceNames[k] ?? k}
+                      <button type="button" onClick={() => removeSource(gi, k)} aria-label={t(`${sourceNames[k] ?? k} 빼기`, `Remove ${sourceNames[k] ?? k}`)} className="grid h-4 w-4 place-items-center rounded-full text-[11px] text-muted hover:bg-ink hover:text-white">×</button>
+                    </span>
+                  ))}
                   {g.keywords.map((k) => (
                     <span key={k} className="inline-flex items-center gap-1 rounded-full bg-ink/10 py-0.5 pl-2.5 pr-1 text-[12px]">
                       {k}
