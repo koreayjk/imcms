@@ -14,8 +14,7 @@ import SearchRegisterGuide from './SearchRegisterGuide'
 import GovPicker from './GovPicker'
 import GovLogoFinder from './GovLogoFinder'
 import LogoStrip from '@/components/site/LogoStrip'
-import { buildSite, cleanLogoStrip, DEFAULT_COLORS, foreignTopics, openTimePassed, pressFields, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
-import { FOREIGN_TOPICS, PRESS_FIELDS } from '@/lib/press-sources'
+import { buildSite, cleanLogoStrip, DEFAULT_COLORS, openTimePassed, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { uploadImage } from '@/components/editor/upload'
 import SiteHeader from '@/components/site/SiteHeader'
 import SiteFooter from '@/components/site/SiteFooter'
@@ -66,13 +65,6 @@ const LAYOUT_EN: Record<string, { name: string; label: string; features: string 
   editorial: { name: 'US style 1', label: 'Editorial', features: 'A classic newspaper with a large centered masthead, thin dividers and serif headlines. Suits current-affairs, analysis and association outlets.' },
   cards: { name: 'US style 2', label: 'Card magazine', features: 'A large hero photo plus a rounded card grid with generous white space. Suits local news, English-language outlets and outlets with many mobile readers.' },
 }
-const FOREIGN_EN: Record<string, { label: string; hint: string }> = {
-  israel: { label: 'Israeli media', hint: 'Jerusalem Post, JNS, Ynet, etc.' },
-  education: { label: 'International education & study-abroad media', hint: 'Inside Higher Ed, The PIE News, ICEF Monitor, etc.' },
-  mission: { label: 'International missions media', hint: 'IMB, OMF, Wycliffe, ICC (persecuted church), Christianity Today' },
-  reformed: { label: 'International Reformed & Christian education media', hint: 'The Gospel Coalition, Reformation21, 9Marks, Association of Classical Christian Schools (ACCS), etc.' },
-}
-const PRESS_FIELD_EN: Record<string, string> = { medical: 'Medical & welfare', shipping: 'Shipping, logistics & trade', education: 'Education' }
 const AI_BOT_EN: Record<string, { label: string; hint: string }> = {
   allow: { label: 'Allow all', hint: 'Block nothing, as now. AI may use your stories for training and may show them as sources in answers.' },
   answer: { label: 'Block training crawls, but allow AI search and answers to cite you as a source (recommended)', hint: 'Lets ChatGPT, Claude and Perplexity link to your stories when answering questions, and blocks only the bulk crawlers used for model training.' },
@@ -168,7 +160,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
   const fileRef = useRef<HTMLInputElement>(null)
 
   const set = (patch: Partial<OutletSiteSettings>) => setS((prev) => ({ ...prev, ...patch }))
-  const keywordList = (s.pressKeywords ?? '').split(/[,\n]/).map((k) => k.trim()).filter(Boolean)
   const setLegal = (k: keyof SiteLegal, v: string) => setS((prev) => ({ ...prev, legal: { ...prev.legal, [k]: v } }))
 
   // 저장 전에 바로 보이는 미리보기
@@ -260,7 +251,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-strip', t('로고 띠', 'Logo strip'), true],
           ['s-sections', t('섹션 메뉴', 'Sections'), true],
           ['s-footer', t('하단 표시', 'Footer'), true],
-          ['s-press', t('보도자료 맞춤', 'Press feed'), !self],
           ['s-open', t('오픈 준비', 'Opening soon'), !self],
           ['s-domain', t('도메인', 'Domain'), !self],
           ['s-search', t('검색 노출', 'Search'), !self],
@@ -345,28 +335,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               )}
               {s.aiNotice?.on && <p className="text-[12px] text-muted">{t('비워 두면 위의 기본 문구를 씁니다. 바꿀 때는 문구에 “AI”나 “인공지능”을 넣어 주세요. 본문 끝에 “※ 문구” 모양으로 들어갑니다.', 'If left blank, the default text above is used. If you change it, include “AI” or “artificial intelligence” in the text. It is added at the end of the story in the form “※ text”.')}</p>}
             </div>
-            {/* 해외 언론 묶음은 운영팀이 정한다 (편집장 설정 화면에는 보이지 않고, 이미 정해진 값은 그대로 저장된다) */}
-            {!self && (
-            <fieldset className="space-y-1.5 text-[13.5px]">
-              <legend className="font-bold">{t('해외 언론 자료 받기', 'Receive international press material')}</legend>
-              <p className="text-[12px] text-muted">{t('보도자료함에 영문 기사 요약을 함께 보여주고, AI가 출처를 밝힌 한국어 기사 초안으로 씁니다. 매체 분야에 맞는 묶음만 고르세요.', 'Shows English story summaries in the press release inbox, and AI writes a Korean story draft that credits the source. Choose only the groups that fit your outlet\'s field.')}</p>
-              {FOREIGN_TOPICS.map((ft) => {
-                const on = foreignTopics(s).includes(ft.key)
-                return (
-                  <label key={ft.key} className="flex items-start gap-2">
-                    <input
-                      type="checkbox" checked={on} className="mt-1"
-                      onChange={(e) => {
-                        const next = foreignTopics(s).filter((k) => k !== ft.key).concat(e.target.checked ? [ft.key] : [])
-                        set({ pressForeignTopics: next, pressForeign: next.length > 0 })
-                      }}
-                    />
-                    <span><strong>{lang === 'en' ? FOREIGN_EN[ft.key]?.label ?? ft.label : ft.label}</strong> <span className="text-[12px] text-muted">{lang === 'en' ? FOREIGN_EN[ft.key]?.hint ?? ft.hint : ft.hint}</span></span>
-                  </label>
-                )
-              })}
-            </fieldset>
-            )}
             {!self && <Field label={t('쇼핑몰 주소', 'Shop URL')} hint={t("SHOP 메뉴·띠에서 연결할 주소 (없으면 '오픈 준비 중')", 'Address linked from the SHOP menu and strip (shows “Opening soon” if empty)')}><input value={s.shopUrl ?? ''} onChange={(e) => set({ shopUrl: e.target.value })} maxLength={300} placeholder="https://" className="field-input" /></Field>}
           </div>
         </div>
@@ -639,31 +607,6 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         {missing.length > 0 && <p className="mt-3 rounded bg-draft/10 px-3 py-2 text-[12.5px] text-[#6B5F22]">⚠ {t('아직 비어 있는 필수 항목:', 'Required fields still empty:')} {missing.map((m) => legalLabel(m)).join(', ')}</p>}
       </Card>
 
-      {/* 보도자료 맞춤 분야·키워드는 운영팀 화면에서만 (편집장은 보도자료함 "전체" 탭에서 출처를 골라 맞춤 자료를 만든다) */}
-      {!self && (
-      <Card id="s-press" title={t('보도자료 맞춤', 'Press release feed')} note={t('보도자료함 ‘맞춤 자료’ 탭에 보여줄 자료를 정합니다. ‘전체’ 탭에는 언제나 모든 자료가 나옵니다.', 'Choose what appears in the “My feed” tab of the press release inbox. The “All” tab always shows everything.')}>
-        <fieldset className="space-y-1.5 text-[13.5px]">
-          <legend className="font-bold">{t('매체 분야', 'Outlet field')}</legend>
-          <p className="text-[12px] text-muted">{t('고른 분야의 뉴스와이어 분류만 맞춤 자료에 나옵니다. 정부·공공기관 보도자료는 제목에 아래 키워드가 있을 때만 나옵니다.', 'Only Newswire categories for the chosen fields appear in your feed. Government and public agency press releases appear only when the title contains one of the keywords below.')}</p>
-          <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-            {PRESS_FIELDS.map((f) => {
-              const now = pressFields(s, keywordList)
-              return (
-                <label key={f.key} className="flex items-center gap-2">
-                  <input type="checkbox" checked={now.includes(f.key)} onChange={(e) => set({ pressFields: now.filter((k) => k !== f.key).concat(e.target.checked ? [f.key] : []) })} />
-                  <strong>{lang === 'en' ? PRESS_FIELD_EN[f.key] ?? f.label : f.label}</strong>
-                </label>
-              )
-            })}
-          </div>
-        </fieldset>
-        <div className="mt-4">
-          <p className="text-[13.5px] font-bold">{t('맞춤 키워드', 'Feed keywords')}</p>
-          <p className="mb-1.5 text-[12px] text-muted">{t('제목에 이 단어가 들어간 정부·공공기관 보도자료를 맞춤 자료에 넣습니다(분야를 고르지 않았다면 모든 출처에서). 분야와 키워드를 모두 비워 두면 매체의 섹션 이름으로 알아서 고릅니다. 쉼표로 구분합니다. 3글자 이하 영문 약어(IB, AI 등)는 다른 단어에 섞여 걸리기 쉬워 쓰지 않습니다.', 'Government and public agency press releases whose title contains these words are added to your feed (from all sources if no field is chosen). Leave both empty and your feed follows your section names automatically. Separate with commas. English abbreviations of 3 letters or fewer (IB, AI, etc.) are not used because they easily match inside other words.')}</p>
-          <textarea value={s.pressKeywords ?? ''} onChange={(e) => set({ pressKeywords: e.target.value })} rows={3} placeholder={t('예: 요양, 돌봄, 복지, 병원', 'e.g. 요양, 돌봄, 복지, 병원 (enter the words as they appear in Korean titles)')} className="field-input resize-y" />
-        </div>
-      </Card>
-      )}
 
       {!self && (
         <>
