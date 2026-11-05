@@ -8,7 +8,6 @@ export const LAUNCH_GROUPS: LaunchGroup[] = [
     title: '1. 개통 준비',
     items: [
       { key: 'invite', title: '발행인이 초대 메일로 가입하고 로그인했다', detail: '안 되면 회원 메뉴에서 다시 초대' },
-      { key: 'domain', title: '매체 도메인 연결 (DNS) 완료', detail: '홈페이지 설정 → 도메인. 오픈 준비 중이면 주소창에는 안내 화면이 보이고, 실제 홈페이지는 미리보기 링크로 확인' },
       { key: 'brand', title: '로고·색·법정 표기 입력', detail: '제호, 발행인·편집인, 인터넷신문 등록번호·등록일, 청소년보호책임자, 주소·연락처' },
       { key: 'sections', title: '섹션 정리', detail: '기본 섹션을 매체에 맞게 고치고 순서 정하기' },
       { key: 'fresh_start', title: '새로 시작하는 매체 (옮길 기사 없음)', detail: '체크하면 고객의 개통 현황에 “기존 기사 옮기기” 대신 “시작용 기사 준비” 단계가 보인다. 진행 항목이 아니라 표시 선택이다' },
@@ -16,6 +15,7 @@ export const LAUNCH_GROUPS: LaunchGroup[] = [
       { key: 'design_collect', title: '기본 디자인에서 바꾸고 싶은 것·추가하고 싶은 디자인을 고객에게 물어 받았다', detail: '미리보기 링크를 보내고 개통 현황 코멘트로 받는다(참고 사이트·이미지 포함). 바꿀 게 없다는 답도 받아 둔다. 요청은 홈페이지 설정(홈 모양·색·로고·섹션·로고 띠 등)과 필요하면 업무요청으로 처리' },
       { key: 'design_apply', title: '요청을 반영해 수정하고 고객이 수정본을 확정했다', detail: '반영하기 어려운 건 이유와 대안을 코멘트로 답한다. 고객이 “확정”(또는 “그대로 진행”)이라고 남기면 체크' },
       { key: 'training', title: '사용법 안내 완료', detail: '고객센터 이용안내·기사 작성 가이드 전달 + (원하는 고객은) 통화·화면 공유 1:1 안내 30분. 기사 쓰기·승인·홈편집·광고' },
+      { key: 'domain', title: '매체 도메인 연결 (DNS) 완료', detail: '모든 이전·디자인 점검·테스트가 끝난 뒤에 한다(다른 프로그램에서 이전하는 매체는 전환 날, 그 전까지 옛 홈페이지는 그대로 켜 둔다). 홈페이지 설정 → 도메인. 오픈 준비 중이면 주소창에는 안내 화면이 보이고, 실제 홈페이지는 미리보기 링크로 확인' },
     ],
   },
   {
@@ -46,7 +46,7 @@ export const LAUNCH_GROUPS: LaunchGroup[] = [
 const LAUNCH_GROUP_TITLE_EN = ['1. Launch preparation', '2. Search registration (with the operations account)', '3. Customer guidance']
 const LAUNCH_ITEM_EN: Record<string, { title: string; detail?: string; linkLabel?: string }> = {
   invite: { title: 'The publisher signed up and logged in from the invitation email', detail: 'If that fails, re-invite from the Members menu' },
-  domain: { title: 'Outlet domain connected (DNS) and complete', detail: 'Website settings → Domain. While "Opening soon" is on, the address bar shows the notice page; check the real website with the preview link' },
+  domain: { title: 'Outlet domain connected (DNS) and complete', detail: 'Do this after migration, design review and testing are all finished (for outlets moving from another program, on the changeover day; keep the old website running until then). Website settings → Domain. While "Opening soon" is on, the address bar shows the notice page; check the real website with the preview link' },
   brand: { title: 'Logo, colors and legal notices entered', detail: 'Masthead title, publisher and editor names, online newspaper registration number and date, youth protection officer, address and contact details' },
   sections: { title: 'Sections organized', detail: 'Adapt the default sections to the outlet and set their order' },
   fresh_start: { title: 'New outlet starting from scratch (no stories to migrate)', detail: 'When checked, the customer\'s launch status shows the "Starter stories prepared" step instead of "Migrate existing stories". This is a display choice, not a progress item' },

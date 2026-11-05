@@ -115,7 +115,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ ok?
           <h1 className="text-[24px] font-extrabold tracking-tight">{t('운영 대시보드', 'Operations dashboard')}</h1>
           <p className="mt-1 text-[13px] text-muted">{today} · {t('모든 그룹과 매체의 현황', 'Status of all groups and outlets')}</p>
         </div>
-        <div className="flex flex-wrap gap-2"><Link href="/admin/ai-usage" className="btn-secondary bg-white">{t('요금제·AI 사용량', 'Plans · AI usage')}</Link><Link href="/admin/ai-compare" className="btn-secondary bg-white">{t('AI 모델 비교', 'AI model comparison')}</Link><Link href="/admin/outlets" className="btn-primary">{t('그룹·매체 관리', 'Groups & outlets')}</Link></div>
+        <div className="flex flex-wrap gap-2"><Link href="/admin/ai-usage" className="btn-secondary bg-white">{t('요금제·AI 사용량', 'Plans · AI usage')}</Link><Link href="/admin/ai-compare" className="btn-secondary bg-white">{t('AI 모델 비교', 'AI model comparison')}</Link><Link href="/admin/link-test" className="btn-secondary bg-white">{t('대용량 링크 시험', 'Big-link test')}</Link><Link href="/admin/outlets" className="btn-primary">{t('그룹·매체 관리', 'Groups & outlets')}</Link></div>
       </header>
 
       {searchParams.error && <p role="alert" className="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-4 py-3 text-[13.5px] text-danger">{searchParams.error}</p>}

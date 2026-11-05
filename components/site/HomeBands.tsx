@@ -99,7 +99,7 @@ function BriefBand({ site, title, href, items, subs, mostViewed, sidebarAd }: Ba
         </FitRows>
       </div>
       <aside data-fit-side className="space-y-9">
-        <MostViewed items={mostViewed} lang={site.lang} />
+        <MostViewed items={mostViewed} lang={site.lang} fit />
         {sidebarAd}
       </aside>
     </Wrap>

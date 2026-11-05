@@ -2,7 +2,7 @@ import SettingsTabs from '@/components/cms/SettingsTabs'
 import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
 import { outletEmailOf } from '@/lib/outlet-email'
-import { getAiStatus } from '@/lib/ai-usage'
+import { getAiAuto, getAiStatus } from '@/lib/ai-usage'
 import ContactEmailForm from '@/components/cms/ContactEmailForm'
 import MemberAiRow, { type MemberAi } from '@/components/cms/MemberAiRow'
 import Link from 'next/link'
@@ -20,9 +20,10 @@ export default async function NewsroomSettingsPage(props: { searchParams: Promis
   if (!outletId) {
     return <div className="mx-auto max-w-[960px] px-4 py-10 md:px-8"><p className="rounded-lg border border-line bg-white px-5 py-4 text-sm">{t('위쪽에서 작업할 매체를 먼저 골라 주세요.', 'Choose an outlet to work on from the top of the page first.')}</p></div>
   }
-  const [contact, status, { data: members, error }] = await Promise.all([
+  const [contact, status, auto, { data: members, error }] = await Promise.all([
     outletEmailOf(supabase, outletId),
     getAiStatus(supabase, outletId),
+    getAiAuto(supabase, outletId),
     supabase.rpc('ai_member_usage', { o: outletId }),
   ])
   const month = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long' }).format(new Date())
@@ -83,6 +84,7 @@ export default async function NewsroomSettingsPage(props: { searchParams: Promis
                 {status?.limit != null
                   ? <>{t('매체 전체 AI 사용', 'Outlet-wide AI use')} <strong className="text-ink">{status.used} / {status.limit}{t('회', '')}</strong>{status.drafts != null ? t(` (초안 ${status.drafts} · 법적 검수 ${status.legal ?? 0})`, ` (drafts ${status.drafts} · legal checks ${status.legal ?? 0})`) : ''}. </>
                   : t('요금제 한도가 없는 매체입니다. ', 'This outlet has no plan limit. ')}
+                {auto && auto.count > 0 && <>{t('자동 작성', 'Auto-written')} <strong className="text-ink">{auto.count}{t('건', '')}</strong>{t('(보도자료로 서버가 자동으로 쓴 기사 · 한도에 들어가지 않음). ', ' (stories the server wrote automatically from press releases · not counted toward the limit). ')}</>}
                 {manager
                   ? t('기자별 한도를 비워 두면 매체 한도를 인원수로 나눠 자동으로 정해집니다(예: 월 300회 · 3명 → 각 100회). 숫자를 적으면 그 사람만 따로 정해지고, 나머지 인원이 남은 횟수를 나눠 갖습니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다.', 'If you leave a reporter\'s limit blank, the outlet limit is divided by headcount automatically (e.g. 300 per month ÷ 3 people = 100 each). If you enter a number, it applies to that person only and the others share the remaining uses. One AI draft and one legal check each count as 1 use.')
                   : t('편집장이 정한 내 한도입니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다. 더 필요하면 편집장에게 요청해 주세요.', 'This is your limit, set by the Editor-in-Chief. One AI draft and one legal check each count as 1 use. Ask the Editor-in-Chief if you need more.')}

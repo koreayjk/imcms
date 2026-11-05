@@ -9,6 +9,7 @@ import { PRODUCT } from '@/lib/product'
 import { PICK_PLAN_EVENT, type PickPlanDetail } from './Pricing'
 import PolicyDoc from './PolicyDoc'
 import { HOME_LAYOUTS } from '@/lib/home-layouts'
+import { NEW_OUTLET, questionsFor } from '@/lib/apply-questions'
 
 const input =
   'w-full rounded-md border border-[#D5D8DD] bg-white px-3.5 py-2.5 text-[15px] outline-none transition-colors placeholder:text-[#A3A8B0] focus:border-[#1D3461]'
@@ -60,6 +61,12 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
   const [billing, setBilling] = useState<Billing>('monthly')
   // 희망하는 홈페이지 모양 ('' = 상담 후 정함)
   const [design, setDesign] = useState('')
+  // 이전·연동 질문 답 (단일 선택은 key → 값, 여러 개 고르는 질문은 key → 값 목록). 오류로 다시 그려져도 남도록 상태로 둔다
+  const [outletCount, setOutletCount] = useState('')
+  const [domain, setDomain] = useState('')
+  const isNew = outletCount === NEW_OUTLET
+  const [ans, setAns] = useState<Record<string, string>>({})
+  const [multi, setMulti] = useState<Record<string, string[]>>({})
   const [agree, setAgree] = useState(false)
   const [agreeTerms, setAgreeTerms] = useState(false)
 
@@ -85,7 +92,7 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
         <p className="mt-2 text-[14.5px] leading-relaxed text-[#5B616B]">
           {chosen.name} · {BILLING_LABEL[billing]}{pay ? ` · 첫 결제 ${won(pay.total)}` : ''}{design ? ` · ${HOME_LAYOUTS.find((l) => l.key === design)?.name ?? ''} 홈페이지` : ''}
           <br />
-          적어주신 연락처로 영업일 기준 이틀 안에 연락드려 개통 일정과 계약 서류를 안내합니다.
+          영업일 기준 이틀 안에 이메일이나 카카오톡으로 연락드려 개통 일정과 계약 서류를 안내합니다.
           <br />
           첫 이용료는 정식 오픈 전에 청구서로 먼저 받고 납부를 확인한 뒤 오픈합니다(오픈 전 취소 시 전액 환불). 신청만 한 지금은 비용이 생기지 않습니다.
         </p>
@@ -162,17 +169,17 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
         <Field id="contact_name" label="신청자 이름" required>
           <input id="contact_name" name="contact_name" required maxLength={40} autoComplete="name" className={input} />
         </Field>
-        <Field id="phone" label="연락처" required>
+        <Field id="phone" label="연락처" required hint="카카오톡으로 연락드릴 때 쓰는 번호입니다. 안내는 이메일과 카카오톡으로 드립니다.">
           <input id="phone" name="phone" required type="tel" inputMode="tel" maxLength={30} autoComplete="tel" placeholder="010-0000-0000" className={input} />
         </Field>
         <Field id="email" label="이메일" required hint="청구서와 개통 안내를 받을 주소">
           <input id="email" name="email" required type="email" maxLength={120} autoComplete="email" className={input} />
         </Field>
-        <Field id="domain" label="도메인" hint="없으면 비워 두세요. 도메인 고르기와 구입도 안내해 드립니다.">
-          <input id="domain" name="domain" maxLength={120} inputMode="url" placeholder="mynews.co.kr" className={input} />
+        <Field id="domain" label="도메인" hint={<>없으면 비워 두세요. 도메인은 대표님 명의로 직접 구입하시고(비용은 고객 부담), 구입 방법은 <a href={`${PRODUCT.path}/domain`} target="_blank" rel="noopener" className="font-semibold text-[#1D3461] underline underline-offset-2">도메인 구입 안내</a>에서 자세히 알려 드립니다. 구입하신 뒤 연결은 저희가 합니다.</>}>
+          <input id="domain" name="domain" value={domain} onChange={(e) => setDomain(e.target.value)} maxLength={120} inputMode="url" placeholder="mynews.co.kr" className={input} />
         </Field>
         <Field id="outlet_count" label="운영 중인 매체 수">
-          <select id="outlet_count" name="outlet_count" defaultValue="" className={input}>
+          <select id="outlet_count" name="outlet_count" value={outletCount} onChange={(e) => setOutletCount(e.target.value)} className={input}>
             <option value="">선택</option>
             <option>창간 준비 중</option>
             <option>1개</option>
@@ -186,6 +193,47 @@ export default function ApplyForm({ demoUrls }: { demoUrls?: Record<string, stri
           </Field>
         </div>
       </div>
+      {/* ─── 이전·연동 확인 (필수: 모르면 '모르겠음') ─── */}
+      <fieldset className="rounded-md border border-[#E4E6EA] bg-[#FAFBFC] p-4 sm:p-5">
+        <legend className="px-1 text-[13px] font-semibold text-[#14171C]">기존 사이트 이전·연동 확인 <span className="text-[#D6402B]">*</span></legend>
+        <p className="mb-4 text-[12.5px] leading-[1.6] text-[#5B616B]">
+          이전과 개통에 필요한 정보를 미리 확인하는 질문입니다. <b className="font-semibold text-[#14171C]">잘 모르면 “모르겠음”을 고르고 넘어가셔도 됩니다.</b> 모르는 것은 상담 때 같이 확인해 드립니다.{isNew ? ' 창간 준비 중이시라 꼭 필요한 질문만 보여 드립니다.' : ' 새로 창간하시는 경우 “운영 중인 매체 수”에서 “창간 준비 중”을 고르면 질문이 줄어듭니다.'}
+        </p>
+        <div className="space-y-5">
+          {questionsFor(isNew, domain.trim() !== '').map((q) => (
+            <div key={q.key}>
+              {q.multi ? (
+                <fieldset>
+                  <legend className="mb-1 text-[13px] font-semibold text-[#14171C]">{q.label} <span className="text-[#D6402B]">*</span></legend>
+                  {q.hint && <p className="mb-2 text-[12px] leading-snug text-[#5B616B]">{q.hint}</p>}
+                  <div className="flex flex-wrap gap-2">
+                    {q.options.map((o) => {
+                      const on = (multi[q.key] ?? []).includes(o)
+                      return (
+                        <label key={o} className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-[13.5px] transition ${on ? 'border-[#1D3461] bg-[#EFF2F7] ring-1 ring-[#1D3461]' : 'border-[#D5D8DD] bg-white hover:border-[#14171C]'}`}>
+                          <input type="checkbox" checked={on} onChange={(e) => setMulti((m) => ({ ...m, [q.key]: e.target.checked ? [...(m[q.key] ?? []), o] : (m[q.key] ?? []).filter((x) => x !== o) }))} className="accent-[#1D3461]" />
+                          {o}
+                        </label>
+                      )
+                    })}
+                  </div>
+                  {(multi[q.key] ?? []).map((o) => <input key={o} type="hidden" name={q.key} value={o} />)}
+                </fieldset>
+              ) : (
+                <>
+                  <label htmlFor={q.key} className="mb-1 block text-[13px] font-semibold text-[#14171C]">{q.label} <span className="text-[#D6402B]">*</span></label>
+                  {q.hint && <p className="mb-1.5 text-[12px] leading-snug text-[#5B616B]">{q.hint}</p>}
+                  <select id={q.key} name={q.key} value={ans[q.key] ?? ''} onChange={(e) => setAns((a) => ({ ...a, [q.key]: e.target.value }))} className={input}>
+                    <option value="">선택해 주세요</option>
+                    {q.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </fieldset>
+
       {/* ─── 홈페이지 모양 ─── */}
       <fieldset>
         <legend className="mb-1 text-[13px] font-semibold text-[#14171C]">홈페이지 모양 <span className="font-normal text-[#5B616B]">(선택)</span></legend>

@@ -1,4 +1,4 @@
-import { FOREIGN_TOPICS, PRESS_FIELDS, type ForeignTopic, type PressField } from './press-sources'
+import { FOREIGN_TOPICS, PRESS_FIELDS, PRESS_SOURCES, type ForeignTopic, type PressField } from './press-sources'
 export type SectionConfig = {
   slug: string
   name: string
@@ -100,6 +100,10 @@ export type SiteConfig = {
   pressFields: PressField[]
   // 보도자료함 "맞춤 자료" 그룹 (1~4단계): 그룹마다 키워드 하나당 최신 N건 (기본 10·5·3·1). 하나도 안 정했으면 예전 추천 방식
   pressTiers?: PressTier[]
+  // 보도자료함 "전체" 탭에서 편집장이 직접 골라 추천에 넣은 출처 (press-sources 의 key)
+  pressSources?: string[]
+  // 홈 포토뉴스 띠 색 (없으면 매체 대표색). 예: 로고 속 청색 #002F7A
+  photoColor?: string
   // 카카오톡·페이스북 등에 링크를 올릴 때 나오는 대표 이미지 (1200×630 PNG/JPG)
   ogImage?: string
   // 브라우저 탭 아이콘 (편집장이 올린 정사각형 이미지. 없으면 로고)
@@ -276,6 +280,9 @@ export type OutletSiteSettings = {
   pressFields?: PressField[]
   // 보도자료함 맞춤 자료 그룹 (outlet_press_tiers_save 로만 저장 — supabase/press-tiers.sql)
   pressTiers?: PressTier[]
+  // 편집장이 보도자료함에서 직접 골라 추천에 넣은 출처
+  pressSources?: string[]
+  photoColor?: string
   ogImage?: string
   iconUrl?: string
   trial?: boolean
@@ -313,6 +320,13 @@ export function shade(hex: string, amount: number) {
 export function foreignTopics(s: Pick<OutletSiteSettings, 'pressForeign' | 'pressForeignTopics'>): ForeignTopic[] {
   if (Array.isArray(s.pressForeignTopics)) return FOREIGN_TOPICS.map((t) => t.key).filter((k) => s.pressForeignTopics!.includes(k))
   return s.pressForeign ? ['israel'] : []
+}
+
+// 편집장이 고른 추천 출처: 모르는 key 는 버린다
+export function cleanPressSources(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  const known = new Set(PRESS_SOURCES.map((x) => x.key))
+  return Array.from(new Set(v.filter((k): k is string => typeof k === 'string' && known.has(k))))
 }
 
 // 보도자료 추천 분야: 매체 설정에서 고른 것, 아직 안 골랐으면 추천 키워드에 분야 단어가 있는지로 짐작한다
@@ -394,6 +408,8 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     })(),
     pressFields: pressFields(s, keywords),
     pressTiers: cleanPressTiers(s.pressTiers),
+    pressSources: cleanPressSources(s.pressSources),
+    photoColor: typeof s.photoColor === 'string' && /^#[0-9a-f]{6}$/i.test(s.photoColor) ? s.photoColor : undefined,
     ogImage: (typeof s.ogImage === 'string' && s.ogImage) || defaultOgImage(s.logoUrl ?? code?.logoMark),
     iconUrl: (typeof s.iconUrl === 'string' && s.iconUrl) || undefined,
     trial: s.trial === true,

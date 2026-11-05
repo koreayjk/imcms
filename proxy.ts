@@ -140,6 +140,20 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
+  // imnewsroom.com/domain: 도메인 구입 안내 (신청서·개통 안내·상담 메일의 링크)
+  if (request.nextUrl.pathname === '/domain' && isProductHost(request.headers.get('host'))) {
+    const url = request.nextUrl.clone()
+    url.pathname = `${PRODUCT.path}/domain`
+    return NextResponse.rewrite(url)
+  }
+
+  // imnewsroom.com/migration: 타사 이전 안내
+  if (request.nextUrl.pathname === '/migration' && isProductHost(request.headers.get('host'))) {
+    const url = request.nextUrl.clone()
+    url.pathname = `${PRODUCT.path}/migration`
+    return NextResponse.rewrite(url)
+  }
+
   // GDPA 도메인으로 들어오면 /gdpa 아래 화면을 보여준다 (로그인 확인·결제 콜백 등 /api·/auth 는 그대로)
   let rewriteTo: URL | null = null
   {

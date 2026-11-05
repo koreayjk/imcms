@@ -57,6 +57,8 @@ function rankCandidates(plan: Plan, cands: Cand[], recentTitles: string[] = []) 
   if (!keywords.length) keywords = usableKeywords(names.filter((n) => n.length >= 2))
   const fields = site.pressFields.length ? site.pressFields : auto?.fields ?? []
   const allowed = new Map(PRESS_SOURCES.map((s) => [s.key, s]))
+  // 편집장이 보도자료함에서 직접 골라 추천에 넣은 출처
+  const picked = new Set(site.pressSources ?? [])
   const lc = keywords.map((k) => k.toLowerCase())
 
   const scored: { c: Cand; score: number }[] = []
@@ -77,12 +79,13 @@ function rankCandidates(plan: Plan, cands: Cand[], recentTitles: string[] = []) 
     let base = 0
     if (english) {
       if (!isUsSource(c.source_key)) continue
-      ok = !!src.local || titleHit
-      base = src.local ? 2 : 0
+      ok = !!src.local || titleHit || picked.has(c.source_key)
+      base = src.local || picked.has(c.source_key) ? 2 : 0
     } else {
       if (isUsSource(c.source_key)) continue
       const tp = foreignTopicOf(c.source_key)
       if (tp) { ok = topics.includes(tp); base = 3 }
+      else if (picked.has(c.source_key)) { ok = true; base = 2 }
       else if (fieldOfSource(c.source_key)) { ok = fields.includes(fieldOfSource(c.source_key)!); base = 2 }
       else {
         // 일반 출처(정부·지자체 등): 추천 키워드가 제목에 있거나, 매체의 필수 단어(지역 등)가 있거나, 이 매체가 믿는 출처면 쓴다

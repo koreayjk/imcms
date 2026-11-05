@@ -95,12 +95,23 @@ const STEPS = [
   },
 ]
 
+const PREPARE = [
+  '제호(신문 이름)와 영문 이름 후보',
+  '쓰고 싶은 도메인 (없으면 신청 뒤 구입 안내를 드립니다)',
+  '카테고리(섹션) 구성안: 정치·경제·사회처럼 메뉴로 쓸 분류',
+  '로고와 대표 색 (없으면 제작이 필요하다고 알려 주세요)',
+  '발행인·편집인·청소년보호책임자 이름과 연락처',
+  '발행소 주소와 대표 전화번호',
+  '개인으로 시작하는지, 법인(사업자)으로 시작하는지',
+]
+
 const FAQ = [
   { q: '창간하는 데 비용이 얼마나 드나요?', a: `등록 수수료, 사무실, 인건비는 지역과 상황마다 다릅니다. ${PRODUCT.name} 이용료는 월 11만 원부터입니다(요금표는 소개 화면 참고). 사이트 제작과 도메인 연결 비용을 따로 받지 않는 기간도 있으니 신청할 때 확인하세요.` },
   { q: '혼자서도 창간할 수 있나요?', a: '등록에 필요한 취재·편집 인력 기준은 법령에서 정하며 바뀐 적이 있습니다. 혼자 가능한지는 관할 시·도 등록 담당 부서에 최신 기준을 물어보는 것이 정확합니다.' },
   { q: '등록하기 전에 사이트를 먼저 만들어도 되나요?', a: '사이트 제작과 시험은 등록 전에도 할 수 있습니다. 다만 신문으로 공개해 기사를 발행하는 시점은 등록 뒤로 잡으세요. 등록 없이 발행하면 문제가 될 수 있으니 등록 담당 부서에 확인하세요.' },
   { q: '등록하면 네이버·다음 뉴스에 바로 나오나요?', a: '아닙니다. 검색에 기사가 노출되는 것은 서치어드바이저·서치콘솔 등록으로 가능하지만, 포털 뉴스 제휴는 별도 신청과 심사가 필요합니다. 심사 기준은 포털마다 다르고 바뀌므로 신청 전에 최신 안내를 확인하세요.' },
-  { q: '이미 다른 업체에서 신문을 운영 중인데 옮길 수 있나요?', a: '기사와 사진을 옮기고, 옛 기사 주소로 들어오는 독자와 검색엔진을 새 기사로 넘기는 이전을 지원합니다. 도메인은 그대로 쓸 수 있습니다.' },
+  { q: '도메인은 누가 사나요?', a: '도메인은 신문 이름이 걸린 주소라서 발행하시는 분 명의로 직접 구입하시기를 권합니다. 어떤 업체에서 어떻게 사는지는 도메인 구입 안내에 정리해 두었고, 산 뒤 IM 뉴스룸에 연결하는 일은 저희가 도와 드립니다.' },
+  { q: '이미 다른 업체에서 신문을 운영 중인데 옮길 수 있나요?', a: '기사와 사진을 옮기고, 옛 기사 주소로 들어오는 독자와 검색엔진을 새 기사로 넘기는 이전을 지원합니다. 도메인은 그대로 쓸 수 있습니다. 순서는 타사 이전 안내에 있습니다.' },
   { q: 'AI로 쓴 기사도 발행해도 되나요?', a: 'AI 초안은 초안일 뿐이고 발행 책임은 기자와 편집장에게 있습니다. IM 뉴스룸은 초안에 확인이 필요한 부분을 표시하고 법적 위험을 한 번 더 점검하며, 발행 전에 사람이 확인하는 승인 단계를 둡니다.' },
 ]
 
@@ -127,7 +138,7 @@ export default function StartGuidePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSONLD }} />
       <IslandNav
         logo={<span className="flex items-center gap-2"><BrandMark size={34} /><span className="text-[18px] font-extrabold tracking-[-0.02em]">IM 뉴스룸</span></span>}
-        items={[{ href: home, label: '소개' }, { href: '#steps', label: '창간 순서' }, { href: '#who', label: '누가 하나요' }, { href: '#faq', label: '자주 묻는 질문' }, { href: `${home}#designs`, label: '디자인 샘플' }, { href: `${home}#pricing`, label: '요금' }]}
+        items={[{ href: home, label: '소개' }, { href: '#steps', label: '창간 순서' }, { href: '#who', label: '누가 하나요' }, { href: '#prepare', label: '준비 자료' }, { href: '#domain', label: '도메인' }, { href: '#faq', label: '자주 묻는 질문' }, { href: `${home}#designs`, label: '디자인 샘플' }, { href: `${home}#pricing`, label: '요금' }]}
         loginHref={appLink('/login')}
         trialHref={appLink('/trial')}
       />
@@ -218,6 +229,60 @@ export default function StartGuidePage() {
           </div>
         </section>
 
+        {/* 신청 전 준비 자료 */}
+        <section id="prepare" className="scroll-mt-24 bg-[#F7F8FA]">
+          <div className="mx-auto max-w-[920px] px-4 py-24 sm:px-6 lg:py-28">
+            <Reveal>
+              <h2 className={H2}>서비스를 신청하기 전에 준비하면 좋은 것</h2>
+              <p className="mt-4 max-w-[36em] text-[16.5px] leading-[1.8] text-[#5B616B]">모두 갖추지 못해도 신청할 수 있습니다. 정해지지 않은 것은 상담하면서 같이 정해요.</p>
+            </Reveal>
+            <Reveal>
+              <div className="pn-shell mt-10"><div className="pn-core p-7 sm:p-9">
+                <ul className="space-y-3">
+                  {PREPARE.map((x) => (
+                    <li key={x} className="flex gap-3 text-[15.5px] leading-relaxed text-[#3B4048]">
+                      <span className="mt-[3px] shrink-0 text-[14px] font-bold text-[#16294D]" aria-hidden>✓</span>
+                      <span>{x}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div></div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* 도메인 */}
+        <section id="domain" className="scroll-mt-24">
+          <div className="mx-auto max-w-[920px] px-4 py-24 sm:px-6 lg:py-28">
+            <Reveal>
+              <h2 className={H2}>도메인은 이렇게 준비합니다</h2>
+              <p className="mt-4 max-w-[38em] text-[16.5px] leading-[1.8] text-[#5B616B]">
+                도메인은 신문의 인터넷 주소(예: newstoday.ai.kr)입니다. 독자와 검색엔진이 기억하는 이름이라, 한번 정하면 오래 씁니다.
+              </p>
+            </Reveal>
+            <div className="mt-10 grid gap-5 md:grid-cols-3">
+              {[
+                { t: '발행하시는 분 명의로 직접 구입', d: '확장자에 따라 다르지만 보통 연 몇만 원 안팎이고, 가비아·후이즈 같은 도메인 업체에서 5~10분이면 살 수 있습니다. 명의가 내 것이어야 나중에 업체를 바꿔도 주소를 그대로 가져갑니다.' },
+                { t: '산 뒤에는 저희가 연결', d: '구입 후 도메인 업체 화면에서 바꿀 설정 두 가지를 알려 드립니다. 어려우면 화면을 보며 같이 설정합니다.' },
+                { t: '정해지지 않았어도 괜찮습니다', d: '홈페이지는 임시 주소로 먼저 만들어 확인합니다. 도메인 연결은 테스트가 끝난 뒤 마지막에 합니다.' },
+              ].map((c, i) => (
+                <Reveal key={c.t} delay={i * 80}>
+                  <div className="pn-shell h-full"><div className="pn-core h-full p-7">
+                    <h3 className="text-[18px] font-extrabold leading-snug tracking-[-0.02em]">{c.t}</h3>
+                    <p className="mt-3 text-[15px] leading-[1.8] text-[#3B4048]">{c.d}</p>
+                  </div></div>
+                </Reveal>
+              ))}
+            </div>
+            <Reveal>
+              <p className="mt-8 text-[15.5px] text-[#5B616B]">
+                구입 순서는 <Link href={`${home}/domain`} className="font-bold text-[#1D3461] underline underline-offset-4">도메인 구입 안내</Link>에 차근차근 적어 두었습니다.
+                이미 다른 업체에서 운영 중이라면 <Link href={`${home}/migration`} className="font-bold text-[#1D3461] underline underline-offset-4">타사 이전 안내</Link>를 보세요.
+              </p>
+            </Reveal>
+          </div>
+        </section>
+
         {/* 자주 묻는 질문 */}
         <section id="faq" className="scroll-mt-24 bg-[#F7F8FA]">
           <div className="mx-auto max-w-[820px] px-4 py-24 sm:px-6 lg:py-28">
@@ -281,6 +346,8 @@ export default function StartGuidePage() {
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-4 py-10 sm:px-6">
           <Link href={home} className="font-bold text-[#0F1115]">IM 뉴스룸</Link>
           <div className="flex flex-wrap gap-5">
+            <Link href={`${home}/migration`} className="hover:text-[#0F1115]">타사 이전</Link>
+            <Link href={`${home}/domain`} className="hover:text-[#0F1115]">도메인 구입 안내</Link>
             <Link href={`${home}/terms`} className="hover:text-[#0F1115]">이용약관</Link>
             <Link href={`${home}/privacy`} className="font-semibold hover:text-[#0F1115]">개인정보처리방침</Link>
           </div>

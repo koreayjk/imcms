@@ -25,6 +25,7 @@ import HomePortal from '@/components/site/HomePortal'
 import HomeEditorial from '@/components/site/HomeEditorial'
 import HomeCards from '@/components/site/HomeCards'
 import HomeBandsTop from '@/components/site/HomeBandsTop'
+import PhotoNews from '@/components/site/PhotoNews'
 import { siteText } from '@/lib/site-text'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -103,9 +104,32 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const underHeadline = [...pinnedUnder, ...take(Math.max(0, 4 - pinnedUnder.length))].slice(0, 4)
   const major = fill(pinned.major, hasImage)
   // 오른쪽 광고(최대 10개)가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 오른쪽 높이에 맞춰 연다. 기사가 모자라면 있는 만큼만)
+  // 이슈 PICK(4)·포토뉴스(12): 편집판에서 비워 둔 자리는 아직 홈에 안 나온 최신 기사로 자동 배치
+  //   이슈 PICK은 사진 있는 기사 먼저. 포토뉴스는 사진 있는 기사만 (사진 없는 고정 기사는 뺀다)
+  const picks = fill(pinned.pick, hasImage)
+  const pinnedPhotos = pinned.photo.filter((a): a is PublicArticle => !!a)
+  const photos = [...pinnedPhotos.filter(hasImage), ...take(Math.max(0, pinned.photo.length - pinnedPhotos.length), hasImage)]
+  const photoBand = photos.length > 0 ? (
+    <PhotoNews
+      items={photos.map((a) => ({ id: a.id, title: a.title, excerpt: a.excerpt, thumb: a.thumbnail_url, author: a.author_name }))}
+      title={t.photoNews}
+      color={site.photoColor ?? site.colors.brand}
+      prevLabel={L === 'en' ? 'Previous photos' : '이전 포토뉴스'}
+      nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
+    />
+  ) : null
+  const photoBandBare = photos.length > 0 ? (
+    <PhotoNews
+      bare
+      items={photos.map((a) => ({ id: a.id, title: a.title, excerpt: a.excerpt, thumb: a.thumbnail_url, author: a.author_name }))}
+      title={t.photoNews}
+      color={site.photoColor ?? site.colors.brand}
+      prevLabel={L === 'en' ? 'Previous photos' : '이전 포토뉴스'}
+      nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
+    />
+  ) : null
   const usedBeforeMore = new Set(used)
   const majorMore = site.homeLayout === 'bands' ? [] : take(36)
-  const picks = pinned.pick.filter((a): a is PublicArticle => !!a)
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
   const bandsMode = site.homeLayout === 'bands' && !!site.bands?.length
@@ -145,7 +169,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
       </>
     )
-    const common = { site, headline, subTops, underHeadline, major, picks, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras, slides: heroSlides, heroSeconds }
+    const common = { site, headline, subTops, underHeadline, major, picks, photoBand: photoBandBare, mostViewed, bySection, sections: topSections(site), middleAd, sideExtras, slides: heroSlides, heroSeconds }
     return (
       <SiteFrame site={site} home>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: siteJsonLd(site, base) }} />
@@ -280,7 +304,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             {/* 숫자 판 (홈페이지 설정에서 채운 매체만) */}
             {site.statsBoard && <StatsBoard board={site.statsBoard} />}
             <div id="popular" className="scroll-mt-28">
-              <MostViewed items={mostViewed} lang={L} />
+              <MostViewed items={mostViewed} lang={L} fit />
             </div>
             {isDemo && <AdSlot label={L === 'en' ? 'Ad 300×250' : '광고 영역 300×250'} className="hidden h-[250px] lg:flex" />}
             <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
@@ -313,6 +337,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </div>
         </section>
       )}
+
+      {photoBand}
 
       {bandsMode && (
         <HomeBands

@@ -5,12 +5,13 @@ import { getCmsContext } from '@/lib/cms'
 import { pressScope } from '@/lib/view-scope'
 import { getT } from '@/lib/cms-t'
 import { MANUAL_SOURCE, refreshPress } from '@/lib/press'
-import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
+import { FOREIGN_TOPICS, NEWSWIRE_DAILY_FREE, PRESS_FIELDS, PRESS_SOURCES as ALL_SOURCES, fieldOfSource, foreignTopicOf, isUsSource, isRegionSection, pressHintsFromSections, usableKeywords } from '@/lib/press-sources'
 import { buildSite, hasPressTiers, type OutletRow } from '@/lib/sites'
 import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
+import PressSourceFilter, { type PickGroup } from '@/components/cms/PressSourceFilter'
 import PressTierSettings from '@/components/cms/PressTierSettings'
-import { refreshNow } from './actions'
+import { refreshNow, savePressSources } from './actions'
 
 // 정책브리핑 등 국내 사이트는 해외 접속을 막기도 하므로 서울 리전에서 가져온다
 export const preferredRegion = 'icn1'
@@ -21,7 +22,7 @@ const PAGE_SIZE = 30
 const TIER_DAYS = 14
 type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; tier?: number; kw?: string }
 
-type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string }> }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
@@ -74,6 +75,12 @@ export default async function PressPage(props: Props) {
 
   const tab = searchParams.tab === 'all' ? 'all' : 'rec'
   const src = searchParams.src === MANUAL_SOURCE || searchParams.src === 'email' ? searchParams.src : PRESS_SOURCES.find((s) => s.key === searchParams.src)?.key
+  // 전체 탭에서 체크한 출처 (체크한 출처의 자료만 보인다)
+  const validSel = new Set([...PRESS_SOURCES.map((x) => x.key), MANUAL_SOURCE, 'email'])
+  const selected = tab === 'all' ? Array.from(new Set([searchParams.s ?? []].flat().map(String).filter((k) => validSel.has(k)))) : []
+  // 이 매체의 섹션: 맞춤 자료 위에 고정 버튼으로 보이고, 누르면 그 섹션 이름에서 나온 단어가 제목에 있는 자료만 본다
+  const sectionPills = Array.from(new Set(sectionNames.map((n) => n.trim()).filter(Boolean))).map((name) => { const kws = pressHintsFromSections([name]).keywords; return { name, kws: kws.length ? kws : isRegionSection(name) ? [name] : [] } }).filter((x) => x.kws.length > 0)
+  const sec = tab === 'rec' ? sectionPills.find((x) => x.name === searchParams.sec) : undefined
   const q = searchParams.q?.trim().slice(0, 50) || undefined
   const page = Math.max(1, Number(searchParams.page) || 1)
 
@@ -84,6 +91,9 @@ export default async function PressPage(props: Props) {
   // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
   query = pressScope(query, ctx)
   if (src) query = query.eq('source_key', src)
+  // 섹션 버튼은 자동으로 고른 자료만 거르고, 메일·직접 등록 자료는 그대로 둔다
+  if (sec) query = query.or([`source_key.in.(${MANUAL_SOURCE},email)`, ...usableKeywords(sec.kws).map((k) => `title.ilike.*${k}*`)].join(','))
+  else if (selected.length) query = query.in('source_key', selected)
   if (english) query = query.or(`source_key.like.us-*,source_key.in.(${MANUAL_SOURCE},email)`)
   else query = query.not('source_key', 'like', 'us-%')
   if (!english) for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) query = query.not('source_key', 'like', `${ft.prefix}%`)
@@ -96,29 +106,44 @@ export default async function PressPage(props: Props) {
   const foreignKeys = PRESS_SOURCES.filter((x) => foreignTopicOf(x.key)).map((x) => x.key)
   const fieldKeys = PRESS_SOURCES.filter((x) => { const f = fieldOfSource(x.key); return !!f && fields.includes(f) }).map((x) => x.key)
   const generalKeys = PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key)).map((x) => x.key)
-  const recBase = [MANUAL_SOURCE, 'email', ...foreignKeys, ...fieldKeys]
-  const usLocal = PRESS_SOURCES.filter((x) => x.local).map((x) => x.key)
-  const usWire = PRESS_SOURCES.filter((x) => !x.local).map((x) => x.key)
-  // 추천 탭 위 출처 버튼: 분야를 정한 매체는 추천에 들어오는 출처만
-  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : fields.length ? new Set([...fieldKeys, ...foreignKeys, ...(titleHit.length ? generalKeys : [])]) : titleHit.length ? null : new Set(foreignKeys)
+  // 편집장이 전체 탭에서 직접 골라 넣은 출처 (이 매체가 볼 수 있는 출처만)
+  const pickedKeys = (outletSite?.pressSources ?? []).filter((k) => PRESS_SOURCES.some((x) => x.key === k))
+  const recBase = Array.from(new Set([MANUAL_SOURCE, 'email', ...foreignKeys, ...fieldKeys, ...pickedKeys]))
+  const canPick = ctx.isEditorPlus || ctx.isStaff
+  const usLocal = Array.from(new Set([...PRESS_SOURCES.filter((x) => x.local).map((x) => x.key), ...pickedKeys]))
+  const usWire = PRESS_SOURCES.filter((x) => !x.local && !pickedKeys.includes(x.key)).map((x) => x.key)
+  // 전체 탭 "맞춤 자료 만들기"에서 체크할 출처 묶음 (이 매체가 볼 수 있는 출처만, 해외 언론 묶음은 매체 설정에서 켜므로 뺀다)
+  const toItems = (xs: typeof PRESS_SOURCES): PickGroup['items'] => xs.map((x) => ({ key: x.key, name: x.name.replace('뉴스와이어 · ', ''), saved: pickedKeys.includes(x.key), auto: fieldKeys.includes(x.key) }))
+  const pickGroups: PickGroup[] = (english
+    ? [
+        { label: t('지역·기관 소식', 'Local & institutions'), items: toItems(PRESS_SOURCES.filter((x) => x.local)) },
+        { label: t('전국 뉴스', 'National news'), items: toItems(PRESS_SOURCES.filter((x) => !x.local)) },
+      ]
+    : [
+        ...PRESS_FIELDS.map((f) => ({ label: f.label, items: toItems(PRESS_SOURCES.filter((x) => f.sources.includes(x.key))) })),
+        { label: t('정부·공공기관·지자체', 'Government & public agencies'), items: toItems(PRESS_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key))) },
+      ]).filter((g) => g.items.length > 0)
+  pickGroups.unshift({ label: t('내가 넣은 자료', 'My own'), items: [{ key: 'email', name: t('메일', 'Email'), saved: false, auto: false }, { key: MANUAL_SOURCE, name: t('직접 등록', 'Added manually'), saved: false, auto: false }] })
+  // 맞춤 자료 탭 위 출처 버튼: 매체 분야의 출처 + 켠 해외 언론 + 편집장이 체크해 넣은 출처만. 정부·지자체처럼 제목 키워드로 골라 오는 출처는 버튼으로 늘어놓지 않는다(출처별로 보려면 전체 탭)
+  const recSources = english ? new Set([...usLocal, ...(titleHit.length ? usWire : [])]) : new Set([...fieldKeys, ...foreignKeys, ...pickedKeys])
   // 추천 분야·키워드를 아직 정하지 않은 한국어 매체 (추천 탭에 안내를 보인다)
-  const noRecSetup = !english && !fields.length && !titleHit.length
+  const noRecSetup = !english && !fields.length && !titleHit.length && !pickedKeys.length
   if (english) {
     // 영문 매체: 지역·기관 소식은 늘, 전국 뉴스와이어는 추천 키워드가 제목에 있을 때만
     if (tab === 'rec') query = query.or([`source_key.in.(${[MANUAL_SOURCE, 'email', ...usLocal].join(',')})`, ...(titleHit.length && usWire.length ? [`and(source_key.in.(${usWire.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
   } else if (tab === 'rec' && fields.length) {
     query = query.or([`source_key.in.(${recBase.join(',')})`, ...(titleHit.length && generalKeys.length ? [`and(source_key.in.(${generalKeys.join(',')}),or(${titleHit.join(',')}))`] : [])].join(','))
   } else if (tab === 'rec' && titleHit.length) {
-    query = query.or([`source_key.in.(${recBase.filter((k) => !fieldOfSource(k)).join(',')})`, ...titleHit].join(','))
+    query = query.or([`source_key.in.(${recBase.join(',')})`, ...titleHit].join(','))
   } else if (tab === 'rec') {
     // 분야도 키워드도 정하지 않은 매체: 모든 출처를 다 보여 주지 않고 메일·직접 등록(과 켠 해외 언론)만 추천에 넣는다
-    query = query.in('source_key', recBase.filter((k) => !fieldOfSource(k)))
+    query = query.in('source_key', recBase)
   }
 
   // 맞춤 자료(그룹) 모드: 추천 탭에서, 검색·출처 고르기 없이, 그룹을 정한 매체
   //   그룹 1→4 순서로, 키워드마다 따로 최신 N건씩 가져와 합친다 (자료가 많은 키워드가 다른 키워드를 밀어내지 않게). 같은 자료는 앞 그룹에만 둔다
   const tiers = outletSite?.pressTiers ?? []
-  const tiered = tab === 'rec' && !q && !src && hasPressTiers(tiers)
+  const tiered = tab === 'rec' && !q && !src && !sec && hasPressTiers(tiers)
   const tierRows = async (): Promise<{ data: PressRow[]; count: number }> => {
     const since = new Date(Date.now() - TIER_DAYS * 86400e3).toISOString()
     const jobs = tiers.flatMap((g, ti) => usableKeywords(g.keywords).map((k) => ({ ti, k, limit: g.limit })))
@@ -160,7 +185,8 @@ export default async function PressPage(props: Props) {
 
   const href = (p: Record<string, string | undefined>) => {
     const sp = new URLSearchParams()
-    Object.entries({ tab: tab === 'all' ? 'all' : undefined, src, q, ...p }).forEach(([k, v]) => v && sp.set(k, v))
+    Object.entries({ tab: tab === 'all' ? 'all' : undefined, src, q, sec: sec?.name, ...p }).forEach(([k, v]) => v && sp.set(k, v))
+    if (tab === 'all') selected.forEach((k) => sp.append('s', k))
     const s = sp.toString()
     return `/press${s ? `?${s}` : ''}`
   }
@@ -183,12 +209,12 @@ export default async function PressPage(props: Props) {
           <div className="flex flex-wrap items-center justify-between gap-x-3 border-b border-line px-2 md:px-5">
             <nav className="flex max-w-full overflow-x-auto" aria-label={t('보기', 'View')}>
               {[
-                { key: 'rec', label: lang === 'en' ? `Recommended (related to ${outlet?.name ?? 'outlet'})` : `추천 (${outlet?.name ?? '매체'} 관련)` },
+                { key: 'rec', label: lang === 'en' ? `My feed (${outlet?.name ?? 'outlet'})` : `맞춤 자료 (${outlet?.name ?? '매체'})` },
                 { key: 'all', label: t('전체', 'All') },
               ].map((tb) => (
                 <Link
                   key={tb.key}
-                  href={href({ tab: tb.key === 'all' ? 'all' : undefined, page: undefined })}
+                  href={href({ tab: tb.key === 'all' ? 'all' : undefined, page: undefined, sec: undefined })}
                   aria-current={tab === tb.key ? 'page' : undefined}
                   className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 py-3.5 text-[14px] md:px-4 ${tab === tb.key ? 'border-ink font-bold text-ink' : 'border-transparent text-muted hover:text-ink'}`}
                 >
@@ -199,22 +225,54 @@ export default async function PressPage(props: Props) {
             <form action="/press" className="flex w-full items-center gap-2 px-2 py-2 md:w-auto md:px-0">
               {tab === 'all' && <input type="hidden" name="tab" value="all" />}
               {src && <input type="hidden" name="src" value={src} />}
+              {selected.map((k) => <input key={k} type="hidden" name="s" value={k} />)}
               <label htmlFor="press-q" className="sr-only">{t('제목 검색', 'Search titles')}</label>
               <input id="press-q" name="q" defaultValue={q} placeholder={t('제목 검색', 'Search titles')} className="field-input h-9 min-w-0 flex-1 py-1.5 md:w-52 md:flex-none" />
               <button type="submit" className="btn-secondary h-9 py-1.5">{t('검색', 'Search')}</button>
             </form>
           </div>
 
-          <div className="flex gap-1.5 overflow-x-auto border-b border-line px-4 py-3 md:flex-wrap md:px-5 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
+          {tab === 'rec' && <div className="flex gap-1.5 overflow-x-auto border-b border-line px-4 py-3 md:flex-wrap md:px-5 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
             <Link href={href({ src: undefined, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${!src ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>{t('모든 출처', 'All sources')}</Link>
             <Link href={href({ src: 'email', page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === 'email' ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>{t('메일', 'Email')}</Link>
             <Link href={href({ src: MANUAL_SOURCE, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === MANUAL_SOURCE ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>{t('직접 등록', 'Added manually')}</Link>
-            {PRESS_SOURCES.filter((s) => tab === 'all' || !recSources || recSources.has(s.key)).map((s) => (
+            {sectionPills.length > 0 && <span aria-hidden className="mx-1 self-center text-line">|</span>}
+            {sectionPills.map((x) => (
+              <Link key={x.name} href={href({ sec: sec?.name === x.name ? undefined : x.name, page: undefined })} title={t('섹션 이름으로 고른 자료', 'Matched from this section’s name')} className={`rounded-full border px-3 py-1 text-[12px] ${sec?.name === x.name ? 'border-ink bg-ink text-white' : 'border-dashed border-line text-muted hover:border-ink hover:text-ink'}`}>
+                {x.name}
+              </Link>
+            ))}
+            {recSources && recSources.size > 0 && <span aria-hidden className="mx-1 self-center text-line">|</span>}
+            {PRESS_SOURCES.filter((s) => !recSources || recSources.has(s.key)).map((s) => (
               <Link key={s.key} href={href({ src: s.key, page: undefined })} className={`rounded-full border px-3 py-1 text-[12px] ${src === s.key ? 'border-ink bg-ink text-white' : 'border-line text-muted hover:border-ink hover:text-ink'}`}>
                 {s.name.replace('뉴스와이어 · ', '')}
               </Link>
             ))}
-          </div>
+          </div>}
+
+          {tab === 'all' && pickGroups.length > 0 && (
+            <PressSourceFilter
+              groups={pickGroups}
+              selected={selected}
+              q={q}
+              canPick={canPick}
+              saveAction={savePressSources}
+              text={{
+                title: t('출처 고르기', 'Pick sources'),
+                hint: t('체크하면 그 출처의 자료만 아래에 보입니다', 'Check sources to see only their releases below'),
+                clear: t('선택 해제', 'Clear'),
+                add: t('★ 맞춤 자료에 넣기', '★ Add to My feed'),
+                remove: t('맞춤 자료에서 빼기', 'Remove from My feed'),
+                only: t('★는 이미 맞춤 자료에 들어 있는 출처입니다. 체크한 뒤 버튼을 누르면 왼쪽 “맞춤 자료”에 모입니다. AI 자동 작성도 이 자료를 씁니다.', '★ marks sources already in My feed. Check sources and use the buttons to add them to “My feed”. AI auto-writing also uses them.'),
+                savedMark: t('맞춤 자료에 들어 있음', 'In My feed'),
+                autoMark: t('(분야 설정)', '(field setting)'),
+                editorOnly: t('맞춤 자료에 넣기는 편집장이 합니다', 'The editor adds sources to My feed'),
+                open: t('열기', 'Open'),
+                close: t('닫기', 'Close'),
+              }}
+            />
+          )}
+          {searchParams.msg && <p className="border-b border-line bg-[#FFF8E6] px-4 py-2.5 text-[12.5px] text-[#6B4E00] md:px-5">{searchParams.msg.slice(0, 200)}</p>}
 
           {tab === 'rec' && outletId && (ctx.isEditorPlus || ctx.isStaff) && (
             <PressTierSettings outletId={outletId} initial={tiers} active={hasPressTiers(tiers)} suggestions={Array.from(new Set([...sectionNames, ...keywords])).slice(0, 40)} />
@@ -226,15 +284,15 @@ export default async function PressPage(props: Props) {
           )}
           {tab === 'rec' && auto && !noRecSetup && !tiered && (
             <p className="border-b border-line bg-[#F1F6FF] px-4 py-3 text-[12.5px] leading-relaxed text-[#27456F] md:px-5">
-              {t('추천 키워드를 따로 정하지 않아 이 매체의 섹션 이름으로 관련 보도자료를 골랐습니다', 'No keywords are set, so releases were matched to this outlet’s section names')}
+              {t('맞춤 키워드를 따로 정하지 않아 이 매체의 섹션 이름으로 관련 보도자료를 골랐습니다', 'No keywords are set, so releases were matched to this outlet’s section names')}
               {auto.keywords.length > 0 && <> ({auto.keywords.slice(0, 8).join(', ')}{auto.keywords.length > 8 ? ' …' : ''})</>}.
               {outletId && <> <Link href={ctx.isStaff ? `/admin/outlets/${outletId}/site#s-press` : '/admin/settings#s-press'} className="font-semibold underline">{t('직접 정하기', 'Set your own')}</Link></>}
             </p>
           )}
           {tab === 'rec' && noRecSetup && !tiered && (
             <p className="border-b border-line bg-[#FFF8E6] px-4 py-3 text-[12.5px] leading-relaxed text-[#6B4E00] md:px-5">
-              {t('이 매체의 추천 분야·키워드가 아직 없어 메일·직접 등록 자료만 보입니다. ', 'No recommended fields or keywords are set for this outlet yet, so only email and manually added releases are shown. ')}
-              {outletId && <Link href={ctx.isStaff ? `/admin/outlets/${outletId}/site#s-press` : '/admin/settings#s-press'} className="font-semibold underline">{t('홈페이지 설정 → 보도자료 추천 키워드에서 정하기', 'Set them in Website settings → press keywords')}</Link>}
+              {t('이 매체의 맞춤 분야·키워드가 아직 없어 메일·직접 등록 자료만 보입니다. ', 'No feed fields or keywords are set for this outlet yet, so only email and manually added releases are shown. ')}
+              {outletId && <Link href={ctx.isStaff ? `/admin/outlets/${outletId}/site#s-press` : '/admin/settings#s-press'} className="font-semibold underline">{t('홈페이지 설정 → 보도자료 맞춤 키워드에서 정하기', 'Set them in Website settings → press keywords')}</Link>}
               {t(' (예: 경기, 수원, 성남 …). 전체 자료는 “전체” 탭에서 볼 수 있습니다.', ' (e.g. local place names). See everything in the “All” tab.')}
             </p>
           )}
@@ -265,7 +323,7 @@ export default async function PressPage(props: Props) {
             </ul>
           ) : (
             <p className="px-5 py-20 text-center text-[14px] text-muted">
-              {q ? (lang === 'en' ? `No press releases match ‘${q}’.` : `‘${q}’에 해당하는 보도자료가 없습니다.`) : tab === 'rec' ? t('관련 키워드에 맞는 보도자료가 아직 없습니다. “전체” 탭도 확인해 보세요.', 'No press releases match your keywords yet. Check the “All” tab too.') : t('아직 가져온 보도자료가 없습니다.', 'No press releases have been collected yet.')}
+              {q ? (lang === 'en' ? `No press releases match ‘${q}’.` : `‘${q}’에 해당하는 보도자료가 없습니다.`) : tab === 'rec' ? t('맞춤 자료에 맞는 보도자료가 아직 없습니다. “전체” 탭에서 받고 싶은 출처를 골라 보세요.', 'Nothing matches your feed yet. Pick sources in the “All” tab.') : t('아직 가져온 보도자료가 없습니다.', 'No press releases have been collected yet.')}
             </p>
           )}
 

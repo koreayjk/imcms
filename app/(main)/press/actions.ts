@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCmsContext } from '@/lib/cms'
@@ -11,7 +11,7 @@ import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 import { duplicateNotes } from '@/lib/duplicate-check'
 import { aiNoticeText, withAiNotice } from '@/lib/ai-notice'
-import { cleanPressTiers, type OutletSiteSettings } from '@/lib/sites'
+import { cleanPressSources, cleanPressTiers, type OutletSiteSettings } from '@/lib/sites'
 
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
 
@@ -35,6 +35,34 @@ export async function refreshNow() {
   const { supabase } = await getCmsContext()
   await refreshPress(supabase, true)
   revalidatePath('/press')
+}
+
+// 전체 탭에서 체크한 출처를 이 매체의 "맞춤 자료"에 넣거나 뺀다 (편집장 이상)
+export async function savePressSources(formData: FormData) {
+  const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
+  const { t } = await getT()
+  // 체크한 출처·검색어를 그대로 두고 전체 탭으로 돌아간다
+  const sp = new URLSearchParams({ tab: 'all' })
+  const q = String(formData.get('q') ?? '').slice(0, 50)
+  if (q) sp.set('q', q)
+  formData.getAll('s').map(String).filter((k) => /^[\w-]{1,40}$/.test(k)).slice(0, 80).forEach((k) => sp.append('s', k))
+  const back = `/press?${sp.toString()}`
+  const go = (msg?: string) => redirect(msg ? `${back}&msg=${encodeURIComponent(msg)}` : back)
+  if (!outletId || (!isEditorPlus && !isStaff)) return go(t('편집장 이상만 바꿀 수 있습니다.', 'Only Editors-in-Chief and above can change this.'))
+  const remove = String(formData.get('mode') ?? '') === 'remove'
+  const keys = cleanPressSources(formData.getAll('s').map(String))
+  if (!keys.length) return go(t('넣거나 뺄 출처를 먼저 체크해 주세요. (메일·직접 등록 자료는 늘 맞춤 자료에 들어 있습니다)', 'Check the sources first. (Email and manually added releases are always in My feed.)'))
+  const { data } = await supabase.from('outlets').select('site').eq('id', outletId).maybeSingle()
+  const cur = cleanPressSources(((data?.site ?? {}) as OutletSiteSettings).pressSources)
+  const next = cleanPressSources(remove ? cur.filter((k) => !keys.includes(k)) : [...cur, ...keys])
+  const { error } = await supabase.rpc('outlet_press_sources_save', { o: outletId, p_sources: next })
+  if (error) {
+    if (/outlet_press_sources_save|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return go(t('이 기능을 쓰려면 운영팀이 Supabase에서 press-sources-pick.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run press-sources-pick.sql in Supabase.'))
+    return go(error.message.replace(/^.*?:\s*/, ''))
+  }
+  revalidateTag('sites', { expire: 0 })
+  revalidatePath('/press')
+  return go(remove ? t('맞춤 자료에서 뺐습니다.', 'Removed from My feed.') : t('맞춤 자료에 넣었습니다. 왼쪽 “맞춤 자료” 탭에서 볼 수 있습니다.', 'Added to My feed. See it in the “My feed” tab.'))
 }
 
 // 보도자료 사진을 우리 저장소로 옮긴다 (원본 사이트가 사진을 지워도 기사가 깨지지 않게)

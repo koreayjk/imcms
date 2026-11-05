@@ -71,7 +71,7 @@ export default function PricingEn() {
           </div>
           <p className="mt-4 text-[12.5px] leading-[1.7] text-[#8A9099]">
             {beta ? `The setup-fee waiver assumes you stay at least ${SETUP_WAIVER_MONTHS} months after launch; if you cancel sooner, we charge the waived fee. ` : ''}
-            Extra title (3rd onward on Premium): {usd(EXTRA_OUTLET_USD)} / month each. Extra AI usage: {usd(EXTRA_AI_USD)} per 100 uses. *Bandwidth is not capped for normal newsroom use.
+            Extra title (3rd onward on Premium): {usd(EXTRA_OUTLET_USD)} / month each. Extra AI usage: {usd(EXTRA_AI_USD)} per 100 uses. Bandwidth is per month; if you go over, we will tell you first and agree on a suitable Plan together.
           </p>
         </div>
       </div>

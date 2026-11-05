@@ -5,9 +5,10 @@ import type { PolicySection } from './service-terms'
 import { ISSUER, PRODUCT } from './product'
 import { EXTRA_AI_USD, EXTRA_OUTLET_USD, SETUP_FEE_USD, SETUP_WAIVER_MONTHS, BETA_MONTHS, BETA_END_LABEL_EN, usd } from './pricing-global'
 
-export const TERMS_VERSION_EN = 'en-2026-10-21'
-export const TERMS_EFFECTIVE_EN = 'October 21, 2026'
+export const TERMS_VERSION_EN = 'en-2026-11-02'
+export const TERMS_EFFECTIVE_EN = 'November 2, 2026'
 export const PRIVACY_VERSION_EN = 'en-2026-10-21'
+export const PRIVACY_EFFECTIVE_EN = 'October 21, 2026'
 
 const co = () => ISSUER.legalName ?? 'IM America Group Corp'
 const intro = () => `${co()}${ISSUER.dba ? ` (doing business as ${ISSUER.dba})` : ''} ("we", "us", the "Company")`
@@ -49,7 +50,7 @@ export function termsSectionsEn(): PolicySection[] {
     {
       title: '5. The Service',
       body: [
-        'What each Plan includes (AI uses, storage, banner and popup design requests, newsletter allowances and so on) is as published on the pricing page. We do not cap bandwidth for normal newsroom use.',
+        'What each Plan includes (AI uses, storage, monthly bandwidth, newsletter allowances and so on) is as published on the pricing page.',
         'We may add or change features to improve the Service. We will give notice before removing or substantially changing a feature the Customer relies on.',
       ],
     },
@@ -82,7 +83,7 @@ export function termsSectionsEn(): PolicySection[] {
       title: '9. Usage limits',
       body: [
         `If AI usage exceeds the monthly allowance the Customer may buy 100 more uses for ${usd(EXTRA_AI_USD)} or wait until next month. We notify the Customer before the limit is reached.`,
-        'If storage exceeds the Plan or bandwidth is far above typical newsroom use for several months, we will contact the Customer to agree on a suitable Plan. We will not bill for temporary spikes the Customer did not cause (for example automated attacks).',
+        'If storage or monthly bandwidth exceeds the Plan, we will first notify the Customer and agree on a suitable Plan. We will not bill for temporary spikes the Customer did not cause (for example automated attacks).',
       ],
     },
     {
@@ -241,6 +242,6 @@ export function privacySectionsEn(): PolicySection[] {
       body: [`You may ask us to access, correct, delete or export your personal information, or object to or restrict its processing, by emailing ${mail()}. If you are in the EU, UK or a region with similar law, you may also lodge a complaint with your local data-protection authority. We do not sell personal information.`],
     },
     { title: '6. Security', body: ['We encrypt data in transit, restrict access by role, offer two-factor authentication, keep sign-in history and take daily backups.'] },
-    { title: '7. Contact and changes', body: [`Questions: ${mail()}. We will post changes to this policy here and email customers about material changes. Effective ${TERMS_EFFECTIVE_EN}.`] },
+    { title: '7. Contact and changes', body: [`Questions: ${mail()}. We will post changes to this policy here and email customers about material changes. Effective ${PRIVACY_EFFECTIVE_EN}.`] },
   ]
 }

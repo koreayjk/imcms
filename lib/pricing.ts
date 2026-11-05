@@ -88,7 +88,7 @@ export const PLANS: Plan[] = [
     name: '베이직',
     for: '기자 몇 명이 매일 기사를 내는 소규모 인터넷신문',
     monthly: 110_000,
-    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 300회'], ['저장 용량', '30G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 3건'], ['뉴스레터', '구독 신청 받기 (발송은 스탠다드부터)'], ['보도자료 메일 자동 수신', '부가 서비스 월 39,000원']],
+    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 300회'], ['저장 용량', '30G'], ['전송량', '월 800GB'], ['뉴스레터', '구독 신청 받기 (발송은 스탠다드부터)'], ['보도자료 메일 자동 수신', '부가 서비스 월 39,000원']],
     extras: [],
   },
   {
@@ -97,7 +97,7 @@ export const PLANS: Plan[] = [
     for: '섹션이 많고 기사량이 꾸준한 일반 언론사',
     monthly: 150_000,
     pick: true,
-    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 900회'], ['저장 용량', '60G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 5건'], ['뉴스레터', '주 1회 · 회당 2,000명'], ['보도자료 메일 자동 수신', '부가 서비스 월 39,000원']],
+    specs: [['운영 매체', '1개'], ['AI 초안·법적 검수', '월 900회'], ['저장 용량', '60G'], ['전송량', '월 1,000GB'], ['뉴스레터', '주 1회 · 회당 2,000명'], ['보도자료 메일 자동 수신', '부가 서비스 월 39,000원']],
     extras: ['홈페이지 맞춤 수정 지원'],
   },
   {
@@ -105,15 +105,15 @@ export const PLANS: Plan[] = [
     name: '프리미엄',
     for: '방문자가 많거나 매체를 여럿 운영하는 언론사',
     monthly: 230_000,
-    specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '제한 없음*'], ['배너·팝업 디자인', '월 10건'], ['뉴스레터', '주 2회 · 회당 5,000명'], ['보도자료 메일 자동 수신', '포함']],
-    extras: ['홈페이지 맞춤 수정 지원', '그룹장 화면 · 여러 매체 동시 송고', '3번째 매체부터 매체마다 월 90,000원(베이직)·110,000원(스탠다드)·150,000원(프리미엄) 중 선택', '우선 지원'],
+    specs: [['운영 매체', '2개 (추가 가능)'], ['AI 초안·법적 검수', '월 2,000회'], ['저장 용량', '100G'], ['전송량', '월 1,500GB'], ['뉴스레터', '주 2회 · 회당 5,000명'], ['보도자료 메일 자동 수신', '포함']],
+    extras: ['홈페이지 맞춤 수정 지원', '그룹장 화면 · 여러 매체 동시 송고', '3번째 매체부터 매체마다 월 90,000원(베이직) · 110,000원(스탠다드) · 150,000원(프리미엄) 중 선택', '우선 지원'],
   },
   {
     id: 'enterprise',
     name: '엔터프라이즈',
     for: '방문자·기사량이 아주 많은 중대형 언론사',
     monthly: null,
-    specs: [['운영 매체', '맞춤'], ['AI 초안·법적 검수', '맞춤'], ['저장 용량', '맞춤'], ['전송량', '맞춤'], ['배너·팝업 디자인', '상담'], ['뉴스레터', '맞춤'], ['보도자료 메일 자동 수신', '포함']],
+    specs: [['운영 매체', '맞춤'], ['AI 초안·법적 검수', '맞춤'], ['저장 용량', '맞춤'], ['전송량', '맞춤'], ['뉴스레터', '맞춤'], ['보도자료 메일 자동 수신', '포함']],
     extras: ['전용 지원 담당'],
   },
 ]
@@ -168,10 +168,10 @@ export const planName = (id: string | null | undefined, lang?: Lang) => {
 }
 // 요금제 사양 (영어): PLANS 와 같은 순서·같은 칸 수
 export const PLAN_SPECS_EN: Record<PlanId, [string, string][]> = {
-  basic: [['Publications', '1'], ['AI drafts & legal reviews', '300 / month'], ['Storage', '30 GB'], ['Data transfer', 'Unlimited*'], ['Banner & popup design', '3 / month'], ['Newsletter', 'Accept subscriptions (sending starts with Standard)'], ['Auto-receive press releases by email', 'Add-on, KRW 39,000/month']],
-  standard: [['Publications', '1'], ['AI drafts & legal reviews', '900 / month'], ['Storage', '60 GB'], ['Data transfer', 'Unlimited*'], ['Banner & popup design', '5 / month'], ['Newsletter', 'Weekly · 2,000 recipients per send'], ['Auto-receive press releases by email', 'Add-on, KRW 39,000/month']],
-  premium: [['Publications', '2 (more available)'], ['AI drafts & legal reviews', '2,000 / month'], ['Storage', '100 GB'], ['Data transfer', 'Unlimited*'], ['Banner & popup design', '10 / month'], ['Newsletter', 'Twice weekly · 5,000 recipients per send'], ['Auto-receive press releases by email', 'Included']],
-  enterprise: [['Publications', 'Custom'], ['AI drafts & legal reviews', 'Custom'], ['Storage', 'Custom'], ['Data transfer', 'Custom'], ['Banner & popup design', 'By consultation'], ['Newsletter', 'Custom'], ['Auto-receive press releases by email', 'Included']],
+  basic: [['Publications', '1'], ['AI drafts & legal reviews', '300 / month'], ['Storage', '30 GB'], ['Data transfer', '800 GB / month'], ['Newsletter', 'Accept subscriptions (sending starts with Standard)'], ['Auto-receive press releases by email', 'Add-on, KRW 39,000/month']],
+  standard: [['Publications', '1'], ['AI drafts & legal reviews', '900 / month'], ['Storage', '60 GB'], ['Data transfer', '1,000 GB / month'], ['Newsletter', 'Weekly · 2,000 recipients per send'], ['Auto-receive press releases by email', 'Add-on, KRW 39,000/month']],
+  premium: [['Publications', '2 (more available)'], ['AI drafts & legal reviews', '2,000 / month'], ['Storage', '100 GB'], ['Data transfer', '1,500 GB / month'], ['Newsletter', 'Twice weekly · 5,000 recipients per send'], ['Auto-receive press releases by email', 'Included']],
+  enterprise: [['Publications', 'Custom'], ['AI drafts & legal reviews', 'Custom'], ['Storage', 'Custom'], ['Data transfer', 'Custom'], ['Newsletter', 'Custom'], ['Auto-receive press releases by email', 'Included']],
 }
 export const PLAN_FOR_EN: Record<PlanId, string> = {
   basic: 'A small online newspaper where a few reporters publish every day',

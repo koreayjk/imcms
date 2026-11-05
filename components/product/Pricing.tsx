@@ -133,7 +133,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
               </dl>
               {p.extras.length > 0 && (
                 <ul className="mt-4 space-y-1.5 text-[13.5px] text-[#3B4048]">
-                  {p.extras.map((x) => <li key={x} className="flex gap-2"><span className="text-[#16294D]" aria-hidden>✓</span>{x}</li>)}
+                  {p.extras.map((x) => <li key={x} className="flex gap-2"><span className="text-[#16294D]" aria-hidden>✓</span><span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{x}</span></li>)}
                 </ul>
               )}
             </div>
@@ -188,7 +188,7 @@ export default function Pricing({ applyHref = '#apply' }: { applyHref?: string }
       </dl>
 
       <p className="mt-5 text-center text-[12.5px] leading-relaxed text-[#8A9099]">
-        모든 금액은 따로 붙는 부가세가 없는 최종 금액입니다(미국 법인 IM America Group Corp 공급, 세금계산서 대신 청구서·결제 영수증 발행). * 전송량은 일반적인 언론사 사용 기준으로 제한 없이 쓰며, 아주 큰 트래픽이 계속되면 요금제를 함께 정합니다. 배너·팝업 디자인은 운영팀이 만들어 드리는 건수이고, 직접 만든 배너는 개수 제한 없이 올릴 수 있습니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
+        모든 금액은 따로 붙는 부가세가 없는 최종 금액입니다(미국 법인 IM America Group Corp 공급, 세금계산서 대신 청구서·결제 영수증 발행). 전송량은 한 달 기준이며, 넘으면 먼저 알려 드리고 맞는 요금제를 함께 정합니다. 자세한 조건은 <a href="/imnewsroom/terms" className="underline hover:text-[#14171C]">이용약관</a>을 확인해 주세요.
         {BETA && ` 베타 반값은 ${BETA_END_LABEL}까지 신청한 신문사의 ${BETA_PERIOD_LABEL} 이용료에 적용되고, ${REGULAR_AFTER_LABEL} 정상가입니다. 1년 결제는 12개월 중 ${BETA_PERIOD_LABEL}분만 반값으로 계산합니다. 매체 추가·AI 추가 사용 요금은 베타 기간에도 정상가입니다.`}
       </p>
     </div>

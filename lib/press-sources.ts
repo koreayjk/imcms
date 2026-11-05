@@ -218,6 +218,8 @@ export const fieldOfSource = (key: string): PressField | null => PRESS_FIELDS.fi
 //   · 기사 형식·공통 메뉴(오피니언·칼럼·포토·종합 등)는 주제가 아니므로 뺀다
 //   · 교육·의료·물류 같은 분야 섹션은 그 분야의 뉴스와이어 분류를 통째로 넣고, 나머지는 섹션 이름과 가까운 단어를 제목 키워드로 쓴다
 const SECTION_SKIP = /^(종합|뉴스|전체|홈|오피니언|사설|칼럼|기자수첩|기고|인터뷰|기획|특집|기획특집|포토|포토뉴스|영상|동영상|로컬|사회|사회종합|국제이슈|이슈|속보|포토|사진|opinion|editorial|column|interview|feature|photo|video|news|local|world|home|all)$/i
+// 지역 섹션(서울·경기·제주 등): 제목에 지역 이름이 든 자료가 너무 많아, 맞춤 키워드로는 쓰지 않는다 (섹션 버튼으로만 보인다)
+export const isRegionSection = (name: string) => /^(서울|경기|인천|부산|대구|광주|대전|울산|세종|강원|충북|충남|충청|전북|전남|호남|경북|경남|영남|제주|수도권|충청권|호남권|영남권)(특별시|광역시|특별자치시|특별자치도|도|권)?$/.test(name.replace(/[\s·・/]+/g, ''))
 const SECTION_WORDS: [RegExp, string[]][] = [
   [/인공지능|^ai$|AI/, ['인공지능', '생성형', '딥러닝']],
   [/빅데이터/, ['빅데이터', '데이터센터']],
@@ -237,14 +239,18 @@ const SECTION_WORDS: [RegExp, string[]][] = [
 export function pressHintsFromSections(names: string[]): { keywords: string[]; fields: PressField[] } {
   const kw = new Set<string>()
   const fields = new Set<PressField>()
+  const regions: string[] = []
   for (const raw of names) {
     const name = raw.trim()
     if (!name || SECTION_SKIP.test(name.replace(/[\s·・/]+/g, ''))) continue
+    if (isRegionSection(name)) { regions.push(name); continue }
     for (const f of PRESS_FIELDS) if (f.words.some((w) => name.includes(w)) || name.includes(f.label.split('·')[0])) fields.add(f.key)
     const hit = SECTION_WORDS.filter(([re]) => re.test(name))
     if (hit.length) hit.forEach(([, ws]) => ws.forEach((w) => kw.add(w)))
     else kw.add(name.replace(/(종합|뉴스|소식)$/, '').trim())
   }
+  // 주제 섹션이 하나도 없는 지역 매체만 지역 이름을 키워드로 쓴다
+  if (!kw.size && !fields.size) regions.forEach((r) => kw.add(r))
   return { keywords: usableKeywords([...kw]).filter((w) => w.length >= 2).slice(0, 40), fields: [...fields] }
 }
 

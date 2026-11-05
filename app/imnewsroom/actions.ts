@@ -9,6 +9,7 @@ import { noticeMail, sendMails } from '@/lib/mail'
 import { quoteUrl } from '@/lib/quote'
 import { ONBOARDING_URL } from '@/lib/onboarding-guide'
 import { paymentDbSecret } from '@/lib/toss'
+import { parseMigrationAnswers } from '@/lib/apply-questions'
 
 export type ApplyState = { ok?: boolean; error?: string }
 
@@ -28,8 +29,11 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
   const domain = get('domain', 120).replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase()
   // 희망하는 홈페이지 모양 (신청서에서 고른 것): 따로 저장 칸 없이 요청사항 맨 앞에 적어 운영팀이 바로 본다
   const design = HOME_LAYOUTS.find((l) => l.ready && l.key === get('design', 20))
-  const typed = String(form.get('message') ?? '').trim().slice(0, 1900)
-  const message = (design ? `[희망 홈페이지 모양] ${design.name} · ${design.label}${typed ? `\n\n${typed}` : ''}` : typed).slice(0, 2000)
+  // 이전·연동 질문(신청서 필수 칸): 요청사항 맨 앞에 적어 운영팀이 바로 본다 (모르면 '모르겠음'을 고른다)
+  const mig = parseMigrationAnswers(form)
+  const head = [design && `[희망 홈페이지 모양] ${design.name} · ${design.label}`, mig.block].filter(Boolean).join('\n\n')
+  const typed = String(form.get('message') ?? '').trim().slice(0, Math.max(0, 1990 - head.length))
+  const message = (head ? `${head}${typed ? `\n\n${typed}` : ''}` : typed).slice(0, 2000)
   const plan = planById(get('plan', 20))
   const billing: Billing = get('billing', 10) === 'monthly' ? 'monthly' : 'annual'
 
@@ -39,6 +43,7 @@ export async function submitBetaRequest(_prev: ApplyState, form: FormData): Prom
   if (phone.replace(/\D/g, '').length < 9) return { error: '연락받을 전화번호를 확인해 주세요.' }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: '청구서와 안내를 받을 이메일 주소를 적어주세요.' }
   if (domain && !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain)) return { error: '도메인을 확인해 주세요. 예: mynews.co.kr' }
+  if (mig.error) return { error: mig.error }
   if (form.get('agree') !== 'on') return { error: '개인정보 수집·이용에 동의해야 신청할 수 있습니다.' }
   if (form.get('agree_terms') !== 'on') return { error: '서비스 이용약관에 동의해야 신청할 수 있습니다.' }
 
@@ -134,7 +139,7 @@ async function sendApplyMails(a: { company: string; contactName: string; phone: 
   const toApplicant = noticeMail({
     title: `${a.company} 서비스 신청을 받았습니다`,
     lines: [
-      `${a.contactName}님, ${PRODUCT.name}을 신청해 주셔서 감사합니다. 담당자가 영업일 기준 이틀 안에 ${a.phone}으로 연락드려 개통 일정과 계약 내용을 안내합니다.`,
+      `${a.contactName}님, ${PRODUCT.name}을 신청해 주셔서 감사합니다. 담당자가 영업일 기준 이틀 안에 이메일이나 카카오톡(${a.phone})으로 연락드려 개통 일정과 계약 내용을 안내합니다.`,
       `신청 내용: ${a.plan} · ${BILLING_LABEL[a.billing]} · 첫 결제 예상 ${won}${a.domain ? ` · 도메인 ${a.domain}` : ''}`,
       `개통까지 어떤 순서로, 보통 며칠이 걸리는지는 ${ONBOARDING_URL} 에서 보실 수 있습니다.`,
       '첫 이용료는 정식 오픈 전에 청구서로 먼저 받고 납부를 확인한 뒤 오픈합니다. 오픈 전에 취소하면 낸 금액을 모두 돌려드리며, 신청만 한 지금은 비용이 생기지 않습니다. 아래 버튼으로 이 신청 내용의 견적서를 보고 인쇄(PDF 저장)할 수 있습니다.',

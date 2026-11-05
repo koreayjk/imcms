@@ -203,7 +203,7 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
     )
     return {
       latest: all.slice(0, 30),
-      mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 8),
+      mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 10),
       bySection,
       pinned: emptyPinned(),
     }
@@ -216,7 +216,7 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
   const [pinnedRes, latest, mostViewed, ...sections] = await Promise.all([
     pinnedArticles(scope),
     published(scope).order('published_at', { ascending: false }).limit(70),
-    published(scope).order('view_count', { ascending: false }).limit(8),
+    published(scope).order('view_count', { ascending: false }).limit(10),
     // 1차 섹션마다 (2차 메뉴 기사 포함)
     ...tops.map((s) => {
       const ids = familyIds(site, scope.catIds, s.slug)
@@ -313,6 +313,7 @@ async function loadArticleData(site: SiteConfig, id: string) {
       ...splitRelated(article, all.filter((a) => a.id !== id), all.filter((a) => a.category?.slug === article.category?.slug && a.id !== id)),
       mostViewed: [...all].sort((a, b) => b.view_count - a.view_count).slice(0, 8),
       latest: all.filter((a) => a.id !== id).slice(0, 5),
+      more: moreOf(splitRelated(article, all.filter((a) => a.id !== id), all.filter((a) => a.category?.slug === article.category?.slug && a.id !== id)), all.filter((a) => a.id !== id).slice(5)),
     }
   }
 
@@ -337,16 +338,20 @@ async function loadArticleData(site: SiteConfig, id: string) {
       ? published(scope).overlaps('tags', tags).neq('id', id).order('published_at', { ascending: false }).limit(30)
       : Promise.resolve({ data: [] as any[] }),
     published(scope).order('view_count', { ascending: false }).limit(8),
-    published(scope).neq('id', id).order('published_at', { ascending: false }).limit(5),
+    published(scope).neq('id', id).order('published_at', { ascending: false }).limit(5 + MORE_POOL),
     sourceOf(scope.supabase, id),
   ])
   const article = toPublic(data)
+  const split = splitRelated(article, (tagged.data ?? []).map(toPublic), (related.data ?? []).map(toPublic))
+  const pool = (latest.data ?? []).map(toPublic)
   return {
     source,
     article,
-    ...splitRelated(article, (tagged.data ?? []).map(toPublic), (related.data ?? []).map(toPublic)),
+    ...split,
     mostViewed: (mostViewed.data ?? []).map(toPublic),
-    latest: (latest.data ?? []).map(toPublic),
+    latest: pool.slice(0, 5),
+    // 본문 아래 '다른 기사': 오른쪽 칸이 더 길 때 빈자리를 채우는 데 쓴다 (오른쪽 최신 기사·관련 기사와 겹치지 않게)
+    more: moreOf(split, pool.slice(5)),
   }
 }
 export const getArticleData = outletCached('article', loadArticleData)
@@ -364,6 +369,12 @@ export async function legacyArticleId(site: SiteConfig, legacy: string) {
 
 const RELATED_LINKS = 4
 const RELATED_MIN = 3
+const MORE_POOL = 24
+
+function moreOf(rel: { related: PublicArticle[]; relatedLinks: PublicArticle[] }, pool: PublicArticle[]) {
+  const skip = new Set([...rel.related, ...rel.relatedLinks].map((r) => r.id))
+  return pool.filter((a) => !skip.has(a.id)).slice(0, MORE_POOL)
+}
 
 // 겹치는 태그 수가 많은 순, 같으면 최신순 (후보는 최신순으로 들어온다)
 function pickRelated(a: PublicArticle, pool: PublicArticle[]) {

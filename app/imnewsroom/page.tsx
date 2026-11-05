@@ -268,7 +268,7 @@ export default async function ProductHome() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: PRODUCT_JSONLD }} />
       <IslandNav
         logo={<Logo />}
-        items={[{ href: '#multi', label: '기능' }, { href: '#designs', label: '디자인 샘플' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: `${PRODUCT.path}/start`, label: '창간 가이드' }, { href: '#faq', label: '자주 묻는 질문' }]}
+        items={[{ href: '#multi', label: '기능' }, { href: '#designs', label: '디자인 샘플' }, { href: '#ai', label: 'AI 초안' }, { href: '#search', label: '검색 등록' }, { href: '#security', label: '보안' }, { href: '#pricing', label: '요금' }, { href: `${PRODUCT.path}/start`, label: '창간 가이드' }, { href: `${PRODUCT.path}/migration`, label: '타사 이전' }, { href: '#faq', label: '자주 묻는 질문' }]}
         loginHref={appLink('/login')}
         trialHref={appLink('/trial')}
       />
@@ -486,9 +486,14 @@ export default async function ProductHome() {
                 </li>
               ))}
             </ul>
-            <p className="mt-8 text-center text-[13.5px] leading-[1.8] text-[#5B616B]">
-              신청서에서 원하는 모양을 고르실 수 있습니다. 처음 개통할 때 맞춰 드리며, 모양 설정은 세팅 작업에 들어 있습니다.
-            </p>
+            <div className="mx-auto mt-12 max-w-[860px] rounded-[28px] bg-[#16294D] px-7 py-9 text-center text-white sm:px-12 sm:py-12">
+              <p className="text-[26px] font-extrabold leading-[1.3] tracking-[-0.04em] [text-wrap:balance] sm:text-[36px]">
+                기본 디자인을 고르시면,<br />개통 전에 원하시는 디자인으로 맞춰 드립니다.
+              </p>
+              <p className="mx-auto mt-5 max-w-[34em] text-[16px] leading-[1.85] text-white/80 sm:text-[18px]">
+                신청서에서 마음에 드는 기본 모양을 고르세요. 바꾸고 싶은 부분이나 추가하고 싶은 칸이 있으면 개통 전에 말씀해 주세요. 오픈 전에 수정해서 확인받은 뒤 개통합니다. 모양 설정과 수정은 세팅 작업에 포함되어 있습니다.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -600,7 +605,7 @@ export default async function ProductHome() {
               <ul className="mt-7 space-y-3">
                 <Check>해운 운임지수(SCFI·KCCI) 주간 그래프 — 편집국이 매주 값만 입력</Check>
                 <Check>“국제물류 전문뉴스”, “케어 전문뉴스”처럼 매체별 전문 섹션 묶음</Check>
-                <Check>분야 키워드로 보도자료 추천, 분야별 보도자료 출처 연결</Check>
+                <Check>분야 키워드로 보도자료 맞춤 선별, 분야별 보도자료 출처 연결</Check>
                 <Check>도메인 연결 전에도 매체마다 따로 된 주소로 미리 확인</Check>
               </ul>
             </Reveal>
@@ -664,17 +669,43 @@ export default async function ProductHome() {
 
         {/* ─── 저희가 먼저 씁니다 ─── */}
         <section>
-          <div className="mx-auto grid max-w-[1200px] items-center gap-10 px-4 py-24 sm:px-6 lg:py-32 md:grid-cols-[1fr_1.2fr]">
+          <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:py-20">
+            <div className="grid items-center gap-8 md:grid-cols-[1fr_1.2fr] md:gap-10">
+              <Reveal>
+                <Eyebrow icon="cloud" color="#16294D">직접 운영하며 만듭니다</Eyebrow>
+                <h2 className={`mt-5 ${H2}`}>저희 매체가<br />먼저 씁니다.</h2>
+              </Reveal>
+              <Reveal delay={150}>
+                <p className="text-[17px] leading-[1.9] text-[#3B4048]">
+                  {PRODUCT.name}은 저희가 직접 운영하는 인터넷신문을 위해 만들었습니다. 보건·복지·요양 전문지 <strong>더케어타임즈</strong>를 시작으로, 국제물류 전문지 <strong>Shipping Times</strong>(준비 중) 등 운영 매체를 차례로 옮기고 있습니다.
+                  매일 쓰면서 불편한 점을 먼저 고치니, 현장에서 필요한 기능이 먼저 들어갑니다.
+                </p>
+              </Reveal>
+            </div>
+
+            {/* 최근에 고친 것: 매일 쓰면서 고친다는 말의 실제 예 */}
             <Reveal>
-              <Eyebrow icon="cloud" color="#16294D">직접 운영하며 만듭니다</Eyebrow>
-              <h2 className={`mt-5 ${H2}`}>저희 매체가<br />먼저 씁니다.</h2>
+              <p className="mt-14 text-[13px] font-bold tracking-[0.04em] text-[#1D3461]">최근에 고친 것</p>
             </Reveal>
-            <Reveal delay={150}>
-              <p className="text-[17px] leading-[1.9] text-[#3B4048]">
-                {PRODUCT.name}은 저희가 직접 운영하는 인터넷신문을 위해 만들었습니다. 보건·복지·요양 전문지 <strong>더케어타임즈</strong>를 시작으로, 국제물류 전문지 <strong>Shipping Times</strong>(준비 중) 등 운영 매체를 차례로 옮기고 있습니다.
-                매일 쓰면서 불편한 점을 먼저 고치니, 현장에서 필요한 기능이 먼저 들어갑니다.
-              </p>
-            </Reveal>
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { t: '첫 화면 톱기사 슬라이드', d: '톱기사를 1~10개 정해 두면 자동으로 넘어갑니다. 넘어가는 간격은 편집장이 홈 편집에서 정합니다.' },
+                { t: '빈자리 없는 첫 화면', d: '주요뉴스 옆 “많이 본 뉴스” 칸이 왼쪽 높이에 맞춰 이어져 아래가 휑하지 않습니다.' },
+                { t: '메일 보도자료 정리', d: '광고 메일처럼 디자인 코드가 섞여 오는 HTML 메일도 글자만 깔끔하게 보도자료함에 들어옵니다.' },
+                { t: '개통 때 디자인 점검', d: '시작용 기사를 확인한 뒤, 바꾸고 싶은 디자인을 받아 개통 전에 수정하는 단계를 넣었습니다.' },
+              ].map((x, i) => (
+                <li key={x.t} className="list-none">
+                  <Reveal delay={i * 80} className="h-full">
+                    <div className="pn-shell h-full">
+                      <div className="pn-core h-full p-6">
+                        <p className="text-[16.5px] font-extrabold tracking-[-0.02em]">{x.t}</p>
+                        <p className="mt-2 text-[14.5px] leading-[1.75] text-[#5B616B]">{x.d}</p>
+                      </div>
+                    </div>
+                  </Reveal>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -921,6 +952,8 @@ export default async function ProductHome() {
             <Link href={appLink('/login')} className="hover:text-[#0F1115]">편집국 로그인</Link>
             <a href="#apply" className="hover:text-[#0F1115]">서비스 신청</a>
             <Link href={`${PRODUCT.path}/start`} className="hover:text-[#0F1115]">창간 가이드</Link>
+            <Link href={`${PRODUCT.path}/migration`} className="hover:text-[#0F1115]">타사 이전</Link>
+            <Link href={`${PRODUCT.path}/domain`} className="hover:text-[#0F1115]">도메인 구입 안내</Link>
             <Link href={`${PRODUCT.path}/terms`} className="hover:text-[#0F1115]">이용약관</Link>
             <Link href={`${PRODUCT.path}/privacy`} className="font-semibold text-[#5B616B] hover:text-[#0F1115]">개인정보처리방침</Link>
             <Link href={`${PRODUCT.path}/en`} hrefLang="en" className="hover:text-[#0F1115]">English</Link>
