@@ -153,3 +153,8 @@ export async function parseInbound(mail: InboundMail): Promise<ParsedMail | null
     skipped,
   }
 }
+
+// 광고 메일: 제목 맨 앞에 (광고)·[광고]·(AD) 표시가 있는 메일. 광고성 정보 전송은 제목에 이 표시를 달아야 해서, 보도자료함에는 받지 않는다
+//   (Re:·Fwd: 뒤에 붙은 것도 포함). 보도자료를 보내는 홍보 담당자는 이 표시를 달지 않는다
+export const AD_SUBJECT = /^\s*(?:(?:re|fwd?|회신|전달)\s*:\s*)*[(\[（【<]\s*(?:광\s*고|ad|advertisement)\s*[)\]）】>]/i
+export const isAdMail = (title: string | null | undefined) => AD_SUBJECT.test(title ?? '')

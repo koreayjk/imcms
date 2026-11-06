@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { parseInbound, type InboundMail } from '@/lib/press-email'
+import { isAdMail, parseInbound, type InboundMail } from '@/lib/press-email'
 import { resendInboundMail, verifyResendWebhook } from '@/lib/resend-inbound'
 
 // 메일 수신 서비스가 메일 한 통마다 부른다. 주소의 ?key= 값을 DB 비밀 열쇠와 대조한다
@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
   const parsed = await parseInbound(mail)
   // 누구 주소인지 알 수 없는 메일은 다시 보내봐야 소용없으니 받은 것으로 처리한다
   if (!parsed) { console.error('[inbound-email] 받는 주소에서 전용 주소 토큰(press+토큰@)을 찾지 못했습니다'); return NextResponse.json({ result: 'no_token' }) }
+
+  // 광고 메일((광고)·[광고] 표시)은 받지 않는다. 저장하지 않으므로 하루 한도(100건)에도 세지 않는다
+  if (parsed.kind === 'release' && isAdMail(parsed.title)) return NextResponse.json({ result: 'ad_skipped' })
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
