@@ -30,6 +30,17 @@ seoul-08·24·17·22·23·25(위에 포함), gyeonggi-12 구리, gyeonggi-13 남
 ## 완료 — 코드만 있음 (3차, 같은 PR)
 chungbuk-04 보은, chungbuk-05 옥천, chungbuk-10 음성, gangwon-09 횡성, gangwon-02 원주 (ntt 형)
 
+## 완료 — 코드만 있음 (4차, 2026-11-07)
+gyeonggi-10 고양(`lg-goyang`, 목록 `fnView('1090',ID)`·상세 webView 칸), chungbuk-01 청주(`lg-cheongju`, 시정소식 bbsNo=40), chungnam-03 보령(`lg-boryeong`, view.do?mgtno), chungnam-12 청양(`lg-cheongyang`, 카드 목록·사진 칸 따로)
+- 파서 보완: 카드 목록 제목은 `.subject`만, 날짜가 링크 안에 있어도 읽기, `onError="this.src=…"` 속 주소를 사진으로 잘못 읽던 것 수정, `;jsessionid=` 제거, BOARDS 규칙에 `image`(본문 밖 대표 사진) 선택 항목 추가
+- 배포 뒤 확인할 것: 새 4곳이 press_fetch_log에서 ok 인지, 이미 있던 카드형 출처(하남·남양주·옥천·포천·연천·김포·당진)의 제목·날짜가 그대로인지
+
+## 시도했으나 이번에 못 붙인 곳 (2026-11-07)
+- gangwon-17 고성: 상세가 POST 폼(`fn_search_detail(nttId)`)이라 GET으로 못 읽을 수 있음
+- gangwon-15 양구: 목록 주소(`user_sub?gfnc=www&mu_idx=232`)가 홈 화면을 돌려줌 — 보도자료 목록 주소 재확인 필요
+- chungnam-15 태안: 메인이 거의 빈 응답(차단 추정)
+- gyeonggi-11 과천·14 오산: 보도자료가 `contents.do` 안내형이라 글 링크 없음. gyeonggi-21 이천·25 광주시: 메인에서 보도자료 링크를 못 찾음
+
 ## 운영 수집 확인 결과 (2026-11-04 19:12 UTC, PR #29 배포 후 첫 수집)
 - 정상(목록 읽힘, 10건 안팎) 55곳: 위 '완료' 목록 대부분 + 광역 8
 - 운영(Vercel)에서 접속 실패 `fetch failed`: lg-jungnang 중랑, lg-jongno 종로, lg-gwangsan 광산, lg-boeun 보은 — Supabase에서는 열리지만 운영 서버에서는 막힘(서버 IP 차단 추정). 우회하지 않는다. 다음 수집에서도 실패하면 '불가(운영 서버 차단)'.

@@ -176,8 +176,33 @@ export function parseNttDetail(page: string, base: string, label: string) {
 
 // ───────── 사이트마다 모양이 다른 게시판 (서울 중랑구·마포구 등) ─────────
 //   표(<tr>) 목록에서 글 주소 규칙(href)에 맞는 링크를 제목으로 읽고, 상세는 본문 칸(body)만 읽는다. 사이트별 규칙은 아래 BOARDS 에 둔다
-type BoardCfg = { id: RegExp; link: (id: string, origin: string) => string; body: RegExp }
+type BoardCfg = { id: RegExp; link: (id: string, origin: string) => string; body: RegExp; image?: RegExp }  // image: 본문 칸 밖에 있는 대표 사진의 주소(첫 번째 묶음)
 export const BOARDS: Record<string, BoardCfg> = {
+  // 청양군: 목록은 카드형(제목은 strong.subject), 상세는 사진 칸과 본문 칸이 따로다 (사진 주소의 ;jsessionid=… 는 뺀다)
+  'lg-cheongyang': {
+    id: /BBSMSTR_000000000064\/selectBoardArticle\.do[^"]*?nttId=(\d+)/,
+    link: (id, o) => `${o}/cop/bbs/BBSMSTR_000000000064/selectBoardArticle.do?nttId=${id}`,
+    body: /<\/script>\s*<\/td>\s*<\/tr>\s*<tr>\s*<td colspan="6">([\s\S]*?)<\/td>/i,
+    image: /<img[^>]+src='([^']*getImage\.do[^']*)'/i,
+  },
+  // 고양시: 목록 제목 링크는 onclick=fnView('1090','ID',…) 형이고, 상세는 webView(PC용) 칸 (바로 뒤에 mobileView 칸이 이어진다)
+  'lg-goyang': {
+    id: /fnView\('1090',\s*'(\d+)'/,
+    link: (id, o) => `${o}/news/user/bbs/BD_selectBbs.do?q_bbsCode=1090&q_bbscttSn=${id}`,
+    body: /<div id="webView"[^>]*>([\s\S]*?)<\/div>\s*<div id="mobileView"/i,
+  },
+  // 청주시: 시정소식 > 새소식 (bbsNo=40). 상세 본문은 board_text_td 칸
+  'lg-cheongju': {
+    id: /selectBbsNttView\.do\?[^"]*nttNo=(\d+)/,
+    link: (id, o) => `${o}/www/selectBbsNttView.do?key=23485&bbsNo=40&nttNo=${id}`,
+    body: /<td class="board_text_td">([\s\S]*?)<\/td>/i,
+  },
+  // 보령시: 보도자료 목록 view.do?mgtno=ID, 상세 본문은 word-break 칸
+  'lg-boryeong': {
+    id: /view\.do\?mgtno=(\d+)/,
+    link: (id, o) => `${o}/prog/eminwon/kor/AA/sub04_02/view.do?mgtno=${id}`,
+    body: /<td style="word-break:break-all;"[^>]*>([\s\S]*?)<\/td>/i,
+  },
   'lg-jungnang': {
     id: /\/portal\/bbs\/view\/B0000151\/(\d+)\.do/,
     link: (id, o) => `${o}/portal/bbs/view/B0000151/${id}.do?menuNo=200474`,
@@ -444,7 +469,9 @@ export function parseGyeongbukList(page: string, key: string, label: string, lis
 }
 
 function boardTitle(anchor: string, inner: string): string {
-  let t = text(inner)
+  // 카드 목록: 링크 안에 제목(.subject)과 요약이 함께 있으면 제목만
+  const subj = /<(strong|span|p|em|b)[^>]*class="[^"]*\bsubject\b[^"]*"[^>]*>([\s\S]*?)<\/\1>/i.exec(inner)
+  let t = text(subj ? subj[2] : inner)
   const w = /wdigm_title\('([\s\S]*?)'\)\s*\)/.exec(inner)
   if (w) t = text(w[1])
   if (/(\.{2,3}|…)$/.test(t)) {
@@ -483,7 +510,8 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
     const end = (m.index ?? 0) + m[0].length
     const next = anchors.slice(i + 1).find((x) => cfg.id.test(decode(x[0])) && text(x[2]).length >= 4)
     const tail = page.slice(end, Math.min(next?.index ?? end + 3000, end + 3000))
-    const date = kstDate(/(\d{4}[-./]\d{2}[-./]\d{2})/.exec(text(tail))?.[1] ?? '')
+    // 날짜가 링크 안(카드의 작성일 칸)에 있는 사이트도 있어, 링크 안 → 링크 뒤 순서로 찾는다
+    const date = kstDate(/(\d{4}[-./]\d{2}[-./]\d{2})/.exec(text(m[0]) + ' ' + text(tail))?.[1] ?? '')
     const prev = found.get(id)
     if (!prev || t.length > prev.title.length) found.set(id, { title: t, date: date ?? prev?.date ?? null })
   })
@@ -497,8 +525,12 @@ export function parseBoardDetail(page: string, key: string, origin: string, labe
   const cfg = BOARDS[key]
   const inner = cfg ? cfg.body.exec(page)?.[1] : null
   if (!inner) return null
-  const imgs = Array.from(inner.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
+  // onError="this.src='…no_image.png'" 같은 속성 안의 src 를 사진 주소로 잘못 읽지 않게 이벤트 속성은 빼고 읽는다
+  const noEvents = inner.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*')/gi, '')
+  const imgs = Array.from(noEvents.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
     .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
+  const extra = cfg?.image?.exec(page)?.[1]
+  if (extra) { try { imgs.unshift(new URL(decode(extra).replace(/;jsessionid=[^?"']*/i, ''), origin).toString()) } catch { /* 주소를 못 읽으면 건너뜀 */ } }
   const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
   const paras = paragraphs(inner.replace(/&amp;nbsp;/gi, '<br><br>').replace(/&amp;(lsquo|rsquo|ldquo|rdquo|middot|hellip|quot|#39);/gi, '&$1;').replace(/&nbsp;/gi, ' '))
   return paras.length ? build(paras, uniq, label) : null
