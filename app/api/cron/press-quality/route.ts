@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const { data: allowed } = await supabase.rpc('press_cron_check', { secret })
   if (allowed !== true) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const { data: pending, error } = await supabase.rpc('press_quality_pending', { secret, n: 80 })
+  const { data: pending, error } = await supabase.rpc('press_quality_pending', { secret, n: 200 })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   const todo = (pending ?? []) as Pending[]
 
