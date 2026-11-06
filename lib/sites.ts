@@ -137,7 +137,7 @@ export type SiteLang = 'ko' | 'en'
 //   출처는 "전체" 탭 출처 고르기에서, 키워드는 맞춤 탭의 그룹 설정에서 담는다
 export type PressTier = { keywords: string[]; sources: string[]; limit: number }
 export const PRESS_TIER_DEFAULTS = [10, 5, 3, 1]
-export const PRESS_TIER_MAX_KEYWORDS = 8
+export const PRESS_TIER_MAX_KEYWORDS = 12
 export const PRESS_TIER_MAX_SOURCES = 70
 export const PRESS_TIER_MAX_LIMIT = 30
 export function cleanPressTiers(v: unknown): PressTier[] {

@@ -30,6 +30,8 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
   const [draft, setDraft] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [err, setErr] = useState('')
+  // 키워드가 한도(그룹당 12개)에 닿았을 때 알림
+  const [kwNotice, setKwNotice] = useState('')
   const latest = useRef(tiers)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const busy = useRef(false)
@@ -72,12 +74,18 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
   })))
   const toggleOne = (key: string) => assign([key], owner.get(key) !== active)
   const toggleMany = (keys: string[]) => assign(keys, !keys.every((k) => owner.get(k) === active))
-  const toggleKeyword = (k: string) => update((cur) => cur.map((g, i) => {
-    const has = g.keywords.includes(k)
+  const fullNotice = () => t(`그룹 ${active + 1}에는 키워드를 ${PRESS_TIER_MAX_KEYWORDS}개까지 담을 수 있습니다. 다른 키워드를 빼거나 다른 그룹을 골라 담아 주세요.`, `Group ${active + 1} holds up to ${PRESS_TIER_MAX_KEYWORDS} keywords. Remove one, or pick another group.`)
+  const toggleKeyword = (k: string) => {
     const mineNow = kwOwner.get(k) === active
-    if (i === active) return { ...g, keywords: mineNow ? g.keywords.filter((x) => x !== k) : [...g.keywords.filter((x) => x !== k), k].slice(-PRESS_TIER_MAX_KEYWORDS) }
-    return has ? { ...g, keywords: g.keywords.filter((x) => x !== k) } : g
-  }))
+    // 한도가 찬 그룹에는 더 담지 않는다 (예전처럼 먼저 담은 것이 말없이 빠지지 않게 알려 준다)
+    if (!mineNow && (tiers[active]?.keywords.length ?? 0) >= PRESS_TIER_MAX_KEYWORDS) { setKwNotice(fullNotice()); return }
+    setKwNotice('')
+    update((cur) => cur.map((g, i) => {
+      const has = g.keywords.includes(k)
+      if (i === active) return { ...g, keywords: mineNow ? g.keywords.filter((x) => x !== k) : [...g.keywords.filter((x) => x !== k), k] }
+      return has ? { ...g, keywords: g.keywords.filter((x) => x !== k) } : g
+    }))
+  }
   // 그룹 카드에는 낱개 출처를 다 늘어놓지 않고 묶음(광역·분야)으로 한 칸씩만 보인다. 세부 체크는 아래 목록에서 한다
   //   묶음 안의 출처가 일부만 담겼으면 "서울특별시 (24/26)"처럼 개수를 같이 보여 준다
   const removeMany = (gi: number, keys: string[]) => update((cur) => cur.map((g, i) => (i === gi ? { ...g, sources: g.sources.filter((x) => !keys.includes(x)) } : g)))
@@ -99,6 +107,9 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
   const addKeywords = (raw: string) => {
     const words = raw.split(/[,\n]/).map((w) => w.replace(/[,()*%\\"]/g, '').trim().slice(0, 30)).filter(Boolean)
     if (!words.length) return
+    const room = PRESS_TIER_MAX_KEYWORDS - (tiers[active]?.keywords.length ?? 0)
+    const fresh = words.filter((w) => !(tiers[active]?.keywords ?? []).includes(w))
+    setKwNotice(fresh.length > room ? (room <= 0 ? fullNotice() : t(`그룹 ${active + 1}에는 ${PRESS_TIER_MAX_KEYWORDS}개까지만 담깁니다. 앞의 ${room}개만 넣었습니다.`, `Group ${active + 1} holds up to ${PRESS_TIER_MAX_KEYWORDS}. Only the first ${room} were added.`)) : '')
     update((cur) => cur.map((g, i) => {
       if (i !== active) return { ...g, keywords: g.keywords.filter((k) => !words.includes(k)) }
       const merged = [...g.keywords]
@@ -192,6 +203,7 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
                     {t('하나당 최신', 'Latest per item')}
                     <input type="number" min={1} max={PRESS_TIER_MAX_LIMIT} value={g.limit} onChange={(e) => setLimit(gi, Number(e.target.value))} className="field-input w-14 py-0.5 text-center" />
                     {t('건', '')}
+                    <span className="ml-auto whitespace-nowrap">{t('키워드', 'Keywords')} {g.keywords.length}/{PRESS_TIER_MAX_KEYWORDS}</span>
                   </label>
                   <div className="mt-2 flex min-h-7 flex-wrap gap-1">
                     {g.sources.length === 0 && g.keywords.length === 0 && <span className="text-[12px] text-muted">{t('비어 있음', 'Empty')}</span>}
@@ -212,6 +224,7 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
               )
             })}
           </div>
+          {kwNotice && <p role="alert" className="mt-2 rounded border border-draft/40 bg-draft/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-ink">{kwNotice}</p>}
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <input
               value={draft}
@@ -251,7 +264,7 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
         ))}
         {grouping && kwList.length > 0 && (
           <fieldset>
-            <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('키워드', 'Keywords')} <span className="font-normal">{t('제목·요약에 이 단어가 있는 자료 (모든 출처에서 찾습니다)', 'Releases whose title or summary contains the word (searched in all sources)')}</span></legend>
+            <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('키워드', 'Keywords')} <span className="font-normal">{t(`제목·요약에 이 단어가 있는 자료 (모든 출처에서 찾습니다) · 그룹당 ${PRESS_TIER_MAX_KEYWORDS}개까지 선택할 수 있습니다`, `Releases whose title or summary contains the word (searched in all sources) · up to ${PRESS_TIER_MAX_KEYWORDS} per group`)}</span></legend>
             <div className="flex flex-wrap gap-x-4 gap-y-1.5">
               {kwList.map((k) => {
                 const g = kwOwner.get(k)
