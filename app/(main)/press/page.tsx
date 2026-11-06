@@ -230,6 +230,12 @@ export default async function PressPage(props: Props) {
   // 우리 매체가 이미 기사로 쓴 자료는 기본 목록에서 숨긴다 ("지난 자료까지 보기"에서는 "기사화됨"으로 보인다)
   const rows = showOld ? rowsAll : rowsAll.filter((r) => !usedSet.has(r.id))
   const hiddenUsed = rowsAll.length - rows.length
+  // 본문 글자 수 (공백 제외): 목록에 보이는 자료만 본문을 읽어 센다
+  const bodyChars = new Map<string, number>()
+  for (let i = 0; i < rows.length; i += 40) {
+    const { data: bs } = await supabase.from('press_releases').select('id, body_html').in('id', rows.slice(i, i + 40).map((r) => r.id))
+    for (const b of (bs ?? []) as { id: string; body_html: string | null }[]) bodyChars.set(b.id, (b.body_html ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, '').length)
+  }
   const newswireToday = (todayUses ?? []).filter((a: any) => a.press_release?.source_key?.startsWith('nw-')).length
   const logByKey = new Map((logs ?? []).map((l) => [l.source_key as string, l]))
   const pages = tiered ? 1 : Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
@@ -331,6 +337,7 @@ export default async function PressPage(props: Props) {
               date: formatShort(r.published_at, lang),
               dateIso: r.published_at,
               used: usedSet.has(r.id),
+              chars: bodyChars.get(r.id) ?? null,
               photos: photoCount.get(r.id) ?? (r.image_url ? 1 : 0),
               badges: [
                 ...(r.source_key === MANUAL_SOURCE ? [t('직접 등록', 'Added manually')] : []),
