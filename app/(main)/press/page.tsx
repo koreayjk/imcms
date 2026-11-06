@@ -21,6 +21,8 @@ const PAGE_SIZE = 30
 // 맞춤 자료(그룹) 모드: 최근 14일 안의 자료만
 const TIER_DAYS = 14
 const TIER_SRC_DAYS = 30
+// 글이 충분하고 사진이 있다고 판정된 자료만 (직접 등록·메일 자료는 판정하지 않고 항상 보인다. press-quality.sql)
+const QUALITY_OK = `quality.eq.ok,source_key.in.(${MANUAL_SOURCE},email)`
 const RECENT_DAYS = 7   // 기본 목록은 최근 7일 것만 (지난 자료는 "지난 자료까지 보기"로)
 const TIER_LEGACY_LIMIT = 3
 type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; mail_section?: string | null; tier?: number; kw?: string }
@@ -103,6 +105,7 @@ export default async function PressPage(props: Props) {
     if (!english) for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) query = query.not('source_key', 'like', `${ft.prefix}%`)
   }
   if (!showOld) query = query.or(winOf(recentSince))
+  query = query.or(QUALITY_OK)
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
 
   const fields = outletSite?.pressFields.length ? outletSite.pressFields : auto?.fields ?? []
@@ -153,11 +156,11 @@ export default async function PressPage(props: Props) {
       for (const k of b.kws) jobs.push(async () => {
         let qy = pressScope(supabase.from('press_releases').select(cols), ctx)
         qy = kwScope ? qy.or(kwScope) : qy.not('source_key', 'like', 'us-%')
-        const { data } = await qy.or(`title.ilike.*${k}*,summary.ilike.*${k}*`).or(win(sinceKw)).order('published_at', { ascending: false, nullsFirst: false }).limit(b.limit)
+        const { data } = await qy.or(`title.ilike.*${k}*,summary.ilike.*${k}*`).or(QUALITY_OK).or(win(sinceKw)).order('published_at', { ascending: false, nullsFirst: false }).limit(b.limit)
         return ((data ?? []) as PressRow[]).map((r) => ({ ...r, tier: b.ti, kw: k }))
       })
       for (const key of b.srcs) jobs.push(async () => {
-        const { data } = await pressScope(supabase.from('press_releases').select(cols), ctx).eq('source_key', key).or(win(sinceSrc)).order('published_at', { ascending: false, nullsFirst: false }).limit(b.limit)
+        const { data } = await pressScope(supabase.from('press_releases').select(cols), ctx).eq('source_key', key).or(QUALITY_OK).or(win(sinceSrc)).order('published_at', { ascending: false, nullsFirst: false }).limit(b.limit)
         return ((data ?? []) as PressRow[]).map((r) => ({ ...r, tier: b.ti }))
       })
     }

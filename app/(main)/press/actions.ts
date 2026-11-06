@@ -235,6 +235,8 @@ export async function createAiReviewArticle(id: string): Promise<BulkResult> {
   if (!data) return { ok: false, id, error: t('보도자료를 찾을 수 없습니다.', 'Press release not found.') }
   const { data: dupRow } = await supabase.from('articles').select('id').eq('outlet_id', outletId).eq('press_release_id', id).limit(1)
   if (dupRow?.length) return { ok: false, id, title: (data as PressRelease).title, error: t('이미 기사로 만든 보도자료입니다.', 'A story was already created from this release.') }
+  // 글이 짧거나 사진이 없다고 판정된 자료(품질 미달)는 AI 기사로 만들지 않는다 (직접 등록·메일 자료는 해당 없음)
+  if ((data as PressRelease).quality === 'poor') return { ok: false, id, title: (data as PressRelease).title, error: t('글이 짧거나 사진이 없어 기사로 만들기에 부족한 자료입니다.', 'This release is too short or has no photo to build a story from.') }
   const r = await ensureFullBody(supabase, data as PressRelease)
   const original = r.body_html?.trim() || `<p>${escapeHtml(r.summary ?? '')}</p>`
 
