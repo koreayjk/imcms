@@ -210,7 +210,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <span className="font-semibold">{t('미리보기', 'Preview')} <span className="font-normal text-muted">{t('(PC 화면 머리 부분, 저장 전에도 바로 바뀝니다)', '(top of the desktop page; updates instantly, even before saving)')}</span></span>
           <a href={previewUrl(outlet.id)} target="_blank" rel="noopener" className="font-semibold text-review underline underline-offset-2">{t('저장한 홈페이지 전체 보기 ↗', 'View the saved website ↗')}</a>
         </div>
-        <div className="pointer-events-none h-[118px] overflow-hidden" aria-hidden>
+        <div className={`pointer-events-none overflow-hidden ${s.headerBanners ? 'h-[210px]' : 'h-[118px]'}`} aria-hidden>
           <div className="site origin-top-left scale-[0.62]" style={{ ...vars, width: '161%' }}>
             <SiteHeader site={preview} />
           </div>
@@ -225,6 +225,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-fill', t('사진 여백', 'Photo fill'), true],
           ['s-icon', t('탭 아이콘', 'Tab icon'), true],
           ['s-logo', t('로고', 'Logo'), true],
+          ['s-hbanner', t('로고 양옆 배너', 'Header banners'), !self],
           ['s-colors', t('색', 'Colors'), true],
           ['s-sections', t('섹션 메뉴', 'Sections'), true],
           ['s-footer', t('하단 표시', 'Footer'), true],
@@ -459,6 +460,33 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           </div>
         </div>
       </Card>
+
+      {!self && (
+        <Card id="s-hbanner" title={t('로고 양옆 기관 배너 (PC 머리글)', 'Header banners beside the logo (desktop)')} note={t('로고를 가운데에 두고 양옆에 기관 배너를 넣으면, 메뉴는 로고 아래 줄로 내려갑니다. 둘 다 비우면 기본 머리글(로고 왼쪽, 메뉴 오른쪽)입니다. 휴대폰 화면에는 나오지 않습니다.', 'Put the logo in the center with organization banners on both sides; the menu moves to a row under the logo. Leave both empty for the default header (logo on the left, menu on the right). Not shown on phones.')}>
+          <div className="grid gap-5 md:grid-cols-2">
+            {(['left', 'right'] as const).map((side) => {
+              const b = s.headerBanners?.[side]
+              const put = (patch: Partial<NonNullable<typeof b>> | null) => {
+                const next = { ...(s.headerBanners ?? {}) }
+                if (patch === null) delete next[side]
+                else next[side] = { name: '', img: '', ...(b ?? {}), ...patch }
+                set({ headerBanners: next.left || next.right ? next : undefined })
+              }
+              return (
+                <div key={side} className="space-y-2">
+                  <ImageSlot label={side === 'left' ? t('왼쪽 배너', 'Left banner') : t('오른쪽 배너', 'Right banner')} hint={t('가로로 긴 이미지(가로 300 × 세로 76 정도)가 좋습니다. 배경은 흰색이거나 투명하게.', 'A wide image (about 300 × 76) works best, with a white or transparent background.')} value={b?.img} onChange={(v) => (v ? put({ img: v }) : put(null))} outletId={outlet.id} boxClass="h-[76px] w-[300px]" />
+                  {b?.img && (
+                    <>
+                      <input value={b.name} maxLength={40} onChange={(e) => put({ name: e.target.value })} placeholder={t('기관 이름', 'Organization name')} className="field-input" aria-label={t('기관 이름', 'Organization name')} />
+                      <input value={b.url ?? ''} maxLength={300} onChange={(e) => put({ url: e.target.value })} inputMode="url" placeholder={t('누르면 갈 주소  https://기관-홈페이지.com', 'Link address  https://organization-website.com')} className="field-input" aria-label={t('누르면 갈 주소', 'Link address')} />
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
 
       <Card id="s-colors" title={t('색', 'Colors')} note={t('대표색은 메뉴 줄·제목, 보조색은 강조선·배지에 쓰입니다. 진한 색은 자동으로 만들어집니다.', 'The main color is used for the menu bar and headings, and the accent color for highlight lines and badges. Darker shades are generated automatically.')}>
         <div className="flex flex-wrap items-end gap-5">

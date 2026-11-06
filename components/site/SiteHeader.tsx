@@ -31,7 +31,23 @@ export default function SiteHeader({ site, current }: Props) {
         </div>
       </div>
 
-      {site.homeLayout === 'editorial' ? (
+      {site.headerBanners ? (
+        /* 로고 가운데 + 양옆 기관 배너, 메뉴는 로고 아래 줄 */
+        <div className="hidden lg:block">
+          <div className="mx-auto grid max-w-[1200px] grid-cols-[300px_1fr_300px] items-center gap-6 px-4 py-5">
+            <HeaderBanner item={site.headerBanners.left} />
+            <div className="flex justify-center"><Logo site={site} size="lg" /></div>
+            <HeaderBanner item={site.headerBanners.right} />
+          </div>
+          <div className="border-t border-rule">
+            <nav className="relative mx-auto max-w-[1200px] px-16" aria-label={t.mainNav}>
+              <NavList site={site} current={current} centered />
+              <Link href="/search" aria-label={t.searchArticles} className="absolute right-4 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-rule text-body hover:border-brand hover:text-brand"><SearchIcon /></Link>
+            </nav>
+          </div>
+          <div className="h-1 bg-brand" />
+        </div>
+      ) : site.homeLayout === 'editorial' ? (
         /* 미국 스타일 1: 가운데 큰 제호 + 두 줄 구분선 + 가로 메뉴 */
         <div className="hidden lg:block">
           <div className="mx-auto max-w-[1200px] px-4">
@@ -67,6 +83,18 @@ export default function SiteHeader({ site, current }: Props) {
       <MobileHeader site={site} current={current} />
     </header>
   )
+}
+
+// 로고 양옆 기관 배너 (칸은 항상 300px 로 잡아 로고가 가운데에 오게 한다)
+function HeaderBanner({ item }: { item?: { name: string; img: string; url?: string } }) {
+  if (!item) return <div aria-hidden />
+  const img = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={item.img} alt={item.name} className="h-[76px] w-[300px] border border-rule bg-white object-contain" />
+  )
+  return item.url
+    ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="block opacity-100 transition hover:opacity-80">{img}</a>
+    : img
 }
 
 // 1차 메뉴 (PC). 2차 메뉴는 마우스를 올리거나 키보드로 들어가면 펼친다

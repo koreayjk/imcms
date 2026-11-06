@@ -55,6 +55,8 @@ export type SiteConfig = {
   openIndexable?: boolean
   // 홈페이지 맨 아래에 오른쪽에서 왼쪽으로 흐르는 로고 띠 (협력·후원·제휴 기관)
   logoStrip?: LogoStrip
+  // 머리글 로고 양옆 기관 배너 (PC). 있으면 로고를 가운데에 두고 메뉴를 로고 아래 줄로 내린다
+  headerBanners?: HeaderBanners
   // 광고 자리 설정 (끈 자리, 오른쪽 광고 개수)
   adSlots?: AdSlotSettings
   // 오픈 준비 중인 매체를 미리보기로 열어 보는 중 (방문자에게는 안내 화면이 보인다)
@@ -275,6 +277,7 @@ export type OutletSiteSettings = {
   openAt?: string
   openTz?: string
   logoStrip?: LogoStrip
+  headerBanners?: HeaderBanners
   adSlots?: AdSlotSettings
   pressKeywords?: string
   legal?: Partial<SiteLegal>
@@ -385,6 +388,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     openTz: s.openTz,
     openIndexable: s.indexable ?? code?.indexable ?? false,
     logoStrip: cleanLogoStrip(s.logoStrip),
+    headerBanners: cleanHeaderBanners(s.headerBanners),
     adSlots: cleanAdSlots(s.adSlots),
     // 오픈 준비 중에는 검색 노출을 켜 두었어도 수집하지 않는다
     indexable: s.comingSoon === true ? false : (s.indexable ?? code?.indexable ?? false),
@@ -491,6 +495,14 @@ export function cleanLogoStrip(v: unknown): LogoStrip | undefined {
   const items = cleanLogoItems(o.items)
   if (!items.length) return undefined
   return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, speed: o.speed === 'slow' || o.speed === 'fast' ? o.speed : undefined, items }
+}
+// 머리글 로고 양옆 기관 배너: 왼쪽·오른쪽 각 1개 (이미지는 이 서비스에 올린 것만, 링크는 http(s)만)
+export type HeaderBanners = { left?: LogoItem; right?: LogoItem }
+export function cleanHeaderBanners(v: unknown): HeaderBanners | undefined {
+  const o = (v ?? {}) as Partial<Record<'left' | 'right', unknown>>
+  const left = cleanLogoItems([o.left])[0]
+  const right = cleanLogoItems([o.right])[0]
+  return left || right ? { ...(left ? { left } : {}), ...(right ? { right } : {}) } : undefined
 }
 // 기관 로고 블록: 로고가 하나도 없으면 없는 것으로
 export function cleanLogoBlock(v: unknown): LogoBlock | undefined {
