@@ -3,8 +3,14 @@ import { toHtml } from './body-text'
 
 const COLOR = /^(#[0-9a-f]{3,8}|rgba?\([\d\s,.%]+\))$/i
 
+// 출처 표기 "(사진=○○ 제공)"가 줄 끝에서 "(사진=" 만 남기고 끊기지 않게: "=" 뒤에 줄바꿈 금지 표시(WORD JOINER)를 넣고, 괄호 안 띄어쓰기는 줄바꿈이 안 되는 공백으로 바꾼다
+const CREDIT = /\((?:사진|자료|출처|제공|그래픽|일러스트|이미지|포토)\s*[=:：][^)<>]{0,80}\)/g
+export function keepCredit(html: string) {
+  return html.replace(CREDIT, (m) => m.replace(/([=:：])\s*/, '$1\u2060').replace(/ /g, '\u00a0'))
+}
+
 export function sanitizeBody(body: string | null | undefined) {
-  return sanitizeHtml(toHtml(body), {
+  return keepCredit(sanitizeHtml(toHtml(body), {
     allowedTags: ['p', 'br', 'h2', 'h3', 'h4', 'strong', 'b', 'em', 'i', 'u', 's', 'sup', 'sub', 'span', 'mark', 'blockquote', 'ul', 'ol', 'li', 'a', 'img', 'figure', 'figcaption', 'hr', 'iframe', 'div', 'video', 'table', 'colgroup', 'col', 'thead', 'tbody', 'tr', 'th', 'td'],
     allowedAttributes: {
       a: ['href', 'target', 'rel'],
@@ -35,5 +41,5 @@ export function sanitizeBody(body: string | null | undefined) {
     transformTags: {
       a: sanitizeHtml.simpleTransform('a', { target: '_blank', rel: 'noopener noreferrer' }),
     },
-  })
+  }))
 }
