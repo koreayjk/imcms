@@ -199,12 +199,15 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
                     <span className="text-[13px] font-bold">{t(`그룹 ${gi + 1}`, `Group ${gi + 1}`)}</span>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${on ? 'bg-ink text-white' : 'bg-line text-muted'}`}>{on ? t('담는 중', 'Filling') : t('누르면 이 그룹에 담기', 'Tap to fill')}</span>
                   </button>
-                  <label className="mt-1.5 flex items-center gap-1.5 text-[12px] text-muted">
-                    {t('하나당 최신', 'Latest per item')}
-                    <input type="number" min={1} max={PRESS_TIER_MAX_LIMIT} value={g.limit} onChange={(e) => setLimit(gi, Number(e.target.value))} className="field-input w-14 py-0.5 text-center" />
-                    {t('건', '')}
-                    <span className="ml-auto whitespace-nowrap">{t('키워드', 'Keywords')} {g.keywords.length}/{PRESS_TIER_MAX_KEYWORDS}</span>
-                  </label>
+                  {/* 칸이 좁아도 글자가 세로로 쪼개지지 않게: 글자는 줄바꿈 없이, 모자라면 키워드 개수가 아래 줄로 내려간다 */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
+                    <label className="flex items-center gap-1.5">
+                      <span className="whitespace-nowrap">{t('하나당 최신', 'Latest per item')}</span>
+                      <input type="number" min={1} max={PRESS_TIER_MAX_LIMIT} value={g.limit} onChange={(e) => setLimit(gi, Number(e.target.value))} className="field-input w-14 shrink-0 py-0.5 text-center" />
+                      <span className="whitespace-nowrap">{t('건', '')}</span>
+                    </label>
+                    <span className="whitespace-nowrap">{t('키워드', 'Keywords')} {g.keywords.length}/{PRESS_TIER_MAX_KEYWORDS}</span>
+                  </div>
                   <div className="mt-2 flex min-h-7 flex-wrap gap-1">
                     {g.sources.length === 0 && g.keywords.length === 0 && <span className="text-[12px] text-muted">{t('비어 있음', 'Empty')}</span>}
                     {sourceChips(g.sources).map((c) => (
