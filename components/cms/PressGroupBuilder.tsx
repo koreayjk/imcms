@@ -240,7 +240,7 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
               <legend className="mb-1.5 text-[12px] font-bold text-muted">{g.label}</legend>
               <div className="flex flex-wrap gap-x-4 gap-y-1.5">{g.items.map(renderItem)}</div>
             </fieldset>
-            {/* 뉴스와이어: 분야별 보도자료 전체를 한 번에 (아래 분야별 체크와 같은 출처이므로 한쪽을 체크하면 같이 표시된다) */}
+            {/* 뉴스와이어: 분야별 보도자료 전체를 한 번에 (분야별 출처도 여기에서 고른다) */}
             {i === 0 && groups.some((x) => x.region && x.section === 'wire') && (
               <fieldset>
                 <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('뉴스와이어', 'Newswire')} <span className="font-normal">{t('기업·기관이 직접 배포한 보도자료입니다. 위 체크로 전체를 한 번에, 열어서 분야별로 고를 수도 있습니다.', 'Press releases issued directly by companies and agencies. Check the top box for all, or open it to pick by field.')}</span></legend>

@@ -123,6 +123,8 @@ export default async function PressPage(props: Props) {
   const pickedKeys = (outletSite?.pressSources ?? []).filter((k) => FEED_SOURCES.some((x) => x.key === k))
   const canPick = ctx.isEditorPlus || ctx.isStaff
   // 전체 탭 "맞춤 자료 만들기"에서 체크할 출처 묶음
+  // 뉴스와이어 출처는 아래 '뉴스와이어 (분야별)' 한 곳에만 둔다 (분야 묶음에 또 두면 같은 체크가 두 군데로 보인다)
+  const notWire = (xs: typeof FEED_SOURCES) => (english ? xs : xs.filter((x) => x.kind !== 'newswire'))
   const toItems = (xs: typeof FEED_SOURCES): PickGroup['items'] => xs.map((x) => ({ key: x.key, name: x.name.replace('뉴스와이어 · ', ''), saved: pickedKeys.includes(x.key), auto: fieldKeys.includes(x.key) }))
   const pickGroups: PickGroup[] = [
     ...(english
@@ -131,16 +133,16 @@ export default async function PressPage(props: Props) {
           { label: t('미국 · 전국 뉴스', 'US · National news'), items: toItems(FEED_SOURCES.filter((x) => isUsSource(x.key) && !x.local)) },
         ]
       : [
-          ...PRESS_FIELDS.map((f) => ({ label: f.label, items: toItems(FEED_SOURCES.filter((x) => f.sources.includes(x.key))) })),
+          ...PRESS_FIELDS.map((f) => ({ label: f.label, items: toItems(notWire(FEED_SOURCES.filter((x) => f.sources.includes(x.key)))) })),
           // 중앙정부·공공기관 (지자체 묶음에 들지 않은 일반 출처)
-          { label: t('정부·공공기관', 'Government & public agencies'), items: toItems(FEED_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key) && !regionOfSource(x.key))) },
+          { label: t('정부·공공기관', 'Government & public agencies'), items: toItems(notWire(FEED_SOURCES.filter((x) => !fieldOfSource(x.key) && !foreignTopicOf(x.key) && !regionOfSource(x.key)))) },
           // 지자체는 광역(특별시·광역시·도)별로 묶는다: 광역을 체크하면 아래 시·군·구가 모두 체크되고, 일부만 뺄 수 있다
           ...REGIONS.map((r) => ({ label: r.label, region: true, section: 'local' as const, items: toItems(r.sources.map((k) => FEED_SOURCES.find((x) => x.key === k)).filter((x): x is (typeof FEED_SOURCES)[number] => !!x)) })),
         ]),
     // 해외 뉴스 (미국 외): 나라·분야별로 묶는다
     ...FOREIGN_TOPICS.map((ft) => ({ label: ft.label, region: true, section: 'world' as const, items: toItems(FEED_SOURCES.filter((x) => x.key.startsWith(ft.prefix))) })),
   ].filter((g) => g.items.length > 0)
-  // 뉴스와이어(분야별 보도자료 전체): 위 체크로 한 번에, 열어서 분야별로 (분야 묶음에도 같은 출처가 있다)
+  // 뉴스와이어(분야별 보도자료 전체): 위 체크로 한 번에, 열어서 분야별로 (뉴스와이어 출처는 여기에만 둔다)
   const wireItems = toItems(FEED_SOURCES.filter((x) => x.kind === 'newswire'))
   if (!english && wireItems.length) pickGroups.push({ label: t('뉴스와이어 (분야별)', 'Newswire (by field)'), region: true, section: 'wire', items: wireItems })
   pickGroups.unshift({ label: t('내가 넣은 자료', 'My own'), items: [{ key: 'email', name: t('메일', 'Email'), saved: false, auto: false }, { key: MANUAL_SOURCE, name: t('직접 등록', 'Added manually'), saved: false, auto: false }] })
