@@ -153,3 +153,18 @@ export async function parseInbound(mail: InboundMail): Promise<ParsedMail | null
     skipped,
   }
 }
+
+// 광고 메일: 제목 맨 앞에 (광고)·[광고]·(AD) 표시가 있는 메일. 광고성 정보 전송은 제목에 이 표시를 달아야 해서, 보도자료함에는 받지 않는다
+//   (Re:·Fwd: 뒤에 붙은 것도 포함). 보도자료를 보내는 홍보 담당자는 이 표시를 달지 않는다
+export const AD_SUBJECT = /^\s*(?:(?:re|fwd?|회신|전달)\s*:\s*)*[(\[（【<]\s*(?:광\s*고|ad|advertisement)\s*[)\]）】>]/i
+export const isAdMail = (title: string | null | undefined) => AD_SUBJECT.test(title ?? '')
+
+// 받지 않을 보낸 곳(도메인): 쇼핑·서비스 알림처럼 보도자료가 아닌 메일. 지메일 전달 필터가 받은편지함 전체를 넘겨 올 때 걸러 준다
+//   하위 주소(notice.aliexpress.com 등)도 함께 막는다. 더 막을 곳이 생기면 여기에 도메인만 추가한다
+// (github.com: 깃허브 알림 메일 — vercel[bot] 등이 보낸 것처럼 보이는 PR 알림)
+export const BLOCKED_SENDER_DOMAINS = ['aliexpress.com', 'alibaba.com', 'alibaba-inc.com', 'tiktok.com', 'openai.com', 'vercel.com', 'github.com']
+export function isBlockedSender(mail: Pick<InboundMail, 'From' | 'FromFull'>) {
+  const addr = (mail.FromFull?.Email ?? /<([^>]+)>/.exec(mail.From ?? '')?.[1] ?? mail.From ?? '').trim().toLowerCase()
+  const domain = addr.split('@')[1] ?? ''
+  return !!domain && BLOCKED_SENDER_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`))
+}

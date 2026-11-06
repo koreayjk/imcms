@@ -92,21 +92,30 @@ export default async function PressPage(props: Props) {
   const winOf = (since: string) => `published_at.gte.${since},and(published_at.is.null,fetched_at.gte.${since})`
 
   // 전체 탭 목록: 체크한 출처가 있으면 그 출처만, 없으면 이 매체가 기본으로 보는 전체 (켜 둔 해외 묶음만)
-  let query = supabase
-    .from('press_releases')
-    .select('id, source_key, source_name, title, summary, link, published_at, mail_section', { count: 'exact' })
-    .order('published_at', { ascending: false, nullsFirst: false })
-  // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
-  query = pressScope(query, ctx)
-  if (selected.length) query = query.in('source_key', selected)
-  else {
-    if (english) query = query.or(`source_key.like.us-*,source_key.in.(${MANUAL_SOURCE},email)`)
-    else query = query.not('source_key', 'like', 'us-%')
-    if (!english) for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) query = query.not('source_key', 'like', `${ft.prefix}%`)
+  // 뉴스와이어 보도자료(기준 통과)는 보도자료로 가장 쓸 만해서 전체 탭 맨 위에 항상 따로 올린다 (출처를 직접 고른 때는 고른 대로)
+  const pinNw = tab === 'all' && !selected.length
+  const baseQuery = (nw: 'only' | 'except' | null) => {
+    let qy = supabase
+      .from('press_releases')
+      .select('id, source_key, source_name, title, summary, link, published_at, mail_section', { count: 'exact' })
+      .order('published_at', { ascending: false, nullsFirst: false })
+    // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
+    qy = pressScope(qy, ctx)
+    if (selected.length) qy = qy.in('source_key', selected)
+    else {
+      if (english) qy = qy.or(`source_key.like.us-*,source_key.in.(${MANUAL_SOURCE},email)`)
+      else qy = qy.not('source_key', 'like', 'us-%')
+      if (!english) for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) qy = qy.not('source_key', 'like', `${ft.prefix}%`)
+    }
+    if (nw === 'only') qy = qy.like('source_key', 'nw-%')
+    if (nw === 'except') qy = qy.not('source_key', 'like', 'nw-%')
+    if (!showOld) qy = qy.or(winOf(recentSince))
+    qy = qy.or(QUALITY_OK)
+    if (q) qy = qy.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
+    return qy
   }
-  if (!showOld) query = query.or(winOf(recentSince))
-  query = query.or(QUALITY_OK)
-  if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
+  const query = baseQuery(pinNw ? 'except' : null)
+  const NW_PIN_MAX = 30
 
   const fields = outletSite?.pressFields.length ? outletSite.pressFields : auto?.fields ?? []
   const fieldKeys = FEED_SOURCES.filter((x) => { const f = fieldOfSource(x.key); return !!f && fields.includes(f) }).map((x) => x.key)
@@ -169,19 +178,22 @@ export default async function PressPage(props: Props) {
     for (let i = 0; i < jobs.length; i += 25) results.push(...await Promise.all(jobs.slice(i, i + 25).map((j) => j())))
     const seen = new Set<string>()
     const merged = results.flat().filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+    // 같은 그룹 안에서는 뉴스와이어 보도자료를 위로 (정렬은 안정적이라 나머지 순서는 그대로)
+    merged.sort((x, y) => (x.tier ?? 0) - (y.tier ?? 0) || Number(y.source_key.startsWith('nw-')) - Number(x.source_key.startsWith('nw-')))
     return { data: merged, count: merged.length }
   }
   const hasFeed = hasPressTiers(tiers) || pickedKeys.length > 0
 
-  const [{ data: rowsRaw, count }, { data: logs }, { data: todayUses }] = await Promise.all([
+  const [{ data: rowsRaw, count }, { data: pinned }, { data: logs }, { data: todayUses }] = await Promise.all([
     tiered ? (hasFeed ? tierRows() : Promise.resolve({ data: [] as PressRow[], count: 0 })) : query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
+    pinNw && page === 1 ? baseQuery('only').limit(NW_PIN_MAX) : Promise.resolve({ data: [] as PressRow[], count: 0 }),
     supabase.from('press_fetch_log').select('*'),
     outletId
       ? supabase.from('articles').select('id, press_release:press_releases(source_key)').eq('outlet_id', outletId).not('press_release_id', 'is', null).gte('created_at', kstMidnightIso())
       : Promise.resolve({ data: [] as any[] }),
   ])
 
-  const allRowsFull = (rowsRaw ?? []) as PressRow[]
+  const allRowsFull = [...((pinned ?? []) as PressRow[]), ...((rowsRaw ?? []) as PressRow[])]
   // 맞춤 자료 탭의 제목 검색: 이미 모은 자료 안에서 거른다
   const allRows = tiered && q ? allRowsFull.filter((r) => r.title.toLowerCase().includes(q.toLowerCase())) : allRowsFull
   // 맞춤 자료의 지역별 보기: 담은 출처가 어느 광역(특별시·광역시·도)인지, 해외 뉴스인지, 그 밖인지로 나눠 보여 준다
