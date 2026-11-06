@@ -267,7 +267,7 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
         ))}
         {grouping && kwList.length > 0 && (
           <fieldset>
-            <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('키워드', 'Keywords')} <span className="font-normal">{t(`제목·요약에 이 단어가 있는 자료 (모든 출처에서 찾습니다) · 그룹당 ${PRESS_TIER_MAX_KEYWORDS}개까지 선택할 수 있습니다`, `Releases whose title or summary contains the word (searched in all sources) · up to ${PRESS_TIER_MAX_KEYWORDS} per group`)}</span></legend>
+            <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('키워드', 'Keywords')} <span className="font-normal">{t(`제목·요약에 이 단어가 있는 자료 (뉴스와이어·메일·직접 등록·해외 자료에서 찾습니다. 지자체·정부 자료는 출처를 직접 담아 주세요) · 그룹당 ${PRESS_TIER_MAX_KEYWORDS}개까지 선택할 수 있습니다`, `Releases whose title or summary contains the word (searched in Newswire, email, manual and foreign items; add government/local sources directly) · up to ${PRESS_TIER_MAX_KEYWORDS} per group`)}</span></legend>
             <div className="flex flex-wrap gap-x-4 gap-y-1.5">
               {kwList.map((k) => {
                 const g = kwOwner.get(k)

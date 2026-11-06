@@ -164,12 +164,14 @@ export default async function PressPage(props: Props) {
     ]
     const cols = 'id, source_key, source_name, title, summary, link, published_at, image_url, mail_section'
     const win = (since: string) => `published_at.gte.${since},and(published_at.is.null,fetched_at.gte.${since})`
-    const kwScope = english ? [`source_key.like.us-*`, ...FOREIGN_TOPICS.map((ft) => `source_key.like.${ft.prefix}*`), `source_key.in.(${MANUAL_SOURCE},email)`].join(',') : null
+    // 키워드는 지자체·정부 출처에서는 찾지 않는다 ("관광"·"비즈니스" 같은 흔한 단어로 서울시 자료 등이 섞여 들어오기 때문).
+    // 뉴스와이어·메일·직접 등록 자료(와 켜 둔 해외 묶음)에서만 찾고, 지자체·정부 자료는 그 출처를 직접 그룹에 담았을 때만 나온다
+    const kwScope = [...(english ? [`source_key.like.us-*`] : []), `source_key.like.nw-*`, ...FOREIGN_TOPICS.map((ft) => `source_key.like.${ft.prefix}*`), `source_key.in.(${MANUAL_SOURCE},email)`].join(',')
     const jobs: (() => Promise<PressRow[]>)[] = []
     for (const b of blocks) {
       for (const k of b.kws) jobs.push(async () => {
         let qy = pressScope(supabase.from('press_releases').select(cols), ctx)
-        qy = kwScope ? qy.or(kwScope) : qy.not('source_key', 'like', 'us-%')
+        qy = qy.or(kwScope)
         const { data } = await qy.or(`title.ilike.*${k}*,summary.ilike.*${k}*`).or(QUALITY_OK).or(win(sinceKw)).order('published_at', { ascending: false, nullsFirst: false }).limit(b.limit)
         return ((data ?? []) as PressRow[]).map((r) => ({ ...r, tier: b.ti, kw: k }))
       })
