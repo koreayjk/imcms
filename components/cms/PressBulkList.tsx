@@ -111,13 +111,12 @@ export default function PressBulkList({ rows }: { rows: BulkRow[] }) {
               <Link href={`/press/${r.id}`} className="block min-w-0 flex-1 px-3 py-4 md:pr-5">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-muted">
                   {r.badges.map((b) => <span key={b} className="rounded bg-ink/10 px-1.5 py-0.5 font-semibold text-ink">{b}</span>)}
-                  {r.photos > 0 && <span className="inline-flex items-center gap-0.5 rounded bg-[#E8F1FB] px-1.5 py-0.5 font-semibold text-[#27456F]" title={t('사진 있음', 'Has photo')}><ImageIcon />{r.photos > 1 && <span className="tabular-nums">{r.photos}</span>}</span>}
                   {r.chars !== null && <span className="tabular-nums" title={t('본문 글자 수(공백 제외)', 'Body characters (no spaces)')}>{r.chars.toLocaleString()}{t('자', ' chars')}</span>}
                   <span className="rounded bg-line/70 px-1.5 py-0.5">{r.sourceName}</span>
                   <time className="tabular-nums" dateTime={r.dateIso ?? undefined}>{r.date}</time>
                   {r.used && <span className="rounded bg-published/10 px-1.5 py-0.5 font-semibold text-published">{t('기사화됨', 'Story created')}</span>}
                 </div>
-                <p className="mt-1.5 text-[15px] font-semibold leading-snug">{r.title}</p>
+                <p className="mt-1.5 text-[15px] font-semibold leading-snug">{r.title}{r.photos > 0 && <span className="ml-1.5 inline-flex translate-y-[2px] items-center gap-0.5 align-baseline text-[12px] font-normal text-muted" title={t('사진 있음', 'Has photo')}><ImageIcon />{r.photos > 1 && <span className="tabular-nums">{r.photos}</span>}</span>}</p>
                 {r.summary && <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted">{r.summary}</p>}
               </Link>
             </div>
