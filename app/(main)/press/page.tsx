@@ -25,7 +25,7 @@ const TIER_SRC_DAYS = 30
 const QUALITY_OK = `quality.eq.ok,source_key.in.(${MANUAL_SOURCE},email)`
 const RECENT_DAYS = 7   // 기본 목록은 최근 7일 것만 (지난 자료는 "지난 자료까지 보기"로)
 const TIER_LEGACY_LIMIT = 3
-type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; mail_section?: string | null; tier?: number; kw?: string }
+type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; image_url?: string | null; mail_section?: string | null; tier?: number; kw?: string }
 
 type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string; old?: string }> }
 
@@ -97,7 +97,7 @@ export default async function PressPage(props: Props) {
   const baseQuery = (nw: 'only' | 'except' | null) => {
     let qy = supabase
       .from('press_releases')
-      .select('id, source_key, source_name, title, summary, link, published_at, mail_section', { count: 'exact' })
+      .select('id, source_key, source_name, title, summary, link, published_at, image_url, mail_section', { count: 'exact' })
       .order('published_at', { ascending: false, nullsFirst: false })
     // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
     qy = pressScope(qy, ctx)
@@ -162,7 +162,7 @@ export default async function PressPage(props: Props) {
       ...tiers.map((g, ti) => ({ ti, limit: g.limit, kws: usableKeywords(g.keywords), srcs: g.sources.filter((k) => visible.has(k)) })),
       { ti: 4, limit: TIER_LEGACY_LIMIT, kws: [], srcs: pickedKeys.filter((k) => !grouped.has(k)) },
     ]
-    const cols = 'id, source_key, source_name, title, summary, link, published_at, mail_section'
+    const cols = 'id, source_key, source_name, title, summary, link, published_at, image_url, mail_section'
     const win = (since: string) => `published_at.gte.${since},and(published_at.is.null,fetched_at.gte.${since})`
     const kwScope = english ? [`source_key.like.us-*`, ...FOREIGN_TOPICS.map((ft) => `source_key.like.${ft.prefix}*`), `source_key.in.(${MANUAL_SOURCE},email)`].join(',') : null
     const jobs: (() => Promise<PressRow[]>)[] = []
@@ -218,6 +218,13 @@ export default async function PressPage(props: Props) {
     ? await supabase.from('articles').select('press_release_id').eq('outlet_id', outletId).in('press_release_id', ids)
     : { data: [] as { press_release_id: string }[] }
   const usedSet = new Set((used ?? []).map((u) => u.press_release_id))
+  // 메일 보도자료의 사진은 첨부파일로 온다: 사진 첨부 개수를 센다 (본문 데이터는 읽지 않는다)
+  const mailIds = rowsAll.filter((r) => r.source_key === 'email').map((r) => r.id)
+  const { data: photoAtt } = mailIds.length
+    ? await supabase.from('press_attachments').select('press_release_id').in('press_release_id', mailIds).like('content_type', 'image/%')
+    : { data: [] as { press_release_id: string }[] }
+  const photoCount = new Map<string, number>()
+  for (const a of photoAtt ?? []) photoCount.set(a.press_release_id, (photoCount.get(a.press_release_id) ?? 0) + 1)
   // 우리 매체가 이미 기사로 쓴 자료는 기본 목록에서 숨긴다 ("지난 자료까지 보기"에서는 "기사화됨"으로 보인다)
   const rows = showOld ? rowsAll : rowsAll.filter((r) => !usedSet.has(r.id))
   const hiddenUsed = rowsAll.length - rows.length
@@ -322,6 +329,7 @@ export default async function PressPage(props: Props) {
               date: formatShort(r.published_at, lang),
               dateIso: r.published_at,
               used: usedSet.has(r.id),
+              photos: photoCount.get(r.id) ?? (r.image_url ? 1 : 0),
               badges: [
                 ...(r.source_key === MANUAL_SOURCE ? [t('직접 등록', 'Added manually')] : []),
                 ...(r.source_key === 'email' ? [t('메일', 'Email'), ...(r.mail_section ? [r.mail_section] : [])] : []),
