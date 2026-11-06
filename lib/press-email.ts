@@ -19,6 +19,8 @@ export type InboundMail = {
   AttachNotes?: string[]
 }
 
+export type BundleItem = { n: number; title: string; summary: string; bodyHtml: string; guid: string }
+
 export type ParsedMail =
   | { kind: 'verify'; token: string; code: string | null; link: string | null }
   | {
@@ -32,6 +34,8 @@ export type ParsedMail =
       publishedAt: string | null
       attachments: { name: string; content_type: string; size: number; content: string }[]
       skipped: string[]
+      // "취재지원자료 총N건"처럼 한 통에 보도자료가 여러 건 묶여 온 메일이면 한 건씩 나눈 것 (2건 이상일 때만)
+      items?: BundleItem[]
     }
 
 // 첨부는 사진·문서만, 한 통에 합계 3MB까지 (서버가 받을 수 있는 요청 크기 한도 때문)
@@ -100,6 +104,33 @@ function trimTail(text: string) {
   return cut > 40 ? text.slice(0, cut) : text
 }
 
+
+// ───────── 묶음 메일 나누기 ─────────
+// 지자체 보도자료 담당 부서는 하루치를 한 통에 묶어 보낸다. 모양: 번호만 있는 줄("1") → 제목 줄 → "보도일시 …" 줄 → 본문 … → 다음 번호("2")
+//   1, 2, 3 … 순서로 번호 줄이 이어지고 제목 바로 뒤에 "보도일시"가 나오는 것만 묶음으로 본다 (모양이 다르면 나누지 않고 한 건으로 둔다)
+export function splitBundle(paras: string[]): { n: number; title: string; paras: string[] }[] | null {
+  const marks: number[] = []
+  let want = 1
+  for (let i = 0; i < paras.length; i++) {
+    if (paras[i].trim() === String(want) && paras.slice(i + 1, i + 4).some((p) => /^보도\s*일시/.test(p.trim()))) { marks.push(i); want++ }
+  }
+  if (marks.length < 2) return null
+  // 끝은 첨부 내용이 시작되는 곳
+  const tail = paras.findIndex((p, i) => i > marks[marks.length - 1] && /^첨부\s*파일(\s*내용)?(?=\s|$|\()/.test(p.trim()))
+  const end = tail > 0 ? tail : paras.length
+  return marks.map((m, k) => {
+    const to = k + 1 < marks.length ? marks[k + 1] : end
+    const body = paras.slice(m + 1, to)
+    const title = (body[0] ?? '').trim()
+    // 머리 정보(보도일시·담당부서·사진자료 표시)는 기사 재료가 아니라서 뺀다. 연락처가 든 담당부서 줄도 뺀다
+    const rest = body.slice(1).filter((p) => !/^(보도\s*일시|사진\s*자료)/.test(p.trim()) && !/^[가-힣·\s]{2,20}\s*(과\s*장|팀\s*장|담\s*당)\s*:/.test(p.trim()))
+    return { n: k + 1, title, paras: rest.filter((p) => p.trim()) }
+  }).filter((x) => x.title && x.paras.length)
+}
+
+// 번호가 붙은 첨부 사진("4-2. 설명.jpg")은 그 번호의 보도자료에 붙인다
+export const attachmentNumber = (name: string) => Number(/^\s*(\d{1,2})\s*[-.]/.exec(name)?.[1] ?? 0)
+
 async function sha(s: string) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
   return Array.from(new Uint8Array(buf).slice(0, 12), (b) => b.toString(16).padStart(2, '0')).join('')
@@ -119,7 +150,8 @@ export async function parseInbound(mail: InboundMail): Promise<ParsedMail | null
   const sourceName = (mail.FromFull?.Name && !unwrapped.from ? mail.FromFull.Name : nameOf(fromLine)) || '이메일 보도자료'
 
   const title = cleanSubject(mail.Subject ?? '') || textToParagraphs(text)[0]?.slice(0, 80) || '(제목 없음)'
-  const paras = textToParagraphs(text).slice(0, 80)
+  const allParas = textToParagraphs(text)
+  const paras = allParas.slice(0, 80)
   const bodyHtml = paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')
 
   // 같은 자료가 기자 여러 명에게 오면 하나로 (보낸 곳 + 제목 + 날짜)
@@ -140,9 +172,23 @@ export async function parseInbound(mail: InboundMail): Promise<ParsedMail | null
     attachments.push({ name, content_type: type, size, content: a.Content })
   }
 
+  // 묶음 메일이면 한 건씩 나눈다 (한 건씩 글자 80문단까지)
+  const day2 = day
+  const parts = splitBundle(allParas)
+  const items: BundleItem[] | undefined = parts && parts.length >= 2
+    ? await Promise.all(parts.map(async (x) => ({
+        n: x.n,
+        title: x.title.slice(0, 300),
+        summary: x.paras.join(' ').slice(0, 400),
+        bodyHtml: x.paras.slice(0, 80).map((p) => `<p>${escapeHtml(p)}</p>`).join(''),
+        guid: `email:${await sha(`${sourceName}|${x.title.replace(/\s+/g, '')}|${day2}`)}`,
+      })))
+    : undefined
+
   return {
     kind: 'release',
     token,
+    items,
     sourceName: sourceName.slice(0, 80),
     guid,
     title: title.slice(0, 300),
@@ -167,4 +213,12 @@ export function isBlockedSender(mail: Pick<InboundMail, 'From' | 'FromFull'>) {
   const addr = (mail.FromFull?.Email ?? /<([^>]+)>/.exec(mail.From ?? '')?.[1] ?? mail.From ?? '').trim().toLowerCase()
   const domain = addr.split('@')[1] ?? ''
   return !!domain && BLOCKED_SENDER_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`))
+}
+
+// 보도자료가 아닌 일정·공지 메일: 제목에 이 말이 들어 있으면 받지 않는다 (예: "화성특례시 주간행사계획(…) 송부")
+//   행사 일정표는 기사 재료가 아니고 PDF 표 글자도 깨져서 보도자료함을 어지럽힌다. 더 막을 말이 생기면 여기에 추가한다
+export const NON_PRESS_TITLE_WORDS = ['주간행사계획', '주간 행사 계획', '주간일정', '주간 일정표', '행사계획 송부']
+export const isNonPressTitle = (title: string | null | undefined) => {
+  const t = (title ?? '').replace(/\s+/g, '')
+  return NON_PRESS_TITLE_WORDS.some((w) => t.includes(w.replace(/\s+/g, '')))
 }
