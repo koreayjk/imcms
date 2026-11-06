@@ -48,7 +48,6 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'us-cstx-news', name: 'City of College Station · News', outlet: 'City of College Station', url: 'https://www.cstx.gov/news/rss', kind: 'us', local: true },
   { key: 'us-bryan-news', name: 'City of Bryan · News', outlet: 'City of Bryan', url: 'https://www.bryantx.gov/news/rss', kind: 'us', local: true },
   { key: 'us-agrilife', name: 'Texas A&M AgriLife Today', outlet: 'Texas A&M AgriLife Today', url: 'https://agrilifetoday.tamu.edu/feed/', kind: 'us', local: true },
-  { key: 'us-bcslibrary', name: 'Bryan + College Station Public Library System', outlet: 'Bryan + College Station Public Library System', url: 'https://www.bcslibrary.org/feed/', kind: 'us', local: true },
   { key: 'us-txgov', name: 'Office of the Texas Governor', outlet: 'Office of the Texas Governor', url: 'https://gov.texas.gov/news/rss', kind: 'us', local: true },
   { key: 'nw-hospital', name: '뉴스와이어 · 의료와 병원', url: 'https://api.newswire.co.kr/rss/industry/1007', kind: 'newswire' },
   { key: 'nw-elderly', name: '뉴스와이어 · 노인', url: 'https://api.newswire.co.kr/rss/industry/1901', kind: 'newswire' },
@@ -91,7 +90,6 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'rf-accs', name: '해외 · ACCS(기독교 고전교육 학교)', outlet: '고전기독교학교협회(ACCS)', url: 'https://classicalchristian.org/feed/', kind: 'foreign' },
   // 선교 언론 (월드미션타임즈 등 '해외 선교 언론'을 켠 매체): 선교 현장·미전도 종족·성경번역·박해 소식
   { key: 'ms-imb', name: '해외 · IMB(국제선교이사회)', outlet: 'IMB(미국 남침례교 국제선교이사회)', url: 'https://www.imb.org/feed/', kind: 'foreign' },
-  { key: 'ms-omf', name: '해외 · OMF', outlet: 'OMF 인터내셔널', url: 'https://www.omf.org/us/feed/', kind: 'foreign' },
   { key: 'ms-wycliffe', name: '해외 · 위클리프(성경번역)', outlet: '위클리프 성경번역선교회(Wycliffe)', url: 'https://www.wycliffe.org/feed', kind: 'foreign' },
   { key: 'ms-icc', name: '해외 · ICC(박해받는 교회)', outlet: '국제기독연대(ICC)', url: 'https://www.persecution.org/feed/', kind: 'foreign' },
   { key: 'ms-ct', name: '해외 · 크리스채너티투데이', outlet: '크리스채너티투데이(Christianity Today)', url: 'https://www.christianitytoday.com/feed/', kind: 'foreign' },
