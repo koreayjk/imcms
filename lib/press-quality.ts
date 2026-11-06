@@ -1,8 +1,7 @@
 // 보도자료함에 올릴 만한 자료인지 판정한다: 글이 어느 정도 길고, 사진이 있어야 한다
 //   · 한국어 글: 공백을 뺀 글자 300자 이상 (지자체는 200자) / 영문 글: 150단어 이상
-//   · 사진: image_url 이 있거나 본문에 <img> 가 있음. 해외 언론(미국 제외)은 사진을 가져오지 않는 정책이라 사진 조건을 보지 않는다
+//   · 사진: image_url 이 있거나 본문에 <img> 가 있어야 한다. 한국·미국·해외 언론 모두 같다 (예전에는 해외 언론은 사진 조건을 보지 않았다)
 //   · 직접 등록·메일로 받은 자료는 판정하지 않는다 (사람이 직접 넣은 자료)
-import { foreignTopicOf, isUsSource } from './press-sources'
 
 export const MIN_KO_CHARS = 300
 // 지자체(lg-) 보도자료는 짧게 쓰는 곳이 많아 기준을 낮춘다 (경기도·충남 등 200~290자 자료가 정상)
@@ -28,7 +27,6 @@ export function judgePress(sourceKey: string, bodyHtml: string | null, imageUrl:
     const w = text.split(' ').length
     if (w < MIN_EN_WORDS) return { ok: false, note: `글이 짧음 (${w}단어)` }
   }
-  const noPhotoPolicy = foreignTopicOf(sourceKey) !== null && !isUsSource(sourceKey)
-  if (!noPhotoPolicy && !(imageUrl && imageUrl.trim()) && !/<img\b/i.test(html)) return { ok: false, note: '사진 없음' }
+  if (!(imageUrl && imageUrl.trim()) && !/<img\b/i.test(html)) return { ok: false, note: '사진 없음' }
   return { ok: true, note: '' }
 }
