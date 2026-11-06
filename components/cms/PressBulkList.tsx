@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { createAiReviewArticle, type BulkResult } from '@/app/(main)/press/actions'
 import { useT } from '@/components/cms/CmsLang'
+import { useBulkAi } from '@/components/cms/BulkAiProvider'
 
 // 보도자료 목록 + 일괄 만들기: 체크한 보도자료를 AI로 기사로 만들어 "승인대기"로 보낸다 (한 번에 최대 10건, 한 건씩 차례로)
 export type BulkRow = { id: string; title: string; summary: string | null; sourceName: string; date: string; dateIso: string | null; used: boolean; badges: string[]; head: string | null }
@@ -17,11 +16,16 @@ const LEN_KEY = 'press-bulk-length'
 
 export default function PressBulkList({ rows }: { rows: BulkRow[] }) {
   const t = useT()
-  const router = useRouter()
+  const { job, start } = useBulkAi()
   const [picked, setPicked] = useState<string[]>([])
-  const [running, setRunning] = useState(false)
-  const [progress, setProgress] = useState<{ done: number; total: number; title: string } | null>(null)
-  const [results, setResults] = useState<BulkResult[]>([])
+  // 만드는 일은 편집국 전체(BulkAiProvider)에서 돌아서, 다른 메뉴에 갔다 와도 계속되고 여기서 진행·결과가 이어서 보인다
+  const running = !!job?.running
+  const progress = job?.running ? { done: job.done, total: job.total, title: job.title } : null
+  const results = job?.results ?? []
+
+  const usable = rows.filter((r) => !r.used)
+  const toggle = (id: string) => setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= MAX ? cur : [...cur, id]))
+  const titleOf = (id: string) => rows.find((r) => r.id === id)?.title ?? ''
   const [len, setLen] = useState<Len>(0)
   // 마지막으로 고른 분량을 기억한다 (이 브라우저에만)
   useEffect(() => {
@@ -29,28 +33,11 @@ export default function PressBulkList({ rows }: { rows: BulkRow[] }) {
   }, [])
   const pickLen = (v: Len) => { setLen(v); try { localStorage.setItem(LEN_KEY, String(v)) } catch { /* 무시 */ } }
 
-  const usable = rows.filter((r) => !r.used)
-  const toggle = (id: string) => setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= MAX ? cur : [...cur, id]))
-  const titleOf = (id: string) => rows.find((r) => r.id === id)?.title ?? ''
-
-  const run = async () => {
+  const run = () => {
     const ids = picked.slice(0, MAX)
     if (!ids.length || running) return
-    setRunning(true)
-    setResults([])
-    const out: BulkResult[] = []
-    for (let i = 0; i < ids.length; i++) {
-      setProgress({ done: i, total: ids.length, title: titleOf(ids[i]) })
-      let r: BulkResult
-      try { r = await createAiReviewArticle(ids[i], len || undefined) } catch { r = { ok: false, id: ids[i], title: titleOf(ids[i]), error: t('서버가 응답하지 않았습니다. 잠시 뒤 다시 시도해 주세요.', 'The server did not respond. Try again shortly.') } }
-      out.push(r)
-      setResults([...out])
-      if (r.stop) break   // 한도를 다 썼거나 매체가 없으면 더 하지 않는다
-    }
-    setProgress(null)
-    setRunning(false)
-    setPicked([])
-    router.refresh()
+    const ok = start(ids, Object.fromEntries(ids.map((id) => [id, titleOf(id)])), len || undefined)
+    if (ok) setPicked([])
   }
 
   const okCount = results.filter((r) => r.ok).length
