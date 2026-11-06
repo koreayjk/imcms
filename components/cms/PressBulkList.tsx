@@ -6,7 +6,7 @@ import { useT } from '@/components/cms/CmsLang'
 import { useBulkAi } from '@/components/cms/BulkAiProvider'
 
 // 보도자료 목록 + 일괄 만들기: 체크한 보도자료를 AI로 기사로 만들어 "승인대기"로 보낸다 (한 번에 최대 10건, 한 건씩 차례로)
-export type BulkRow = { id: string; title: string; summary: string | null; sourceName: string; date: string; dateIso: string | null; used: boolean; badges: string[]; head: string | null }
+export type BulkRow = { id: string; title: string; summary: string | null; sourceName: string; date: string; dateIso: string | null; used: boolean; photos: number; badges: string[]; head: string | null }
 
 const MAX = 10
 // 기사 분량(본문 글자 수). 0 = AI가 원문에 맞춰 알아서
@@ -110,6 +110,7 @@ export default function PressBulkList({ rows }: { rows: BulkRow[] }) {
               <Link href={`/press/${r.id}`} className="block min-w-0 flex-1 px-3 py-4 md:pr-5">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-muted">
                   {r.badges.map((b) => <span key={b} className="rounded bg-ink/10 px-1.5 py-0.5 font-semibold text-ink">{b}</span>)}
+                  {r.photos > 0 && <span className="rounded bg-[#E8F1FB] px-1.5 py-0.5 font-semibold text-[#27456F]">{r.photos > 1 ? t(`📷 사진 ${r.photos}`, `📷 Photos ${r.photos}`) : t('📷 사진', '📷 Photo')}</span>}
                   <span className="rounded bg-line/70 px-1.5 py-0.5">{r.sourceName}</span>
                   <time className="tabular-nums" dateTime={r.dateIso ?? undefined}>{r.date}</time>
                   {r.used && <span className="rounded bg-published/10 px-1.5 py-0.5 font-semibold text-published">{t('기사화됨', 'Story created')}</span>}
