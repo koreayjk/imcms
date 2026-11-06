@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { savePressTiers } from '@/app/(main)/press/actions'
 import { useT } from '@/components/cms/CmsLang'
@@ -10,8 +10,8 @@ import { PRESS_TIER_DEFAULTS, PRESS_TIER_MAX_KEYWORDS, PRESS_TIER_MAX_LIMIT, typ
 //   ① 위쪽 그룹 카드에서 담을 그룹을 누른다 → ② 아래 출처(광역·시·군·구)를 체크하면 그 자리에서 바로 그 그룹에 담긴다 (새로고침 없이, 저장은 뒤에서 알아서)
 //   그룹마다 "하나당 최신 몇 건"을 정하고 키워드도 담을 수 있다. 편집장 이상만 그룹을 고친다. 나머지는 "목록 보기"(체크한 출처 자료만 아래에 보기)만 쓴다
 export type PickItem = { key: string; name: string; auto: boolean; saved: boolean }
-// region: 접고 펴는 묶음(위 체크로 아래 전부 선택). section: 'local' 지자체 / 'world' 해외 뉴스(미국 외)
-export type PickGroup = { label: string; items: PickItem[]; region?: boolean; section?: 'local' | 'world' }
+// region: 접고 펴는 묶음(위 체크로 아래 전부 선택). section: 'local' 지자체 / 'world' 해외 뉴스(미국 외) / 'wire' 뉴스와이어
+export type PickGroup = { label: string; items: PickItem[]; region?: boolean; section?: 'local' | 'world' | 'wire' }
 
 export default function PressGroupBuilder({ outletId, canPick, initial, groups, selected, q, suggestions }: {
   outletId: string | null
@@ -234,11 +234,20 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
       )}
 
       <div className="mt-3 space-y-3">
-        {groups.filter((g) => !g.region).map((g) => (
-          <fieldset key={g.label}>
-            <legend className="mb-1.5 text-[12px] font-bold text-muted">{g.label}</legend>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5">{g.items.map(renderItem)}</div>
-          </fieldset>
+        {groups.filter((g) => !g.region).map((g, i) => (
+          <Fragment key={g.label}>
+            <fieldset>
+              <legend className="mb-1.5 text-[12px] font-bold text-muted">{g.label}</legend>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">{g.items.map(renderItem)}</div>
+            </fieldset>
+            {/* 뉴스와이어: 분야별 보도자료 전체를 한 번에 (아래 분야별 체크와 같은 출처이므로 한쪽을 체크하면 같이 표시된다) */}
+            {i === 0 && groups.some((x) => x.region && x.section === 'wire') && (
+              <fieldset>
+                <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('뉴스와이어', 'Newswire')} <span className="font-normal">{t('기업·기관이 직접 배포한 보도자료입니다. 위 체크로 전체를 한 번에, 열어서 분야별로 고를 수도 있습니다.', 'Press releases issued directly by companies and agencies. Check the top box for all, or open it to pick by field.')}</span></legend>
+                <div className="grid gap-1.5">{groups.filter((x) => x.region && x.section === 'wire').map(renderRegion)}</div>
+              </fieldset>
+            )}
+          </Fragment>
         ))}
         {grouping && kwList.length > 0 && (
           <fieldset>
@@ -257,10 +266,10 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
             </div>
           </fieldset>
         )}
-        {groups.some((g) => g.region && g.section !== 'world') && (
+        {groups.some((g) => g.region && g.section !== 'world' && g.section !== 'wire') && (
           <fieldset>
             <legend className="mb-1.5 text-[12px] font-bold text-muted">{t('지자체', 'Local government')} <span className="font-normal">{t('광역을 체크하면 아래 시·군·구가 모두 체크됩니다. 빼고 싶은 곳만 체크를 풀어 주세요.', 'Check a region to select all its cities and districts, then uncheck the ones you don’t want.')}</span></legend>
-            <div className="grid gap-1.5">{groups.filter((g) => g.region && g.section !== 'world').map(renderRegion)}</div>
+            <div className="grid gap-1.5">{groups.filter((g) => g.region && g.section !== 'world' && g.section !== 'wire').map(renderRegion)}</div>
           </fieldset>
         )}
         {groups.some((g) => g.region && g.section === 'world') && (
