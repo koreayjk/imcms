@@ -78,7 +78,23 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
     if (i === active) return { ...g, keywords: mineNow ? g.keywords.filter((x) => x !== k) : [...g.keywords.filter((x) => x !== k), k].slice(-PRESS_TIER_MAX_KEYWORDS) }
     return has ? { ...g, keywords: g.keywords.filter((x) => x !== k) } : g
   }))
-  const removeSource = (gi: number, k: string) => update((cur) => cur.map((g, i) => (i === gi ? { ...g, sources: g.sources.filter((x) => x !== k) } : g)))
+  // 그룹 카드에는 낱개 출처를 다 늘어놓지 않고 묶음(광역·분야)으로 한 칸씩만 보인다. 세부 체크는 아래 목록에서 한다
+  //   묶음 안의 출처가 일부만 담겼으면 "서울특별시 (24/26)"처럼 개수를 같이 보여 준다
+  const removeMany = (gi: number, keys: string[]) => update((cur) => cur.map((g, i) => (i === gi ? { ...g, sources: g.sources.filter((x) => !keys.includes(x)) } : g)))
+  const sourceChips = (sources: string[]) => {
+    const left = new Set(sources)
+    const chips: { id: string; label: string; keys: string[] }[] = []
+    const ordered = [...groups.filter((p) => p.region), ...groups.filter((p) => !p.region)]
+    for (const p of ordered) {
+      if (p.items.length < 2) continue
+      const members = p.items.map((x) => x.key).filter((k) => left.has(k))
+      if (!members.length) continue
+      members.forEach((k) => left.delete(k))
+      chips.push({ id: `g:${p.label}`, label: members.length === p.items.length ? `${p.label} ${t('전체', 'all')}` : `${p.label} (${members.length}/${p.items.length})`, keys: members })
+    }
+    for (const k of left) chips.push({ id: k, label: names.get(k) ?? k, keys: [k] })
+    return chips
+  }
   const removeKeyword = (gi: number, k: string) => update((cur) => cur.map((g, i) => (i === gi ? { ...g, keywords: g.keywords.filter((x) => x !== k) } : g)))
   const addKeywords = (raw: string) => {
     const words = raw.split(/[,\n]/).map((w) => w.replace(/[,()*%\\"]/g, '').trim().slice(0, 30)).filter(Boolean)
@@ -179,10 +195,10 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
                   </label>
                   <div className="mt-2 flex min-h-7 flex-wrap gap-1">
                     {g.sources.length === 0 && g.keywords.length === 0 && <span className="text-[12px] text-muted">{t('비어 있음', 'Empty')}</span>}
-                    {g.sources.map((k) => (
-                      <span key={k} className="inline-flex items-center gap-1 rounded-full border border-ink/30 bg-white py-0.5 pl-2 pr-0.5 text-[11.5px]">
-                        {names.get(k) ?? k}
-                        <button type="button" onClick={() => removeSource(gi, k)} aria-label={t(`${names.get(k) ?? k} 빼기`, `Remove ${names.get(k) ?? k}`)} className="grid h-4 w-4 place-items-center rounded-full text-[11px] text-muted hover:bg-ink hover:text-white">×</button>
+                    {sourceChips(g.sources).map((c) => (
+                      <span key={c.id} className="inline-flex items-center gap-1 rounded-full border border-ink/30 bg-white py-0.5 pl-2 pr-0.5 text-[11.5px]">
+                        {c.label}
+                        <button type="button" onClick={() => removeMany(gi, c.keys)} aria-label={t(`${c.label} 빼기`, `Remove ${c.label}`)} className="grid h-4 w-4 place-items-center rounded-full text-[11px] text-muted hover:bg-ink hover:text-white">×</button>
                       </span>
                     ))}
                     {g.keywords.map((k) => (
