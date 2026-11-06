@@ -245,9 +245,11 @@ export async function createAiReviewArticle(id: string): Promise<BulkResult> {
       : aiLimitMessage({ used: slot.used, limit: slot.limit, overage: false })
     return { ok: false, id, title: r.title, error: msg, stop: true }
   }
+  const { data: catRows } = await supabase.from('categories').select('id, name').eq('outlet_id', outletId)
+  const cats = (catRows ?? []) as { id: string; name: string }[]
   let draft
   try {
-    const result = await draftFromPressRelease({ title: r.title, text: pressTextForAi(original) || r.summary || '', source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link })
+    const result = await draftFromPressRelease({ title: r.title, text: pressTextForAi(original) || r.summary || '', source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: cats.map((c) => c.name) })
     await finishAi(supabase, slot.id, result)
     draft = result.draft
   } catch (e) {
@@ -278,10 +280,12 @@ export async function createAiReviewArticle(id: string): Promise<BulkResult> {
   const notice = aiNoticeText((outlet as { site?: OutletSiteSettings | null } | null)?.site)
   if (notice) body = withAiNotice(body, notice)
 
+  const picked = draft.category ? cats.find((c) => c.name === draft.category) : undefined
   const notes: string[] = []
   const dup = await duplicateNotes(supabase, outletId, draft.title, r.id).catch(() => [] as string[])
   notes.push(...dup.map((n) => `• ${n}`))
   if (draft.review_notes.length) notes.push(...draft.review_notes.map((n) => `• ${n}`))
+  if (picked) notes.push(`• ${t(`섹션 "${picked.name}"은 AI가 고른 것입니다. 맞지 않으면 승인 전에 바꿔 주세요.`, `The section "${picked.name}" was chosen by AI. Change it before approving if it does not fit.`)}`)
   notes.push(`• ${t('보도자료함에서 일괄로 만든 AI 초안입니다. AI 법적 검수는 아직 하지 않았으니, 기사를 열어 검수한 뒤 승인해 주세요.', 'Bulk AI draft from the press inbox. The AI legal review has not been run; open the story and run it before approving.')}`)
   notes.push(`• ${t('원문', 'Original')}(${sourceLabel(r)}): ${r.link}`)
   notes.push(`• ${notice ? t('본문 끝에 AI 활용 표시 문구를 넣었습니다(매체 설정).', 'An AI-use disclosure was added at the end of the story (outlet setting).') : t('AI 초안입니다. 거의 그대로 내보낸다면 본문에 AI 활용 사실을 밝혀 주세요.', 'This is an AI draft. If you publish it largely as-is, disclose the use of AI in the story body.')}`)
@@ -298,6 +302,8 @@ export async function createAiReviewArticle(id: string): Promise<BulkResult> {
     ai_notes: notes.join('\n'),
   }
   if (draft.keywords?.length) row.tags = draft.keywords
+  // 섹션: AI가 고른 섹션을 넣는다 (맞는 게 없으면 비움). 승인할 때 편집장이 바꿀 수 있다
+  if (picked) row.category_id = picked.id
   let { data: article, error } = await supabase.from('articles').insert(row).select('id').single()
   if (error && /ai_notes/.test(error.message)) {
     delete row.ai_notes
