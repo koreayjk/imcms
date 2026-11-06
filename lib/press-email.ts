@@ -158,3 +158,12 @@ export async function parseInbound(mail: InboundMail): Promise<ParsedMail | null
 //   (Re:·Fwd: 뒤에 붙은 것도 포함). 보도자료를 보내는 홍보 담당자는 이 표시를 달지 않는다
 export const AD_SUBJECT = /^\s*(?:(?:re|fwd?|회신|전달)\s*:\s*)*[(\[（【<]\s*(?:광\s*고|ad|advertisement)\s*[)\]）】>]/i
 export const isAdMail = (title: string | null | undefined) => AD_SUBJECT.test(title ?? '')
+
+// 받지 않을 보낸 곳(도메인): 쇼핑·서비스 알림처럼 보도자료가 아닌 메일. 지메일 전달 필터가 받은편지함 전체를 넘겨 올 때 걸러 준다
+//   하위 주소(notice.aliexpress.com 등)도 함께 막는다. 더 막을 곳이 생기면 여기에 도메인만 추가한다
+export const BLOCKED_SENDER_DOMAINS = ['aliexpress.com', 'alibaba.com', 'alibaba-inc.com']
+export function isBlockedSender(mail: Pick<InboundMail, 'From' | 'FromFull'>) {
+  const addr = (mail.FromFull?.Email ?? /<([^>]+)>/.exec(mail.From ?? '')?.[1] ?? mail.From ?? '').trim().toLowerCase()
+  const domain = addr.split('@')[1] ?? ''
+  return !!domain && BLOCKED_SENDER_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`))
+}
