@@ -140,6 +140,9 @@ export default async function PressPage(props: Props) {
     // 해외 뉴스 (미국 외): 나라·분야별로 묶는다
     ...FOREIGN_TOPICS.map((ft) => ({ label: ft.label, region: true, section: 'world' as const, items: toItems(FEED_SOURCES.filter((x) => x.key.startsWith(ft.prefix))) })),
   ].filter((g) => g.items.length > 0)
+  // 뉴스와이어(분야별 보도자료 전체): 위 체크로 한 번에, 열어서 분야별로 (분야 묶음에도 같은 출처가 있다)
+  const wireItems = toItems(FEED_SOURCES.filter((x) => x.kind === 'newswire'))
+  if (!english && wireItems.length) pickGroups.push({ label: t('뉴스와이어 (분야별)', 'Newswire (by field)'), region: true, section: 'wire', items: wireItems })
   pickGroups.unshift({ label: t('내가 넣은 자료', 'My own'), items: [{ key: 'email', name: t('메일', 'Email'), saved: false, auto: false }, { key: MANUAL_SOURCE, name: t('직접 등록', 'Added manually'), saved: false, auto: false }] })
 
   // 맞춤 자료 탭: 내가 그룹에 담은 것만 보인다 (자동으로 들어가는 자료는 없다)
