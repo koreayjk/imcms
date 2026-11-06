@@ -211,7 +211,7 @@ export class AiDraftError extends Error {}
 
 // foreign: 해외 언론 기사 (출처를 밝힌 한국어 기사로 새로 쓴다)
 //   topic: 해외 언론 묶음 (이스라엘 / 교육·유학) — 독자와 주의할 점이 달라진다
-export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; us?: boolean; topic?: ForeignTopic; link?: string; categories?: string[]; length?: number }
+export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; us?: boolean; topic?: ForeignTopic; link?: string; categories?: string[]; length?: number; feedback?: string }
 export type DraftResult = { draft: AiDraft; model: AiModel; ms: number; inputTokens: number; outputTokens: number; costUsd: number }
 
 function userPrompt(input: DraftInput) {
@@ -220,7 +220,7 @@ function userPrompt(input: DraftInput) {
       ? `\n\nSection choices: ${input.categories.join(' | ')}\nIn the "category" field, write exactly one of these section names that fits the story best, or an empty string if none fits.`
       : `\n\n섹션 후보: ${input.categories.join(' | ')}\n"category"에 위 섹션 이름 중 이 기사에 가장 알맞은 하나를 그대로 쓰세요. 맞는 것이 없으면 빈 문자열.`)
     : ''
-  return userPromptBase(input) + cat + lengthHint(input)
+  return userPromptBase(input) + cat + lengthHint(input) + (input.feedback ?? '')
 }
 
 // 기사 분량(본문 글자 수) 선택: 800 / 1000 / 1500자. 원문이 짧으면 억지로 늘리지 않고 확인할 점에 적게 한다
@@ -232,7 +232,8 @@ function lengthHint(input: DraftInput) {
     const w = Math.round((n * 0.4) / 10) * 10
     return `\n\nLength: write the body at about ${w} words (a tolerance of 15% is fine). If the source has too little material, write shorter instead of padding, and say so in review_notes. Never add facts that are not in the source.`
   }
-  return `\n\n분량: 본문(paragraphs)을 공백 포함 약 ${n}자로 씁니다(±15%). 원문에 재료가 부족하면 내용을 지어내 채우지 말고 짧게 쓰고, 그 사실을 review_notes에 적습니다. 위 문단 수 안내보다 이 분량을 우선합니다.`
+  const paras = n <= 800 ? 5 : n <= 1000 ? 6 : 8
+  return `\n\n분량(반드시 지킬 것): 본문(paragraphs) 글자 수의 합계를 공백 포함 ${n}자(허용 ${Math.round(n * 0.9)}~${Math.round(n * 1.1)}자)로 씁니다. 문단은 ${paras}개 안팎, 문단당 약 ${Math.round(n / paras)}자를 목표로 쓰고, 쓰고 나서 글자 수를 세어 범위를 벗어나면 고쳐 씁니다. 제목·부제목·review_notes는 글자 수에 넣지 않습니다. 원문에 재료가 부족해 이 분량을 채울 수 없을 때만 짧게 쓰고(지어내서 채우지 않습니다) 그 사실과 실제 글자 수를 review_notes에 적습니다. 위 문단 수·문장 수 안내보다 이 분량을 우선합니다.`
 }
 
 function userPromptBase(input: DraftInput) {
@@ -399,13 +400,50 @@ async function withGemini(model: AiModel, input: DraftInput, budgetMs = 50_000) 
   }
 }
 
+// 본문 글자 수 (공백 포함). 영문은 단어 수
+export function bodySize(paragraphs: string[], us?: boolean) {
+  const text = paragraphs.join('\n')
+  return us ? text.split(/\s+/).filter(Boolean).length : text.replace(/\n/g, '').length
+}
+const LENGTH_TOLERANCE = 0.1
+
 // budgetMs: 이 모델에 쓸 수 있는 최대 시간 (서버리스 60초 제한 안에서 나눠 쓴다)
+//   분량(length)을 정했으면 쓴 뒤에 글자 수를 세어, 범위를 벗어나면 현재 글자 수를 알려 주고 시간이 남는 만큼 다시 쓰게 한다
 export async function draftWithModel(modelId: string, input: DraftInput, budgetMs = 50_000): Promise<DraftResult> {
   const model = AI_MODELS.find((m) => m.id === modelId)
   if (!model) throw new AiDraftError('알 수 없는 AI 모델입니다.')
   if (!providerReady(model.provider)) throw new AiDraftError(`${model.label}을(를) 쓰려면 ${KEY[model.provider]}를 설정해야 합니다.`)
   const started = Date.now()
-  const r = model.provider === 'gemini' ? await withGemini(model, input, budgetMs) : await withAnthropic(model, input, budgetMs)
+  const run = (inp: DraftInput, ms: number) => model.provider === 'gemini' ? withGemini(model, inp, ms) : withAnthropic(model, inp, ms)
+  let r = await run(input, budgetMs)
+  if (input.length) {
+    const target = input.us ? Math.round((input.length * 0.4) / 10) * 10 : input.length
+    const lo = Math.round(target * (1 - LENGTH_TOLERANCE)), hi = Math.round(target * (1 + LENGTH_TOLERANCE))
+    const unit = input.us ? '단어' : '자'
+    let best = r
+    for (let i = 0; i < 2; i++) {
+      const size = bodySize(r.draft.paragraphs, input.us)
+      if (size >= lo && size <= hi) { best = r; break }
+      const left = budgetMs - (Date.now() - started)
+      if (left < 14_000) break
+      const dir = size < lo ? `${target - size}${unit} 더 늘려` : `${size - target}${unit} 줄여`
+      const feedback = `\n\n[분량 다시 쓰기] 아래 초안은 본문이 ${size}${unit}라서 목표 ${target}${unit}(허용 ${lo}~${hi}${unit})에서 벗어났습니다. 내용은 원문에 있는 사실만 쓰되, ${dir} 처음부터 다시 쓰세요. 쓴 뒤 글자 수를 세어 범위 안인지 확인합니다.\n<이전 초안>\n${r.draft.paragraphs.join('\n')}\n</이전 초안>`
+      try {
+        const next = await run({ ...input, feedback }, left)
+        const ns = bodySize(next.draft.paragraphs, input.us)
+        r = { ...next, inputTokens: r.inputTokens + next.inputTokens, outputTokens: r.outputTokens + next.outputTokens }
+        if (Math.abs(ns - target) < Math.abs(size - target)) best = r; else r = { ...best, inputTokens: r.inputTokens, outputTokens: r.outputTokens }
+      } catch { break }
+    }
+    r = { ...best, inputTokens: r.inputTokens, outputTokens: r.outputTokens }
+    // 끝내 범위를 못 맞췄으면 길 때는 뒤 문단을 덜어 내고, 그래도 안 되면 기자가 알도록 확인할 점에 적는다
+    let paras = r.draft.paragraphs
+    while (paras.length > 3 && bodySize(paras, input.us) > hi && bodySize(paras.slice(0, -1), input.us) >= lo) paras = paras.slice(0, -1)
+    const finalSize = bodySize(paras, input.us)
+    const notes = [...r.draft.review_notes]
+    if (finalSize < lo || finalSize > hi) notes.unshift(`분량: 목표 ${target}${unit}에 못 맞췄습니다 (현재 ${finalSize}${unit}). ${finalSize < lo ? '원문에 쓸 재료가 부족합니다. 지어내서 늘리지 않았습니다.' : '직접 줄여 주세요.'}`)
+    r = { ...r, draft: { ...r.draft, paragraphs: paras, review_notes: notes } }
+  }
   const costUsd = (r.inputTokens * model.input + r.outputTokens * model.output) / 1_000_000
   return { ...r, model, ms: Date.now() - started, costUsd }
 }
