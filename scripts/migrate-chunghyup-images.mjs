@@ -17,15 +17,18 @@
 //   · 이미 올라간 파일은 건너뛴다 (여러 번 실행해도 된다)
 //   · 이 매체의 사진 용량(30GB, 베이직)에 들어간다. 약 320MB
 // 다른 사이트(농림축산식품부·다음 브런치 등)의 이미지는 받지 않는다 (권리 확인 전).
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, writeFileSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { execFileSync } from 'node:child_process'
 
 const OUTLET_ID = '020d226e-edea-4e08-a7d9-ba45bffba46d'           // 미래농업매거진
 const SUPABASE_URL = 'https://xmkrpjsetdneulyyasrf.supabase.co'       // imcms 운영 프로젝트
 const BUCKET = 'media'
 const S3_HOST = /https:\/\/pango-lingo-chunghyup-assetsbucket-wrmvzvcu\.s3[a-z0-9.-]*amazonaws\.com\/([^"' )<>?]+)/g
 const TYPES = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' }
-const PARALLEL = 6
+const PARALLEL = 4
+const MAX_BYTES = 10 * 1024 * 1024   // media 저장소의 파일당 한도
 
 const file = process.argv[2]
 const dry = process.argv.includes('--dry')
@@ -41,6 +44,7 @@ if (dry) { console.log(paths.slice(0, 5).join('\n'), '\n…'); process.exit(0) }
 
 let done = 0, skipped = 0
 const failed = []
+const resized = []
 async function one(p) {
   const target = `${OUTLET_ID}/migrated/${p}`
   const url = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${target.split('/').map(encodeURIComponent).join('/')}`
@@ -50,9 +54,28 @@ async function one(p) {
   let body
   if (localDir) body = readFileSync(join(localDir, p))
   else {
-    const src = await fetch(`https://pango-lingo-chunghyup-assetsbucket-wrmvzvcu.s3.amazonaws.com/${p.split('/').map(encodeURIComponent).join('/')}`)
-    if (!src.ok) throw new Error(`내려받기 실패 ${src.status}`)
-    body = Buffer.from(await src.arrayBuffer())
+    const from = `https://pango-lingo-chunghyup-assetsbucket-wrmvzvcu.s3.amazonaws.com/${p.split('/').map(encodeURIComponent).join('/')}`
+    for (let tryNo = 1; ; tryNo++) {   // 인터넷이 잠깐 끊겨도 4번까지 다시 시도
+      try {
+        const src = await fetch(from)
+        if (!src.ok) throw new Error(`내려받기 실패 ${src.status}`)
+        body = Buffer.from(await src.arrayBuffer())
+        break
+      } catch (e) {
+        if (tryNo >= 4) throw e
+        await new Promise((r) => setTimeout(r, 1500 * tryNo))
+      }
+    }
+  }
+  // 10MB가 넘는 사진은 가로·세로 2800px 이하로 줄여서 올린다 (macOS 기본 도구 sips 사용). 파일 이름·확장자는 그대로
+  if (body.length > MAX_BYTES) {
+    const dir = mkdtempSync(join(tmpdir(), 'chunghyup-'))
+    const inp = join(dir, `in.${ext}`), out = join(dir, `out.${ext}`)
+    writeFileSync(inp, body)
+    try { execFileSync('sips', ['-Z', '2800', inp, '--out', out], { stdio: 'ignore' }) } catch { throw new Error(`용량 초과(${(body.length / 1048576).toFixed(1)}MB) — 줄이지 못했습니다`) }
+    body = readFileSync(out)
+    if (body.length > MAX_BYTES) throw new Error('줄여도 10MB를 넘습니다')
+    resized.push(p)
   }
   const res = await fetch(url, {
     method: 'POST',
@@ -75,4 +98,5 @@ await Promise.all(Array.from({ length: PARALLEL }, async () => {
 }))
 
 console.log(`\n올림 ${done}, 이미 있어서 건너뜀 ${skipped}, 실패 ${failed.length}`)
+if (resized.length) console.log(`용량이 커서 줄여 올린 사진 ${resized.length}개`)
 if (failed.length) { console.log(failed.join('\n')); process.exit(2) }
