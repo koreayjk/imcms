@@ -10,6 +10,9 @@
 //   4) 실제로 올리기:                        node scripts/migrate-chunghyup-images.mjs chunghyup_data.sql
 //   (선택) 용량이 커서 줄여 둔 파일만 올릴 때:  node scripts/migrate-chunghyup-images.mjs chunghyup_data.sql --local ./chunghyup-fix
 //        --local 폴더 안에 article-images/날짜/파일 구조로 두면, 그 폴더에 있는 파일만 S3 대신 그 파일로 올린다
+//   (옛 기사 사진) 2024~2025년 기사의 /news/photo/202410/파일.jpg 같은 사진은 zip을 푼 폴더에서 올린다:
+//        node scripts/migrate-chunghyup-images.mjs chunghyup_data.sql --legacy ./chunghyup_images   (먼저 --dry 로 개수 확인)
+//        → media/<매체id>/migrated/news/photo/202410/파일.jpg 로 올라간다 (본문 주소는 /news/photo/ 앞부분만 바꾸면 된다)
 //   5) 끝나면 service_role 키를 Supabase에서 교체(Reset)하는 것을 권한다.
 //
 // 올라가는 곳: media/<매체id>/migrated/<팡고링고 경로>   예) media/020d226e-…/migrated/article-images/2026-01-07/xxxx.png
@@ -32,13 +35,23 @@ const MAX_BYTES = 10 * 1024 * 1024   // media 저장소의 파일당 한도
 
 const file = process.argv[2]
 const dry = process.argv.includes('--dry')
+const legacyDir = process.argv.includes('--legacy') ? process.argv[process.argv.indexOf('--legacy') + 1] : null
 const localDir = process.argv.includes('--local') ? process.argv[process.argv.indexOf('--local') + 1] : null
 if (!file) { console.error('사용법: node scripts/migrate-chunghyup-images.mjs chunghyup_data.sql [--dry]'); process.exit(1) }
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!dry && !key) { console.error('SUPABASE_SERVICE_ROLE_KEY 환경변수가 없습니다. (파일 위쪽 설명 참고)'); process.exit(1) }
 
 const sql = readFileSync(file, 'utf8')
-const paths = [...new Set([...sql.matchAll(S3_HOST)].map((m) => decodeURIComponent(m[1])))].filter((p) => /^article-images\//.test(p) && (!localDir || existsSync(join(localDir, p)))).sort()
+const LEGACY = /(?:\/news\/photo\/|'|")(\d{6}\/[\w.\-]+\.(?:jpg|jpeg|png|webp|gif))/gi
+const paths = legacyDir
+  ? [...new Set([...sql.matchAll(LEGACY)].map((m) => m[1]))].filter((p) => existsSync(join(legacyDir, 'article-images', p))).sort()
+  : [...new Set([...sql.matchAll(S3_HOST)].map((m) => decodeURIComponent(m[1])))].filter((p) => /^article-images\//.test(p) && (!localDir || existsSync(join(localDir, p)))).sort()
+if (legacyDir) {
+  const all = new Set([...sql.matchAll(LEGACY)].map((m) => m[1]))
+  console.log(`옛 사진 주소 ${all.size}개 중 폴더에 있는 것 ${paths.length}개`)
+  const none = [...all].filter((p) => !paths.includes(p))
+  if (none.length) console.log(`폴더에 없는 사진 ${none.length}개:\n${none.slice(0, 30).join('\n')}${none.length > 30 ? '\n…' : ''}`)
+}
 console.log(`이미지 ${paths.length}개 (${dry ? '확인만 — 올리지 않음' : '올리는 중'})`)
 if (dry) { console.log(paths.slice(0, 5).join('\n'), '\n…'); process.exit(0) }
 
@@ -46,13 +59,14 @@ let done = 0, skipped = 0
 const failed = []
 const resized = []
 async function one(p) {
-  const target = `${OUTLET_ID}/migrated/${p}`
+  const target = legacyDir ? `${OUTLET_ID}/migrated/news/photo/${p}` : `${OUTLET_ID}/migrated/${p}`
   const url = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${target.split('/').map(encodeURIComponent).join('/')}`
   const ext = p.split('.').pop().toLowerCase()
   const type = TYPES[ext]
   if (!type) throw new Error(`모르는 확장자: ${ext}`)
   let body
-  if (localDir) body = readFileSync(join(localDir, p))
+  if (legacyDir) body = readFileSync(join(legacyDir, 'article-images', p))
+  else if (localDir) body = readFileSync(join(localDir, p))
   else {
     const from = `https://pango-lingo-chunghyup-assetsbucket-wrmvzvcu.s3.amazonaws.com/${p.split('/').map(encodeURIComponent).join('/')}`
     for (let tryNo = 1; ; tryNo++) {   // 인터넷이 잠깐 끊겨도 4번까지 다시 시도
