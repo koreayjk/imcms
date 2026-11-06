@@ -22,7 +22,7 @@ const PAGE_SIZE = 30
 const TIER_DAYS = 14
 const TIER_SRC_DAYS = 30
 const TIER_LEGACY_LIMIT = 3
-type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; tier?: number; kw?: string }
+type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; mail_section?: string | null; tier?: number; kw?: string }
 
 type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string }> }
 
@@ -88,7 +88,7 @@ export default async function PressPage(props: Props) {
   // 전체 탭 목록: 체크한 출처가 있으면 그 출처만, 없으면 이 매체가 기본으로 보는 전체 (켜 둔 해외 묶음만)
   let query = supabase
     .from('press_releases')
-    .select('id, source_key, source_name, title, summary, link, published_at', { count: 'exact' })
+    .select('id, source_key, source_name, title, summary, link, published_at, mail_section', { count: 'exact' })
     .order('published_at', { ascending: false, nullsFirst: false })
   // 보기 모드: 그 매체의 발행인·편집장·기자가 실제로 보는 자료만 (다른 그룹의 메일·직접 등록 자료는 뺀다)
   query = pressScope(query, ctx)
@@ -140,7 +140,7 @@ export default async function PressPage(props: Props) {
       ...tiers.map((g, ti) => ({ ti, limit: g.limit, kws: usableKeywords(g.keywords), srcs: g.sources.filter((k) => visible.has(k)) })),
       { ti: 4, limit: TIER_LEGACY_LIMIT, kws: [], srcs: pickedKeys.filter((k) => !grouped.has(k)) },
     ]
-    const cols = 'id, source_key, source_name, title, summary, link, published_at'
+    const cols = 'id, source_key, source_name, title, summary, link, published_at, mail_section'
     const win = (since: string) => `published_at.gte.${since},and(published_at.is.null,fetched_at.gte.${since})`
     const kwScope = english ? [`source_key.like.us-*`, ...FOREIGN_TOPICS.map((ft) => `source_key.like.${ft.prefix}*`), `source_key.in.(${MANUAL_SOURCE},email)`].join(',') : null
     const jobs: (() => Promise<PressRow[]>)[] = []
@@ -290,7 +290,7 @@ export default async function PressPage(props: Props) {
               used: usedSet.has(r.id),
               badges: [
                 ...(r.source_key === MANUAL_SOURCE ? [t('직접 등록', 'Added manually')] : []),
-                ...(r.source_key === 'email' ? [t('메일', 'Email')] : []),
+                ...(r.source_key === 'email' ? [t('메일', 'Email'), ...(r.mail_section ? [r.mail_section] : [])] : []),
                 ...(tiered && r.kw ? [r.kw] : []),
               ],
               head: tiered && (i === 0 || rows[i - 1].tier !== r.tier)
