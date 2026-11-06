@@ -16,6 +16,7 @@ export type PressRelease = {
   body_html: string | null
   image_url: string | null
   published_at: string | null
+  quality?: 'ok' | 'poor' | null
 }
 
 function decode(s: string) {
@@ -204,7 +205,10 @@ export function newswireBody(page: string) {
 // 목록에는 요약만 있으므로, 처음 열 때 전문을 가져와 저장해 둔다
 //   예전 방식으로 읽어 세로 사진 등을 놓친 보도자료(사진 없음 + image_url 비어 있음)도 한 번 다시 읽는다.
 //   다시 읽은 뒤 사진이 없으면 image_url을 ''로 두어 다음부터는 다시 읽지 않는다
-export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease): Promise<PressRelease> {
+export type BodySaver = (id: string, patch: { body_html: string | null; image_url: string | null }) => PromiseLike<unknown>
+export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease, saveTo?: BodySaver): Promise<PressRelease> {
+  // 기본은 로그인한 사람의 연결로 바로 저장. 로그인 없는 예약 작업(품질 판정)은 저장 방법을 따로 넘긴다
+  const save: BodySaver = saveTo ?? ((id, patch) => supabase.from('press_releases').update(patch).eq('id', id))
   if (isForeignSource(r.source_key)) {
     const us = isUsSource(r.source_key)
     // 해외 언론: 본문 글만 (사진은 그 언론사 저작물이라 가져오지 않는다)
@@ -217,7 +221,7 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease):
       const html = text ? photos + text : r.body_html
       if (!html) return r
       const image = us ? (/<img[^>]+src="([^"]+)"/.exec(photos)?.[1] ?? '') : ''
-      await supabase.from('press_releases').update({ body_html: html, image_url: image }).eq('id', r.id)
+      await save(r.id, { body_html: html, image_url: image })
       return { ...r, body_html: html, image_url: image }
     } catch {
       return r
@@ -232,7 +236,7 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease):
       const label = r.source_name.replace(/ 보도자료.*$/, '')
       const parsed = src.adapter === 'ansan' ? parseAnsanDetail(page, label) : src.adapter === 'ntt' ? parseNttDetail(page, new URL(r.link).origin, label) : (src.adapter === 'board' || src.adapter === 'incheon' || src.adapter === 'seoul' || src.adapter === 'jeju') ? parseBoardDetail(page, r.source_key, new URL(r.link).origin, label) : parseGnewsDetail(page, label)
       if (!parsed) return r
-      await supabase.from('press_releases').update({ body_html: parsed.html, image_url: parsed.image }).eq('id', r.id)
+      await save(r.id, { body_html: parsed.html, image_url: parsed.image })
       return { ...r, body_html: parsed.html, image_url: parsed.image }
     } catch {
       return r
@@ -245,7 +249,7 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease):
     const parsed = newswireBody(await fetchText(r.link, 8000))
     if (!parsed) return r
     const image = parsed.image ?? ''
-    await supabase.from('press_releases').update({ body_html: parsed.html, image_url: image }).eq('id', r.id)
+    await save(r.id, { body_html: parsed.html, image_url: image })
     return { ...r, body_html: parsed.html, image_url: image }
   } catch {
     return r
