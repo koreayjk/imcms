@@ -95,7 +95,7 @@ export function parseGnewsDetail(page: string, label = '경기도뉴스포털') 
   const cut = zone.search(/fileset26|class="postmenu2|<div class="(?:file|prev|next)/i)
   const bodyZone = cut > 0 ? zone.slice(0, cut) : zone
   const paras = paragraphs(bodyZone)
-  const imgs = Array.from(page.matchAll(/data-url="(\/UP_FILES\/[^"]+\.(?:jpe?g|png))"/gi), (m) => m[1])
+  const imgs = Array.from(page.matchAll(/data-url="(\/(?:UP_FILES|OP_UPDATA)\/[^"]+\.(?:jpe?g|png))"/gi), (m) => m[1])
   const images = imgs.filter((u, n) => imgs.indexOf(u) === n).map((u) => ({ src: `${GNEWS}${u.split(';')[0].replace(/ /g, '%20')}` }))
   return paras.length ? build(paras, images, label) : null
 }
@@ -164,7 +164,8 @@ export function parseNttList(page: string, key: string, label: string, listUrl: 
 }
 
 export function parseNttDetail(page: string, base: string, label: string) {
-  const m = /<(div|td)[^>]*class="[^"]*\b(?:contenttext|bbs_content|p-table__content|viewcontent|view_content|nttCn)\b[^"]*"[^>]*>([\s\S]*?)<\/\1>/i.exec(page)
+  // 본문 칸이 div·td 가 아니라 표의 한 줄(<tr class="p-table__content">, 김포시)인 사이트도 있다
+  const m = /<(div|td|tr)[^>]*class="[^"]*\b(?:contenttext|bbs_content|p-table__content|viewcontent|view_content|nttCn)\b[^"]*"[^>]*>([\s\S]*?)<\/\1>/i.exec(page)
   if (!m) return null
   const inner = m[2]
   const imgs = Array.from(inner.matchAll(/<img[^>]+src="([^"]+)"[^>]*>/gi), (x) => { try { return new URL(decode(x[1]), base).toString() } catch { return '' } })
@@ -226,7 +227,7 @@ export const BOARDS: Record<string, BoardCfg> = {
   'lg-daejeon': {
     id: /boardNormalView\.do\?[^"]*ntatcSeq=(\d+)/,
     link: (id, o) => `${o}/drh/board/boardNormalView.do?boardId=normal_0189&menuSeq=1632&ntatcSeq=${id}`,
-    body: /<div class="board_txt">([\s\S]*?)(?=<\/div>\s*<\/div>\s*<div class="kogl_type")/i,
+    body: /<div class="board_txt">([\s\S]*?)(?=<\/div>\s*<\/div>\s*(?:<!--[\s\S]*?-->\s*)?<div class="kogl_type")/i,
   },
   'lg-ulsan-donggu': {
     id: /selectBoardArticle\.do\?bbsId=BBSMSTR_000000000322&nttId=(\d+)/,
@@ -261,7 +262,7 @@ export const BOARDS: Record<string, BoardCfg> = {
   'lg-michuhol': {
     id: /view\.do\?sq=(\d+)&board_code=news_item/,
     link: (id, o) => `${o}/main/board/view.do?sq=${id}&board_code=news_item`,
-    body: /<div class="content editor_content">\s*<div class="content editor_content">([\s\S]*?)<\/div>/i,
+    body: /<div class="content editor_content">\s*(?:<div class="content editor_content">)?([\s\S]*?)<\/div>/i,   // 사이트가 한 겹으로 바꾼 뒤에도 읽도록 두 겹은 있어도 없어도 된다
   },
   'lg-gwangjin': {
     id: /B0000002\/view\.do\?nttId=(\d+)/,
