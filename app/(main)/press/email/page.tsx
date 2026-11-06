@@ -5,10 +5,12 @@ import { getT } from '@/lib/cms-t'
 import PressEmailSetup from '@/components/cms/PressEmailSetup'
 import MailServiceSettings from '@/components/cms/MailServiceSettings'
 import PressMailLimits from '@/components/cms/PressMailLimits'
-import { getMyInbox, getMailLimits } from './actions'
+import PressMailSections from '@/components/cms/PressMailSections'
+import { getMyInbox, getMailLimits, getMailSectionUsage } from './actions'
+import { cleanMailSections } from '@/lib/press-mail-sections'
 
 export default async function PressEmailPage() {
-  const { supabase, isSuper } = await getCmsContext()
+  const { supabase, isSuper, outletId, isEditorPlus, isStaff } = await getCmsContext()
   const { t, lang } = await getT()
   const { inbox, error } = await getMyInbox()
 
@@ -16,6 +18,11 @@ export default async function PressEmailPage() {
   const { data: admin } = isAdmin ? await supabase.rpc('admin_press_mail_settings') : { data: null }
   const settings = (Array.isArray(admin) ? admin[0] : admin) as { secret: string | null; address: string | null } | null
   const limits = isAdmin ? await getMailLimits() : null
+  const canSections = !!outletId && (isEditorPlus || isStaff)
+  const [{ data: o }, { data: cats }, usage] = canSections
+    ? await Promise.all([supabase.from('outlets').select('site').eq('id', outletId).maybeSingle(), supabase.from('categories').select('name').eq('outlet_id', outletId), getMailSectionUsage(outletId!)])
+    : [{ data: null }, { data: null }, {} as Record<string, number>]
+  const mailConf = cleanMailSections(((o?.site ?? {}) as { mailSections?: unknown }).mailSections)
   const host = (await headers()).get('host') ?? 'imcms.vercel.app'
   const webhook = settings?.secret ? `https://${host}/api/inbound/email?key=${settings.secret}` : null
 
@@ -39,6 +46,7 @@ export default async function PressEmailPage() {
         <PressEmailSetup initial={inbox} />
       )}
 
+      {canSections && !error && <PressMailSections outletId={outletId!} initial={mailConf} suggested={((cats ?? []) as { name: string }[]).map((c) => c.name)} usage={usage} />}
       {isAdmin && !error && <MailServiceSettings address={settings?.address ?? null} webhook={webhook} />}
       {isAdmin && !error && (limits
         ? <PressMailLimits initial={limits.outlets} plans={limits.plans} />
