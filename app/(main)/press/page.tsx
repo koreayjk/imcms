@@ -25,9 +25,9 @@ const TIER_SRC_DAYS = 30
 const QUALITY_OK = `quality.eq.ok,source_key.in.(${MANUAL_SOURCE},email)`
 const RECENT_DAYS = 7   // 기본 목록은 최근 7일 것만 (지난 자료는 "지난 자료까지 보기"로)
 const TIER_LEGACY_LIMIT = 3
-type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; image_url?: string | null; mail_section?: string | null; tier?: number; kw?: string }
+type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; image_url?: string | null; mail_section?: string | null; tier?: number; kw?: string; kws?: string[] }
 
-type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string; old?: string }> }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string; kw?: string; old?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
@@ -183,8 +183,14 @@ export default async function PressPage(props: Props) {
     // 출처가 많아도 한꺼번에 수십 개를 보내지 않게 25개씩 나눠 가져온다
     const results: PressRow[][] = []
     for (let i = 0; i < jobs.length; i += 25) results.push(...await Promise.all(jobs.slice(i, i + 25).map((j) => j())))
-    const seen = new Set<string>()
-    const merged = results.flat().filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+    // 같은 자료가 키워드 여러 개에 걸리면 한 줄로 합치되, 걸린 키워드는 모두 기억한다 (키워드별 보기용)
+    const seen = new Map<string, PressRow>()
+    for (const r of results.flat()) {
+      const prev = seen.get(r.id)
+      if (!prev) seen.set(r.id, { ...r, kws: r.kw ? [r.kw] : [] })
+      else if (r.kw && !prev.kws?.includes(r.kw)) prev.kws = [...(prev.kws ?? []), r.kw]
+    }
+    const merged = [...seen.values()]
     // 같은 그룹 안에서는 뉴스와이어 보도자료를 위로 (정렬은 안정적이라 나머지 순서는 그대로)
     merged.sort((x, y) => (x.tier ?? 0) - (y.tier ?? 0) || Number(y.source_key.startsWith('nw-')) - Number(x.source_key.startsWith('nw-')))
     return { data: merged, count: merged.length }
@@ -214,7 +220,12 @@ export default async function PressPage(props: Props) {
   const regionCounts = new Map<string, number>()
   for (const r of allRows) regionCounts.set(regionKeyOf(r.source_key), (regionCounts.get(regionKeyOf(r.source_key)) ?? 0) + 1)
   const rgSel = tiered && hasFeed && REGION_CHIPS.some((c) => c.key === searchParams.rg && (regionCounts.get(c.key) ?? 0) > 0) ? String(searchParams.rg) : ''
-  const rowsAll = rgSel ? allRows.filter((r) => regionKeyOf(r.source_key) === rgSel) : allRows
+  // 맞춤 자료의 키워드별 보기: 그 키워드가 제목·요약에 있어 들어온 자료만 (지역 선택과 함께 쓸 수 있다)
+  const kwCounts = new Map<string, number>()
+  for (const r of allRows) for (const k of r.kws ?? []) kwCounts.set(k, (kwCounts.get(k) ?? 0) + 1)
+  const kwSel = tiered && hasFeed && searchParams.kw && (kwCounts.get(searchParams.kw) ?? 0) > 0 ? String(searchParams.kw) : ''
+  const byKw = kwSel ? allRows.filter((r) => r.kws?.includes(kwSel)) : allRows
+  const rowsAll = rgSel ? byKw.filter((r) => regionKeyOf(r.source_key) === rgSel) : byKw
   const ids = rowsAll.map((r) => r.id)
   const { data: used } = ids.length && outletId
     ? await supabase.from('articles').select('press_release_id').eq('outlet_id', outletId).in('press_release_id', ids)
@@ -313,11 +324,21 @@ export default async function PressPage(props: Props) {
             <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-[#F1F6FF] px-4 py-2.5 text-[12.5px] text-[#27456F] md:px-5">
               <span className="mr-1 font-semibold">{t('지역별로 보기', 'View by region')}</span>
               {[{ key: '', label: t('모두', 'All') }, ...REGION_CHIPS.filter((c) => (regionCounts.get(c.key) ?? 0) > 0)].map((c) => (
-                <Link key={c.key || 'all'} href={c.key ? `/press?rg=${c.key}` : '/press'} aria-current={rgSel === c.key ? 'true' : undefined} className={`rounded-full border px-3 py-1 text-[12px] ${rgSel === c.key ? 'border-ink bg-ink text-white' : 'border-[#27456F]/30 bg-white text-[#27456F] hover:border-ink'}`}>
+                <Link key={c.key || 'all'} href={`/press${c.key || kwSel ? '?' : ''}${[c.key && `rg=${c.key}`, kwSel && `kw=${encodeURIComponent(kwSel)}`].filter(Boolean).join('&')}`} aria-current={rgSel === c.key ? 'true' : undefined} className={`rounded-full border px-3 py-1 text-[12px] ${rgSel === c.key ? 'border-ink bg-ink text-white' : 'border-[#27456F]/30 bg-white text-[#27456F] hover:border-ink'}`}>
                   {c.label} <span className="tabular-nums opacity-70">{c.key ? regionCounts.get(c.key) : allRows.length}</span>
                 </Link>
               ))}
               <span className="ml-1 text-[#27456F]/80">{t('숫자는 보도자료 건수입니다(출처 수가 아닙니다). 맞춤 자료는 “전체” 탭에서 정합니다.', 'Numbers are counts of press releases, not sources. Set up My feed in the “All” tab.')}</span>
+            </div>
+          )}
+          {tiered && hasFeed && kwCounts.size > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-[#F8F6FF] px-4 py-2.5 text-[12.5px] text-[#4A3A7A] md:px-5">
+              <span className="mr-1 font-semibold">{t('키워드별로 보기', 'View by keyword')}</span>
+              {[{ key: '', label: t('모두', 'All') }, ...[...kwCounts.keys()].map((k) => ({ key: k, label: `#${k}` }))].map((c) => (
+                <Link key={c.key || 'all'} href={`/press${c.key || rgSel ? '?' : ''}${[rgSel && `rg=${rgSel}`, c.key && `kw=${encodeURIComponent(c.key)}`].filter(Boolean).join('&')}`} aria-current={kwSel === c.key ? 'true' : undefined} className={`rounded-full border px-3 py-1 text-[12px] ${kwSel === c.key ? 'border-ink bg-ink text-white' : 'border-[#4A3A7A]/30 bg-white text-[#4A3A7A] hover:border-ink'}`}>
+                  {c.label} <span className="tabular-nums opacity-70">{c.key ? kwCounts.get(c.key) : allRows.length}</span>
+                </Link>
+              ))}
             </div>
           )}
           {tab === 'rec' && !hasFeed && (
@@ -342,7 +363,7 @@ export default async function PressPage(props: Props) {
               badges: [
                 ...(r.source_key === MANUAL_SOURCE ? [t('직접 등록', 'Added manually')] : []),
                 ...(r.source_key === 'email' ? [t('메일', 'Email'), ...(r.mail_section ? [r.mail_section] : [])] : []),
-                ...(tiered && r.kw ? [r.kw] : []),
+                ...(tiered ? (r.kws ?? (r.kw ? [r.kw] : [])).map((k) => `#${k}`) : []),
               ],
               head: tiered && (i === 0 || rows[i - 1].tier !== r.tier)
                 ? (r.tier === 4
