@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { isAdMail, isBlockedSender, parseInbound, type InboundMail } from '@/lib/press-email'
+import { attachmentNumber, isAdMail, isBlockedSender, isNonPressTitle, parseInbound, type InboundMail } from '@/lib/press-email'
 import { resendInboundMail, verifyResendWebhook } from '@/lib/resend-inbound'
 
 // 메일 수신 서비스가 메일 한 통마다 부른다. 주소의 ?key= 값을 DB 비밀 열쇠와 대조한다
@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
 
   // 광고 메일((광고)·[광고] 표시)은 받지 않는다. 저장하지 않으므로 하루 한도(100건)에도 세지 않는다
   if (parsed.kind === 'release' && isAdMail(parsed.title)) return NextResponse.json({ result: 'ad_skipped' })
+  // 행사 일정표·공지 메일은 보도자료가 아니라서 받지 않는다
+  if (parsed.kind === 'release' && isNonPressTitle(parsed.title)) return NextResponse.json({ result: 'not_press' })
   // 막아 둔 보낸 곳(AliExpress 등 쇼핑·서비스 알림)도 받지 않는다
   if (parsed.kind === 'release' && isBlockedSender(mail)) return NextResponse.json({ result: 'sender_blocked' })
 
@@ -67,6 +69,26 @@ export async function POST(req: NextRequest) {
           p_published_at: parsed.publishedAt,
           p_attachments: parsed.attachments,
         }
+
+  // "취재지원자료 총N건"처럼 한 통에 보도자료가 여러 건 묶여 온 메일은 한 건씩 나눠 저장한다
+  //   번호가 붙은 첨부 사진("4-2. 설명.jpg")은 그 번호의 보도자료에만 붙이고, 번호 없는 첨부(전체 자료 파일 등)는 글자만 본문에 옮겨져 있어 따로 저장하지 않는다
+  if (parsed.kind === 'release' && parsed.items?.length) {
+    const results: unknown[] = []
+    for (const it of parsed.items) {
+      const own = parsed.attachments.filter((a) => attachmentNumber(a.name) === it.n)
+      const one = { ...args, p_guid: it.guid, p_title: it.title, p_summary: it.summary, p_body_html: it.bodyHtml, p_attachments: own }
+      let r = await supabase.rpc('press_ingest_email', { secret, p_token: parsed.token, ...one })
+      if (r.error && own.length) r = await supabase.rpc('press_ingest_email', { secret, p_token: parsed.token, ...one, p_attachments: [] })
+      if (r.error) {
+        console.error('[inbound-email] 묶음 메일 저장 실패:', r.error.message)
+        return NextResponse.json({ error: /forbidden/.test(r.error.message) ? 'unauthorized' : 'save_failed' }, { status: /forbidden/.test(r.error.message) ? 401 : 500 })
+      }
+      results.push(r.data)
+      if (r.data === 'addon_required') break   // 이용 한도를 넘었으면 나머지는 시도하지 않는다
+    }
+    console.log('[inbound-email] 묶음 메일 처리 결과:', results.join(','))
+    return NextResponse.json({ result: 'bundle', items: results })
+  }
 
   let { data, error } = await supabase.rpc('press_ingest_email', { secret, p_token: parsed.token, ...args })
   // 첨부가 너무 커서 저장하지 못했으면 본문만이라도 저장한다 (첨부는 이름만 남긴다)
