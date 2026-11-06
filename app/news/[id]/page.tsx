@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { currentSite, getArticleData, legacyArticleId, siteBaseUrl } from '@/lib/public-data'
 import { articleBreadcrumbJsonLd, newsArticleJsonLd } from '@/lib/news-jsonld'
-import { findSection, siteIcon } from '@/lib/sites'
+import { findSection, googlePreferredHost, siteIcon } from '@/lib/sites'
 import SiteFrame from '@/components/site/SiteFrame'
 import { sanitizeBody } from '@/lib/article-html'
 import ViewCounter from './ViewCounter'
@@ -93,6 +93,7 @@ export default async function ArticlePage(props: Props) {
           siteName={site.name}
           lang={site.lang}
           tz={site.timeZone}
+          googleHost={googlePreferredHost(site)}
           comments={site.commentsOn ? <CommentBox articleId={a.id} lang={site.lang ?? 'ko'} next={`/news/${a.id}`} /> : undefined}
           source={source}
           related={related}

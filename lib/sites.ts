@@ -511,3 +511,12 @@ export function cleanLogoBlock(v: unknown): LogoBlock | undefined {
   if (!items.length) return undefined
   return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, cols: o.cols === 3 || o.cols === 5 ? o.cols : undefined, items }
 }
+
+// 구글 "선호하는 소스" 버튼에 쓸 도메인: 진짜 도메인이 연결된 공개 매체만 (임시 주소·미리보기·오픈 준비 중이면 없음)
+export function googlePreferredHost(site: Pick<SiteConfig, 'domains' | 'preview' | 'softPreview' | 'comingSoon'>): string | undefined {
+  if (site.preview || site.softPreview || site.comingSoon) return undefined
+  const d = (site.domains?.[0] ?? '').toLowerCase().replace(/^www\./, '')
+  if (!d || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)) return undefined
+  if (d.endsWith('.vercel.app') || d === 'localhost') return undefined
+  return d
+}

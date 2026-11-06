@@ -8,6 +8,7 @@ import Thumb from './Thumb'
 import OptImg from './OptImg'
 import { optimizeBodyImages } from '@/lib/image-url'
 import ShareButton from './ShareButton'
+import GooglePreferredSource from './GooglePreferredSource'
 import FitRows from './FitRows'
 import type { SiteLang } from '@/lib/sites'
 import { enLongDate, siteText } from '@/lib/site-text'
@@ -17,7 +18,7 @@ import { enLongDate, siteText } from '@/lib/site-text'
 // 발행 뒤 1시간이 넘어 고친 기사만 "수정" 시각을 보여 준다
 const modifiedAt = (a: PublicArticle) => (a.updated_at && a.published_at && Date.parse(a.updated_at) - Date.parse(a.published_at) > 3_600_000 ? a.updated_at : null)
 
-export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], more = [], bottomAd, topAd, lang, tz, comments }: {
+export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source = null, related = [], relatedLinks = [], more = [], bottomAd, topAd, lang, tz, comments, googleHost }: {
   a: PublicArticle
   bodyHtml: string
   sectionName?: string
@@ -34,6 +35,8 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
   tz?: string
   // 기사 아래 댓글 상자 (매체가 댓글을 켠 경우)
   comments?: ReactNode
+  // 도메인이 연결된 매체만: 구글 선호 매체 추가 버튼에 쓸 도메인 (없으면 버튼을 그리지 않는다)
+  googleHost?: string
 }) {
   const t = siteText(lang)
   return (
@@ -73,7 +76,10 @@ export default function ArticleMain({ a, bodyHtml, sectionName, siteName, source
               )}
             </p>
           )}
-          <ShareButton title={a.title} lang={lang} size="sm" />
+          <div className="flex flex-wrap items-center gap-3">
+            {googleHost && <GooglePreferredSource host={googleHost} lang={lang} />}
+            <ShareButton title={a.title} lang={lang} size="sm" />
+          </div>
         </div>
       </header>
 
