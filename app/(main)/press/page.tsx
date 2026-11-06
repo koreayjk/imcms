@@ -21,10 +21,11 @@ const PAGE_SIZE = 30
 // 맞춤 자료(그룹) 모드: 최근 14일 안의 자료만
 const TIER_DAYS = 14
 const TIER_SRC_DAYS = 30
+const RECENT_DAYS = 7   // 기본 목록은 최근 7일 것만 (지난 자료는 "지난 자료까지 보기"로)
 const TIER_LEGACY_LIMIT = 3
 type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; mail_section?: string | null; tier?: number; kw?: string }
 
-type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string }> }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string; old?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
@@ -84,6 +85,9 @@ export default async function PressPage(props: Props) {
   const selected = tab === 'all' ? Array.from(new Set([searchParams.s ?? []].flat().map(String).filter((k) => validSel.has(k)))) : []
   const q = searchParams.q?.trim().slice(0, 50) || undefined
   const page = Math.max(1, Number(searchParams.page) || 1)
+  const showOld = searchParams.old === '1'
+  const recentSince = new Date(Date.now() - RECENT_DAYS * 86400e3).toISOString()
+  const winOf = (since: string) => `published_at.gte.${since},and(published_at.is.null,fetched_at.gte.${since})`
 
   // 전체 탭 목록: 체크한 출처가 있으면 그 출처만, 없으면 이 매체가 기본으로 보는 전체 (켜 둔 해외 묶음만)
   let query = supabase
@@ -98,6 +102,7 @@ export default async function PressPage(props: Props) {
     else query = query.not('source_key', 'like', 'us-%')
     if (!english) for (const ft of FOREIGN_TOPICS) if (!topics.includes(ft.key)) query = query.not('source_key', 'like', `${ft.prefix}%`)
   }
+  if (!showOld) query = query.or(winOf(recentSince))
   if (q) query = query.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
 
   const fields = outletSite?.pressFields.length ? outletSite.pressFields : auto?.fields ?? []
@@ -131,8 +136,8 @@ export default async function PressPage(props: Props) {
   const tiers = outletSite?.pressTiers ?? []
   const tiered = tab === 'rec'
   const tierRows = async (): Promise<{ data: PressRow[]; count: number }> => {
-    const sinceKw = new Date(Date.now() - TIER_DAYS * 86400e3).toISOString()
-    const sinceSrc = new Date(Date.now() - TIER_SRC_DAYS * 86400e3).toISOString()
+    const sinceKw = new Date(Date.now() - (showOld ? TIER_DAYS : RECENT_DAYS) * 86400e3).toISOString()
+    const sinceSrc = new Date(Date.now() - (showOld ? TIER_SRC_DAYS : RECENT_DAYS) * 86400e3).toISOString()
     const visible = new Set([...FEED_SOURCES.map((x) => x.key), 'email', MANUAL_SOURCE])
     const grouped = new Set(tiers.flatMap((g) => g.sources))
     type Block = { ti: number; limit: number; kws: string[]; srcs: string[] }
@@ -187,12 +192,15 @@ export default async function PressPage(props: Props) {
   const regionCounts = new Map<string, number>()
   for (const r of allRows) regionCounts.set(regionKeyOf(r.source_key), (regionCounts.get(regionKeyOf(r.source_key)) ?? 0) + 1)
   const rgSel = tiered && hasFeed && REGION_CHIPS.some((c) => c.key === searchParams.rg && (regionCounts.get(c.key) ?? 0) > 0) ? String(searchParams.rg) : ''
-  const rows = rgSel ? allRows.filter((r) => regionKeyOf(r.source_key) === rgSel) : allRows
-  const ids = rows.map((r) => r.id)
+  const rowsAll = rgSel ? allRows.filter((r) => regionKeyOf(r.source_key) === rgSel) : allRows
+  const ids = rowsAll.map((r) => r.id)
   const { data: used } = ids.length && outletId
     ? await supabase.from('articles').select('press_release_id').eq('outlet_id', outletId).in('press_release_id', ids)
     : { data: [] as { press_release_id: string }[] }
   const usedSet = new Set((used ?? []).map((u) => u.press_release_id))
+  // 우리 매체가 이미 기사로 쓴 자료는 기본 목록에서 숨긴다 ("지난 자료까지 보기"에서는 "기사화됨"으로 보인다)
+  const rows = showOld ? rowsAll : rowsAll.filter((r) => !usedSet.has(r.id))
+  const hiddenUsed = rowsAll.length - rows.length
   const newswireToday = (todayUses ?? []).filter((a: any) => a.press_release?.source_key?.startsWith('nw-')).length
   const logByKey = new Map((logs ?? []).map((l) => [l.source_key as string, l]))
   const pages = tiered ? 1 : Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
@@ -201,7 +209,7 @@ export default async function PressPage(props: Props) {
 
   const href = (p: Record<string, string | undefined>) => {
     const sp = new URLSearchParams()
-    Object.entries({ tab: tab === 'all' ? 'all' : undefined, q, ...p }).forEach(([k, v]) => v && sp.set(k, v))
+    Object.entries({ tab: tab === 'all' ? 'all' : undefined, q, old: showOld ? '1' : undefined, ...p }).forEach(([k, v]) => v && sp.set(k, v))
     if (tab === 'all') selected.forEach((k) => sp.append('s', k))
     const s = sp.toString()
     return `/press${s ? `?${s}` : ''}`
@@ -258,6 +266,12 @@ export default async function PressPage(props: Props) {
               suggestions={Array.from(new Set([...sectionNames, ...keywords])).slice(0, 40)}
             />
           )}
+          <p className="flex flex-wrap items-center gap-x-2 border-b border-line px-4 py-2 text-[12px] text-muted md:px-5">
+            {showOld
+              ? t('지난 자료까지 모두 보는 중입니다.', 'Showing older releases too.')
+              : t(`최근 ${RECENT_DAYS}일 자료만 보입니다.${hiddenUsed ? ` 이미 기사로 쓴 ${hiddenUsed}건은 숨겼습니다.` : ''}`, `Showing the last ${RECENT_DAYS} days only.${hiddenUsed ? ` ${hiddenUsed} already used in stories are hidden.` : ''}`)}
+            <Link href={href({ old: showOld ? undefined : '1', page: undefined })} className="font-semibold text-ink underline">{showOld ? t(`최근 ${RECENT_DAYS}일만 보기`, `Last ${RECENT_DAYS} days only`) : t('지난 자료까지 보기', 'Show older')}</Link>
+          </p>
           {searchParams.msg && <p className="border-b border-line bg-[#FFF8E6] px-4 py-2.5 text-[12.5px] text-[#6B4E00] md:px-5">{searchParams.msg.slice(0, 200)}</p>}
 
           {tiered && hasFeed && (
