@@ -25,7 +25,7 @@ function slotOf(raw: string, ids: string[]): string | null {
   return NAME_RULES.find(([re]) => re.test(name))?.[1] ?? null
 }
 
-const MAX_MB = 50 // 프로젝트 기본 업로드 한도. Storage 설정에서 올렸다면 아래 숫자도 같이 올리세요
+const MAX_MB = 100 // 올릴 수 있는 한 파일 최대 크기. Supabase Storage 설정의 업로드 한도(Settings → Upload file size limit)도 이 값 이상이어야 한다
 const mb = (n: number) => (n / 1024 / 1024).toFixed(1)
 
 export default function GuideVideoUploader({ slots }: { slots: Slot[] }) {
