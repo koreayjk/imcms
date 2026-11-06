@@ -6,7 +6,7 @@ const UA = { 'user-agent': 'Mozilla/5.0' }
 export async function GET(req: Request) {
   const p = new URL(req.url).searchParams.get('p')
   try {
-    if (p && /^\/[A-Za-z0-9_\-./]+\.(png|jpg|jpeg|svg|gif|webp)$/.test(p)) {
+    if (p && /^\/[A-Za-z0-9_\-./]+\.(png|jpg|jpeg|svg|gif|webp|css)$/.test(p)) {
       const r = await fetch(BASE + p, { headers: UA, signal: AbortSignal.timeout(15000) })
       return new Response(await r.arrayBuffer(), { status: r.status, headers: { 'content-type': r.headers.get('content-type') ?? 'application/octet-stream' } })
     }
