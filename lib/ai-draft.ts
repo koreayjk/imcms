@@ -211,7 +211,7 @@ export class AiDraftError extends Error {}
 
 // foreign: 해외 언론 기사 (출처를 밝힌 한국어 기사로 새로 쓴다)
 //   topic: 해외 언론 묶음 (이스라엘 / 교육·유학) — 독자와 주의할 점이 달라진다
-export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; us?: boolean; topic?: ForeignTopic; link?: string; categories?: string[] }
+export type DraftInput = { title: string; text: string; source: string; foreign?: boolean; us?: boolean; topic?: ForeignTopic; link?: string; categories?: string[]; length?: number }
 export type DraftResult = { draft: AiDraft; model: AiModel; ms: number; inputTokens: number; outputTokens: number; costUsd: number }
 
 function userPrompt(input: DraftInput) {
@@ -220,7 +220,19 @@ function userPrompt(input: DraftInput) {
       ? `\n\nSection choices: ${input.categories.join(' | ')}\nIn the "category" field, write exactly one of these section names that fits the story best, or an empty string if none fits.`
       : `\n\n섹션 후보: ${input.categories.join(' | ')}\n"category"에 위 섹션 이름 중 이 기사에 가장 알맞은 하나를 그대로 쓰세요. 맞는 것이 없으면 빈 문자열.`)
     : ''
-  return userPromptBase(input) + cat
+  return userPromptBase(input) + cat + lengthHint(input)
+}
+
+// 기사 분량(본문 글자 수) 선택: 800 / 1000 / 1500자. 원문이 짧으면 억지로 늘리지 않고 확인할 점에 적게 한다
+export const AI_LENGTHS = [800, 1000, 1500] as const
+function lengthHint(input: DraftInput) {
+  const n = input.length
+  if (!n) return ''
+  if (input.us) {
+    const w = Math.round((n * 0.4) / 10) * 10
+    return `\n\nLength: write the body at about ${w} words (a tolerance of 15% is fine). If the source has too little material, write shorter instead of padding, and say so in review_notes. Never add facts that are not in the source.`
+  }
+  return `\n\n분량: 본문(paragraphs)을 공백 포함 약 ${n}자로 씁니다(±15%). 원문에 재료가 부족하면 내용을 지어내 채우지 말고 짧게 쓰고, 그 사실을 review_notes에 적습니다. 위 문단 수 안내보다 이 분량을 우선합니다.`
 }
 
 function userPromptBase(input: DraftInput) {

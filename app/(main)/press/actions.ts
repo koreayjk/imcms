@@ -227,7 +227,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai', for
 //   사진은 언론이 쓰라고 내는 자료(정부·지자체, 뉴스와이어)의 원문 사진만 넣고, 해외·미국 언론 사진은 넣지 않는다 (사용 권리를 확인하지 못하면 넣지 않는다).
 //   법적 검수는 하지 않는다 (기사를 열어 AI 법적 검수를 누르거나 편집장이 승인할 때 확인) — 확인할 점 메모에 남긴다
 export type BulkResult = { ok: boolean; id: string; title?: string; articleId?: string; error?: string; stop?: boolean }
-export async function createAiReviewArticle(id: string): Promise<BulkResult> {
+export async function createAiReviewArticle(id: string, length?: number): Promise<BulkResult> {
   const { supabase, user, profile, outletId } = await getCmsContext()
   const { t } = await getT()
   if (!outletId) return { ok: false, id, error: t('매체를 먼저 골라 주세요.', 'Choose an outlet first.'), stop: true }
@@ -251,7 +251,7 @@ export async function createAiReviewArticle(id: string): Promise<BulkResult> {
   const cats = (catRows ?? []) as { id: string; name: string }[]
   let draft
   try {
-    const result = await draftFromPressRelease({ title: r.title, text: pressTextForAi(original) || r.summary || '', source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: cats.map((c) => c.name) })
+    const result = await draftFromPressRelease({ title: r.title, text: pressTextForAi(original) || r.summary || '', source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: cats.map((c) => c.name), length: length === 800 || length === 1000 || length === 1500 ? length : undefined })
     await finishAi(supabase, slot.id, result)
     draft = result.draft
   } catch (e) {
