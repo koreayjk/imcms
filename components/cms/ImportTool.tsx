@@ -274,7 +274,8 @@ export default function ImportTool({ outlets, userId }: { outlets: Outlet[]; use
     const tags = Array.from(new Set((get('tags') ?? '').split(/[,|#;]/).map((t) => t.trim()).filter(Boolean))).slice(0, 10)
     const views = Number.parseInt(get('views') ?? '', 10)
     return {
-      ok: !!title && !!published_at && !!plainText(html),
+      // 글자 없이 사진(인포그래픽·성명서 이미지)만 있는 기사도 실제 기사이므로 넣는다
+      ok: !!title && !!published_at && (!!plainText(html) || /<img\b/i.test(html)),
       missing,
       row: {
         outlet_id: outletId, author_id: userId, legacy_id: legacy, title, body: html,
