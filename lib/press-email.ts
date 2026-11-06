@@ -161,7 +161,8 @@ export const isAdMail = (title: string | null | undefined) => AD_SUBJECT.test(ti
 
 // 받지 않을 보낸 곳(도메인): 쇼핑·서비스 알림처럼 보도자료가 아닌 메일. 지메일 전달 필터가 받은편지함 전체를 넘겨 올 때 걸러 준다
 //   하위 주소(notice.aliexpress.com 등)도 함께 막는다. 더 막을 곳이 생기면 여기에 도메인만 추가한다
-export const BLOCKED_SENDER_DOMAINS = ['aliexpress.com', 'alibaba.com', 'alibaba-inc.com']
+// (github.com: 깃허브 알림 메일 — vercel[bot] 등이 보낸 것처럼 보이는 PR 알림)
+export const BLOCKED_SENDER_DOMAINS = ['aliexpress.com', 'alibaba.com', 'alibaba-inc.com', 'tiktok.com', 'openai.com', 'vercel.com', 'github.com']
 export function isBlockedSender(mail: Pick<InboundMail, 'From' | 'FromFull'>) {
   const addr = (mail.FromFull?.Email ?? /<([^>]+)>/.exec(mail.From ?? '')?.[1] ?? mail.From ?? '').trim().toLowerCase()
   const domain = addr.split('@')[1] ?? ''
