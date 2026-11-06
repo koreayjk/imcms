@@ -50,7 +50,6 @@ export const PRESS_SOURCES: PressSource[] = [
   { key: 'us-agrilife', name: 'Texas A&M AgriLife Today', outlet: 'Texas A&M AgriLife Today', url: 'https://agrilifetoday.tamu.edu/feed/', kind: 'us', local: true },
   { key: 'us-bcslibrary', name: 'Bryan + College Station Public Library System', outlet: 'Bryan + College Station Public Library System', url: 'https://www.bcslibrary.org/feed/', kind: 'us', local: true },
   { key: 'us-txgov', name: 'Office of the Texas Governor', outlet: 'Office of the Texas Governor', url: 'https://gov.texas.gov/news/rss', kind: 'us', local: true },
-  { key: 'us-fda', name: 'U.S. FDA · Press releases', outlet: 'U.S. Food and Drug Administration', url: 'https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml', kind: 'us' },
   { key: 'nw-hospital', name: '뉴스와이어 · 의료와 병원', url: 'https://api.newswire.co.kr/rss/industry/1007', kind: 'newswire' },
   { key: 'nw-elderly', name: '뉴스와이어 · 노인', url: 'https://api.newswire.co.kr/rss/industry/1901', kind: 'newswire' },
   { key: 'nw-welfare', name: '뉴스와이어 · 사회복지', url: 'https://api.newswire.co.kr/rss/industry/1903', kind: 'newswire' },
