@@ -8,6 +8,8 @@
 //        Windows(PowerShell):  $env:SUPABASE_SERVICE_ROLE_KEY='...'
 //   3) 먼저 확인만(아무것도 올리지 않음):  node scripts/migrate-chunghyup-images.mjs chunghyup_data.sql --dry
 //   4) 실제로 올리기:                        node scripts/migrate-chunghyup-images.mjs chunghyup_data.sql
+//   (선택) 용량이 커서 줄여 둔 파일만 올릴 때:  node scripts/migrate-chunghyup-images.mjs chunghyup_data.sql --local ./chunghyup-fix
+//        --local 폴더 안에 article-images/날짜/파일 구조로 두면, 그 폴더에 있는 파일만 S3 대신 그 파일로 올린다
 //   5) 끝나면 service_role 키를 Supabase에서 교체(Reset)하는 것을 권한다.
 //
 // 올라가는 곳: media/<매체id>/migrated/<팡고링고 경로>   예) media/020d226e-…/migrated/article-images/2026-01-07/xxxx.png
@@ -15,7 +17,8 @@
 //   · 이미 올라간 파일은 건너뛴다 (여러 번 실행해도 된다)
 //   · 이 매체의 사진 용량(30GB, 베이직)에 들어간다. 약 320MB
 // 다른 사이트(농림축산식품부·다음 브런치 등)의 이미지는 받지 않는다 (권리 확인 전).
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
+import { join } from 'node:path'
 
 const OUTLET_ID = '020d226e-edea-4e08-a7d9-ba45bffba46d'           // 미래농업매거진
 const SUPABASE_URL = 'https://xmkrpjsetdneulyyasrf.supabase.co'       // imcms 운영 프로젝트
@@ -26,12 +29,13 @@ const PARALLEL = 6
 
 const file = process.argv[2]
 const dry = process.argv.includes('--dry')
+const localDir = process.argv.includes('--local') ? process.argv[process.argv.indexOf('--local') + 1] : null
 if (!file) { console.error('사용법: node scripts/migrate-chunghyup-images.mjs chunghyup_data.sql [--dry]'); process.exit(1) }
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!dry && !key) { console.error('SUPABASE_SERVICE_ROLE_KEY 환경변수가 없습니다. (파일 위쪽 설명 참고)'); process.exit(1) }
 
 const sql = readFileSync(file, 'utf8')
-const paths = [...new Set([...sql.matchAll(S3_HOST)].map((m) => decodeURIComponent(m[1])))].filter((p) => /^article-images\//.test(p)).sort()
+const paths = [...new Set([...sql.matchAll(S3_HOST)].map((m) => decodeURIComponent(m[1])))].filter((p) => /^article-images\//.test(p) && (!localDir || existsSync(join(localDir, p)))).sort()
 console.log(`이미지 ${paths.length}개 (${dry ? '확인만 — 올리지 않음' : '올리는 중'})`)
 if (dry) { console.log(paths.slice(0, 5).join('\n'), '\n…'); process.exit(0) }
 
@@ -43,9 +47,13 @@ async function one(p) {
   const ext = p.split('.').pop().toLowerCase()
   const type = TYPES[ext]
   if (!type) throw new Error(`모르는 확장자: ${ext}`)
-  const src = await fetch(`https://pango-lingo-chunghyup-assetsbucket-wrmvzvcu.s3.amazonaws.com/${p.split('/').map(encodeURIComponent).join('/')}`)
-  if (!src.ok) throw new Error(`내려받기 실패 ${src.status}`)
-  const body = Buffer.from(await src.arrayBuffer())
+  let body
+  if (localDir) body = readFileSync(join(localDir, p))
+  else {
+    const src = await fetch(`https://pango-lingo-chunghyup-assetsbucket-wrmvzvcu.s3.amazonaws.com/${p.split('/').map(encodeURIComponent).join('/')}`)
+    if (!src.ok) throw new Error(`내려받기 실패 ${src.status}`)
+    body = Buffer.from(await src.arrayBuffer())
+  }
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, apikey: key, 'Content-Type': type, 'Cache-Control': 'max-age=31536000', 'x-upsert': 'false' },
