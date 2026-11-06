@@ -164,12 +164,14 @@ export default async function PressPage(props: Props) {
     ]
     const cols = 'id, source_key, source_name, title, summary, link, published_at, image_url, mail_section'
     const win = (since: string) => `published_at.gte.${since},and(published_at.is.null,fetched_at.gte.${since})`
-    const kwScope = english ? [`source_key.like.us-*`, ...FOREIGN_TOPICS.map((ft) => `source_key.like.${ft.prefix}*`), `source_key.in.(${MANUAL_SOURCE},email)`].join(',') : null
+    // 키워드는 지자체·정부 출처에서는 찾지 않는다 ("관광"·"비즈니스" 같은 흔한 단어로 서울시 자료 등이 섞여 들어오기 때문).
+    // 뉴스와이어·메일·직접 등록 자료(와 켜 둔 해외 묶음)에서만 찾고, 지자체·정부 자료는 그 출처를 직접 그룹에 담았을 때만 나온다
+    const kwScope = [...(english ? [`source_key.like.us-*`] : []), `source_key.like.nw-*`, ...FOREIGN_TOPICS.map((ft) => `source_key.like.${ft.prefix}*`), `source_key.in.(${MANUAL_SOURCE},email)`].join(',')
     const jobs: (() => Promise<PressRow[]>)[] = []
     for (const b of blocks) {
       for (const k of b.kws) jobs.push(async () => {
         let qy = pressScope(supabase.from('press_releases').select(cols), ctx)
-        qy = kwScope ? qy.or(kwScope) : qy.not('source_key', 'like', 'us-%')
+        qy = qy.or(kwScope)
         const { data } = await qy.or(`title.ilike.*${k}*,summary.ilike.*${k}*`).or(QUALITY_OK).or(win(sinceKw)).order('published_at', { ascending: false, nullsFirst: false }).limit(b.limit)
         return ((data ?? []) as PressRow[]).map((r) => ({ ...r, tier: b.ti, kw: k }))
       })
@@ -228,6 +230,12 @@ export default async function PressPage(props: Props) {
   // 우리 매체가 이미 기사로 쓴 자료는 기본 목록에서 숨긴다 ("지난 자료까지 보기"에서는 "기사화됨"으로 보인다)
   const rows = showOld ? rowsAll : rowsAll.filter((r) => !usedSet.has(r.id))
   const hiddenUsed = rowsAll.length - rows.length
+  // 본문 글자 수 (공백 제외): 목록에 보이는 자료만 본문을 읽어 센다
+  const bodyChars = new Map<string, number>()
+  for (let i = 0; i < rows.length; i += 40) {
+    const { data: bs } = await supabase.from('press_releases').select('id, body_html').in('id', rows.slice(i, i + 40).map((r) => r.id))
+    for (const b of (bs ?? []) as { id: string; body_html: string | null }[]) bodyChars.set(b.id, (b.body_html ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, '').length)
+  }
   const newswireToday = (todayUses ?? []).filter((a: any) => a.press_release?.source_key?.startsWith('nw-')).length
   const logByKey = new Map((logs ?? []).map((l) => [l.source_key as string, l]))
   const pages = tiered ? 1 : Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
@@ -329,6 +337,7 @@ export default async function PressPage(props: Props) {
               date: formatShort(r.published_at, lang),
               dateIso: r.published_at,
               used: usedSet.has(r.id),
+              chars: bodyChars.get(r.id) ?? null,
               photos: photoCount.get(r.id) ?? (r.image_url ? 1 : 0),
               badges: [
                 ...(r.source_key === MANUAL_SOURCE ? [t('직접 등록', 'Added manually')] : []),
