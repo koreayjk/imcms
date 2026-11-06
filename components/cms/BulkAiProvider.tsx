@@ -27,8 +27,9 @@ type Ctx = {
   job: BulkJob | null
   start: (ids: string[], titles: Record<string, string>, length?: number) => boolean
   dismiss: () => void
+  clear: () => void   // 결과를 완전히 지운다 (보도자료함의 결과 칸 닫기)
 }
-const BulkCtx = createContext<Ctx>({ job: null, start: () => false, dismiss: () => {} })
+const BulkCtx = createContext<Ctx>({ job: null, start: () => false, dismiss: () => {}, clear: () => {} })
 export const useBulkAi = () => useContext(BulkCtx)
 
 export default function BulkAiProvider({ children }: { children: ReactNode }) {
@@ -89,8 +90,14 @@ export default function BulkAiProvider({ children }: { children: ReactNode }) {
     return n
   }), [])
 
+  const clear = useCallback(() => setJob((cur) => {
+    if (cur?.running) return cur
+    save(null)
+    return null
+  }), [])
+
   return (
-    <BulkCtx.Provider value={{ job, start, dismiss }}>
+    <BulkCtx.Provider value={{ job, start, dismiss, clear }}>
       {children}
       <BulkAiPill />
     </BulkCtx.Provider>

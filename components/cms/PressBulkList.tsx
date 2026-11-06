@@ -17,7 +17,7 @@ const LEN_KEY = 'press-bulk-length'
 
 export default function PressBulkList({ rows }: { rows: BulkRow[] }) {
   const t = useT()
-  const { job, start } = useBulkAi()
+  const { job, start, clear } = useBulkAi()
   const [picked, setPicked] = useState<string[]>([])
   // 만드는 일은 편집국 전체(BulkAiProvider)에서 돌아서, 다른 메뉴에 갔다 와도 계속되고 여기서 진행·결과가 이어서 보인다
   const running = !!job?.running
@@ -86,6 +86,7 @@ export default function PressBulkList({ rows }: { rows: BulkRow[] }) {
           {results.length > 0 && (
             <>
               {!progress && <p className="font-semibold">{t(`${okCount}건을 승인대기로 올렸습니다.`, `${okCount} stories were sent to pending review.`)} <Link href="/articles" className="underline">{t('기사 목록에서 확인', 'See them in Stories')}</Link></p>}
+              {!progress && <button type="button" onClick={clear} className="float-right ml-2 text-muted underline">{t('결과 지우기', 'Clear')}</button>}
               <ul className="mt-1 space-y-0.5">
                 {results.map((r) => (
                   <li key={r.id} className={r.ok ? 'text-published' : 'text-danger'}>
