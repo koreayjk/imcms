@@ -203,7 +203,7 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
                     <label className="flex items-center gap-1.5">
                       <span className="whitespace-nowrap">{t('하나당 최신', 'Latest per item')}</span>
-                      <input type="number" min={1} max={PRESS_TIER_MAX_LIMIT} value={g.limit} onChange={(e) => setLimit(gi, Number(e.target.value))} className="field-input w-14 shrink-0 py-0.5 text-center" />
+                      <input type="number" min={1} max={PRESS_TIER_MAX_LIMIT} value={g.limit} onChange={(e) => setLimit(gi, Number(e.target.value))} style={{ width: 56 }} className="field-input shrink-0 px-1 py-0.5 text-center" />
                       <span className="whitespace-nowrap">{t('건', '')}</span>
                     </label>
                     <span className="whitespace-nowrap">{t('키워드', 'Keywords')} {g.keywords.length}/{PRESS_TIER_MAX_KEYWORDS}</span>
