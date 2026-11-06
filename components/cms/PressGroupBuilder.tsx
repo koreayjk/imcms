@@ -177,13 +177,13 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
       {grouping ? (
         <>
           <p className="mb-2 text-[12.5px] leading-relaxed text-muted">
-            <b className="text-ink">① {t('담을 그룹을 누르세요', 'Pick a group')}</b> → <b className="text-ink">② {t('아래에서 출처를 체크하면 바로 그 그룹에 담깁니다', 'check sources below and they go into that group right away')}</b>. {t('그룹 1이 맞춤 자료 맨 위에 나오고, 건수는 그 그룹에서 출처·키워드 하나당 보이는 최신 자료 수입니다. 체크를 다시 풀면 그룹에서 빠집니다.', 'Group 1 appears at the top of My feed; the number is how many latest items each source/keyword in that group shows. Uncheck to remove.')}
+            <b className="text-ink">① {t('담을 그룹 칸을 누르세요', 'Click a group box')}</b> → <b className="text-ink">② {t('아래에서 출처를 체크하면 바로 그 그룹에 담깁니다', 'check sources below and they go into that group right away')}</b>. {t('그룹 1이 맞춤 자료 맨 위에 나오고, 건수는 그 그룹에서 출처·키워드 하나당 보이는 최신 자료 수입니다. 체크를 다시 풀면 그룹에서 빠집니다.', 'Group 1 appears at the top of My feed; the number is how many latest items each source/keyword in that group shows. Uncheck to remove.')}
           </p>
           <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
             {tiers.map((g, gi) => {
               const on = gi === active
               return (
-                <div key={gi} className={`rounded-lg border bg-white p-2.5 ${on ? 'border-ink ring-1 ring-ink' : 'border-line'}`}>
+                <div key={gi} onClick={() => setActive(gi)} className={`cursor-pointer rounded-lg border bg-white p-2.5 ${on ? 'border-ink ring-1 ring-ink' : 'border-line'}`}>
                   <button type="button" onClick={() => setActive(gi)} aria-pressed={on} className="flex w-full items-center justify-between gap-2 text-left">
                     <span className="text-[13px] font-bold">{t(`그룹 ${gi + 1}`, `Group ${gi + 1}`)}</span>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${on ? 'bg-ink text-white' : 'bg-line text-muted'}`}>{on ? t('담는 중', 'Filling') : t('누르면 이 그룹에 담기', 'Tap to fill')}</span>
@@ -198,13 +198,13 @@ export default function PressGroupBuilder({ outletId, canPick, initial, groups, 
                     {sourceChips(g.sources).map((c) => (
                       <span key={c.id} className="inline-flex items-center gap-1 rounded-full border border-ink/30 bg-white py-0.5 pl-2 pr-0.5 text-[11.5px]">
                         {c.label}
-                        <button type="button" onClick={() => removeMany(gi, c.keys)} aria-label={t(`${c.label} 빼기`, `Remove ${c.label}`)} className="grid h-4 w-4 place-items-center rounded-full text-[11px] text-muted hover:bg-ink hover:text-white">×</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeMany(gi, c.keys) }} aria-label={t(`${c.label} 빼기`, `Remove ${c.label}`)} className="grid h-4 w-4 place-items-center rounded-full text-[11px] text-muted hover:bg-ink hover:text-white">×</button>
                       </span>
                     ))}
                     {g.keywords.map((k) => (
                       <span key={k} className="inline-flex items-center gap-1 rounded-full bg-ink/10 py-0.5 pl-2 pr-0.5 text-[11.5px]">
                         # {k}
-                        <button type="button" onClick={() => removeKeyword(gi, k)} aria-label={t(`${k} 빼기`, `Remove ${k}`)} className="grid h-4 w-4 place-items-center rounded-full text-[11px] text-muted hover:bg-ink hover:text-white">×</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeKeyword(gi, k) }} aria-label={t(`${k} 빼기`, `Remove ${k}`)} className="grid h-4 w-4 place-items-center rounded-full text-[11px] text-muted hover:bg-ink hover:text-white">×</button>
                       </span>
                     ))}
                   </div>
