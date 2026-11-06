@@ -297,7 +297,7 @@ export default async function PressPage(props: Props) {
                   {c.label} <span className="tabular-nums opacity-70">{c.key ? regionCounts.get(c.key) : allRows.length}</span>
                 </Link>
               ))}
-              <span className="ml-1 text-[#27456F]/80">{t('맞춤 자료는 “전체” 탭에서 정합니다.', 'Set up My feed in the “All” tab.')}</span>
+              <span className="ml-1 text-[#27456F]/80">{t('숫자는 보도자료 건수입니다(출처 수가 아닙니다). 맞춤 자료는 “전체” 탭에서 정합니다.', 'Numbers are counts of press releases, not sources. Set up My feed in the “All” tab.')}</span>
             </div>
           )}
           {tab === 'rec' && !hasFeed && (
