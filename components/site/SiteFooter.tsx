@@ -3,6 +3,7 @@ import { topSections, type SiteConfig } from '@/lib/sites'
 import Logo from './Logo'
 import { POLICIES } from '@/lib/policies'
 import NewsletterBox from './NewsletterBox'
+import SocialLinks from './SocialLinks'
 import { mailReady } from '@/lib/mail'
 import { siteText } from '@/lib/site-text'
 
@@ -32,6 +33,15 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
           )}
         </nav>
       </div>
+
+      {!!site.socials?.length && (
+        <div className="border-b border-rule bg-white">
+          <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
+            <span className="text-[12.5px] font-semibold text-sub">{en ? 'Follow us' : '공식 SNS'}</span>
+            <SocialLinks items={site.socials} en={en} />
+          </div>
+        </div>
+      )}
 
       {site.outletId && mailReady() && (
         <div className="border-b border-rule bg-white">

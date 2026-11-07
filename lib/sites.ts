@@ -57,6 +57,8 @@ export type SiteConfig = {
   logoStrip?: LogoStrip
   // 머리글 로고 양옆 기관 배너 (PC). 있으면 로고를 가운데에 두고 메뉴를 로고 아래 줄로 내린다
   headerBanners?: HeaderBanners
+  // 하단에 보이는 SNS 링크 줄 (유튜브·인스타그램 등)
+  socials?: SocialLink[]
   // 구글 '선호하는 소스' 버튼 (구글이 이 매체를 아직 모르면 '결과 없음'이 나오므로 운영팀이 확인한 뒤에만 켠다)
   googlePreferred?: boolean
   // 광고 자리 설정 (끈 자리, 오른쪽 광고 개수)
@@ -280,6 +282,7 @@ export type OutletSiteSettings = {
   openTz?: string
   logoStrip?: LogoStrip
   headerBanners?: HeaderBanners
+  socials?: SocialLink[]
   // 구글 '선호하는 소스' 버튼 (구글이 이 매체를 아직 모르면 '결과 없음'이 나오므로 운영팀이 확인한 뒤에만 켠다)
   googlePreferred?: boolean
   adSlots?: AdSlotSettings
@@ -393,6 +396,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     openIndexable: s.indexable ?? code?.indexable ?? false,
     logoStrip: cleanLogoStrip(s.logoStrip),
     headerBanners: cleanHeaderBanners(s.headerBanners),
+    socials: cleanSocials(s.socials),
     googlePreferred: s.googlePreferred === true,
     adSlots: cleanAdSlots(s.adSlots),
     // 오픈 준비 중에는 검색 노출을 켜 두었어도 수집하지 않는다
@@ -500,6 +504,33 @@ export function cleanLogoStrip(v: unknown): LogoStrip | undefined {
   const items = cleanLogoItems(o.items)
   if (!items.length) return undefined
   return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, speed: o.speed === 'slow' || o.speed === 'fast' ? o.speed : undefined, items }
+}
+// SNS 링크 줄: 종류마다 1개, 최대 8개. 주소는 https:// 만 (유튜브·인스타 등 공개 주소)
+export const SOCIAL_KINDS = [
+  { key: 'youtube', label: '유튜브', en: 'YouTube', example: 'https://www.youtube.com/@채널이름' },
+  { key: 'instagram', label: '인스타그램', en: 'Instagram', example: 'https://www.instagram.com/계정이름' },
+  { key: 'facebook', label: '페이스북', en: 'Facebook', example: 'https://www.facebook.com/페이지이름' },
+  { key: 'x', label: 'X(트위터)', en: 'X', example: 'https://x.com/계정이름' },
+  { key: 'threads', label: '스레드', en: 'Threads', example: 'https://www.threads.net/@계정이름' },
+  { key: 'tiktok', label: '틱톡', en: 'TikTok', example: 'https://www.tiktok.com/@계정이름' },
+  { key: 'naverblog', label: '네이버 블로그', en: 'Naver Blog', example: 'https://blog.naver.com/아이디' },
+  { key: 'kakao', label: '카카오톡 채널', en: 'KakaoTalk Channel', example: 'https://pf.kakao.com/_채널' },
+] as const
+export type SocialKind = (typeof SOCIAL_KINDS)[number]['key']
+export type SocialLink = { kind: SocialKind; url: string }
+export function cleanSocials(v: unknown): SocialLink[] | undefined {
+  const known = new Set<string>(SOCIAL_KINDS.map((k) => k.key))
+  const seen = new Set<string>()
+  const out: SocialLink[] = []
+  for (const x of Array.isArray(v) ? v : []) {
+    const kind = String((x as { kind?: unknown })?.kind ?? '')
+    const url = String((x as { url?: unknown })?.url ?? '').trim().slice(0, 300)
+    if (!known.has(kind) || seen.has(kind) || !/^https:\/\/[^\s<>"']+$/i.test(url)) continue
+    seen.add(kind)
+    out.push({ kind: kind as SocialKind, url })
+    if (out.length >= 8) break
+  }
+  return out.length ? out : undefined
 }
 // 머리글 로고 양옆 기관 배너: 왼쪽·오른쪽 각 1개 (이미지는 이 서비스에 올린 것만, 링크는 http(s)만)
 export type HeaderBanners = { left?: LogoItem; right?: LogoItem }

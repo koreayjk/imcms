@@ -11,7 +11,7 @@ import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
 import { saveSelfSiteSettings } from '@/app/(main)/admin/settings/site-actions'
 import { OPEN_ZONES, formatZoned, isoToZoned, zonedToIso } from '@/lib/zoned-time'
 import SearchRegisterGuide from './SearchRegisterGuide'
-import { buildSite, DEFAULT_COLORS, openTimePassed, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
+import { buildSite, DEFAULT_COLORS, openTimePassed, SOCIAL_KINDS, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { uploadImage } from '@/components/editor/upload'
 import SiteHeader from '@/components/site/SiteHeader'
 import SiteFooter from '@/components/site/SiteFooter'
@@ -187,7 +187,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill, pressKeywords: s.pressKeywords, pressFields: s.pressFields },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, socials: s.socials, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill, pressKeywords: s.pressKeywords, pressFields: s.pressFields },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -225,6 +225,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-fill', t('사진 여백', 'Photo fill'), true],
           ['s-icon', t('탭 아이콘', 'Tab icon'), true],
           ['s-logo', t('로고', 'Logo'), true],
+          ['s-social', t('SNS 링크', 'Social links'), true],
           ['s-hbanner', t('로고 양옆 배너', 'Header banners'), !self],
           ['s-gpref', t('구글 선호 버튼', 'Google button'), !self],
           ['s-colors', t('색', 'Colors'), true],
@@ -460,6 +461,38 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
             <p className="text-[11.5px] text-muted">{t('배경이 투명한 PNG를 추천합니다. 올린 이미지의 빈 여백은 자동으로 잘라 냅니다. 그래도 작아 보이면 로고 크기를 키우세요(미리보기에 바로 반영됩니다). 가로로 긴 로고는 “로고 이미지만”을 고르세요.', 'A PNG with a transparent background is recommended. Empty margins around the uploaded image are trimmed automatically. If it still looks small, increase the logo size (the preview updates right away). For wide logos, choose “Logo image only”.')}</p>
           </div>
         </div>
+      </Card>
+
+      <Card id="s-social" title={t('SNS 링크 (홈페이지 하단)', 'Social links (website footer)')} note={t('유튜브·인스타그램 같은 공식 계정 주소를 넣으면 홈페이지 맨 아래에 아이콘 줄로 나옵니다. 종류마다 하나씩, 주소는 https:// 로 시작해야 합니다. 비워 두면 보이지 않습니다.', 'Add your official channel links and they appear as a row of icons at the bottom of your website. One link per platform; links must start with https://. Leave empty to hide the row.')}>
+        <div className="space-y-2">
+          {SOCIAL_KINDS.map((k) => {
+            const cur = s.socials?.find((x) => x.kind === k.key)
+            return (
+              <div key={k.key} className="grid items-center gap-2 sm:grid-cols-[150px_1fr]">
+                <span className="text-[13px] font-semibold">{lang === 'en' ? k.en : k.label}</span>
+                <input
+                  value={cur?.url ?? ''}
+                  maxLength={300}
+                  inputMode="url"
+                  placeholder={k.example}
+                  aria-label={lang === 'en' ? `${k.en} link` : `${k.label} 주소`}
+                  onChange={(e) => {
+                    const rest = (s.socials ?? []).filter((x) => x.kind !== k.key)
+                    const v = e.target.value.trim()
+                    const next = v ? [...rest, { kind: k.key, url: e.target.value }] : rest
+                    // 정해진 순서로 둔다
+                    next.sort((a, b) => SOCIAL_KINDS.findIndex((z) => z.key === a.kind) - SOCIAL_KINDS.findIndex((z) => z.key === b.kind))
+                    set({ socials: next.length ? next : undefined })
+                  }}
+                  className="field-input"
+                />
+              </div>
+            )
+          })}
+        </div>
+        {(s.socials ?? []).some((x) => !/^https:\/\/\S+$/i.test(x.url.trim())) && (
+          <p className="mt-2 text-[12.5px] font-semibold text-danger">{t('https:// 로 시작하지 않는 주소는 저장할 때 빠집니다.', 'Links that do not start with https:// are dropped when you save.')}</p>
+        )}
       </Card>
 
       {!self && (
