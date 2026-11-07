@@ -68,7 +68,10 @@ language sql stable security definer set search_path = public as $$
   where m.outlet_id = o and not (coalesce(p.is_staff, false) and not coalesce(p.is_super, false))
   union
   select p.id from profiles p
-  where p.outlet_id = o and coalesce(p.approved, true) and not (coalesce(p.is_staff, false) and not coalesce(p.is_super, false));
+  where p.outlet_id = o and coalesce(p.approved, true)
+    -- 총관리자 계정은 "지금 이 매체로 일하는 사람"으로는 세지 않는다 (정식 구성원으로 등록된 경우만 위쪽에서 들어온다)
+    and not coalesce(p.is_super, false)
+    and not (coalesce(p.is_staff, false) and not coalesce(p.is_super, false));
 $$;
 
 -- 한 사람의 이번 달 한도 (null = 한도 없음)

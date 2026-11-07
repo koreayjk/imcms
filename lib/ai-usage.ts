@@ -3,7 +3,7 @@ import { EXTRA_AI_FEE } from './pricing'
 
 // 매체별 이번 달 AI 사용량 (supabase/ai-usage.sql · ai-usage-all.sql). AI 초안 1번·법적 검수 1번을 각각 1회로 센다
 //   SQL 실행 전이면 함수가 없어서 한도 없이 쓰고 집계도 하지 않는다
-export type AiStatus = { plan: string | null; limit: number | null; used: number; drafts?: number; legal?: number; overage: boolean; over: number; mine_used?: number; mine_limit?: number | null }
+export type AiStatus = { plan: string | null; limit: number | null; used: number; drafts?: number; legal?: number; overage: boolean; over: number; mine_used?: number; mine_limit?: number | null; boost_from?: number | null; boost_to?: number | null }
 
 export async function getAiStatus(supabase: SupabaseClient, outletId: string | null): Promise<AiStatus | null> {
   if (!outletId) return null

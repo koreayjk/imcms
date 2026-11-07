@@ -82,7 +82,12 @@ export default async function NewsroomSettingsPage(props: { searchParams: Promis
               <h2 id="ai-title" className="text-[16px] font-bold">{t(`${month} 기자별 AI 사용량`, `AI usage by reporter, ${month}`)}</h2>
               <p className="mt-1 text-[13px] leading-relaxed text-muted">
                 {status?.limit != null
-                  ? <>{t('매체 전체 AI 사용', 'Outlet-wide AI use')} <strong className="text-ink">{status.used} / {status.limit}{t('회', '')}</strong>{status.drafts != null ? t(` (초안 ${status.drafts} · 법적 검수 ${status.legal ?? 0})`, ` (drafts ${status.drafts} · legal checks ${status.legal ?? 0})`) : ''}. </>
+                  ? <>{t('매체 전체 AI 사용', 'Outlet-wide AI use')} <strong className="text-ink">{status.used} / {status.limit}{t('회', '')}</strong>{status.drafts != null ? t(` (초안 ${status.drafts} · 법적 검수 ${status.legal ?? 0})`, ` (drafts ${status.drafts} · legal checks ${status.legal ?? 0})`) : ''}.{' '}
+                    {status.boost_to != null && status.boost_from != null && (
+                      <span className="mr-1 inline-block rounded-full bg-[#EDE9FE] px-2 py-0.5 text-[12px] font-semibold text-[#6D28D9]">
+                        {t(`이번 달만 ${status.boost_from} → ${status.boost_to}회로 상향`, `This month only: raised from ${status.boost_from} to ${status.boost_to}`)}
+                      </span>
+                    )}</>
                   : t('요금제 한도가 없는 매체입니다. ', 'This outlet has no plan limit. ')}
                 {auto && auto.count > 0 && <>{t('자동 작성', 'Auto-written')} <strong className="text-ink">{auto.count}{t('건', '')}</strong>{t('(보도자료로 서버가 자동으로 쓴 기사 · 한도에 들어가지 않음). ', ' (stories the server wrote automatically from press releases · not counted toward the limit). ')}</>}
                 {manager
