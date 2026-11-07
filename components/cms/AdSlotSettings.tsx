@@ -43,7 +43,7 @@ export default function AdSlotSettings({ outletId, initial }: { outletId: string
                 {s.id === 'sidebar' && on && (
                   <span className="mt-1.5 flex items-center gap-2 text-[12.5px]">{t('동시에 보일 광고', 'Ads shown at once')}
                     <select value={max} onChange={(e) => setMax(Number(e.target.value))} className="field-input w-24 py-1">
-                      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{t(`${n}개`, String(n))}</option>)}
+                      {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{t(`${n}개`, String(n))}</option>)}
                     </select>
                     <span className="text-muted">{t('순서는 배너의 “순서 번호”(작을수록 위)로 정합니다', 'The order follows each banner’s “order number” (lower numbers go higher)')}</span>
                   </span>

@@ -109,7 +109,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const pinnedUnder = pinned.under.filter((x): x is PublicArticle => !!x)
   const underHeadline = [...pinnedUnder, ...take(Math.max(0, 4 - pinnedUnder.length))].slice(0, 4)
   const major = fill(pinned.major, hasImage)
-  // 오른쪽 광고(최대 10개)가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 오른쪽 높이에 맞춰 연다. 기사가 모자라면 있는 만큼만)
+  // 오른쪽 광고(최대 20개)가 길어지면 왼쪽 빈자리에 채울 덤 기사 (화면에서 오른쪽 높이에 맞춰 연다. 기사가 모자라면 있는 만큼만)
   // 이슈 PICK(4)·포토뉴스(12): 편집판에서 비워 둔 자리는 아직 홈에 안 나온 최신 기사로 자동 배치
   //   이슈 PICK은 사진 있는 기사 먼저. 포토뉴스는 사진 있는 기사만 (사진 없는 고정 기사는 뺀다)
   const picks = fill(pinned.pick, hasImage)
@@ -140,7 +140,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const partnerBlock = logoBlock ? <PartnerBlock block={logoBlock} en={L === 'en'} /> : null
   const partnerBlockBare = logoBlock ? <PartnerBlock block={logoBlock} en={L === 'en'} bare /> : null
   const usedBeforeMore = new Set(used)
-  const majorMore = site.homeLayout === 'bands' ? [] : take(36)
+  const majorMore = site.homeLayout === 'bands' ? [] : take(60)
 
   // 섹션 띠 배치 (Israel Today 등): 톱 기사 아래를 설정한 섹션 순서대로 쌓는다
   const bandsMode = site.homeLayout === 'bands' && !!site.bands?.length
@@ -164,7 +164,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const gapUsed = new Set([...gapLeads, ...gapTitles].map((a) => a.id))
   const wingFill = (
     <WingFill title={L === 'en' ? 'More stories' : '기사 더 보기'}>
-      {pool.filter((a) => !gapUsed.has(a.id)).slice(0, 40).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
+      {pool.filter((a) => !gapUsed.has(a.id)).slice(0, 60).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
     </WingFill>
   )
 

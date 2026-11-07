@@ -221,7 +221,7 @@ async function loadHomeData(site: SiteConfig): Promise<HomeData> {
 
   const [pinnedRes, latest, mostViewed, ...sections] = await Promise.all([
     pinnedArticles(scope),
-    published(scope).order('published_at', { ascending: false }).limit(70),
+    published(scope).order('published_at', { ascending: false }).limit(110),
     published(scope).order('view_count', { ascending: false }).limit(10),
     // 1차 섹션마다 (2차 메뉴 기사 포함)
     ...tops.map((s) => {
@@ -377,7 +377,7 @@ export async function legacyArticleId(site: SiteConfig, legacy: string) {
 
 const RELATED_LINKS = 4
 const RELATED_MIN = 3
-const MORE_POOL = 24
+const MORE_POOL = 48
 
 function moreOf(rel: { related: PublicArticle[]; relatedLinks: PublicArticle[] }, pool: PublicArticle[]) {
   const skip = new Set([...rel.related, ...rel.relatedLinks].map((r) => r.id))
