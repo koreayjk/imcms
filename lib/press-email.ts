@@ -208,10 +208,10 @@ export const isAdMail = (title: string | null | undefined) => AD_SUBJECT.test(ti
 // 받지 않을 보낸 곳(도메인): 쇼핑·서비스 알림처럼 보도자료가 아닌 메일. 지메일 전달 필터가 받은편지함 전체를 넘겨 올 때 걸러 준다
 //   하위 주소(notice.aliexpress.com 등)도 함께 막는다. 더 막을 곳이 생기면 여기에 도메인만 추가한다
 // (github.com: 깃허브 알림 메일 — vercel[bot] 등이 보낸 것처럼 보이는 PR 알림)
-export const BLOCKED_SENDER_DOMAINS = ['aliexpress.com', 'alibaba.com', 'alibaba-inc.com', 'tiktok.com', 'openai.com', 'vercel.com', 'github.com']
+export const BLOCKED_SENDER_DOMAINS = ['aliexpress.com', 'alibaba.com', 'alibaba-inc.com', 'tiktok.com', 'openai.com', 'vercel.com', 'github.com', 'google.com']
 // 보낸 사람 이름으로도 막는다 (광고 대행 서비스로 보내서 주소가 매번 다른 곳). 이름의 띄어쓰기·대소문자는 무시한다
 //   예: 알파컷(영상 편집 서비스 광고). 더 막을 곳이 생기면 여기에 이름만 추가한다
-export const BLOCKED_SENDER_NAMES = ['알파컷']
+export const BLOCKED_SENDER_NAMES = ['알파컷', 'Google Alerts', 'Google 알리미']
 const squash = (v: string) => v.replace(/\s+/g, '').toLowerCase()
 // 받은 메일에서 읽어 낸 보낸 곳 이름(전달 메일이면 원래 보낸 곳)이 막아 둔 이름인지
 export const isBlockedSourceName = (name: string | null | undefined) => { const n = squash(name ?? ''); return !!n && BLOCKED_SENDER_NAMES.some((b) => n.includes(squash(b))) }
@@ -225,7 +225,7 @@ export function isBlockedSender(mail: Pick<InboundMail, 'From' | 'FromFull'>) {
 
 // 보도자료가 아닌 일정·공지 메일: 제목에 이 말이 들어 있으면 받지 않는다 (예: "화성특례시 주간행사계획(…) 송부")
 //   행사 일정표는 기사 재료가 아니고 PDF 표 글자도 깨져서 보도자료함을 어지럽힌다. 더 막을 말이 생기면 여기에 추가한다
-export const NON_PRESS_TITLE_WORDS = ['주간행사계획', '주간 행사 계획', '주간일정', '주간 일정표', '행사계획 송부']
+export const NON_PRESS_TITLE_WORDS = ['Google 알리미', 'Google Alert', '주간행사계획', '주간 행사 계획', '주간일정', '주간 일정표', '행사계획 송부']
 export const isNonPressTitle = (title: string | null | undefined) => {
   const t = (title ?? '').replace(/\s+/g, '')
   return NON_PRESS_TITLE_WORDS.some((w) => t.includes(w.replace(/\s+/g, '')))
