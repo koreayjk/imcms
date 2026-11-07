@@ -7,8 +7,8 @@ import { AI_NOTICE_DEFAULT, aiNoticeText, withAiNotice } from './ai-notice'
 import { downloadUrl, searchOpenPhotos } from './photo-search'
 import { searchCommons } from './commons-photo'
 import { ensureFullBody, escapeHtml, htmlToText, pressTextForAi, sourceLabel, type PressRelease } from './press'
-import { PRESS_SOURCES, fieldOfSource, foreignTopicOf, isForeignSource, isUsSource, pressHintsFromSections, usableKeywords } from './press-sources'
-import { buildSite, type OutletRow } from './sites'
+import { PRESS_SOURCES, fieldOfSource, foreignTopicOf, isForeignSource, isUsSource, pressHintsFromSections, regionOfSource, usableKeywords } from './press-sources'
+import { buildSite, hasPressTiers, type OutletRow } from './sites'
 
 // 보도자료 → AI 기사 → 법적 검수 → 승인 대기 저장 (매시간 크론이 매체마다 한 번 부른다)
 //   서버리스 60초 안에 끝나도록 AI 시간을 나눠 쓴다. 로그인이 없으므로 모든 읽기·쓰기는 DB 함수(auto-press-articles.sql)로 한다
@@ -100,6 +100,40 @@ function rankCandidates(plan: Plan, cands: Cand[], recentTitles: string[] = []) 
   return scored.sort((a, b) => b.score - a.score).map((x) => x.c)
 }
 
+// 맞춤 자료(그룹)를 쓰는 매체: 품질 'ok'이고 맞춤 자료에 걸리는 보도자료(DB가 걸러서 준다)를 지역(광역)별로 번갈아 고른다.
+//   오늘 이미 쓴 건수(plan.today)로 시작 지역을 돌려서, 하루 10건이 한 지역에 몰리지 않게 한다. 지역 안에서는 사진·본문이 있고 최신인 것부터
+function rankTiered(plan: Plan, cands: Cand[], recentTitles: string[] = []) {
+  const blk = (plan.cfg.block_words ?? []).map((w) => w.toLowerCase())
+  const regionOf = (k: string) => regionOfSource(k) ?? (k.startsWith('nw-') ? 'wire' : 'etc')
+  const score = (c: Cand) => {
+    const bodyLen = (c.body_html ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, '').length
+    const photo = !!c.image_url || /<img[^>]+src="https:/i.test(c.body_html ?? '')
+    return (photo ? 100 : 0) + Math.min(60, bodyLen / 50) + (c.published_at ? new Date(c.published_at).getTime() / 1e13 : 0)
+  }
+  const groups = new Map<string, Cand[]>()
+  for (const c of cands) {
+    const hay = `${c.title} ${c.summary ?? ''}`.toLowerCase()
+    if (SENSITIVE.test(hay) || blk.some((w) => hay.includes(w))) continue
+    if (recentTitles.some((t) => similar(t, c.title))) continue
+    const k = regionOf(c.source_key)
+    groups.set(k, [...(groups.get(k) ?? []), c])
+  }
+  for (const list of groups.values()) list.sort((a, b) => score(b) - score(a))
+  const keys = [...groups.keys()].sort()
+  const out: Cand[] = []
+  if (!keys.length) return out
+  const start = plan.today % keys.length
+  for (let round = 0; ; round++) {
+    let any = false
+    for (let i = 0; i < keys.length; i++) {
+      const c = groups.get(keys[(start + i) % keys.length])![round]
+      if (c) { out.push(c); any = true }
+    }
+    if (!any) break
+  }
+  return out
+}
+
 const SKIP_CAT = /오피니언|칼럼|사설|인터뷰|기고|기자수첩|포토|기획|특집|opinion|editorial|column|interview/i
 const selectableCategories = (plan: Plan) => plan.categories.filter((c) => !SKIP_CAT.test(c.name))
 
@@ -159,7 +193,8 @@ const raceTimeout = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Prom
 
 export type RunResult = { outlet: string; status: 'saved' | 'skipped' | 'failed'; message: string; articleId?: string | null }
 
-export async function runAutoArticle(supabase: SupabaseClient, secret: string, outletId: string, opts: { force?: boolean } = {}): Promise<RunResult> {
+// opts.count === false 이면 맞춤 자료 매체의 자동 작성도 매체 AI 한도에 세지 않는다 (시험 실행용)
+export async function runAutoArticle(supabase: SupabaseClient, secret: string, outletId: string, opts: { force?: boolean; count?: boolean } = {}): Promise<RunResult> {
   const started = Date.now()
   const { data: plan, error: pe } = await supabase.rpc('auto_press_plan', { secret, p_outlet: outletId })
   if (pe) return { outlet: outletId, status: 'failed', message: `계획 읽기 실패: ${pe.message}` }
@@ -175,10 +210,24 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
   if (!aiReady()) { await note(null, false, 'AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)가 설정되지 않았습니다'); return { outlet: name, status: 'failed', message: 'AI 키 없음' } }
   if (!p.cfg.author_id) { await note(null, false, '기자 계정(author_id)이 비어 있습니다'); return { outlet: name, status: 'failed', message: '기자 계정 없음' } }
 
-  const { data: raw, error: ce } = await supabase.rpc('auto_press_candidates', { secret, p_outlet: outletId, p_days: 4, p_limit: 600, p_english: p.outlet.site?.lang === 'en' })
+  // 맞춤 자료(그룹)를 정해 둔 매체는 그 자료 중에서 지역별로 골고루 고르고, 쓴 기사는 매체 AI 한도에 1회로 센다
+  const tiered = hasPressTiers(buildSite(p.outlet, []).pressTiers)
+  const counting = tiered && opts.count !== false
+  if (counting) {
+    const { data: left } = await supabase.rpc('auto_press_ai_left', { secret, p_outlet: outletId })
+    const l = left as { limit: number | null; used: number; overage: boolean } | null
+    if (l && l.limit != null && l.used >= l.limit && !l.overage) {
+      await note(null, false, `이번 달 AI 사용 한도(${l.limit}회)를 다 써서 자동 작성을 쉽니다`)
+      return { outlet: name, status: 'skipped', message: `이번 달 AI 한도 소진 (${l.used}/${l.limit})` }
+    }
+  }
+  const { data: raw, error: ce } = tiered
+    ? await supabase.rpc('auto_press_candidates_tiered', { secret, p_outlet: outletId, p_days: 4, p_limit: 800 })
+    : await supabase.rpc('auto_press_candidates', { secret, p_outlet: outletId, p_days: 4, p_limit: 600, p_english: p.outlet.site?.lang === 'en' })
   if (ce) return { outlet: name, status: 'failed', message: `보도자료 읽기 실패: ${ce.message}` }
   const { data: rt } = await supabase.rpc('auto_press_recent_titles', { secret, p_days: 3 })
-  const ranked = rankCandidates(p, (raw ?? []) as Cand[], ((rt ?? []) as { title: string }[]).map((x) => x.title))
+  const recent = ((rt ?? []) as { title: string }[]).map((x) => x.title)
+  const ranked = tiered ? rankTiered(p, (raw ?? []) as Cand[], recent) : rankCandidates(p, (raw ?? []) as Cand[], recent)
   if (!ranked.length) { await note(null, false, '맞는 보도자료가 없습니다 (최근 4일)'); return { outlet: name, status: 'skipped', message: '맞는 보도자료 없음' } }
 
   const site = buildSite(p.outlet, p.categories.map((c) => ({ slug: c.slug, name: c.name })))
@@ -278,6 +327,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
         p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)),
       })
       if (se) { await note(r.id, false, `저장 실패: ${se.message}`, cost); failures.push(se.message); continue }
+      if (counting && id) await supabase.rpc('auto_press_ai_count', { secret, p_outlet: outletId, p_user: p.cfg.author_id, p_model: model.id, p_tin: dr.inputTokens, p_tout: dr.outputTokens, p_cost: Number(cost.toFixed(5)) })
       return { outlet: name, status: 'saved', message: `승인 대기로 저장: ${title}`, articleId: id as string | null }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류'

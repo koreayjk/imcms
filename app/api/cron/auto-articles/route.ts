@@ -20,6 +20,6 @@ export async function GET(req: NextRequest) {
   const { data: allowed } = await supabase.rpc('press_cron_check', { secret })
   if (allowed !== true) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const result = await runAutoArticle(supabase, secret, outlet, { force: req.nextUrl.searchParams.get('force') === '1' })
+  const result = await runAutoArticle(supabase, secret, outlet, { force: req.nextUrl.searchParams.get('force') === '1', count: req.nextUrl.searchParams.get('nocount') !== '1' })
   return NextResponse.json({ at: new Date().toISOString(), ...result })
 }
