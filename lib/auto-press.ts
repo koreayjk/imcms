@@ -101,6 +101,7 @@ function rankCandidates(plan: Plan, cands: Cand[], recentTitles: string[] = []) 
 }
 
 // 맞춤 자료(그룹)를 쓰는 매체: 품질 'ok'이고 맞춤 자료에 걸리는 보도자료(DB가 걸러서 준다)를 지역(광역)별로 번갈아 고른다.
+//   최근 24시간 안에 나온 자료만 쓴다 (매일 아침 10건씩 쓰므로 어제 이전 자료는 이미 지나갔다)
 //   오늘 이미 쓴 건수(plan.today)로 시작 지역을 돌려서, 하루 10건이 한 지역에 몰리지 않게 한다. 지역 안에서는 사진·본문이 있고 최신인 것부터
 function rankTiered(plan: Plan, cands: Cand[], recentTitles: string[] = []) {
   const blk = (plan.cfg.block_words ?? []).map((w) => w.toLowerCase())
@@ -222,13 +223,13 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
     }
   }
   const { data: raw, error: ce } = tiered
-    ? await supabase.rpc('auto_press_candidates_tiered', { secret, p_outlet: outletId, p_days: 4, p_limit: 800 })
+    ? await supabase.rpc('auto_press_candidates_tiered', { secret, p_outlet: outletId, p_days: 1, p_limit: 800 })
     : await supabase.rpc('auto_press_candidates', { secret, p_outlet: outletId, p_days: 4, p_limit: 600, p_english: p.outlet.site?.lang === 'en' })
   if (ce) return { outlet: name, status: 'failed', message: `보도자료 읽기 실패: ${ce.message}` }
   const { data: rt } = await supabase.rpc('auto_press_recent_titles', { secret, p_days: 3 })
   const recent = ((rt ?? []) as { title: string }[]).map((x) => x.title)
   const ranked = tiered ? rankTiered(p, (raw ?? []) as Cand[], recent) : rankCandidates(p, (raw ?? []) as Cand[], recent)
-  if (!ranked.length) { await note(null, false, '맞는 보도자료가 없습니다 (최근 4일)'); return { outlet: name, status: 'skipped', message: '맞는 보도자료 없음' } }
+  if (!ranked.length) { await note(null, false, tiered ? '맞는 보도자료가 없습니다 (최근 24시간)' : '맞는 보도자료가 없습니다 (최근 4일)'); return { outlet: name, status: 'skipped', message: '맞는 보도자료 없음' } }
 
   const site = buildSite(p.outlet, p.categories.map((c) => ({ slug: c.slug, name: c.name })))
   const english = site.lang === 'en'
