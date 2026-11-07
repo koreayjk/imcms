@@ -57,6 +57,8 @@ export type SiteConfig = {
   logoStrip?: LogoStrip
   // 머리글 로고 양옆 기관 배너 (PC). 있으면 로고를 가운데에 두고 메뉴를 로고 아래 줄로 내린다
   headerBanners?: HeaderBanners
+  // 구글 '선호하는 소스' 버튼 (구글이 이 매체를 아직 모르면 '결과 없음'이 나오므로 운영팀이 확인한 뒤에만 켠다)
+  googlePreferred?: boolean
   // 광고 자리 설정 (끈 자리, 오른쪽 광고 개수)
   adSlots?: AdSlotSettings
   // 오픈 준비 중인 매체를 미리보기로 열어 보는 중 (방문자에게는 안내 화면이 보인다)
@@ -278,6 +280,8 @@ export type OutletSiteSettings = {
   openTz?: string
   logoStrip?: LogoStrip
   headerBanners?: HeaderBanners
+  // 구글 '선호하는 소스' 버튼 (구글이 이 매체를 아직 모르면 '결과 없음'이 나오므로 운영팀이 확인한 뒤에만 켠다)
+  googlePreferred?: boolean
   adSlots?: AdSlotSettings
   pressKeywords?: string
   legal?: Partial<SiteLegal>
@@ -389,6 +393,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     openIndexable: s.indexable ?? code?.indexable ?? false,
     logoStrip: cleanLogoStrip(s.logoStrip),
     headerBanners: cleanHeaderBanners(s.headerBanners),
+    googlePreferred: s.googlePreferred === true,
     adSlots: cleanAdSlots(s.adSlots),
     // 오픈 준비 중에는 검색 노출을 켜 두었어도 수집하지 않는다
     indexable: s.comingSoon === true ? false : (s.indexable ?? code?.indexable ?? false),
@@ -513,7 +518,8 @@ export function cleanLogoBlock(v: unknown): LogoBlock | undefined {
 }
 
 // 구글 "선호하는 소스" 버튼에 쓸 도메인: 진짜 도메인이 연결된 공개 매체만 (임시 주소·미리보기·오픈 준비 중이면 없음)
-export function googlePreferredHost(site: Pick<SiteConfig, 'domains' | 'preview' | 'softPreview' | 'comingSoon'>): string | undefined {
+export function googlePreferredHost(site: Pick<SiteConfig, 'domains' | 'preview' | 'softPreview' | 'comingSoon' | 'googlePreferred'>): string | undefined {
+  if (!site.googlePreferred) return undefined
   if (site.preview || site.softPreview || site.comingSoon) return undefined
   const d = (site.domains?.[0] ?? '').toLowerCase().replace(/^www\./, '')
   if (!d || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)) return undefined

@@ -68,6 +68,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     openTz: s.openAt && isOpenZone(s.openTz) ? s.openTz : undefined,
     logoStrip: cleanLogoStrip(s.logoStrip),
     headerBanners: cleanHeaderBanners(s.headerBanners),
+    googlePreferred: s.googlePreferred === true ? true : undefined,
     // 'allow'는 안 막는 기본값이므로 저장하지 않는다
     aiBots: parseAiBotMode(s.aiBots) === 'allow' ? undefined : parseAiBotMode(s.aiBots),
     pressKeywords: cut(s.pressKeywords, 2000),

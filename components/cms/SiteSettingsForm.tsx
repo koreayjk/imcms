@@ -226,6 +226,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-icon', t('탭 아이콘', 'Tab icon'), true],
           ['s-logo', t('로고', 'Logo'), true],
           ['s-hbanner', t('로고 양옆 배너', 'Header banners'), !self],
+          ['s-gpref', t('구글 선호 버튼', 'Google button'), !self],
           ['s-colors', t('색', 'Colors'), true],
           ['s-sections', t('섹션 메뉴', 'Sections'), true],
           ['s-footer', t('하단 표시', 'Footer'), true],
@@ -485,6 +486,16 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
               )
             })}
           </div>
+        </Card>
+      )}
+
+      {!self && (
+        <Card id="s-gpref" title={t('구글 선호 매체 버튼 (기사 화면)', 'Google preferred-source button (story page)')} note={t('기사 제목 줄에 “구글에서 우리 매체 먼저 보기” 버튼을 보여 줍니다. 구글이 이 매체를 아직 모르면 누른 독자에게 “결과 없음”이 나오므로, 아래 주소를 열어 매체가 검색되는 것을 확인한 뒤에만 켜 주세요.', 'Shows a “Prefer us on Google” button on stories. If Google does not know this outlet yet, readers see “No results”, so turn it on only after the outlet shows up at the address below.')}>
+          <label className="flex items-center gap-2 text-[13.5px] font-semibold">
+            <input type="checkbox" checked={s.googlePreferred === true} onChange={(e) => set({ googlePreferred: e.target.checked ? true : undefined })} />
+            {t('버튼 보이기', 'Show the button')}
+          </label>
+          {domain.trim() && <p className="mt-2 text-[12.5px] text-muted">{t('확인 주소', 'Check here')}: <a className="font-semibold underline" target="_blank" rel="noopener" href={`https://www.google.com/preferences/source?q=${encodeURIComponent(domain.trim().replace(/^www\./, ''))}`}>google.com/preferences/source?q={domain.trim().replace(/^www\./, '')}</a></p>}
         </Card>
       )}
 
