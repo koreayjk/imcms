@@ -38,7 +38,7 @@ export default async function News(props: { searchParams: Promise<{ page?: strin
       {!items.length && <p className="py-20 text-center text-[15px] text-[var(--g-sub)]">Stories from member outlets will appear here soon.</p>}
       {pages > 1 && (
         <nav className="mt-10 flex flex-wrap justify-center gap-1" aria-label="Pages">
-          {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+          {Array.from({ length: Math.min(10, pages) }, (_, i) => Math.max(1, Math.min(page - 4, pages - 9)) + i).map((p) => (
             <Link key={p} href={`${base}/news${p > 1 ? `?page=${p}` : ''}`} aria-current={p === page ? 'page' : undefined}
               className={`grid h-9 min-w-9 place-items-center border px-2 text-[14px] ${p === page ? 'border-[var(--g-navy)] bg-[var(--g-navy)] text-white' : 'border-[var(--g-line)]'}`}>{p}</Link>
           ))}

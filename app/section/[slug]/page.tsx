@@ -94,8 +94,10 @@ export default async function SectionPage(props: Props) {
           )}
 
           {pages > 1 && (
-            <nav className="mt-8 flex justify-center gap-1" aria-label={t.pages}>
-              {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+            // 페이지가 많아도 휴대폰 화면 밖으로 밀려 나가지 않게: 지금 페이지 앞뒤 10개만 보이고, 넘치면 줄바꿈한다
+            <nav className="mt-8 flex flex-wrap justify-center gap-1" aria-label={t.pages}>
+              {page > 1 && <Link href={`/section/${section.slug}${page > 2 ? `?page=${page - 1}` : ''}`} className="grid h-9 place-items-center border border-rule px-3 text-[14px] text-sub hover:border-brand hover:text-brand">{t.prev}</Link>}
+              {Array.from({ length: Math.min(10, pages) }, (_, i) => Math.max(1, Math.min(page - 4, pages - 9)) + i).map((p) => (
                 <Link
                   key={p}
                   href={`/section/${section.slug}${p > 1 ? `?page=${p}` : ''}`}
@@ -107,6 +109,7 @@ export default async function SectionPage(props: Props) {
                   {p}
                 </Link>
               ))}
+              {page < pages && <Link href={`/section/${section.slug}?page=${page + 1}`} className="grid h-9 place-items-center border border-rule px-3 text-[14px] text-sub hover:border-brand hover:text-brand">{t.next}</Link>}
             </nav>
           )}
         </div>
