@@ -3,7 +3,7 @@ import { AiDraftError, activeModel, aiReady, draftWithModel, type AiDraft } from
 import { checkLegal, legalModel } from './ai-legal'
 import type { LegalCheck } from './legal-types'
 import { legalContentHash } from './legal-hash'
-import { AI_NOTICE_DEFAULT, aiNoticeText, withAiNotice } from './ai-notice'
+import { aiNoticeText, withAiNotice } from './ai-notice'
 import { downloadUrl, searchOpenPhotos } from './photo-search'
 import { searchCommons } from './commons-photo'
 import { ensureFullBody, escapeHtml, htmlToText, pressTextForAi, sourceLabel, type PressRelease } from './press'
@@ -305,7 +305,9 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
         const byline = `[${name}=${p.cfg.byline} 기자]&nbsp;`
         body = body.replace(/^<p>/, `<p>${byline}`)
       }
-      body = withAiNotice(body, aiNoticeText(p.outlet.site) ?? AI_NOTICE_DEFAULT[english ? 'en' : 'ko'])
+      // AI 활용 표시는 매체 설정(홈페이지 설정 → AI 활용 표시)이 켜져 있을 때만 붙인다. 꺼져 있으면 넣지 않는다
+      const notice = aiNoticeText(p.outlet.site)
+      if (notice) body = withAiNotice(body, notice)
 
       // 7) 메모(편집장이 읽는 확인할 점)
       const notes: string[] = []
