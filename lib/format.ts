@@ -11,6 +11,13 @@ function parts(iso: string) {
   return { y: p.year, m: p.month, d: p.day, hh: p.hour, mm: p.minute }
 }
 
+// 처음 발행하는 기사의 발행 일시: 앞으로의 시각이면 예약으로 그대로 두고, 비었거나 이미 지난 시각이면 "발행하는 순간"으로 정한다.
+// (발행 일시가 저장 시각보다 앞서는 일이 없게 하려는 것. 옛 기사 가져오기(ImportTool)는 이 함수를 쓰지 않는다)
+export function publishAtOrNow(chosen: string | null | undefined, now: number = Date.now()): string {
+  const t = chosen ? Date.parse(chosen) : NaN
+  return Number.isFinite(t) && t > now ? new Date(t).toISOString() : new Date(now).toISOString()
+}
+
 // lang: 영문 매체('en')는 AP 표기, 시간대는 tz(없으면 미국 동부) (lib/site-text.tsx)
 type Lang = 'ko' | 'en' | undefined
 

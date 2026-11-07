@@ -7,6 +7,7 @@ import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
 import { refreshArticlePages } from '@/app/(main)/articles/refresh'
 import { trialPublish } from '@/app/(main)/articles/moderation'
+import { publishAtOrNow } from '@/lib/format'
 import { deleteArticles } from '@/app/(main)/articles/actions'
 import { useT } from './CmsLang'
 
@@ -56,12 +57,12 @@ export function BulkReview({ items, canReview = false, moderated = false, childr
     for (const [n, a] of ok.entries()) {
       setBusy(t(`승인 중 ${n + 1}/${ok.length}`, `Approving ${n + 1}/${ok.length}`))
       if (moderated) {
-        const r = await trialPublish(a.id, a.publishedAt).catch((e) => ({ ok: false as const, error: e instanceof Error ? e.message : t('오류', 'Error') }))
+        const r = await trialPublish(a.id, publishAtOrNow(a.publishedAt)).catch((e) => ({ ok: false as const, error: e instanceof Error ? e.message : t('오류', 'Error') }))
         if (!r.ok) { failed.push(`“${a.title}”: ${'held' in r && r.held ? t(`총관리자 확인 대기 (${r.note})`, `Waiting for Super Admin review (${r.note})`) : 'error' in r ? r.error : ''}`); continue }
       } else {
         const { data, error } = await supabase.from('articles').update({
           status: 'published',
-          published_at: a.publishedAt ?? new Date().toISOString(),
+          published_at: publishAtOrNow(a.publishedAt),
           reviewed_by: user?.id ?? null,
           reject_reason: null,
         }).eq('id', a.id).eq('status', 'in_review').select('id')

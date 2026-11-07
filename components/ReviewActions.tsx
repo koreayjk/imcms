@@ -7,6 +7,7 @@ import { describe, syndicate } from '@/lib/syndicate'
 import { notifyArticle } from '@/app/(main)/articles/notify'
 import { refreshArticlePages } from '@/app/(main)/articles/refresh'
 import { trialPublish } from '@/app/(main)/articles/moderation'
+import { publishAtOrNow } from '@/lib/format'
 import { useT, useCmsLang } from '@/components/cms/CmsLang'
 
 // presetAt: 기자가 정해 둔 발행 일시 (있으면 그 시각으로 발행 — 앞으로의 시각이면 예약 발행)
@@ -27,7 +28,7 @@ export default function ReviewActions({ articleId, presetAt = null, hasSection =
     setLoading(true)
     let error: { message: string } | null = null
     if (moderated) {
-      const r = await trialPublish(articleId, presetAt)
+      const r = await trialPublish(articleId, publishAtOrNow(presetAt))
       if (!r.ok) {
         window.alert(r.held
           ? t(`욕설·혐오·선정적 표현이 있을 수 있어 바로 발행되지 않았습니다.\n총관리자가 확인한 뒤 발행됩니다.\n\n사유: ${r.note}`, `The story may contain profanity, hate speech, or sensational wording, so it was not published right away.\nIt will be published after the Super Admin reviews it.\n\nReason: ${r.note}`)
@@ -40,7 +41,8 @@ export default function ReviewActions({ articleId, presetAt = null, hasSection =
       const { data: { user } } = await supabase.auth.getUser()
       ;({ error } = await supabase.from('articles').update({
         status: 'published',
-        published_at: presetAt ?? new Date().toISOString(),
+        // 기자가 정해 둔 시각이 이미 지났으면 승인하는 순간으로 (발행 일시가 승인보다 앞서지 않게)
+        published_at: publishAtOrNow(presetAt),
         reviewed_by: user?.id ?? null,
         reject_reason: null,
       }).eq('id', articleId))

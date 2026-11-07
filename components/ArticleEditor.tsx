@@ -6,7 +6,7 @@ import type { Editor } from '@tiptap/react'
 import { createClient } from '@/lib/supabase'
 import { refreshArticlePages } from '@/app/(main)/articles/refresh'
 import { toHtml } from '@/lib/body-text'
-import { formatDateTime, fromKstInput, isScheduled, toKstInput } from '@/lib/format'
+import { formatDateTime, fromKstInput, isScheduled, publishAtOrNow, toKstInput } from '@/lib/format'
 import { statusLabel, type Article, type ArticleStatus, type Category } from '@/lib/types'
 import { useCmsLang, useT } from './cms/CmsLang'
 import type { T } from '@/lib/cms-i18n'
@@ -238,7 +238,7 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       const when = new Date(chosenAt).getTime()
       const msg = when > Date.now() + 60_000
         ? t(`${formatDateTime(chosenAt)}에 홈페이지에 공개되도록 예약 발행할까요?\n그 전까지는 홈페이지에 보이지 않습니다.`, `Schedule this story to go live on the site at ${formatDateTime(chosenAt, lang, 'Asia/Seoul')}?\nIt will not be visible on the site until then.`)
-        : when < Date.now() - 60_000
+        : status === 'published' && when < Date.now() - 60_000
           ? t(`발행 일시를 ${formatDateTime(chosenAt)}(지난 날짜)로 해서 발행할까요?`, `Publish with the publish time set to ${formatDateTime(chosenAt, lang, 'Asia/Seoul')} (a past date)?`)
           : null
       if (msg && !window.confirm(msg)) return
@@ -255,7 +255,8 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
       payload.status = 'in_review'
     } else if (mode === 'publish') {
       payload.status = 'published'
-      payload.published_at = chosenAt ?? new Date().toISOString()
+      // 처음 발행하는 기사: 지난 시각을 적었어도 발행하는 순간으로 정한다 (발행 일시가 저장 시각보다 앞서지 않게). 이미 발행된 기사의 수정 반영은 적은 값 그대로
+      payload.published_at = status === 'published' ? (chosenAt ?? new Date().toISOString()) : publishAtOrNow(chosenAt)
       payload.reviewed_by = userId
       payload.reject_reason = null
     } else if (!article) {
@@ -601,7 +602,9 @@ export default function ArticleEditor({ article, categories, userId, outletId, o
               const msg = diff > 60_000
                 ? <p className="text-[12px] font-semibold text-[#6D28D9]">{lang === 'en' ? `Scheduled: goes live on the site at ${formatDateTime(at, lang, 'Asia/Seoul')} (Korea time). It will not be visible until then.` : `예약 발행: ${formatDateTime(at)}(한국 시간)에 홈페이지에 공개됩니다. 그 전까지는 보이지 않습니다.`}</p>
                 : diff < -60_000
-                  ? <p className="text-[12px] text-muted">{t('지난 날짜로 발행됩니다. 기사 날짜와 목록 순서가 이 일시를 따릅니다.', 'This will be published with a past date. The story date and list order follow this time.')}</p>
+                  ? (status === 'published'
+                    ? <p className="text-[12px] text-muted">{t('지난 날짜로 발행됩니다. 기사 날짜와 목록 순서가 이 일시를 따릅니다.', 'This will be published with a past date. The story date and list order follow this time.')}</p>
+                    : <p className="text-[12px] font-semibold text-danger">{t('이미 지난 시각입니다. 발행하는 순간의 시각으로 발행됩니다. 날짜·시각이 맞는지 확인해 주세요.', 'That time has already passed. The story will be published at the moment you publish it. Please check the date and time.')}</p>)
                   : null
               return msg && <><span />{msg}</>
             })()}
