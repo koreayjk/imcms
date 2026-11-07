@@ -245,6 +245,17 @@ export default function CategoryManager({ categories, outletId, siteUrl }: { cat
         <p className="mt-2 text-[12px] leading-relaxed text-muted">{t('영문 주소는 홈페이지 메뉴 주소(예: /section/education)가 됩니다. 한글 이름이면 로마자로 자동으로 채워지고, 고쳐 써도 됩니다.', 'The slug becomes the homepage menu address (e.g. /section/education). For a Korean name it is filled in automatically in Roman letters, and you can edit it.')}</p>
       </div>
 
+      {/* 바꾼 게 있으면 맨 위에서도 바로 저장할 수 있게 한다 (아래쪽 저장 줄을 못 보고 지나치는 경우가 있었다). '완료'는 입력 칸만 닫을 뿐 저장이 아니다 */}
+      {dirty && (
+        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-review/40 bg-review/10 px-4 py-3">
+          <p className="min-w-[12rem] flex-1 text-[13px] font-semibold text-review">
+            {t('저장하지 않은 변경이 있습니다. “변경 저장”을 눌러야 홈페이지에 반영됩니다. (이름 옆 “완료”는 입력 칸만 닫습니다)', 'You have unsaved changes. Press “Save changes” for them to appear on your website. (“Done” next to a name only closes the input boxes.)')}
+          </p>
+          <button type="button" onClick={() => { setRows(base); setEditKey(null); setMsg({}) }} disabled={saving} className="whitespace-nowrap px-2 text-[13px] text-muted hover:text-ink">{t('변경 취소', 'Discard changes')}</button>
+          <button type="button" onClick={save} disabled={saving} className="btn-primary pn-press">{saving ? t('저장 중…', 'Saving…') : t('변경 저장', 'Save changes')}</button>
+        </div>
+      )}
+
       {/* 홈페이지 메뉴 미리보기 */}
       <div className="rounded-lg border border-line bg-white px-4 py-3">
         <p className="text-[12px] font-semibold text-muted">{t('홈페이지 메뉴 미리보기', 'Homepage menu preview')}{dirty && <span className="ml-1.5 text-review">· {t('저장 전', 'not saved yet')}</span>}</p>
