@@ -28,7 +28,7 @@ const RECENT_DAYS = 7   // 기본 목록은 최근 7일 것만 (지난 자료는
 const TIER_LEGACY_LIMIT = 3
 type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; image_url?: string | null; mail_section?: string | null; tier?: number; kw?: string; kws?: string[] }
 
-type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string; kw?: string; old?: string }> }
+type Props = { searchParams: Promise<{ tab?: string; src?: string; q?: string; page?: string; msg?: string; s?: string | string[]; sec?: string; rg?: string; kw?: string; old?: string; hid?: string }> }
 
 function kstMidnightIso() {
   const kst = new Date(Date.now() + 9 * 3600e3)
@@ -198,8 +198,24 @@ export default async function PressPage(props: Props) {
   }
   const hasFeed = hasPressTiers(tiers) || pickedKeys.length > 0
 
-  const [{ data: rowsRaw, count }, { data: pinned }, { data: logs }, { data: todayUses }] = await Promise.all([
-    tiered ? (hasFeed ? tierRows() : Promise.resolve({ data: [] as PressRow[], count: 0 })) : query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
+  // 편집장이 맞춤 자료에서 가린 자료 (supabase/press-hidden.sql, 이 매체에서만 안 보인다). 표가 아직 없으면 아무것도 가리지 않는다
+  const { data: hiddenRows } = tiered && outletId
+    ? await supabase.from('press_hidden').select('press_release_id').eq('outlet_id', outletId).order('hidden_at', { ascending: false }).limit(2000)
+    : { data: null }
+  const hiddenIds = ((hiddenRows ?? []) as { press_release_id: string }[]).map((h) => h.press_release_id)
+  const hiddenSet = new Set(hiddenIds)
+  const showHidden = tiered && canPick && searchParams.hid === '1'
+  // "가린 자료 보기": 가린 자료를 (그룹에 걸리는지와 상관없이) 최근 가린 순으로 100건까지
+  const hiddenList = async (): Promise<{ data: PressRow[]; count: number }> => {
+    if (!hiddenIds.length) return { data: [], count: 0 }
+    const { data } = await pressScope(supabase.from('press_releases').select('id, source_key, source_name, title, summary, link, published_at, image_url, mail_section'), ctx).in('id', hiddenIds.slice(0, 100))
+    const order = new Map(hiddenIds.map((id, i) => [id, i]))
+    const list = ((data ?? []) as PressRow[]).sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+    return { data: list, count: list.length }
+  }
+
+  const [{ data: rowsRaw, count },{ data: pinned }, { data: logs }, { data: todayUses }] = await Promise.all([
+    tiered ? (showHidden ? hiddenList() : hasFeed ? tierRows() : Promise.resolve({ data: [] as PressRow[], count: 0 })) : query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1),
     pinNw && page === 1 ? baseQuery('only').limit(NW_PIN_MAX) : Promise.resolve({ data: [] as PressRow[], count: 0 }),
     supabase.from('press_fetch_log').select('*'),
     outletId
@@ -207,7 +223,9 @@ export default async function PressPage(props: Props) {
       : Promise.resolve({ data: [] as any[] }),
   ])
 
-  const allRowsFull = [...((pinned ?? []) as PressRow[]), ...((rowsRaw ?? []) as PressRow[])]
+  const allRowsAll = [...((pinned ?? []) as PressRow[]), ...((rowsRaw ?? []) as PressRow[])]
+  // 맞춤 자료에서는 가린 자료를 뺀다 (가린 자료 보기에서는 가린 것만 나온다)
+  const allRowsFull = tiered && !showHidden ? allRowsAll.filter((r) => !hiddenSet.has(r.id)) : allRowsAll
   // 맞춤 자료 탭의 제목 검색: 이미 모은 자료 안에서 거른다
   const allRows = tiered && q ? allRowsFull.filter((r) => r.title.toLowerCase().includes(q.toLowerCase())) : allRowsFull
   // 맞춤 자료의 지역별 보기: 담은 출처가 어느 광역(특별시·광역시·도)인지, 해외 뉴스인지, 그 밖인지로 나눠 보여 준다
@@ -240,7 +258,7 @@ export default async function PressPage(props: Props) {
   const photoCount = new Map<string, number>()
   for (const a of photoAtt ?? []) photoCount.set(a.press_release_id, (photoCount.get(a.press_release_id) ?? 0) + 1)
   // 우리 매체가 이미 기사로 쓴 자료는 기본 목록에서 숨긴다 ("지난 자료까지 보기"에서는 "기사화됨"으로 보인다)
-  const rows = showOld ? rowsAll : rowsAll.filter((r) => !usedSet.has(r.id))
+  const rows = showOld || showHidden ? rowsAll : rowsAll.filter((r) => !usedSet.has(r.id))
   const hiddenUsed = rowsAll.length - rows.length
   // 본문 글자 수 (공백 제외): 목록에 보이는 자료만 본문을 읽어 센다
   const bodyChars = new Map<string, number>()
@@ -321,7 +339,15 @@ export default async function PressPage(props: Props) {
           </p>
           {searchParams.msg && <p className="border-b border-line bg-[#FFF8E6] px-4 py-2.5 text-[12.5px] text-[#6B4E00] md:px-5">{searchParams.msg.slice(0, 200)}</p>}
 
-          {tiered && hasFeed && (
+          {tab === 'rec' && canPick && (hiddenIds.length > 0 || showHidden) && (
+            <p className={`flex flex-wrap items-center gap-x-2 border-b border-line px-4 py-2 text-[12.5px] md:px-5 ${showHidden ? 'bg-[#FFF8E6] text-[#6B4E00]' : 'text-muted'}`}>
+              {showHidden
+                ? <><span className="font-semibold">{t(`가린 자료 ${rows.length}건 (최근 가린 순, 최대 100건)`, `${rows.length} hidden releases (most recently hidden first, up to 100)`)}</span> {t('체크하고 “되돌리기”를 누르면 맞춤 자료에 다시 나옵니다.', 'Check them and press “Restore” to show them in My feed again.')}</>
+                : t(`가린 자료 ${hiddenIds.length}건이 있습니다.`, `${hiddenIds.length} releases are hidden.`)}
+              <Link href={showHidden ? '/press' : '/press?hid=1'} className="font-semibold text-ink underline">{showHidden ? t('맞춤 자료로 돌아가기', 'Back to My feed') : t('가린 자료 보기·되돌리기', 'View / restore hidden')}</Link>
+            </p>
+          )}
+          {tiered && hasFeed && !showHidden && (
             <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-[#F1F6FF] px-4 py-2.5 text-[12.5px] text-[#27456F] md:px-5">
               <span className="mr-1 font-semibold">{t('지역별로 보기', 'View by region')}</span>
               {[{ key: '', label: t('모두', 'All') }, ...REGION_CHIPS.filter((c) => (regionCounts.get(c.key) ?? 0) > 0)].map((c) => (
@@ -332,7 +358,7 @@ export default async function PressPage(props: Props) {
               <span className="ml-1 text-[#27456F]/80">{t('숫자는 보도자료 건수입니다(출처 수가 아닙니다). 맞춤 자료는 “전체” 탭에서 정합니다.', 'Numbers are counts of press releases, not sources. Set up My feed in the “All” tab.')}</span>
             </div>
           )}
-          {tiered && hasFeed && kwCounts.size > 0 && (
+          {tiered && hasFeed && !showHidden && kwCounts.size > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-[#F8F6FF] px-4 py-2.5 text-[12.5px] text-[#4A3A7A] md:px-5">
               <span className="mr-1 font-semibold">{t('키워드별로 보기', 'View by keyword')}</span>
               {[{ key: '', label: t('모두', 'All') }, ...[...kwCounts.keys()].map((k) => ({ key: k, label: `#${k}` }))].map((c) => (
@@ -351,7 +377,7 @@ export default async function PressPage(props: Props) {
             </div>
           )}
           {rows.length ? (
-            <PressBulkList rows={rows.map((r, i): BulkRow => ({
+            <PressBulkList canHide={tiered && canPick} hiddenView={showHidden} rows={rows.map((r, i): BulkRow => ({
               id: r.id,
               title: r.title,
               summary: r.summary,

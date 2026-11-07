@@ -45,6 +45,24 @@ export async function refreshNow() {
   revalidatePath('/press')
 }
 
+// 맞춤 자료에서 고른 보도자료를 이 매체에서만 가리거나(undo=false) 되돌린다(undo=true). 편집장 이상 (supabase/press-hidden.sql)
+//   보도자료 원본은 지우지 않는다. 한 번에 50건까지
+export async function hidePress(ids: string[], undo = false): Promise<{ error?: string; n?: number }> {
+  const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
+  const { t } = await getT()
+  if (!isEditorPlus && !isStaff) return { error: t('편집장 이상만 가릴 수 있습니다.', 'Only Editors-in-Chief and above can hide releases.') }
+  if (!outletId) return { error: t('매체를 먼저 골라 주세요.', 'Choose an outlet first.') }
+  const clean = Array.from(new Set((ids ?? []).map(String).filter((id) => /^[0-9a-f-]{36}$/i.test(id)))).slice(0, 50)
+  if (!clean.length) return { error: t('고른 자료가 없습니다.', 'No releases selected.') }
+  const { data, error } = await supabase.rpc(undo ? 'press_unhide' : 'press_hide', { o: outletId, ids: clean })
+  if (error) {
+    if (/press_hide|press_unhide|function/i.test(error.message) && /does not exist|schema cache|find/i.test(error.message)) return { error: t('이 기능을 쓰려면 운영팀이 Supabase에서 press-hidden.sql을 실행해야 합니다.', 'To use this feature, the IM Newsroom team needs to run press-hidden.sql in Supabase.') }
+    return { error: error.message.replace(/^.*?:\s*/, '') }
+  }
+  revalidatePath('/press')
+  return { n: Number(data ?? 0) }
+}
+
 // 전체 탭에서 체크한 출처를 이 매체의 "맞춤 자료"에 넣거나 뺀다 (편집장 이상)
 export async function savePressSources(formData: FormData) {
   const { supabase, outletId, isEditorPlus, isStaff } = await getCmsContext()
