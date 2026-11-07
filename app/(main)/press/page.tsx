@@ -22,7 +22,8 @@ const PAGE_SIZE = 30
 const TIER_DAYS = 14
 const TIER_SRC_DAYS = 30
 // 글이 충분하고 사진이 있다고 판정된 자료만 (직접 등록·메일 자료는 판정하지 않고 항상 보인다. press-quality.sql)
-const QUALITY_OK = `quality.eq.ok,source_key.in.(${MANUAL_SOURCE},email)`
+// 직접 등록·메일 자료는 판정하지 않으므로 기본으로 보이되, 'poor'로 표시해 둔 것(차단한 발신자 등)은 가린다
+const QUALITY_OK = `quality.eq.ok,and(source_key.in.(${MANUAL_SOURCE},email),quality.is.null)`
 const RECENT_DAYS = 7   // 기본 목록은 최근 7일 것만 (지난 자료는 "지난 자료까지 보기"로)
 const TIER_LEGACY_LIMIT = 3
 type PressRow = { id: string; source_key: string; source_name: string; title: string; summary: string | null; link: string; published_at: string | null; image_url?: string | null; mail_section?: string | null; tier?: number; kw?: string; kws?: string[] }

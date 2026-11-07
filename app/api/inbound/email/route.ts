@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { attachmentNumber, isAdMail, isBlockedSender, isNonPressTitle, parseInbound, type InboundMail } from '@/lib/press-email'
+import { attachmentNumber, isAdMail, isBlockedSender, isBlockedSourceName, isNonPressTitle, parseInbound, type InboundMail } from '@/lib/press-email'
 import { resendInboundMail, verifyResendWebhook } from '@/lib/resend-inbound'
 
 // 메일 수신 서비스가 메일 한 통마다 부른다. 주소의 ?key= 값을 DB 비밀 열쇠와 대조한다
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   // 행사 일정표·공지 메일은 보도자료가 아니라서 받지 않는다
   if (parsed.kind === 'release' && isNonPressTitle(parsed.title)) return NextResponse.json({ result: 'not_press' })
   // 막아 둔 보낸 곳(AliExpress 등 쇼핑·서비스 알림)도 받지 않는다
-  if (parsed.kind === 'release' && isBlockedSender(mail)) return NextResponse.json({ result: 'sender_blocked' })
+  if (parsed.kind === 'release' && (isBlockedSender(mail) || isBlockedSourceName(parsed.sourceName))) return NextResponse.json({ result: 'sender_blocked' })
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
