@@ -126,7 +126,6 @@ export const PRESS_SOURCES: PressSource[] = [
   // 표준 게시판형(selectBbsNttList.do) 지자체 보도자료 — 서울·충북·충남·강원·경기 일부
   { key: 'lg-chungbuk', name: '충청북도 보도자료', url: 'https://www.chungbuk.go.kr/www/selectBbsNttList.do?bbsNo=65&key=429', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-seosan', name: '서산시 보도자료', url: 'https://www.seosan.go.kr/www/selectBbsNttList.do?bbsNo=101&key=1260', kind: 'gov', adapter: 'ntt' },
-  { key: 'lg-sancheong', name: '산청군 보도자료', url: 'https://www.sancheong.go.kr/www/selectBbsNttList.do?bbsNo=115&key=163', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-yeongwol', name: '영월군 보도자료', url: 'https://www.yw.go.kr/www/selectBbsNttList.do?bbsNo=19&key=21', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-dongducheon', name: '동두천시 보도자료', url: 'https://www.ddc.go.kr/ddc/selectBbsNttList.do?bbsNo=95&key=1914', kind: 'gov', adapter: 'ntt' },
   { key: 'lg-yangpyeong', name: '양평군 보도자료', url: 'https://www.yp21.go.kr/www/selectBbsNttList.do?bbsNo=2&key=1112', kind: 'gov', adapter: 'ntt' },
@@ -274,7 +273,7 @@ export const REGIONS: { key: string; label: string; sources: string[] }[] = [
   { key: 'chungnam', label: '충청남도', sources: ['lg-chungnam', 'lg-boryeong', 'lg-cheongyang', 'lg-seosan', 'lg-dangjin'] },
   { key: 'jeonnam', label: '전라남도', sources: ['lg-mokpo', 'lg-naju', 'lg-muan'] },
   { key: 'gyeongbuk', label: '경상북도', sources: ['lg-gyeongbuk'] },
-  { key: 'gyeongnam', label: '경상남도', sources: ['lg-jinju', 'lg-gimhae', 'lg-sancheong'] },
+  { key: 'gyeongnam', label: '경상남도', sources: ['lg-jinju', 'lg-gimhae'] },
   { key: 'jeju', label: '제주특별자치도', sources: ['lg-jeju'] },
 ]
 export const regionOfSource = (key: string) => REGIONS.find((r) => r.sources.includes(key))?.key
