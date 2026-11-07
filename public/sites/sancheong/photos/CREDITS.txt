@@ -1,0 +1,5 @@
+사진 출처 (모두 Wikimedia Commons, 라이선스 CC BY-SA 2.0, 원 게시자 Republic of Korea = Korea.net / 문화체육관광부 해외문화홍보원)
+- sc-herb-dishes.webp   : Sancheong Gun 64 (File:Sancheong_Gun_64_(16069762764).jpg)
+- sc-village.webp       : Sancheong Gun 36 (File:Sancheong_Gun_36_(16505954809).jpg)
+- sc-strawberry-flower.webp : Sancheong Gun 10 (File:Sancheong_Gun_10_(16069770974).jpg)
+960px 썸네일을 webp로 변환. 캡션에 출처와 라이선스를 적는다.
