@@ -83,6 +83,21 @@ export default async function ArticleDetailPage(
         </div>
       )}
 
+      {(() => {
+        // AI로 만든 기사: 원래 보도자료(보도자료함)와 AI 메모에 적힌 원문 주소를 바로 열 수 있게 한다
+        const prId = (article as { press_release_id?: string | null }).press_release_id
+        const notes = (article as { ai_notes?: string | null }).ai_notes ?? ''
+        const urls = Array.from(new Set(notes.match(/https?:\/\/[^\s·)]+/g) ?? [])).filter((u) => /원문 주소/.test(notes))
+        if (!prId && !urls.length) return null
+        return (
+          <p className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-[#3B4CCA]/20 bg-[#EEF0FF] px-5 py-3 text-[13px] text-[#3B4CCA]">
+            <span className="rounded bg-white px-1.5 py-0.5 text-[10.5px] font-bold leading-none">AI</span>
+            {prId && <Link href={`/press/${prId}`} className="font-semibold underline">{t('원래 보도자료 보기', 'View the original press release')}</Link>}
+            {urls.slice(0, 3).map((u) => <a key={u} href={u} target="_blank" rel="noopener noreferrer" className="break-all underline">{t('원문 주소', 'Source')} ↗ <span className="text-[12px] opacity-70">{u.replace(/^https?:\/\//, '').slice(0, 48)}</span></a>)}
+          </p>
+        )
+      })()}
+
       {'legal_check' in article && !article.legal_check && article.status === 'in_review' && (
         <p className="mb-5 rounded-lg border border-line bg-white px-5 py-3 text-[13px] text-muted">{t('AI 법적 검수를 하지 않고 승인신청한 기사입니다. 필요하면 수정 화면에서 “AI 검수”를 눌러 확인할 수 있습니다.', 'This story was submitted without an AI legal review. If needed, click “AI review” on the edit screen to run one.')}</p>
       )}
