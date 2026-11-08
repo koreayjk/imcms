@@ -40,7 +40,7 @@ export default async function ArticlesPage(props: Props) {
   let listQuery = scoped(
     supabase
       .from('articles')
-      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author_id, byline, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', q ? { count: 'exact' } : undefined)
+      .select('id, title, status, thumbnail_url, view_count, updated_at, published_at, reject_reason, is_featured, author_id, byline, ai_notes, author:profiles!articles_author_id_fkey(full_name), category:categories(name)', q ? { count: 'exact' } : undefined)
   )
   if (status) listQuery = listQuery.eq('status', status)
   if (q) listQuery = listQuery.ilike('title', `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
@@ -137,6 +137,7 @@ export default async function ArticlesPage(props: Props) {
                     {a.is_featured && <span className="text-[12px] font-bold text-draft" title={t('주요 기사', 'Featured story')}>★</span>}
                     <Link href={`/articles/${a.id}`} className="line-clamp-2 text-[14.5px] font-medium hover:underline md:truncate">{a.title}</Link>
                     {a.thumbnail_url && <span className="shrink-0 text-muted" title={t('사진 있음', 'Has photo')}><ImageIcon /></span>}
+                    {a.ai_notes && <span className="shrink-0 rounded bg-[#EEF0FF] px-1.5 py-0.5 text-[10.5px] font-bold leading-none text-[#3B4CCA]" title={t('AI로 만든 기사', 'Created with AI')}>AI</span>}
                     {a.status === 'published' && <span className="hidden shrink-0 text-[12px] tabular-nums text-muted md:inline">{t('조회', 'Views')} {a.view_count ?? 0}</span>}
                   </div>
                   <p className="mt-0.5 truncate text-[12px] text-muted md:hidden">
