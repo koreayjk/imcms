@@ -378,7 +378,11 @@ export const BOARDS: Record<string, BoardCfg> = {
   'lg-suwon': {
     id: /jsView\('1043',\s*'(\d+)'/,
     link: (id, o) => `${o}/web/board/BD_board.view.do?seq=${id}&bbsCd=1043`,
-    body: /<td[^>]*class="p-table__content[^"]*"[^>]*>([\s\S]*?)<\/td>/i,
+    // 본문 칸(fulltext) 안에 보도일시·담당자 표(<table>)가 들어 있어 첫 </td>에서 끊으면 제목 두 줄만 읽힌다.
+    // 그래서 본문 칸 끝(</div></td></tr>)까지 읽고, 그 모양이 아니면 예전 방식으로 읽는다
+    body: /<td[^>]*class="p-table__content[^"]*fulltext[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/td>\s*<\/tr>|<td[^>]*class="p-table__content[^"]*"[^>]*>([\s\S]*?)<\/td>/i,
+    // 사진은 첨부파일로만 있다: 첨부 미리보기 주소(.jpg·.png)의 첫 번째
+    image: /goSynapViewerCall\('(https?:\/\/www\.suwon\.go\.kr\/common-upload\/upload\/board\/[^']+\.(?:jpe?g|png))'/i,
   },
   'lg-gwangmyeong': {
     id: /opView\('(\d+)'\)/,
@@ -524,14 +528,15 @@ export function parseBoardList(page: string, key: string, label: string, listUrl
 
 export function parseBoardDetail(page: string, key: string, origin: string, label: string) {
   const cfg = BOARDS[key]
-  const inner = cfg ? cfg.body.exec(page)?.[1] : null
+  const bm = cfg ? cfg.body.exec(page) : null
+  const inner = bm ? (bm[1] ?? bm[2]) : null
   if (!inner) return null
   // onError="this.src='…no_image.png'" 같은 속성 안의 src 를 사진 주소로 잘못 읽지 않게 이벤트 속성은 빼고 읽는다
   const noEvents = inner.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*')/gi, '')
   const imgs = Array.from(noEvents.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
     .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
   const extra = cfg?.image?.exec(page)?.[1]
-  if (extra) { try { imgs.unshift(new URL(decode(extra).replace(/;jsessionid=[^?"']*/i, ''), origin).toString()) } catch { /* 주소를 못 읽으면 건너뜀 */ } }
+  if (extra) { try { imgs.unshift(new URL(decode(extra).replace(/;jsessionid=[^?"']*/i, ''), origin).toString().replace(/^http:\/\/www\.suwon\.go\.kr/, 'https://www.suwon.go.kr')) } catch { /* 주소를 못 읽으면 건너뜀 */ } }
   const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
   const paras = paragraphs(inner.replace(/&amp;nbsp;/gi, '<br><br>').replace(/&amp;(lsquo|rsquo|ldquo|rdquo|middot|hellip|quot|#39);/gi, '&$1;').replace(/&nbsp;/gi, ' '))
   return paras.length ? build(paras, uniq, label) : null
