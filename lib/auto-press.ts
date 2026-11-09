@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isNonPhotoImage } from './press-quality'
 import { AiDraftError, activeModel, aiReady, draftWithModel, type AiDraft } from './ai-draft'
 import { checkLegal, legalModel } from './ai-legal'
 import type { LegalCheck } from './legal-types'
@@ -163,7 +164,7 @@ function pressPhoto(r: PressRelease): { src: string; caption: string } | null {
   const html = r.body_html ?? ''
   const m = /<img[^>]+src="(https:\/\/[^"]+)"[^>]*>(?:<p><em>▲\s*([\s\S]*?)<\/em><\/p>)?/i.exec(html)
   const src = (m?.[1] ?? r.image_url ?? '').trim()
-  if (!/^https:\/\//.test(src) || /logo|icon|sprite|avatar|pixel|1x1/i.test(src)) return null
+  if (!/^https:\/\//.test(src) || isNonPhotoImage(src)) return null
   const cap = m?.[2]?.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').trim()
   return { src: src.replace(/&amp;/g, '&'), caption: cap || '' }
 }

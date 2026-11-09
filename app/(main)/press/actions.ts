@@ -7,6 +7,7 @@ import { getCmsContext } from '@/lib/cms'
 import { getT } from '@/lib/cms-t'
 import { findPressSource, foreignTopicOf, isForeignSource, isUsSource } from '@/lib/press-sources'
 import { MANUAL_SOURCE, ensureFullBody, escapeHtml, htmlToText, pressTextForAi, refreshPress, sourceLabel, textToParagraphs, type PressRelease } from '@/lib/press'
+import { isNonPhotoImage } from '@/lib/press-quality'
 import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 import { duplicateNotes } from '@/lib/duplicate-check'
@@ -124,6 +125,7 @@ function firstSentences(text: string, max = 120) {
 // 사진과 그 아래 "▲ 설명" 문단을 한 덩어리로 뽑는다
 function photoBlocks(html: string) {
   return Array.from(html.matchAll(/(?:<img[^>]*>|<div data-youtube-video[^>]*>[\s\S]*?<\/div>)(?:<p><em>▲[\s\S]*?<\/em><\/p>)?/g), (m) => m[0])
+    .filter((b) => !/^<img\b/i.test(b) || !isNonPhotoImage(/\bsrc=["']([^"']+)["']/i.exec(b)?.[1] ?? ''))  // 공공누리 마크·로고는 사진이 아니다
 }
 
 export async function createArticleFromPress(id: string, mode: 'raw' | 'ai', form?: FormData) {
