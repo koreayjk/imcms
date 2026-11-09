@@ -172,7 +172,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const shortsSection = shortsCfg && shortItems.length ? (
     <ShortsSection
       title={shortsCfg.title || (L === 'en' ? 'Shorts' : '쇼츠')}
-      items={shortItems.map((x) => ({ id: x.id, title: x.title }))}
+      items={shortItems.map((x) => ({ id: x.id, title: x.title, date: formatShort(x.published, L) }))}
+      siteName={site.name}
       channelUrl={site.socials?.find((x) => x.kind === 'youtube')?.url ?? `https://www.youtube.com/channel/${shortsCfg.channelId}`}
       en={L === 'en'}
     />
