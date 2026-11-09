@@ -11,6 +11,7 @@ import { formatDateTime, formatShort } from '@/lib/format'
 import PendingButton from '@/components/cms/PendingButton'
 import PressGroupBuilder, { type PickGroup } from '@/components/cms/PressGroupBuilder'
 import PressBulkList, { type BulkRow } from '@/components/cms/PressBulkList'
+import { getAiStatus } from '@/lib/ai-usage'
 import { refreshNow } from './actions'
 
 // 정책브리핑 등 국내 사이트는 해외 접속을 막기도 하므로 서울 리전에서 가져온다
@@ -199,6 +200,8 @@ export default async function PressPage(props: Props) {
   const hasFeed = hasPressTiers(tiers) || pickedKeys.length > 0
 
   // 편집장이 맞춤 자료에서 가린 자료 (supabase/press-hidden.sql, 이 매체에서만 안 보인다). 표가 아직 없으면 아무것도 가리지 않는다
+  // 이번 달 AI 사용량(초안·법적 검수 합계)과 한도: AI 기사 만들기 줄에 보여 준다
+  const aiUsage = await getAiStatus(supabase, outletId)
   const { data: hiddenRows } = tiered && outletId
     ? await supabase.from('press_hidden').select('press_release_id').eq('outlet_id', outletId).order('hidden_at', { ascending: false }).limit(2000)
     : { data: null }
@@ -377,7 +380,7 @@ export default async function PressPage(props: Props) {
             </div>
           )}
           {rows.length ? (
-            <PressBulkList canHide={tiered && canPick} hiddenView={showHidden} rows={rows.map((r, i): BulkRow => ({
+            <PressBulkList canHide={tiered && canPick} hiddenView={showHidden} aiUsage={aiUsage ? { used: aiUsage.used, limit: aiUsage.limit, mineUsed: aiUsage.mine_used ?? null, mineLimit: aiUsage.mine_limit ?? null } : null} rows={rows.map((r, i): BulkRow => ({
               id: r.id,
               title: r.title,
               summary: r.summary,
