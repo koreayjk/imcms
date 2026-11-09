@@ -122,6 +122,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       color={site.photoColor ?? site.colors.brand}
       prevLabel={L === 'en' ? 'Previous photos' : '이전 포토뉴스'}
       nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
+      moreLabel={L === 'en' ? 'More' : '더보기'}
     />
   ) : null
   const photoBandBare = photos.length > 0 ? (
@@ -132,6 +133,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       color={site.photoColor ?? site.colors.brand}
       prevLabel={L === 'en' ? 'Previous photos' : '이전 포토뉴스'}
       nextLabel={L === 'en' ? 'Next photos' : '다음 포토뉴스'}
+      moreLabel={L === 'en' ? 'More' : '더보기'}
     />
   ) : null
   // 홈 중간 기관 로고 블록 (홈 편집판에서 채운 경우만)

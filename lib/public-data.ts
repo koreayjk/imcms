@@ -404,6 +404,22 @@ function splitRelated(a: PublicArticle, tagged: PublicArticle[], sameSection: Pu
   return { relatedLinks, related: sameSection.filter((r) => !linkIds.has(r.id)).slice(0, 4) }
 }
 
+export const PHOTO_PAGE_SIZE = 24
+
+// 포토뉴스 모아보기: 대표 사진이 있는 발행 기사를 최신순으로
+async function loadPhotoNews(site: SiteConfig, page: number) {
+  const from = (page - 1) * PHOTO_PAGE_SIZE
+  if (isDemo) {
+    const list = demoArticles().filter((a) => !!a.thumbnail_url)
+    return { articles: list.slice(from, from + PHOTO_PAGE_SIZE), total: list.length }
+  }
+  const scope = await outletScope(site)
+  if (!scope) return { articles: [] as PublicArticle[], total: 0 }
+  const list = await published(scope).not('thumbnail_url', 'is', null).neq('thumbnail_url', '').order('published_at', { ascending: false }).range(from, from + PHOTO_PAGE_SIZE - 1)
+  return { articles: (list.data ?? []).map(toPublic), total: list.count ?? 0 }
+}
+export const getPhotoNews = outletCached('photonews', loadPhotoNews)
+
 export const REPORTER_PAGE_SIZE = 15
 
 // 기자별 기사: 기사에 적힌 기자명이 같은 기사 (기자명을 따로 적지 않은 기사는 그 이름의 작성자 계정 기사)
