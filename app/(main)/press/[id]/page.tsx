@@ -77,7 +77,7 @@ export default async function PressDetailPage(
         </div>
       )}
 
-      <article className="rounded-lg border border-line bg-white px-5 py-6 md:px-10 md:py-9">
+      <article className="min-w-0 overflow-hidden rounded-lg border border-line bg-white px-5 py-6 md:px-10 md:py-9">
         <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
           {manual && <span className="rounded bg-ink px-1.5 py-0.5 text-white">{t('직접 등록', 'Added manually')}</span>}
           {emailed && <span className="rounded bg-review px-1.5 py-0.5 text-white">{t('메일로 받음', 'Received by email')}</span>}
