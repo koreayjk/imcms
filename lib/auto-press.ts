@@ -15,7 +15,7 @@ import { buildSite, hasPressTiers, type OutletRow } from './sites'
 
 export type Plan = {
   outlet: OutletRow
-  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
+  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; publish_hour?: number | null; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
   today: number
   categories: { id: string; slug: string; name: string }[]
 }
@@ -331,16 +331,19 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
       } else notes.push(`⚠ AI 법적 검수를 하지 못했습니다 (${legalErr}). 기사 편집 화면의 'AI 검수'를 먼저 실행한 뒤 승인하세요.`)
       notes.push(...draft.review_notes)
       notes.push(photoNote)
-      notes.push(`자동 작성 기사: 보도자료 '${r.title}' (${sourceLabel(r)})를 바탕으로 AI가 쓰고 법적 검수를 거쳐 승인 대기로 올렸습니다. 원문: ${r.link}`)
+      // 발행 시각(publish_hour)을 정한 매체는 승인 없이 그 시각에 발행되게 저장한다. 다만 AI 법적 검수를 못 했거나 위험도가 '높음'이면 사람이 보도록 승인 대기로 둔다
+      const hold = p.cfg.publish_hour == null || !legal || legal.risk === 'high'
+      if (p.cfg.publish_hour != null && hold) notes.push('⚠ 자동 발행 대상이었지만 법적 검수 결과(미실행 또는 위험도 높음) 때문에 승인 대기로 두었습니다. 편집장이 확인한 뒤 발행하세요.')
+      notes.push(`자동 작성 기사: 보도자료 '${r.title}' (${sourceLabel(r)})를 바탕으로 AI가 쓰고 법적 검수를 거쳐 ${hold ? '승인 대기로 올렸습니다' : `${p.cfg.publish_hour}시 발행으로 예약했습니다 (승인 없이 자동 발행)`}. 원문: ${r.link}`)
 
       const { data: id, error: se } = await supabase.rpc('auto_press_save', {
         secret, p_outlet: outletId, p_press: r.id, p_category: pickCategory(p, { ...draft, title, paragraphs: paras }),
         p_title: title, p_body: body, p_excerpt: subtitle || null, p_thumb: photo.src, p_tags: draft.keywords ?? [],
-        p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)),
+        p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)), p_hold: hold,
       })
       if (se) { await note(r.id, false, `저장 실패: ${se.message}`, cost); failures.push(se.message); continue }
       if (counting && id) await supabase.rpc('auto_press_ai_count', { secret, p_outlet: outletId, p_user: p.cfg.author_id, p_model: model.id, p_tin: dr.inputTokens, p_tout: dr.outputTokens, p_cost: Number(cost.toFixed(5)) })
-      return { outlet: name, status: 'saved', message: `승인 대기로 저장: ${title}`, articleId: id as string | null }
+      return { outlet: name, status: 'saved', message: `${hold ? '승인 대기로 저장' : `${p.cfg.publish_hour}시 발행 예약`}: ${title}`, articleId: id as string | null }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류'
       await note(r.id, false, `실패: ${msg}`)
