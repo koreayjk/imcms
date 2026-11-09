@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { childSections, dividerBefore, topSections, type SiteConfig } from '@/lib/sites'
 import { siteText } from '@/lib/site-text'
 import Logo from './Logo'
+import SocialLinks from './SocialLinks'
 import { ChartTile, ClockTile, CloseIcon, CrownTile, MegaphoneTile, MenuIcon, PenTile, SearchIcon, UserIcon } from './icons'
 
 type Props = { site: SiteConfig; current?: string }
@@ -134,6 +135,13 @@ export default function MobileHeader({ site, current }: Props) {
               />
               <button type="submit" aria-label={t.search} className="grid w-14 place-items-center bg-[#262A27] text-white"><SearchIcon /></button>
             </form>
+
+            {!!site.socials?.length && (
+              <div className="flex items-center gap-3 border-b border-rule bg-white px-5 py-3">
+                <span className="text-[13px] font-semibold text-sub">{site.lang === 'en' ? 'Follow us' : '공식 SNS'}</span>
+                <SocialLinks items={site.socials} en={site.lang === 'en'} size="sm" />
+              </div>
+            )}
 
             <nav aria-label={t.allSections} className="bg-white px-5 pb-6 pt-4">
               <ul className="grid grid-cols-2 gap-x-4">
