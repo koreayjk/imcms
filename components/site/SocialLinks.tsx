@@ -1,58 +1,39 @@
 import { SOCIAL_KINDS, type SocialLink } from '@/lib/sites'
 
-// 하단 SNS 링크 줄: 매체 설정(SNS 링크)에 넣은 공식 계정을 동그란 아이콘으로 보여 준다. 새 창으로 열린다
-const svg = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const
+// SNS 링크 줄: 매체 설정(SNS 링크)에 넣은 공식 계정을 각 서비스 색의 둥근 네모 아이콘으로 보여 준다. 새 창으로 열린다
+//   size: 'sm' = 머리글·모바일 메뉴(22px), 'md' = 하단(30px)
+const svg = { viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const
+const text = (ch: string, small = false) => <span aria-hidden className={`font-bold leading-none text-white ${small ? 'text-[8px] tracking-tight' : 'text-[13px]'}`}>{ch}</span>
 
-// 유튜브 로고: 빨간 둥근 사각형 + 흰 재생 삼각형
-function YoutubeLogo({ height }: { height: number }) {
-  return (
-    <svg viewBox="0 0 28 20" height={height} width={(height * 28) / 20} aria-hidden>
-      <rect width="28" height="20" rx="5.5" fill="#FF0000" />
-      <path d="M11.2 5.6v8.8l7.6-4.4z" fill="#fff" />
-    </svg>
-  )
+const BRAND: Record<SocialLink['kind'], { bg: string; glyph: React.ReactNode }> = {
+  youtube: { bg: '#FF0000', glyph: <svg {...svg} fill="#fff" stroke="none"><path d="M9.5 6.8v10.4l8.7-5.2z" /></svg> },
+  instagram: {
+    bg: 'linear-gradient(45deg,#FEDA75 0%,#FA7E1E 28%,#D62976 55%,#962FBF 78%,#4F5BD5 100%)',
+    glyph: <svg {...svg}><rect x="4.5" y="4.5" width="15" height="15" rx="4.5" /><circle cx="12" cy="12" r="3.4" /><circle cx="16.6" cy="7.4" r="0.5" fill="#fff" /></svg>,
+  },
+  facebook: { bg: '#1877F2', glyph: <svg {...svg} fill="#fff" stroke="none"><path d="M13.4 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.4 1.5-1.4h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.8 1.4-3.8 3.9v2.2H8v3h2.4V21z" /></svg> },
+  x: { bg: '#000', glyph: <svg {...svg}><path d="M5.5 5.5l13 13M18.5 5.5l-13 13" /></svg> },
+  threads: { bg: '#000', glyph: text('@') },
+  tiktok: { bg: '#000', glyph: text('♪') },
+  naverblog: { bg: '#03C75A', glyph: text('N') },
+  kakao: { bg: '#FEE500', glyph: <svg {...svg} fill="#3C1E1E" stroke="none"><path d="M12 5C7.6 5 4 7.7 4 11.1c0 2.2 1.5 4.1 3.7 5.2l-.8 2.9c-.1.3.2.5.5.3l3.4-2.2c.4 0 .8.1 1.2.1 4.4 0 8-2.7 8-6.1S16.4 5 12 5z" /></svg> },
 }
 
-function Glyph({ kind }: { kind: SocialLink['kind'] }) {
-  switch (kind) {
-    case 'youtube':
-      return <YoutubeLogo height={18} />
-    case 'instagram':
-      return <svg {...svg}><rect x="3.5" y="3.5" width="17" height="17" rx="5" /><circle cx="12" cy="12" r="3.8" /><circle cx="17" cy="7" r="0.6" fill="currentColor" /></svg>
-    case 'facebook':
-      return <svg {...svg}><path d="M14.5 21v-7.5H17l.5-3h-3V8.8c0-.9.4-1.5 1.6-1.5h1.6V4.6c-.3 0-1.3-.1-2.3-.1-2.4 0-3.9 1.4-3.9 4v2H9v3h2.5V21" /></svg>
-    case 'x':
-      return <svg {...svg}><path d="M4 4l16 16M20 4L4 20" /></svg>
-    default: {
-      const ch = { threads: '@', tiktok: '♪', naverblog: 'N', kakao: 'TALK' }[kind]
-      return <span aria-hidden className={`font-bold leading-none ${kind === 'kakao' ? 'text-[9px] tracking-tight' : 'text-[14px]'}`}>{ch}</span>
-    }
-  }
-}
-
-// size: 'md' = 하단(원 36px), 'sm' = 머리글·모바일 메뉴(원 28px)
 export default function SocialLinks({ items, en, size = 'md' }: { items: SocialLink[]; en?: boolean; size?: 'sm' | 'md' }) {
   if (!items.length) return null
-  const circle = size === 'sm' ? 'h-7 w-7' : 'h-9 w-9'
+  const box = size === 'sm' ? 22 : 30
   return (
-    <ul className="flex flex-wrap items-center gap-2" aria-label={en ? 'Social links' : 'SNS 링크'}>
+    <ul className="flex flex-wrap items-center gap-1.5" aria-label={en ? 'Social links' : 'SNS 링크'}>
       {items.map((x) => {
         const k = SOCIAL_KINDS.find((z) => z.key === x.kind)
         const name = k ? (en ? k.en : k.label) : x.kind
-        if (x.kind === 'youtube') {
-          return (
-            <li key={x.kind}>
-              <a href={x.url} target="_blank" rel="noopener noreferrer" aria-label={name} title={name} className="grid place-items-center transition-opacity hover:opacity-80">
-                <YoutubeLogo height={size === 'sm' ? 20 : 26} />
-              </a>
-            </li>
-          )
-        }
+        const b = BRAND[x.kind]
         return (
           <li key={x.kind}>
             <a href={x.url} target="_blank" rel="noopener noreferrer" aria-label={name} title={name}
-              className={`grid ${circle} place-items-center rounded-full border border-rule bg-white text-body transition-colors hover:border-brand hover:bg-brand hover:text-white`}>
-              <Glyph kind={x.kind} />
+              className="grid place-items-center rounded-[5px] transition-opacity hover:opacity-80"
+              style={{ width: box, height: box, background: b.bg }}>
+              <span className="grid place-items-center" style={{ width: box * 0.8, height: box * 0.8 }}>{b.glyph}</span>
             </a>
           </li>
         )

@@ -23,14 +23,11 @@ export default function SiteHeader({ site, current }: Props) {
       {/* PC */}
       <div className="hidden border-b border-rule bg-soft lg:block">
         <div className="mx-auto flex h-9 max-w-[1200px] items-center justify-between px-4 text-[12px] text-sub">
-          <span>{formatToday(site.lang, site.timeZone)}</span>
+          <div className="flex items-center gap-3">
+            <span>{formatToday(site.lang, site.timeZone)}</span>
+            {!!site.socials?.length && <SocialLinks items={site.socials} en={site.lang === 'en'} size="sm" />}
+          </div>
           <nav className="flex items-center gap-4" aria-label={t.utilNav}>
-            {!!site.socials?.length && (
-              <>
-                <SocialLinks items={site.socials} en={site.lang === 'en'} size="sm" />
-                <span className="h-3 w-px bg-rule" aria-hidden />
-              </>
-            )}
             <a href={`${mail}?subject=${encodeURIComponent(t.tipSubject)}`} className="hover:text-brand">{t.tip}</a>
             <a href={adsHref} className="hover:text-brand">{t.ads}</a>
             <Link href="/login" className="hover:text-brand">{t.login}</Link>
