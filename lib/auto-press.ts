@@ -214,6 +214,9 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
   // 맞춤 자료(그룹)를 정해 둔 매체는 그 자료 중에서 지역별로 골고루 고르고, 쓴 기사는 매체 AI 한도에 1회로 센다
   const tiered = hasPressTiers(buildSite(p.outlet, []).pressTiers)
   const counting = tiered && opts.count !== false
+  // 승인 없이 발행하는 매체(publish_hour)는 본문 500자 이상·사진 필수 (미달이면 그 보도자료는 건너뛰고 다음 후보로)
+  const autoPublish = p.cfg.publish_hour != null
+  const MIN_PUBLISH_CHARS = 500
   if (counting) {
     const { data: left } = await supabase.rpc('auto_press_ai_left', { secret, p_outlet: outletId })
     const l = left as { limit: number | null; used: number; overage: boolean } | null
@@ -258,7 +261,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
 
       // 2) AI 기사
       const left = 52_000 - (Date.now() - started)
-      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: selectableCategories(p).map((c) => c.name) }, Math.min(30_000, left - 18_000))
+      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: selectableCategories(p).map((c) => c.name), ...(autoPublish ? { length: 800 } : {}) }, Math.min(30_000, left - 18_000))
       const draft: AiDraft = dr.draft
       let cost = dr.costUsd
 
@@ -289,6 +292,12 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
           if (hit) { is.decision = 'fixed'; fixed.push(is.reason) }
         }
         legal.content_hash = legalContentHash(title, subtitle, paras.join('\n\n'))
+      }
+
+      // 4-1) 자동 발행 매체: 본문(공백 포함)이 500자 미만이면 발행하지 않는다 (영문 매체는 해당 없음)
+      if (autoPublish && !english) {
+        const size = paras.join('').length
+        if (size < MIN_PUBLISH_CHARS) { await note(r.id, false, `본문 ${size}자로 ${MIN_PUBLISH_CHARS}자 미만이라 건너뜀`, cost); failures.push(`본문 ${size}자`); continue }
       }
 
       // 5) 사진: 보도자료 사진 → 없으면 기사 내용으로 무료 공개 사진 검색
