@@ -8,7 +8,7 @@ import Thumb from './Thumb'
 //   편집판의 '포토뉴스' 칸을 채운 경우에만 홈에 나온다 (app/page.tsx)
 export type PhotoItem = { id: string; title: string; excerpt: string | null; thumb: string | null; author: string | null }
 
-export default function PhotoNews({ items, title, color, prevLabel, nextLabel, bare }: { items: PhotoItem[]; title: string; color: string; prevLabel: string; nextLabel: string; bare?: boolean }) {
+export default function PhotoNews({ items, title, color, prevLabel, nextLabel, moreLabel, moreHref = '/news/photo', bare }: { items: PhotoItem[]; title: string; color: string; prevLabel: string; nextLabel: string; moreLabel?: string; moreHref?: string; bare?: boolean }) {
   const box = useRef<HTMLUListElement>(null)
   const [edge, setEdge] = useState({ start: true, end: false })
 
@@ -27,6 +27,20 @@ export default function PhotoNews({ items, title, color, prevLabel, nextLabel, b
     return () => ro.disconnect()
   }, [measure, items.length])
 
+  // 5초마다 한 화면(보이는 만큼, PC는 4개)씩 저절로 넘어가고, 끝에 닿으면 처음으로 돌아온다.
+  //   마우스를 올리거나 키보드·손가락으로 건드리는 동안, 그리고 "움직임 줄이기"를 켠 사람에게는 멈춘다
+  const paused = useRef(false)
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const timer = window.setInterval(() => {
+      const el = box.current
+      if (!el || paused.current || el.scrollWidth <= el.clientWidth + 4) return
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 4) el.scrollTo({ left: 0, behavior: 'smooth' })
+      else el.scrollBy({ left: el.clientWidth, behavior: 'smooth' })
+    }, 5000)
+    return () => window.clearInterval(timer)
+  }, [])
+
   // 한 번에 한 화면(보이는 만큼)씩 넘긴다
   const go = (dir: 1 | -1) => {
     const el = box.current
@@ -36,8 +50,20 @@ export default function PhotoNews({ items, title, color, prevLabel, nextLabel, b
 
   return (
     <section aria-label={title} className={bare ? 'my-6' : 'mx-auto mb-9 max-w-[1200px] px-4'}>
-      <div className="relative rounded-md px-4 pb-6 pt-5 sm:px-6" style={{ background: color }}>
-        <h2 className="mb-4 text-[18px] font-extrabold tracking-[0.02em] text-white">{title}</h2>
+      <div
+        className="relative rounded-md px-4 pb-6 pt-5 sm:px-6"
+        style={{ background: color }}
+        onMouseEnter={() => { paused.current = true }}
+        onMouseLeave={() => { paused.current = false }}
+        onFocus={() => { paused.current = true }}
+        onBlur={() => { paused.current = false }}
+        onTouchStart={() => { paused.current = true }}
+        onTouchEnd={() => { window.setTimeout(() => { paused.current = false }, 8000) }}
+      >
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-[18px] font-extrabold tracking-[0.02em] text-white">{title}</h2>
+          <Link href={moreHref} className="shrink-0 rounded-full border border-white/60 px-3 py-1 text-[12.5px] font-semibold text-white hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">{moreLabel ?? '더보기'} +</Link>
+        </div>
         <ul ref={box} onScroll={measure} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-1">
           {items.map((a) => (
             <li key={a.id} className="w-[78%] shrink-0 snap-start sm:w-[calc((100%-16px)/2)] lg:w-[calc((100%-48px)/4)]">
