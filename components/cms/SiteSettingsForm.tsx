@@ -11,6 +11,7 @@ import { saveSiteSettings } from '@/app/(main)/admin/outlets/[id]/site/actions'
 import { saveSelfSiteSettings } from '@/app/(main)/admin/settings/site-actions'
 import { OPEN_ZONES, formatZoned, isoToZoned, zonedToIso } from '@/lib/zoned-time'
 import SearchRegisterGuide from './SearchRegisterGuide'
+import ShortsCard from './ShortsCard'
 import { buildSite, DEFAULT_COLORS, openTimePassed, SOCIAL_KINDS, type CategoryRow, type LogoMode, type LogoSize, type OutletSiteSettings, type SiteLegal } from '@/lib/sites'
 import { uploadImage } from '@/components/editor/upload'
 import SiteHeader from '@/components/site/SiteHeader'
@@ -187,7 +188,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, socials: s.socials, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill, pressKeywords: s.pressKeywords, pressFields: s.pressFields },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, socials: s.socials, shorts: s.shorts, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill, pressKeywords: s.pressKeywords, pressFields: s.pressFields },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -226,6 +227,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           ['s-icon', t('탭 아이콘', 'Tab icon'), true],
           ['s-logo', t('로고', 'Logo'), true],
           ['s-social', t('SNS 링크', 'Social links'), true],
+          ['s-shorts', t('쇼츠 구역', 'Shorts'), true],
           ['s-hbanner', t('로고 양옆 배너', 'Header banners'), !self],
           ['s-gpref', t('구글 선호 버튼', 'Google button'), !self],
           ['s-colors', t('색', 'Colors'), true],
@@ -493,6 +495,10 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         {(s.socials ?? []).some((x) => !/^https:\/\/\S+$/i.test(x.url.trim())) && (
           <p className="mt-2 text-[12.5px] font-semibold text-danger">{t('https:// 로 시작하지 않는 주소는 저장할 때 빠집니다.', 'Links that do not start with https:// are dropped when you save.')}</p>
         )}
+      </Card>
+
+      <Card id="s-shorts" title={t('쇼츠 구역 (홈페이지)', 'Shorts section (home page)')} note={t('유튜브 채널의 쇼츠를 홈페이지 주요뉴스 아래에 세로 카드로 자동으로 보여 줍니다. 새 쇼츠가 올라오면 30분 안에 바뀝니다. 채널 주소를 넣고 “채널 ID 찾기”를 누르세요.', 'Automatically shows your YouTube channel\'s Shorts as vertical cards below the top stories. New Shorts appear within about 30 minutes. Paste the channel link and press “Find channel ID”.')}>
+        <ShortsCard value={s.shorts} onChange={(v) => set({ shorts: v })} />
       </Card>
 
       {!self && (

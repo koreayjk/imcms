@@ -59,6 +59,8 @@ export type SiteConfig = {
   headerBanners?: HeaderBanners
   // 하단에 보이는 SNS 링크 줄 (유튜브·인스타그램 등)
   socials?: SocialLink[]
+  // 홈페이지 "쇼츠" 구역 (유튜브 채널의 쇼츠를 자동으로 가져온다)
+  shorts?: ShortsSettings
   // 구글 '선호하는 소스' 버튼 (구글이 이 매체를 아직 모르면 '결과 없음'이 나오므로 운영팀이 확인한 뒤에만 켠다)
   googlePreferred?: boolean
   // 광고 자리 설정 (끈 자리, 오른쪽 광고 개수)
@@ -283,6 +285,7 @@ export type OutletSiteSettings = {
   logoStrip?: LogoStrip
   headerBanners?: HeaderBanners
   socials?: SocialLink[]
+  shorts?: ShortsSettings
   // 구글 '선호하는 소스' 버튼 (구글이 이 매체를 아직 모르면 '결과 없음'이 나오므로 운영팀이 확인한 뒤에만 켠다)
   googlePreferred?: boolean
   adSlots?: AdSlotSettings
@@ -397,6 +400,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     logoStrip: cleanLogoStrip(s.logoStrip),
     headerBanners: cleanHeaderBanners(s.headerBanners),
     socials: cleanSocials(s.socials),
+    shorts: cleanShorts(s.shorts),
     googlePreferred: s.googlePreferred === true,
     adSlots: cleanAdSlots(s.adSlots),
     // 오픈 준비 중에는 검색 노출을 켜 두었어도 수집하지 않는다
@@ -504,6 +508,16 @@ export function cleanLogoStrip(v: unknown): LogoStrip | undefined {
   const items = cleanLogoItems(o.items)
   if (!items.length) return undefined
   return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, speed: o.speed === 'slow' || o.speed === 'fast' ? o.speed : undefined, items }
+}
+// 홈페이지 쇼츠 구역: 유튜브 채널(UC로 시작하는 24자 ID)의 쇼츠를 최신순으로 count개 (3~12, 기본 6)
+export type ShortsSettings = { on: boolean; channelId: string; title?: string; count?: number }
+export function cleanShorts(v: unknown): ShortsSettings | undefined {
+  const o = (v ?? {}) as Record<string, unknown>
+  const channelId = String(o.channelId ?? '').trim()
+  if (!/^UC[\w-]{22}$/.test(channelId)) return undefined
+  const title = String(o.title ?? '').trim().slice(0, 20)
+  const n = Math.round(Number(o.count))
+  return { on: o.on === true, channelId, ...(title ? { title } : {}), ...(Number.isFinite(n) && n >= 3 && n <= 12 && n !== 6 ? { count: n } : {}) }
 }
 // SNS 링크 줄: 종류마다 1개, 최대 8개. 주소는 https:// 만 (유튜브·인스타 등 공개 주소)
 export const SOCIAL_KINDS = [

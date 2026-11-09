@@ -13,6 +13,8 @@ import SectionHeading from '@/components/site/SectionHeading'
 import MostViewed from '@/components/site/MostViewed'
 import FitRows from '@/components/site/FitRows'
 import WingFill from '@/components/site/WingFill'
+import ShortsSection from '@/components/site/ShortsSection'
+import { getShorts } from '@/lib/youtube-shorts'
 import HeroSlider from '@/components/site/HeroSlider'
 import MobileHero from '@/components/site/MobileHero'
 import ArticleRow from '@/components/site/ArticleRow'
@@ -164,6 +166,17 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const gapLeads = pool.filter(hasImage).slice(0, gap)
   const gapTitles = pool.filter((a) => !gapLeads.includes(a)).slice(0, gap * 3)
   const gapUsed = new Set([...gapLeads, ...gapTitles].map((a) => a.id))
+  // 유튜브 쇼츠 구역 (홈페이지 설정에서 켠 매체만): 채널의 최신 쇼츠를 자동으로 가져온다
+  const shortsCfg = site.shorts?.on ? site.shorts : null
+  const shortItems = shortsCfg ? await getShorts(shortsCfg.channelId, shortsCfg.count ?? 6) : []
+  const shortsSection = shortsCfg && shortItems.length ? (
+    <ShortsSection
+      title={shortsCfg.title || (L === 'en' ? 'Shorts' : '쇼츠')}
+      items={shortItems.map((x) => ({ id: x.id, title: x.title }))}
+      channelUrl={site.socials?.find((x) => x.kind === 'youtube')?.url ?? `https://www.youtube.com/channel/${shortsCfg.channelId}`}
+      en={L === 'en'}
+    />
+  ) : null
   const wingFill = (
     <WingFill title={L === 'en' ? 'More stories' : '기사 더 보기'}>
       {pool.filter((a) => !gapUsed.has(a.id)).slice(0, 60).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
@@ -328,6 +341,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         {!bandsMode && <AdArea site={site} slot="home_middle" className="pb-8" />}
       </div>
       <AdArea site={site} slot="popup" />
+
+      {shortsSection}
 
       {partnerBlock}
 
