@@ -19,7 +19,9 @@ const LENGTHS = [0, 800, 1000, 1500] as const
 type Len = (typeof LENGTHS)[number]
 const LEN_KEY = 'press-bulk-length'
 
-export default function PressBulkList({ rows, canHide = false, hiddenView = false }: { rows: BulkRow[]; canHide?: boolean; hiddenView?: boolean }) {
+export type AiUsageLine = { used: number; limit: number | null; mineUsed: number | null; mineLimit: number | null }
+
+export default function PressBulkList({ rows, canHide = false, hiddenView = false, aiUsage = null }: { rows: BulkRow[]; canHide?: boolean; hiddenView?: boolean; aiUsage?: AiUsageLine | null }) {
   const t = useT()
   const router = useRouter()
   const [hiding, setHiding] = useState(false)
@@ -108,6 +110,17 @@ export default function PressBulkList({ rows, canHide = false, hiddenView = fals
           </div>
         </div>
         {hideNote && <p role="status" className="mt-2 text-[12.5px] font-semibold text-ink">{hideNote}</p>}
+        {!hiddenView && aiUsage && aiUsage.limit != null && (
+          <p className={`mt-2 text-[12.5px] font-semibold ${aiUsage.used >= aiUsage.limit ? 'text-danger' : aiUsage.used >= aiUsage.limit * 0.8 ? 'text-draft' : 'text-ink'}`} role="status">
+            {t(`이번 달 AI 사용 ${aiUsage.used.toLocaleString()}/${aiUsage.limit.toLocaleString()}회`, `AI used this month: ${aiUsage.used.toLocaleString()} / ${aiUsage.limit.toLocaleString()}`)}
+            <span className="ml-1.5 font-normal text-muted">
+              {aiUsage.used >= aiUsage.limit
+                ? t('(한도를 다 썼습니다)', '(limit reached)')
+                : t(`(초안·법적 검수 합계 · ${(aiUsage.limit - aiUsage.used).toLocaleString()}회 남음)`, `(drafts + legal checks · ${(aiUsage.limit - aiUsage.used).toLocaleString()} left)`)}
+              {aiUsage.mineLimit != null && <> · {t(`내 몫 ${(aiUsage.mineUsed ?? 0).toLocaleString()}/${aiUsage.mineLimit.toLocaleString()}회`, `Mine ${(aiUsage.mineUsed ?? 0).toLocaleString()} / ${aiUsage.mineLimit.toLocaleString()}`)}</>}
+            </span>
+          </p>
+        )}
         {!hiddenView && <p className="mt-2 text-[11.5px] leading-relaxed text-muted">
           {t('체크한 보도자료를 AI가 기사 초안으로 써서 승인대기로 보냅니다. 발행은 편집장이 확인한 뒤에 합니다. 원문이 짧으면 분량을 채우려고 내용을 지어내지 않고 짧게 씁니다.', 'AI writes a draft story from each checked release and sends it to pending review; an editor publishes after checking. If the source is short, the draft stays short rather than inventing content.')}
         </p>}
