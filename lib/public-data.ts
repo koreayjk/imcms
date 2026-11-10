@@ -2,12 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies, headers } from 'next/headers'
 import { unstable_cache } from 'next/cache'
 import { demoArticles, demoSite } from './demo-articles'
-import { withLayout } from './sites'
+import { englishView, withLayout } from './sites'
 import { isLayoutDemoHost } from './home-layouts'
 import { SITES, applyOpenSchedule, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type LogoBlock, type LogoStrip, type OutletRow, type SiteConfig } from './sites'
 import { heroSecondsOf, logoBlockOf, logoStripOf, normalizeLayout, type SlotKey } from './home-layout'
 import { INDEX_WEEKS, type IndexKey, type IndexSeries } from './market-index'
 import { outletTag } from './outlet-cache'
+import { overlayTranslations } from './translate-overlay'
 
 export type PublicArticle = {
   id: string
@@ -58,6 +59,7 @@ const loadSite = unstable_cache(
 )
 
 export const PREVIEW_LAYOUT_COOKIE = 'im_preview_layout'
+export const LANG_COOKIE = 'im_lang'
 
 export async function currentSite(): Promise<SiteConfig> {
   const jar = await cookies()
@@ -69,7 +71,9 @@ export async function currentSite(): Promise<SiteConfig> {
   try {
     const site = applyOpenSchedule((await loadSite(host, /^[0-9a-f-]{36}$/.test(previewId ?? '') ? previewId : null)) ?? resolveSite(host))
     if (isLayoutDemoHost(host)) return { ...site, layoutDemo: true }
-    return site.preview ? withLayout(site, layout) : site
+    const shown = site.preview ? withLayout(site, layout) : site
+    // 영어 번역판: 번역을 켠 매체에서 독자가 "English" 버튼을 눌러 쿠키가 있으면 영어판 설정으로 바꿔 준다
+    return jar.get(LANG_COOKIE)?.value === 'en' && shown.translate?.langs.includes('en') ? englishView(shown) : shown
   } catch {
     return resolveSite(host)
   }
@@ -116,7 +120,7 @@ function outletCached<A extends unknown[], R>(name: string, load: (site: SiteCon
   return (site: SiteConfig, ...args: A): Promise<R> => {
     if (isDemo) return load(site, ...args)
     const id = cacheId(site)
-    return unstable_cache(() => load(site, ...args), ['outlet-data', name, id, sectionsKey(site), JSON.stringify(args)], {
+    return unstable_cache(async () => overlayTranslations(site, await load(site, ...args)), ['outlet-data', name, id, sectionsKey(site), site.viewLang ?? '', JSON.stringify(args)], {
       revalidate: CACHE_SECONDS,
       tags: [outletTag(id), 'sites'],
     })()
@@ -293,7 +297,17 @@ export async function searchArticles(site: SiteConfig, q: string) {
   if (!scope) return []
   const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
   const { data } = await published(scope).ilike('title', pattern).order('published_at', { ascending: false }).limit(30)
-  return (data ?? []).map(toPublic)
+  let list = (data ?? []).map(toPublic)
+  // 영어판에서는 영어 제목으로도 찾는다
+  if (site.viewLang === 'en') {
+    const { data: tr } = await scope.supabase.from('article_translations').select('article_id').eq('lang', 'en').ilike('title', pattern).limit(30)
+    const ids = (tr ?? []).map((r) => r.article_id as string).filter((id) => !list.some((a) => a.id === id))
+    if (ids.length) {
+      const { data: more } = await published(scope).in('id', ids).order('published_at', { ascending: false }).limit(30)
+      list = [...list, ...(more ?? []).map(toPublic)].slice(0, 30)
+    }
+  }
+  return overlayTranslations(site, list)
 }
 
 export type ArticleSource = { id: string; outletName: string; url: string | null }
@@ -478,7 +492,7 @@ export async function getArticleSidebar(site: SiteConfig) {
     published(scope).order('view_count', { ascending: false }).limit(8),
     published(scope).order('published_at', { ascending: false }).limit(5),
   ])
-  return { mostViewed: (mostViewed.data ?? []).map(toPublic), latest: (latest.data ?? []).map(toPublic) }
+  return overlayTranslations(site, { mostViewed: (mostViewed.data ?? []).map(toPublic), latest: (latest.data ?? []).map(toPublic) })
 }
 
 // ───────── 해운 운임지수 위젯 (SCFI·KCCI) ─────────

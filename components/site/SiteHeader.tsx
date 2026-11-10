@@ -3,6 +3,7 @@ import { childSections, dividerBefore, topSections, type SiteConfig } from '@/li
 import { formatToday } from '@/lib/format'
 import Logo from './Logo'
 import MobileHeader from './MobileHeader'
+import LangSwitch from './LangSwitch'
 import { SearchIcon } from './icons'
 import SocialLinks from './SocialLinks'
 import { siteText } from '@/lib/site-text'
@@ -28,6 +29,7 @@ export default function SiteHeader({ site, current }: Props) {
             {!!site.socials?.length && <SocialLinks items={site.socials} en={site.lang === 'en'} size="sm" labels={site.socials.length <= 2} />}
           </div>
           <nav className="flex items-center gap-4" aria-label={t.utilNav}>
+            <LangSwitch site={site} />
             <a href={`${mail}?subject=${encodeURIComponent(t.tipSubject)}`} className="hover:text-brand">{t.tip}</a>
             <a href={adsHref} className="hover:text-brand">{t.ads}</a>
             <Link href="/login" className="hover:text-brand">{t.login}</Link>

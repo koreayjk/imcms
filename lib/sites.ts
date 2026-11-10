@@ -122,6 +122,9 @@ export type SiteConfig = {
   plan?: string | null
   // 홈페이지 언어: ko(기본) / en(영문 매체 — 메뉴·날짜·안내 문구가 영어, lib/site-text.tsx)
   lang?: SiteLang
+  // 영어 번역판: 켜 둔 매체는 홈페이지 위에 "한글 | English" 버튼이 생긴다 (supabase/article-translations.sql). viewLang 은 영어판으로 보는 중일 때만 'en'
+  translate?: TranslateConfig
+  viewLang?: 'en'
   // 영문 홈페이지의 날짜·시각 시간대 (IANA 이름, 없으면 미국 동부)
   timeZone?: string
   // 기사 댓글 (독자 로그인 + 승인 후 공개, comments.sql). 기본 꺼짐
@@ -308,6 +311,7 @@ export type OutletSiteSettings = {
   iconUrl?: string
   trial?: boolean
   lang?: SiteLang
+  translate?: TranslateConfig
   // 영문 홈페이지의 날짜·시각 시간대 (IANA 이름, 없으면 미국 동부)
   timeZone?: string
   commentsOn?: boolean
@@ -321,6 +325,33 @@ export type OutletSiteSettings = {
   // AI 활용 표시: 켜면 AI 초안 기사 본문 끝에 문구를 붙인다 (lib/ai-notice.ts)
   aiNotice?: { on: boolean; text?: string }
   aiBots?: AiBotMode
+}
+
+// 영어 번역판 설정: langs 에 'en' 이 있으면 번역·영어 버튼이 켜진다. name·description·sections 는 영어판에서 보이는 매체 이름·소개·섹션 이름
+export type TranslateConfig = { langs: string[]; name?: string; description?: string; sections?: Record<string, string> }
+export function cleanTranslate(v: unknown): TranslateConfig | undefined {
+  if (!v || typeof v !== 'object') return undefined
+  const t = v as Partial<TranslateConfig>
+  if (!Array.isArray(t.langs) || !t.langs.includes('en')) return undefined
+  const sections: Record<string, string> = {}
+  for (const [k, n] of Object.entries(t.sections ?? {})) if (typeof n === 'string' && n.trim()) sections[k] = n.trim().slice(0, 80)
+  return { langs: ['en'], name: typeof t.name === 'string' ? t.name.slice(0, 80) : undefined, description: typeof t.description === 'string' ? t.description.slice(0, 400) : undefined, sections }
+}
+// 영어판으로 볼 때의 매체 설정 (메뉴·날짜·안내 문구는 lang 'en' 이 영어로 바꿔 준다)
+export function englishView(site: SiteConfig): SiteConfig {
+  const tr = site.translate
+  if (!tr) return site
+  return {
+    ...site,
+    lang: 'en',
+    viewLang: 'en',
+    name: tr.name || site.nameEn || site.name,
+    slogan: site.sloganEn || site.slogan,
+    description: tr.description || site.description,
+    specialtyTitle: 'In Focus',
+    timeZone: site.timeZone ?? 'Asia/Seoul',
+    sections: site.sections.map((s) => ({ ...s, name: tr.sections?.[s.slug] ?? s.name, description: undefined })),
+  }
 }
 
 export type OutletRow = { id: string; name: string; domain: string | null; site?: OutletSiteSettings | null; created_at?: string | null }
@@ -439,6 +470,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     iconUrl: (typeof s.iconUrl === 'string' && s.iconUrl) || undefined,
     trial: s.trial === true,
     lang: s.lang === 'en' ? 'en' : 'ko',
+    translate: cleanTranslate(s.translate),
     timeZone: isOpenZone(s.timeZone) ? s.timeZone : undefined,
     commentsOn: s.commentsOn === true,
     commentsKind: s.commentsKind === 'guest' ? 'guest' : 'login',
