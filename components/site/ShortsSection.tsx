@@ -8,18 +8,26 @@ export type ShortCard = { id: string; title: string; date?: string }
 
 // bare: 이미 폭·좌우 여백이 있는 칸 안에 넣을 때 (바깥 여백을 붙이지 않는다)
 export default function ShortsSection({ title, items, channelUrl, siteName, en, bare = false }: { title: string; items: ShortCard[]; channelUrl?: string; siteName?: string; en?: boolean; bare?: boolean }) {
-  const [open, setOpen] = useState<ShortCard | null>(null)
+  // 열려 있는 쇼츠의 순서 (null = 닫힘). 좌우 화살표로 앞뒤 쇼츠를 이어서 본다
+  const [idx, setIdx] = useState<number | null>(null)
+  const open = idx === null ? null : items[idx] ?? null
+  const total = items.length
+  const go = (d: number) => setIdx((i) => (i === null ? i : Math.min(total - 1, Math.max(0, i + d))))
 
   useEffect(() => {
-    if (!open) return
+    if (idx === null) return
     document.body.style.overflow = 'hidden'
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(null)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIdx(null)
+      else if (e.key === 'ArrowRight') setIdx((i) => (i === null ? i : Math.min(total - 1, i + 1)))
+      else if (e.key === 'ArrowLeft') setIdx((i) => (i === null ? i : Math.max(0, i - 1)))
+    }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', onKey)
     }
-  }, [open])
+  }, [idx, total])
 
   if (!items.length) return null
   return (
@@ -47,7 +55,7 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
             <li key={s.id} className="w-[44vw] max-w-[190px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none">
               <button
                 type="button"
-                onClick={() => setOpen(s)}
+                onClick={() => setIdx(items.indexOf(s))}
                 aria-label={`${s.title} — ${en ? 'play' : '재생'}`}
                 className="group relative block aspect-[9/16] w-full overflow-hidden rounded-xl bg-black text-left shadow-[0_4px_14px_rgba(20,30,50,0.18)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_28px_rgba(20,30,50,0.3)]"
               >
@@ -70,23 +78,39 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
 
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={open.title}>
-          <button type="button" aria-label={en ? 'Close' : '닫기'} onClick={() => setOpen(null)} className="absolute inset-0 bg-black/80" />
+          <button type="button" aria-label={en ? 'Close' : '닫기'} onClick={() => setIdx(null)} className="absolute inset-0 bg-black/80" />
           <div className="relative w-[min(92vw,calc((100dvh-9rem)*9/16))]">
-            <button type="button" onClick={() => setOpen(null)} className="absolute -top-10 right-0 text-[14px] font-semibold text-white">{en ? 'Close' : '닫기'} ✕</button>
-            <div className="aspect-[9/16] w-full overflow-hidden rounded-xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${open.id}?autoplay=1&rel=0&playsinline=1`}
-                title={open.title}
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen
-                className="h-full w-full"
-              />
+            <button type="button" onClick={() => setIdx(null)} className="absolute -top-10 right-0 text-[14px] font-semibold text-white">{en ? 'Close' : '닫기'} ✕</button>
+            <div className="relative">
+              <div className="aspect-[9/16] w-full overflow-hidden rounded-xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+                <iframe
+                  key={open.id}
+                  src={`https://www.youtube-nocookie.com/embed/${open.id}?autoplay=1&rel=0&playsinline=1`}
+                  title={open.title}
+                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  className="h-full w-full"
+                />
+              </div>
+              {/* 넓은 화면: 재생 창 양옆의 화살표 */}
+              {idx! > 0 && (
+                <button type="button" onClick={() => go(-1)} aria-label={en ? 'Previous short' : '이전 쇼츠'} className="absolute -left-14 top-1/2 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[20px] font-bold text-black shadow-lg hover:bg-white sm:grid">‹</button>
+              )}
+              {idx! < total - 1 && (
+                <button type="button" onClick={() => go(1)} aria-label={en ? 'Next short' : '다음 쇼츠'} className="absolute -right-14 top-1/2 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[20px] font-bold text-black shadow-lg hover:bg-white sm:grid">›</button>
+              )}
             </div>
             <div className="mt-2.5 flex items-start justify-between gap-3">
               <p className="line-clamp-2 text-[13px] leading-snug text-white/90">{open.title}</p>
               <a href={`https://www.youtube.com/shorts/${open.id}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 rounded-full border border-white/30 px-3 py-1 text-[12px] font-semibold text-white hover:bg-white hover:text-black">
                 {en ? 'Open on YouTube' : '유튜브에서 열기'} ↗
               </a>
+            </div>
+            {/* 아래 줄: 이전 · 몇 번째 · 다음 (휴대폰에서도 쓰는 버튼) */}
+            <div className="mt-3 flex items-center justify-center gap-4 text-white">
+              <button type="button" onClick={() => go(-1)} disabled={idx === 0} className="rounded-full border border-white/35 px-4 py-1.5 text-[13px] font-semibold disabled:opacity-30">{en ? '‹ Prev' : '‹ 이전'}</button>
+              <span className="text-[12.5px] tabular-nums text-white/75">{(idx ?? 0) + 1} / {total}</span>
+              <button type="button" onClick={() => go(1)} disabled={idx === total - 1} className="rounded-full border border-white/35 px-4 py-1.5 text-[13px] font-semibold disabled:opacity-30">{en ? 'Next ›' : '다음 ›'}</button>
             </div>
           </div>
         </div>
