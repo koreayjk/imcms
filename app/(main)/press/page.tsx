@@ -265,8 +265,10 @@ export default async function PressPage(props: Props) {
   const hiddenUsed = rowsAll.length - rows.length
   // 본문 글자 수 (공백 제외): 목록에 보이는 자료만 본문을 읽어 센다
   const bodyChars = new Map<string, number>()
+  const bodyHasImg = new Set<string>()
   for (let i = 0; i < rows.length; i += 40) {
     const { data: bs } = await supabase.from('press_releases').select('id, body_html').in('id', rows.slice(i, i + 40).map((r) => r.id))
+    for (const b of (bs ?? []) as { id: string; body_html: string | null }[]) { if (/<img\b/i.test(b.body_html ?? '')) bodyHasImg.add(b.id) }
     for (const b of (bs ?? []) as { id: string; body_html: string | null }[]) bodyChars.set(b.id, (b.body_html ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, '').length)
   }
   const newswireToday = (todayUses ?? []).filter((a: any) => a.press_release?.source_key?.startsWith('nw-')).length
@@ -390,6 +392,8 @@ export default async function PressPage(props: Props) {
               used: usedSet.has(r.id),
               chars: bodyChars.get(r.id) ?? null,
               photos: photoCount.get(r.id) ?? (r.image_url ? 1 : 0),
+              // 메일로 받은 자료는 사진이 없어도 보이므로, 사진(첨부·본문)이 없으면 "사진 없음"으로 표시한다
+              noPhoto: r.source_key === 'email' && !(photoCount.get(r.id) ?? 0) && !r.image_url && !bodyHasImg.has(r.id),
               badges: [
                 ...(r.source_key === MANUAL_SOURCE ? [t('직접 등록', 'Added manually')] : []),
                 ...(r.source_key === 'email' ? [t('메일', 'Email'), ...(r.mail_section ? [r.mail_section] : [])] : []),

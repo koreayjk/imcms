@@ -10,6 +10,9 @@ export const MIN_EN_WORDS = 150
 
 export type Quality = { ok: boolean; note: string }
 
+// 사진이 아닌 그림: 공공누리(KOGL) 이용허락 마크, 로고, 아이콘 등. 이런 그림은 보도자료 사진으로 세지 않는다
+export const isNonPhotoImage = (src: string) => /kogl|opentype|codetype|logo|icon|sprite|avatar|pixel|1x1|btn_|\/ico_|blank|noimg|no_image|noimage/i.test(src)
+
 const plain = (html: string) =>
   html.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim()
 
@@ -27,6 +30,8 @@ export function judgePress(sourceKey: string, bodyHtml: string | null, imageUrl:
     const w = text.split(' ').length
     if (w < MIN_EN_WORDS) return { ok: false, note: `글이 짧음 (${w}단어)` }
   }
-  if (!(imageUrl && imageUrl.trim()) && !/<img\b/i.test(html)) return { ok: false, note: '사진 없음' }
+  const hasMain = !!(imageUrl && imageUrl.trim()) && !isNonPhotoImage(imageUrl)
+  const hasInline = Array.from(html.matchAll(/<img\b[^>]*?\bsrc=["']([^"']+)["']/gi)).some((m) => !isNonPhotoImage(m[1]))
+  if (!hasMain && !hasInline) return { ok: false, note: '사진 없음' }
   return { ok: true, note: '' }
 }

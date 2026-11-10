@@ -169,7 +169,7 @@ export function parseNttDetail(page: string, base: string, label: string) {
   if (!m) return null
   const inner = m[2]
   const imgs = Array.from(inner.matchAll(/<img[^>]+src="([^"]+)"[^>]*>/gi), (x) => { try { return new URL(decode(x[1]), base).toString() } catch { return '' } })
-    .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
+    .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank|kogl|opentype|codetype/i.test(u))
   const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))
   const paras = paragraphs(inner.replace(/&nbsp;/gi, ' '))
   return paras.length ? build(paras, uniq, label) : null
@@ -534,7 +534,7 @@ export function parseBoardDetail(page: string, key: string, origin: string, labe
   // onError="this.src='…no_image.png'" 같은 속성 안의 src 를 사진 주소로 잘못 읽지 않게 이벤트 속성은 빼고 읽는다
   const noEvents = inner.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*')/gi, '')
   const imgs = Array.from(noEvents.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi), (x) => { try { return new URL(decode(x[1]), origin).toString() } catch { return '' } })
-    .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank/i.test(u))
+    .filter((u) => /^https?:\/\//.test(u) && !/ico|btn|icon|blank|kogl|opentype|codetype/i.test(u))
   const extra = cfg?.image?.exec(page)?.[1]
   if (extra) { try { imgs.unshift(new URL(decode(extra).replace(/;jsessionid=[^?"']*/i, ''), origin).toString().replace(/^http:\/\/www\.suwon\.go\.kr/, 'https://www.suwon.go.kr')) } catch { /* 주소를 못 읽으면 건너뜀 */ } }
   const uniq = imgs.filter((u, n) => imgs.indexOf(u) === n).map((src) => ({ src }))

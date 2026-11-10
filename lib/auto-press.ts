@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isNonPhotoImage } from './press-quality'
 import { AiDraftError, activeModel, aiReady, draftWithModel, type AiDraft } from './ai-draft'
 import { checkLegal, legalModel } from './ai-legal'
 import type { LegalCheck } from './legal-types'
@@ -15,7 +16,7 @@ import { buildSite, hasPressTiers, type OutletRow } from './sites'
 
 export type Plan = {
   outlet: OutletRow
-  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
+  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; publish_hour?: number | null; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
   today: number
   categories: { id: string; slug: string; name: string }[]
 }
@@ -163,7 +164,7 @@ function pressPhoto(r: PressRelease): { src: string; caption: string } | null {
   const html = r.body_html ?? ''
   const m = /<img[^>]+src="(https:\/\/[^"]+)"[^>]*>(?:<p><em>▲\s*([\s\S]*?)<\/em><\/p>)?/i.exec(html)
   const src = (m?.[1] ?? r.image_url ?? '').trim()
-  if (!/^https:\/\//.test(src) || /logo|icon|sprite|avatar|pixel|1x1/i.test(src)) return null
+  if (!/^https:\/\//.test(src) || isNonPhotoImage(src)) return null
   const cap = m?.[2]?.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').trim()
   return { src: src.replace(/&amp;/g, '&'), caption: cap || '' }
 }
@@ -214,6 +215,9 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
   // 맞춤 자료(그룹)를 정해 둔 매체는 그 자료 중에서 지역별로 골고루 고르고, 쓴 기사는 매체 AI 한도에 1회로 센다
   const tiered = hasPressTiers(buildSite(p.outlet, []).pressTiers)
   const counting = tiered && opts.count !== false
+  // 승인 없이 발행하는 매체(publish_hour)는 본문 500자 이상·사진 필수 (미달이면 그 보도자료는 건너뛰고 다음 후보로)
+  const autoPublish = p.cfg.publish_hour != null
+  const MIN_PUBLISH_CHARS = 500
   if (counting) {
     const { data: left } = await supabase.rpc('auto_press_ai_left', { secret, p_outlet: outletId })
     const l = left as { limit: number | null; used: number; overage: boolean } | null
@@ -258,7 +262,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
 
       // 2) AI 기사
       const left = 52_000 - (Date.now() - started)
-      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: selectableCategories(p).map((c) => c.name) }, Math.min(30_000, left - 18_000))
+      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: selectableCategories(p).map((c) => c.name), ...(autoPublish ? { length: 800 } : {}) }, Math.min(30_000, left - 18_000))
       const draft: AiDraft = dr.draft
       let cost = dr.costUsd
 
@@ -289,6 +293,12 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
           if (hit) { is.decision = 'fixed'; fixed.push(is.reason) }
         }
         legal.content_hash = legalContentHash(title, subtitle, paras.join('\n\n'))
+      }
+
+      // 4-1) 자동 발행 매체: 본문(공백 포함)이 500자 미만이면 발행하지 않는다 (영문 매체는 해당 없음)
+      if (autoPublish && !english) {
+        const size = paras.join('').length
+        if (size < MIN_PUBLISH_CHARS) { await note(r.id, false, `본문 ${size}자로 ${MIN_PUBLISH_CHARS}자 미만이라 건너뜀`, cost); failures.push(`본문 ${size}자`); continue }
       }
 
       // 5) 사진: 보도자료 사진 → 없으면 기사 내용으로 무료 공개 사진 검색
@@ -331,16 +341,19 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
       } else notes.push(`⚠ AI 법적 검수를 하지 못했습니다 (${legalErr}). 기사 편집 화면의 'AI 검수'를 먼저 실행한 뒤 승인하세요.`)
       notes.push(...draft.review_notes)
       notes.push(photoNote)
-      notes.push(`자동 작성 기사: 보도자료 '${r.title}' (${sourceLabel(r)})를 바탕으로 AI가 쓰고 법적 검수를 거쳐 승인 대기로 올렸습니다. 원문: ${r.link}`)
+      // 발행 시각(publish_hour)을 정한 매체는 승인 없이 그 시각에 발행되게 저장한다. 다만 AI 법적 검수를 못 했거나 위험도가 '높음'이면 사람이 보도록 승인 대기로 둔다
+      const hold = p.cfg.publish_hour == null || !legal || legal.risk === 'high'
+      if (p.cfg.publish_hour != null && hold) notes.push('⚠ 자동 발행 대상이었지만 법적 검수 결과(미실행 또는 위험도 높음) 때문에 승인 대기로 두었습니다. 편집장이 확인한 뒤 발행하세요.')
+      notes.push(`자동 작성 기사: 보도자료 '${r.title}' (${sourceLabel(r)})를 바탕으로 AI가 쓰고 법적 검수를 거쳐 ${hold ? '승인 대기로 올렸습니다' : `${p.cfg.publish_hour}시 발행으로 예약했습니다 (승인 없이 자동 발행)`}. 원문: ${r.link}`)
 
       const { data: id, error: se } = await supabase.rpc('auto_press_save', {
         secret, p_outlet: outletId, p_press: r.id, p_category: pickCategory(p, { ...draft, title, paragraphs: paras }),
         p_title: title, p_body: body, p_excerpt: subtitle || null, p_thumb: photo.src, p_tags: draft.keywords ?? [],
-        p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)),
+        p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)), p_hold: hold,
       })
       if (se) { await note(r.id, false, `저장 실패: ${se.message}`, cost); failures.push(se.message); continue }
       if (counting && id) await supabase.rpc('auto_press_ai_count', { secret, p_outlet: outletId, p_user: p.cfg.author_id, p_model: model.id, p_tin: dr.inputTokens, p_tout: dr.outputTokens, p_cost: Number(cost.toFixed(5)) })
-      return { outlet: name, status: 'saved', message: `승인 대기로 저장: ${title}`, articleId: id as string | null }
+      return { outlet: name, status: 'saved', message: `${hold ? '승인 대기로 저장' : `${p.cfg.publish_hour}시 발행 예약`}: ${title}`, articleId: id as string | null }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류'
       await note(r.id, false, `실패: ${msg}`)

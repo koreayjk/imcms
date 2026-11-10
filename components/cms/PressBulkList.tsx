@@ -9,7 +9,7 @@ import { ImageIcon } from '@/components/cms/icons'
 import { hidePress } from '@/app/(main)/press/actions'
 
 // 보도자료 목록 + 일괄 만들기: 체크한 보도자료를 AI로 기사로 만들어 "승인대기"로 보낸다 (한 번에 최대 10건, 한 건씩 차례로)
-export type BulkRow = { id: string; title: string; summary: string | null; sourceName: string; date: string; dateIso: string | null; used: boolean; chars: number | null; photos: number; badges: string[]; head: string | null }
+export type BulkRow = { id: string; title: string; summary: string | null; sourceName: string; date: string; dateIso: string | null; used: boolean; chars: number | null; photos: number; noPhoto?: boolean; badges: string[]; head: string | null }
 
 const MAX = 10
 // 가리기·되돌리기는 한 번에 50건까지 (AI 기사 만들기는 10건까지)
@@ -164,6 +164,7 @@ export default function PressBulkList({ rows, canHide = false, hiddenView = fals
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-muted">
                   {r.badges.map((b) => <span key={b} className="rounded bg-ink/10 px-1.5 py-0.5 font-semibold text-ink">{b}</span>)}
                   {r.chars !== null && <span className="tabular-nums" title={t('본문 글자 수(공백 제외)', 'Body characters (no spaces)')}>{r.chars.toLocaleString()}{t('자', ' chars')}</span>}
+                  {r.noPhoto && <span className="rounded bg-[#FFF1E0] px-1.5 py-0.5 font-semibold text-[#9A4B00]" title={t('이 메일에는 사진이 없습니다 (첨부·본문 모두)', 'This email has no photo (attachment or inline)')}>{t('사진 없음', 'No photo')}</span>}
                   <span className="rounded bg-line/70 px-1.5 py-0.5">{r.sourceName}</span>
                   <time className="tabular-nums" dateTime={r.dateIso ?? undefined}>{r.date}</time>
                   {r.used && <span className="rounded bg-published/10 px-1.5 py-0.5 font-semibold text-published">{t('기사화됨', 'Story created')}</span>}
