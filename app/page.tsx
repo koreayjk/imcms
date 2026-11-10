@@ -168,7 +168,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const gapUsed = new Set([...gapLeads, ...gapTitles].map((a) => a.id))
   // 유튜브 쇼츠 구역 (홈페이지 설정에서 켠 매체만): 채널의 최신 쇼츠를 자동으로 가져온다
   const shortsCfg = site.shorts?.on ? site.shorts : null
-  const shortItems = shortsCfg ? await getShorts(shortsCfg.channelId, shortsCfg.count ?? 12) : []
+  const shortItems = shortsCfg ? await getShorts(shortsCfg.channelId, shortsCfg.count ?? 20) : []
   // 표준 홈(주요뉴스 + 많이 본 뉴스)에서는 톱 기사 바로 아래(bare), 섹션 띠·포털 배치에서는 예전 자리에 둔다
   const makeShorts = (bare: boolean) => shortsCfg && shortItems.length ? (
     <ShortsSection

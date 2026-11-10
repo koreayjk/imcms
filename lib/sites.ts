@@ -541,7 +541,7 @@ export function cleanLogoStrip(v: unknown): LogoStrip | undefined {
   if (!items.length) return undefined
   return { title: String(o.title ?? '').trim().slice(0, 30) || undefined, speed: o.speed === 'slow' || o.speed === 'fast' ? o.speed : undefined, items }
 }
-// 홈페이지 쇼츠 구역: 유튜브 채널(UC로 시작하는 24자 ID)의 쇼츠를 최신순으로 count개 (3~12, 기본 12). 한 화면에 6개씩 보이고 화살표로 넘긴다
+// 홈페이지 쇼츠 구역: 유튜브 채널(UC로 시작하는 24자 ID)의 쇼츠를 최신순으로 count개 (3~30, 기본 20). 한 화면에 6개씩 보이고 화살표로 넘긴다. 유튜브가 공개 목록으로는 최근 15개까지만 줘서, 그 이상은 YOUTUBE_API_KEY 가 있어야 한다
 export type ShortsSettings = { on: boolean; channelId: string; title?: string; count?: number }
 export function cleanShorts(v: unknown): ShortsSettings | undefined {
   const o = (v ?? {}) as Record<string, unknown>
@@ -549,7 +549,7 @@ export function cleanShorts(v: unknown): ShortsSettings | undefined {
   if (!/^UC[\w-]{22}$/.test(channelId)) return undefined
   const title = String(o.title ?? '').trim().slice(0, 20)
   const n = Math.round(Number(o.count))
-  return { on: o.on === true, channelId, ...(title ? { title } : {}), ...(Number.isFinite(n) && n >= 3 && n <= 12 && n !== 12 ? { count: n } : {}) }
+  return { on: o.on === true, channelId, ...(title ? { title } : {}), ...(Number.isFinite(n) && n >= 3 && n <= 30 && n !== 20 ? { count: n } : {}) }
 }
 // SNS 링크 줄: 종류마다 1개, 최대 8개. 주소는 https:// 만 (유튜브·인스타 등 공개 주소)
 export const SOCIAL_KINDS = [
