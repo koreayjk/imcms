@@ -262,7 +262,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
 
       // 2) AI 기사
       const left = 52_000 - (Date.now() - started)
-      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: selectableCategories(p).map((c) => c.name), ...(autoPublish ? { length: 800 } : {}) }, Math.min(30_000, left - 18_000))
+      const dr = await draftWithModel(model.id, { title: r.title, text, source: sourceLabel(r), foreign: isForeignSource(r.source_key), us: isUsSource(r.source_key), topic: foreignTopicOf(r.source_key) ?? undefined, link: r.link, categories: selectableCategories(p).map((c) => c.name), ...(autoPublish && !english ? { length: 800 } : {}) }, Math.min(30_000, left - 18_000))
       const draft: AiDraft = dr.draft
       let cost = dr.costUsd
 
