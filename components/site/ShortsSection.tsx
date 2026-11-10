@@ -24,19 +24,19 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
   if (!items.length) return null
   return (
     <section aria-labelledby="shorts-title" className={bare ? 'mt-8 lg:mt-2' : 'mx-auto mb-9 max-w-[1200px] px-4'}>
-      <div className="overflow-hidden rounded-2xl bg-[#0E131B] px-4 pb-6 pt-6 shadow-[0_10px_30px_rgba(10,16,28,0.18)] sm:px-7 sm:pb-7">
+      <div className="overflow-hidden rounded-2xl border border-[#E3E7EE] bg-gradient-to-b from-[#F7F9FC] to-[#EDF1F7] px-4 pb-6 pt-6 shadow-[0_8px_26px_rgba(30,50,90,0.08)] sm:px-7 sm:pb-7">
         <div className="mb-5 flex items-end justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span aria-hidden className="grid h-8 w-11 place-items-center rounded-[9px] bg-[#FF0000] shadow-[0_4px_14px_rgba(255,0,0,0.35)]">
+            <span aria-hidden className="grid h-8 w-11 place-items-center rounded-[9px] bg-[#FF0000] shadow-[0_4px_12px_rgba(255,0,0,0.25)]">
               <svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5.5v13l11-6.5z" fill="#fff" /></svg>
             </span>
             <div>
-              <p className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-[#FF5A52]">{siteName ? `${siteName} · Shorts` : 'Shorts'}</p>
-              <h2 id="shorts-title" className="text-[21px] font-extrabold leading-tight tracking-[-0.03em] text-white">{title}</h2>
+              <p className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-[#E0352B]">{siteName ? `${siteName} · Shorts` : 'Shorts'}</p>
+              <h2 id="shorts-title" className="text-[21px] font-extrabold leading-tight tracking-[-0.03em] text-body">{title}</h2>
             </div>
           </div>
           {channelUrl && (
-            <a href={channelUrl} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 rounded-full border border-white/25 px-3.5 py-1.5 text-[12.5px] font-semibold text-white/90 transition-colors hover:border-white hover:bg-white hover:text-[#0E131B]">
+            <a href={channelUrl} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 rounded-full border border-[#C9D0DC] bg-white px-3.5 py-1.5 text-[12.5px] font-semibold text-body transition-colors hover:border-body hover:bg-body hover:text-white">
               {en ? 'YouTube channel' : '유튜브 채널'} ↗
             </a>
           )}
@@ -49,7 +49,7 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
                 type="button"
                 onClick={() => setOpen(s)}
                 aria-label={`${s.title} — ${en ? 'play' : '재생'}`}
-                className="group relative block aspect-[9/16] w-full overflow-hidden rounded-xl bg-black text-left ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:ring-white/40 hover:shadow-[0_14px_28px_rgba(0,0,0,0.5)]"
+                className="group relative block aspect-[9/16] w-full overflow-hidden rounded-xl bg-black text-left shadow-[0_4px_14px_rgba(20,30,50,0.18)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_28px_rgba(20,30,50,0.3)]"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`https://i.ytimg.com/vi/${s.id}/oardefault.jpg`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
