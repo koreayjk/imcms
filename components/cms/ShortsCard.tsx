@@ -43,8 +43,8 @@ export default function ShortsCard({ value, onChange }: { value?: ShortsSettings
         <label className="block text-[12.5px]"><span className="mb-1 block font-semibold">{t('구역 제목', 'Section title')}</span>
           <input value={cur.title ?? ''} maxLength={20} onChange={(e) => put({ title: e.target.value })} placeholder={t('쇼츠', 'Shorts')} className="field-input" />
         </label>
-        <label className="block text-[12.5px]"><span className="mb-1 block font-semibold">{t('보여 줄 개수', 'How many')}</span>
-          <select value={cur.count ?? 6} onChange={(e) => put({ count: Number(e.target.value) })} className="field-input">
+        <label className="block text-[12.5px]"><span className="mb-1 block font-semibold">{t('가져올 쇼츠 개수 (한 화면에 6개씩)', 'How many to load (6 per screen)')}</span>
+          <select value={cur.count ?? 12} onChange={(e) => put({ count: Number(e.target.value) })} className="field-input">
             {Array.from({ length: 10 }, (_, i) => i + 3).map((n) => <option key={n} value={n}>{t(`${n}개`, String(n))}</option>)}
           </select>
         </label>

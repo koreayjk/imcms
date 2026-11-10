@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // 홈페이지 "쇼츠" 구역: 유튜브 쇼츠를 세로 카드로 보여 주고, 누르면 홈페이지 안에서 재생 창이 뜬다 (유튜브 공식 재생기, 쿠키 없는 주소)
 //   홈 안 재생기는 로그인 상태가 아니라 재생기 안의 좋아요·공유는 동작하지 않는다 → 재생 창 아래에 "유튜브에서 열기" 링크를 둔다
@@ -13,6 +13,75 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
   const open = idx === null ? null : items[idx] ?? null
   const total = items.length
   const go = (d: number) => setIdx((i) => (i === null ? i : Math.min(total - 1, Math.max(0, i + d))))
+
+  // 카드 줄: 한 화면(PC는 6개)씩 좌우 화살표로 넘긴다
+  const row = useRef<HTMLUListElement>(null)
+  const [edge, setEdge] = useState({ l: false, r: false })
+  const measure = () => {
+    const el = row.current
+    if (!el) return
+    setEdge({ l: el.scrollLeft > 8, r: el.scrollLeft + el.clientWidth < el.scrollWidth - 8 })
+  }
+  useEffect(() => {
+    measure()
+    const el = row.current
+    window.addEventListener('resize', measure)
+    el?.addEventListener('scroll', measure, { passive: true })
+    return () => { window.removeEventListener('resize', measure); el?.removeEventListener('scroll', measure) }
+  }, [items.length])
+  const slide = (dir: number) => {
+    const el = row.current
+    if (el) el.scrollBy({ left: dir * (el.clientWidth + 16), behavior: 'smooth' })
+  }
+
+  // 한 편이 끝나면 자동으로 다음 쇼츠로 (유튜브 재생기가 보내 주는 상태 신호를 받는다. 쇼츠는 끝나면 처음부터 다시 도는 경우가 있어, 재생 위치가 되감기는 것도 "끝남"으로 본다)
+  const [auto, setAuto] = useState(true)
+  const frame = useRef<HTMLIFrameElement>(null)
+  const track = useRef({ t: 0, d: 0, done: false })
+  const YT = 'https://www.youtube-nocookie.com'
+  const listen = () => {
+    const w = frame.current?.contentWindow
+    if (!w) return
+    const post = (m: object) => { try { w.postMessage(JSON.stringify(m), YT) } catch { /* 무시 */ } }
+    post({ event: 'listening', id: 1, channel: 'widget' })
+    post({ event: 'command', func: 'addEventListener', args: ['onStateChange'], id: 1, channel: 'widget' })
+  }
+  const onFrameLoad = () => {
+    track.current = { t: 0, d: 0, done: false }
+    listen()
+    // 재생기가 준비되는 시간이 영상마다 달라서 몇 번 더 알린다
+    window.setTimeout(listen, 700)
+    window.setTimeout(listen, 2000)
+  }
+  useEffect(() => {
+    if (idx === null || !auto) return
+    const advance = () => {
+      if (track.current.done) return
+      track.current.done = true
+      setIdx((i) => (i !== null && i < total - 1 ? i + 1 : i))
+    }
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== YT && e.origin !== 'https://www.youtube.com') return
+      if (e.source !== frame.current?.contentWindow) return
+      let d: { event?: string; info?: unknown } | null = null
+      try { d = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data as typeof d) } catch { return }
+      if (!d || typeof d !== 'object') return
+      const info = d.info as { playerState?: number; currentTime?: number; duration?: number } | number | undefined
+      if (d.event === 'onStateChange' && info === 0) return advance()
+      if (d.event === 'infoDelivery' && info && typeof info === 'object') {
+        if (info.playerState === 0) return advance()
+        if (typeof info.currentTime === 'number') {
+          const dur = Number(info.duration) || track.current.d
+          if (dur) track.current.d = dur
+          const prev = track.current.t
+          track.current.t = info.currentTime
+          if (prev > 1 && info.currentTime < prev - 1 && prev >= (track.current.d || Infinity) - 2) advance()
+        }
+      }
+    }
+    window.addEventListener('message', onMsg)
+    return () => window.removeEventListener('message', onMsg)
+  }, [idx, auto, total])
 
   useEffect(() => {
     if (idx === null) return
@@ -50,9 +119,10 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
           )}
         </div>
 
-        <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-7 sm:px-7 lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-4 lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden">
+        <div className="relative">
+        <ul ref={row} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 pb-1 [scrollbar-width:none] sm:-mx-7 sm:px-7 lg:mx-0 lg:gap-4 lg:px-0 [&::-webkit-scrollbar]:hidden">
           {items.map((s) => (
-            <li key={s.id} className="w-[44vw] max-w-[190px] flex-shrink-0 snap-start lg:w-auto lg:max-w-none">
+            <li key={s.id} className="w-[44vw] max-w-[190px] flex-shrink-0 snap-start lg:w-[calc((100%-5rem)/6)] lg:max-w-none">
               <button
                 type="button"
                 onClick={() => setIdx(items.indexOf(s))}
@@ -74,6 +144,13 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
             </li>
           ))}
         </ul>
+        {edge.l && (
+          <button type="button" onClick={() => slide(-1)} aria-label={en ? 'Previous shorts' : '이전 쇼츠'} className="absolute -left-3 top-1/2 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white text-[22px] font-bold text-body shadow-[0_6px_18px_rgba(20,30,50,0.28)] hover:bg-body hover:text-white lg:grid">‹</button>
+        )}
+        {edge.r && (
+          <button type="button" onClick={() => slide(1)} aria-label={en ? 'More shorts' : '다음 쇼츠 보기'} className="absolute -right-3 top-1/2 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white text-[22px] font-bold text-body shadow-[0_6px_18px_rgba(20,30,50,0.28)] hover:bg-body hover:text-white lg:grid">›</button>
+        )}
+        </div>
       </div>
 
       {open && (
@@ -85,7 +162,9 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
               <div className="aspect-[9/16] w-full overflow-hidden rounded-xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
                 <iframe
                   key={open.id}
-                  src={`https://www.youtube-nocookie.com/embed/${open.id}?autoplay=1&rel=0&playsinline=1`}
+                  ref={frame}
+                  onLoad={onFrameLoad}
+                  src={`${YT}/embed/${open.id}?autoplay=1&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window === 'undefined' ? '' : window.location.origin)}`}
                   title={open.title}
                   allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                   allowFullScreen
@@ -112,6 +191,10 @@ export default function ShortsSection({ title, items, channelUrl, siteName, en, 
               <span className="text-[12.5px] tabular-nums text-white/75">{(idx ?? 0) + 1} / {total}</span>
               <button type="button" onClick={() => go(1)} disabled={idx === total - 1} className="rounded-full border border-white/35 px-4 py-1.5 text-[13px] font-semibold disabled:opacity-30">{en ? 'Next ›' : '다음 ›'}</button>
             </div>
+            <label className="mt-2.5 flex cursor-pointer items-center justify-center gap-2 text-[12.5px] text-white/80">
+              <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+              {en ? 'Auto-play the next short' : '끝나면 자동으로 다음 쇼츠'}
+            </label>
           </div>
         </div>
       )}

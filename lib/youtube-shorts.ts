@@ -27,6 +27,6 @@ async function loadShorts(channelId: string): Promise<Short[]> {
 
 const cached = unstable_cache(loadShorts, ['yt-shorts-v1'], { revalidate: 1800, tags: ['shorts'] })
 
-export async function getShorts(channelId: string, count = 6): Promise<Short[]> {
+export async function getShorts(channelId: string, count = 12): Promise<Short[]> {
   try { return (await cached(channelId)).slice(0, count) } catch { return [] }
 }
