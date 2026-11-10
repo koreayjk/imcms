@@ -21,6 +21,8 @@ function isPublicPath(pathname: string) {
     pathname === '/ko-kr' || pathname.startsWith('/ko-kr/') ||
     pathname.startsWith('/section/') ||
     pathname === '/search' ||
+    // 홈페이지 "한글 | English" 언어 버튼
+    pathname === '/lang' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
     // 체험 신청·체험 종료 안내 (trial.sql)

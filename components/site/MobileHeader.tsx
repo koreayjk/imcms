@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import LangSwitch from './LangSwitch'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { childSections, dividerBefore, topSections, type SiteConfig } from '@/lib/sites'
@@ -63,9 +64,12 @@ export default function MobileHeader({ site, current }: Props) {
           <MenuIcon />
         </button>
         <Logo site={site} size="sm" />
-        <Link href="/search" aria-label={t.searchArticles} className="grid h-11 w-11 place-items-center text-body">
-          <SearchIcon />
-        </Link>
+        <div className="flex items-center">
+          <LangSwitch site={site} className="mr-1 text-[12px]" />
+          <Link href="/search" aria-label={t.searchArticles} className="grid h-11 w-11 place-items-center text-body">
+            <SearchIcon />
+          </Link>
+        </div>
       </div>
 
       <nav className="bg-brand" aria-label={t.mainNav}>
