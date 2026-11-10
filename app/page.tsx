@@ -169,8 +169,10 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // 유튜브 쇼츠 구역 (홈페이지 설정에서 켠 매체만): 채널의 최신 쇼츠를 자동으로 가져온다
   const shortsCfg = site.shorts?.on ? site.shorts : null
   const shortItems = shortsCfg ? await getShorts(shortsCfg.channelId, shortsCfg.count ?? 6) : []
-  const shortsSection = shortsCfg && shortItems.length ? (
+  // 표준 홈(주요뉴스 + 많이 본 뉴스)에서는 톱 기사 바로 아래(bare), 섹션 띠·포털 배치에서는 예전 자리에 둔다
+  const makeShorts = (bare: boolean) => shortsCfg && shortItems.length ? (
     <ShortsSection
+      bare={bare}
       title={shortsCfg.title || (L === 'en' ? 'Shorts' : '쇼츠')}
       items={shortItems.map((x) => ({ id: x.id, title: x.title, date: formatShort(x.published, L) }))}
       siteName={site.name}
@@ -178,6 +180,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       en={L === 'en'}
     />
   ) : null
+  const shortsSection = makeShorts(false)
+  const shortsTop = makeShorts(true)
   const wingFill = (
     <WingFill title={L === 'en' ? 'More stories' : '기사 더 보기'}>
       {pool.filter((a) => !gapUsed.has(a.id)).slice(0, 60).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
@@ -294,6 +298,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
         {!bandsMode && (
           <>
+        {/* ── 쇼츠: 톱 기사 바로 아래 ── */}
+        {shortsTop}
+
         {/* ── 주요뉴스 + 많이 본 뉴스 ── */}
         <div data-fit-grid className="grid grid-cols-1 gap-10 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <section id="major" className="scroll-mt-28">
@@ -343,7 +350,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </div>
       <AdArea site={site} slot="popup" />
 
-      {shortsSection}
+      {bandsMode && shortsSection}
 
       {partnerBlock}
 

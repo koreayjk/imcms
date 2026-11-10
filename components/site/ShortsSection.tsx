@@ -2,10 +2,11 @@
 //   (홈 안에서 재생하는 유튜브 재생기는 로그인이 안 돼 좋아요·공유가 안 먹어서 쓰지 않는다)
 export type ShortCard = { id: string; title: string; date?: string }
 
-export default function ShortsSection({ title, items, channelUrl, siteName, en }: { title: string; items: ShortCard[]; channelUrl?: string; siteName?: string; en?: boolean }) {
+// bare: 이미 폭·좌우 여백이 있는 칸 안에 넣을 때 (바깥 여백을 붙이지 않는다)
+export default function ShortsSection({ title, items, channelUrl, siteName, en, bare = false }: { title: string; items: ShortCard[]; channelUrl?: string; siteName?: string; en?: boolean; bare?: boolean }) {
   if (!items.length) return null
   return (
-    <section aria-labelledby="shorts-title" className="mx-auto mb-9 max-w-[1200px] px-4">
+    <section aria-labelledby="shorts-title" className={bare ? 'mt-8 lg:mt-2' : 'mx-auto mb-9 max-w-[1200px] px-4'}>
       <div className="overflow-hidden rounded-2xl bg-[#0E131B] px-4 pb-6 pt-6 shadow-[0_10px_30px_rgba(10,16,28,0.18)] sm:px-7 sm:pb-7">
         <div className="mb-5 flex items-end justify-between gap-3">
           <div className="flex items-center gap-3">
