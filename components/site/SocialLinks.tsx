@@ -2,7 +2,7 @@ import { SOCIAL_KINDS, type SocialLink } from '@/lib/sites'
 
 // SNS 링크 줄: 매체 설정(SNS 링크)에 넣은 공식 계정을 각 서비스 색의 둥근 네모 아이콘으로 보여 준다. 새 창으로 열린다
 //   size: 'sm' = 머리글·모바일 메뉴(26px), 'md' = 하단(30px). labels = 아이콘 옆에 이름도 써 준다 (1~2개만 넣었을 때 눈에 띄게)
-const svg = { viewBox: '0 0 24 24', fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const
+const svg = { viewBox: '0 0 24 24', width: '100%', height: '100%', fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const
 const text = (ch: string, small = false) => <span aria-hidden className={`font-bold leading-none text-white ${small ? 'text-[8px] tracking-tight' : 'text-[13px]'}`}>{ch}</span>
 
 const BRAND: Record<SocialLink['kind'], { bg: string; glyph: React.ReactNode }> = {
@@ -31,10 +31,10 @@ export default function SocialLinks({ items, en, size = 'md', labels = false }: 
         return (
           <li key={x.kind}>
             <a href={x.url} target="_blank" rel="noopener noreferrer" aria-label={name} title={name}
-              className={`${labels ? 'inline-flex items-center gap-1.5' : 'grid place-items-center'} transition-opacity hover:opacity-80`}
-              style={labels ? undefined : { width: box, height: box, background: b.bg, borderRadius: 5 }}>
-              <span className="grid place-items-center" style={labels ? { width: box, height: box, background: b.bg, borderRadius: 5 } : { width: box * 0.8, height: box * 0.8 }}>
-                <span className="grid place-items-center" style={labels ? { width: box * 0.8, height: box * 0.8 } : undefined}>{b.glyph}</span>
+              className={`${labels ? 'inline-flex items-center gap-1.5' : 'inline-flex'} transition-opacity hover:opacity-80`}>
+              {/* 서비스 색 타일 + 그 안의 로고 모양 (글자 아이콘은 크기를 정해 줘야 SVG가 사라지지 않는다) */}
+              <span className="grid place-items-center" style={{ width: box, height: box, background: b.bg, borderRadius: 5 }}>
+                <span className="grid place-items-center" style={{ width: box * 0.78, height: box * 0.78 }}>{b.glyph}</span>
               </span>
               {labels && <span className="text-[13px] font-bold text-body">{name}</span>}
             </a>
