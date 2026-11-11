@@ -229,12 +229,13 @@ export async function ensureFullBody(supabase: SupabaseClient, r: PressRelease, 
   }
   const src = findPressSource(r.source_key)
   if (src?.kind === 'gov') {
-    // 평택시는 상세가 폼 전송이라 본문을 가져오지 못한다 (목록 요약만 있음)
-    if (r.body_html || src.adapter === 'pyeongtaek' || src.adapter === 'gyeongbuk') return r
+    // 경북은 상세를 가져오지 못한다 (목록 요약만 있음). 평택시는 view.do?idx=… 주소로 열린다
+    // 평택시 예전 자료는 링크가 목록 주소라 상세를 열지 못하므로 건너뛴다 (새로 모으는 자료부터 상세 주소)
+    if (r.body_html || src.adapter === 'gyeongbuk' || (src.adapter === 'pyeongtaek' && !/[?&]idx=\d+/.test(r.link))) return r
     try {
       const page = await fetchText(r.link, 12000)
       const label = r.source_name.replace(/ 보도자료.*$/, '')
-      const parsed = src.adapter === 'ansan' ? parseAnsanDetail(page, label) : src.adapter === 'ntt' ? parseNttDetail(page, new URL(r.link).origin, label) : (src.adapter === 'board' || src.adapter === 'incheon' || src.adapter === 'seoul' || src.adapter === 'jeju') ? parseBoardDetail(page, r.source_key, new URL(r.link).origin, label) : parseGnewsDetail(page, label)
+      const parsed = src.adapter === 'ansan' ? parseAnsanDetail(page, label) : src.adapter === 'ntt' ? parseNttDetail(page, new URL(r.link).origin, label) : (src.adapter === 'board' || src.adapter === 'incheon' || src.adapter === 'seoul' || src.adapter === 'jeju' || src.adapter === 'pyeongtaek') ? parseBoardDetail(page, r.source_key, new URL(r.link).origin, label) : parseGnewsDetail(page, label)
       if (!parsed) return r
       await save(r.id, { body_html: parsed.html, image_url: parsed.image })
       return { ...r, body_html: parsed.html, image_url: parsed.image }

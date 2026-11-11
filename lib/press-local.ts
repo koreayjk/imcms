@@ -101,7 +101,7 @@ export function parseGnewsDetail(page: string, label = '경기도뉴스포털') 
 }
 
 // ───────── 평택시 홈페이지 (보도자료 bcIdx=90) ─────────
-//   목록은 그대로 읽히지만 상세 열기는 폼 전송(POST)이라 본문·사진은 가져오지 못한다. 목록의 제목·날짜·요약까지만 보도자료함에 쌓는다
+//   목록의 제목 링크는 폼 전송처럼 보이지만, 상세는 view.do?bcIdx=90&mid=…&idx=글번호 로 GET 해도 열린다 (본문은 view_cont 칸)
 const PYEONGTAEK = 'https://www.pyeongtaek.go.kr'
 export const PYEONGTAEK_LIST = `${PYEONGTAEK}/pyeongtaek/board/post/list.do?bcIdx=90&mid=0402010000`
 
@@ -117,7 +117,7 @@ export function parsePyeongtaekList(page: string): PressRow[] {
     let summary = text(/<span class="list_txt">([\s\S]*?)<\/span>/i.exec(b)?.[1] ?? '')
     const at = summary.indexOf(title.slice(0, 6))
     if (at > 0) summary = summary.slice(at)
-    rows.push({ source_key: 'lg-pyeongtaek', source_name: '평택시 보도자료', guid: `lg-pyeongtaek:${id}`, title, link: PYEONGTAEK_LIST, summary: summary.slice(0, 400) || null, body_html: null, published_at: date })
+    rows.push({ source_key: 'lg-pyeongtaek', source_name: '평택시 보도자료', guid: `lg-pyeongtaek:${id}`, title, link: `${PYEONGTAEK}/pyeongtaek/board/post/view.do?bcIdx=90&mid=0402010000&idx=${id}`, summary: summary.slice(0, 400) || null, body_html: null, published_at: date })
   }
   return rows
 }
@@ -179,6 +179,26 @@ export function parseNttDetail(page: string, base: string, label: string) {
 //   표(<tr>) 목록에서 글 주소 규칙(href)에 맞는 링크를 제목으로 읽고, 상세는 본문 칸(body)만 읽는다. 사이트별 규칙은 아래 BOARDS 에 둔다
 type BoardCfg = { id: RegExp; link: (id: string, origin: string) => string; body: RegExp; image?: RegExp }  // image: 본문 칸 밖에 있는 대표 사진의 주소(첫 번째 묶음)
 export const BOARDS: Record<string, BoardCfg> = {
+  // 평택시: 상세 본문은 view_cont 칸 (맨 앞 사진 + mT10 칸의 글). 본문 첫머리의 부서·전화번호 줄은 AI가 기사로 쓸 때 걸러진다
+  'lg-pyeongtaek': {
+    id: /idx=(\d+)/,
+    link: (id, o) => `${o}/pyeongtaek/board/post/view.do?bcIdx=90&mid=0402010000&idx=${id}`,
+    body: /<div class="view_cont">([\s\S]*?)<\/div>\s*<\/div>\s*<dl class="view_file">|<div class="view_cont">([\s\S]*?)<\/div>\s*<dl class="view_file">/i,
+  },
+  // 안성시: 시정소식 > 보도자료. 목록은 표(제목 링크 onclick=boardView('1','ID')), 상세는 GET 으로 열리고 본문은 view_cont 칸(사진은 imgSaeolViewer.do 주소)
+  'lg-anseong': {
+    id: /boardView\('\d+',\s*'(\d+)'/,
+    link: (id, o) => `${o}/portal/saeol/newsView.do?newsEpctNo=${id}&mId=0502010100`,
+    body: /<div class="view_cont">([\s\S]*?)<\/div>\s*<dl class="view_file">/i,
+  },
+  // 창원특례시: 보도자료 게시판(10432.web). 목록은 카드형(제목은 strong.t1, 링크 ?gcode=1011&idx=ID&amode=view), 상세 본문은 substance 칸
+  //   앞쪽의 사진 갤러리(작은 사진 여러 장)는 건너뛰고 본문 글만 읽고, 대표 사진은 갤러리의 큰 사진(s=1200x1200)을 쓴다
+  'lg-changwon': {
+    id: /idx=(\d+)&(?:amp;)?amode=view/,
+    link: (id, o) => `${o}/cwportal/10310/10429/10432.web?gcode=1011&idx=${id}&amode=view`,
+    body: /<div class="substance">(?:[\s\S]*?jQchangePic3[^<]*<\/script>)?([\s\S]*?)<\/div>\s*<!-- \/\/substance -->/i,
+    image: /href="(\/cwportal\/cmsfile\/image\.do\?idx=\d+&amp;s=1200x1200[^"]*)"/i,
+  },
   // 청양군: 목록은 카드형(제목은 strong.subject), 상세는 사진 칸과 본문 칸이 따로다 (사진 주소의 ;jsessionid=… 는 뺀다)
   'lg-cheongyang': {
     id: /BBSMSTR_000000000064\/selectBoardArticle\.do[^"]*?nttId=(\d+)/,
@@ -476,7 +496,8 @@ export function parseGyeongbukList(page: string, key: string, label: string, lis
 function boardTitle(anchor: string, inner: string): string {
   // 카드 목록: 링크 안에 제목(.subject)과 요약이 함께 있으면 제목만
   const subj = /<(strong|span|p|em|b)[^>]*class="[^"]*\bsubject\b[^"]*"[^>]*>([\s\S]*?)<\/\1>/i.exec(inner)
-  let t = text(subj ? subj[2] : inner)
+  const t1 = subj ? null : /<strong[^>]*class="[^"]*\bt1\b[^"]*"[^>]*>([\s\S]*?)<\/strong>/i.exec(inner)
+  let t = text(subj ? subj[2] : t1 ? t1[1] : inner).replace(/\s*새 글$/, '')
   const w = /wdigm_title\('([\s\S]*?)'\)\s*\)/.exec(inner)
   if (w) t = text(w[1])
   if (/(\.{2,3}|…)$/.test(t)) {
