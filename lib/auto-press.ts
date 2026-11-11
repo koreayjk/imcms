@@ -16,7 +16,7 @@ import { buildSite, hasPressTiers, type OutletRow } from './sites'
 
 export type Plan = {
   outlet: OutletRow
-  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; publish_hour?: number | null; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
+  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; publish_hour?: number | null; required_groups?: { name: string; sources: string[] }[] | null; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
   today: number
   categories: { id: string; slug: string; name: string }[]
 }
@@ -241,6 +241,19 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
     const fresh = rankTiered(p, all.filter(isRecent), recent)
     const need = Math.max(1, p.cfg.daily_limit - p.today)
     ranked = fresh.length >= need ? fresh : [...fresh, ...rankTiered(p, all.filter((c) => !isRecent(c)), recent)]
+    // 꼭 포함할 출처(예: 수원시·평택시): 오늘 아직 못 쓴 묶음이 있고 자료가 있으면 그 묶음의 가장 좋은 자료를 맨 앞으로 올린다 (한 번에 한 묶음).
+    //   그 밖의 건수는 위의 지역 돌려쓰기 순서 그대로 쓴다
+    const groups = p.cfg.required_groups ?? []
+    if (groups.length) {
+      const { data: ts } = await supabase.rpc('auto_press_today_sources', { secret, p_outlet: outletId })
+      const done = new Set(((ts ?? []) as string[]))
+      for (const g of groups) {
+        if (g.sources.some((k) => done.has(k))) continue
+        const at = ranked.findIndex((c) => g.sources.includes(c.source_key))
+        if (at > 0) { const [first] = ranked.splice(at, 1); ranked.unshift(first); break }
+        if (at === 0) break
+      }
+    }
   } else ranked = rankCandidates(p, (raw ?? []) as Cand[], recent)
   if (!ranked.length) { await note(null, false, tiered ? '맞는 보도자료가 없습니다 (최근 48시간)' : '맞는 보도자료가 없습니다 (최근 4일)'); return { outlet: name, status: 'skipped', message: '맞는 보도자료 없음' } }
 
