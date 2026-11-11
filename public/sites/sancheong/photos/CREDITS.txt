@@ -5,3 +5,4 @@
 960px 썸네일을 webp로 변환. 캡션에 출처와 라이선스를 적는다.
 - sc-landscape.webp     : Sancheong Gun 51 (File:Sancheong_Gun_51_(16666146226).jpg), Republic of Korea(Korea.net), CC BY-SA 2.0
 - sc-gotgam-drying.webp : Drying gotgam (File:Drying_gotgam.jpg), Lee Gen-hyung, CC0 1.0 (출처 표시 의무 없음, 캡션에는 적는다)
+- sc-gate.webp : Sancheong Gun 45 (File:Sancheong_Gun_45_(16690768591).jpg), Republic of Korea(Korea.net), CC BY-SA 2.0 (氣天門 현판이 있는 전통 문루)
