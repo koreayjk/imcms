@@ -227,7 +227,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
     }
   }
   const { data: raw, error: ce } = tiered
-    ? await supabase.rpc('auto_press_candidates_tiered', { secret, p_outlet: outletId, p_days: 2, p_limit: 800 })
+    ? await supabase.rpc('auto_press_candidates_tiered', { secret, p_outlet: outletId, p_days: 2, p_limit: 800, p_photoless: !(p.cfg.required_groups?.length) })
     : await supabase.rpc('auto_press_candidates', { secret, p_outlet: outletId, p_days: 4, p_limit: 600, p_english: p.outlet.site?.lang === 'en' })
   if (ce) return { outlet: name, status: 'failed', message: `보도자료 읽기 실패: ${ce.message}` }
   const { data: rt } = await supabase.rpc('auto_press_recent_titles', { secret, p_days: 3 })
