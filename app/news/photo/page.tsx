@@ -5,7 +5,7 @@ import { currentSite, getPhotoNews, PHOTO_PAGE_SIZE } from '@/lib/public-data'
 import SiteFrame from '@/components/site/SiteFrame'
 import Thumb from '@/components/site/Thumb'
 import { ALL_NEWS } from '@/components/site/SiteHeader'
-import { siteIcon } from '@/lib/sites'
+import { findSection, siteIcon } from '@/lib/sites'
 import { siteText } from '@/lib/site-text'
 
 type Props = { searchParams: Promise<{ page?: string }> }
@@ -34,7 +34,7 @@ export default async function PhotoNewsPage(props: Props) {
   const href = (p: number) => `/news/photo${p > 1 ? `?page=${p}` : ''}`
 
   return (
-    <SiteFrame site={site} current={ALL_NEWS}>
+    <SiteFrame site={site} current={findSection(site, 'photo') ? 'photo' : ALL_NEWS}>
       <div className="border-b border-rule bg-soft">
         <div className="mx-auto max-w-[1200px] px-4 py-6 lg:py-8">
           <nav className="text-[12px] text-sub" aria-label={t.breadcrumb}>
