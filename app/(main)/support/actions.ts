@@ -265,6 +265,10 @@ export async function saveInvoice(_prev: FormState, form: FormData): Promise<For
     }, { onConflict: 'outlet_id,month' })
     .select('id').single()
   if (error || !data) return { error: /납부된 청구서/.test(error?.message ?? '') ? t('이미 납부된 청구서라 고칠 수 없습니다. 환불한 뒤 새로 발행해 주세요.', 'This invoice is already paid and cannot be edited. Refund it and issue a new one.') : `${t('저장하지 못했습니다', 'Could not save')}: ${error?.message ?? ''}` }
+  // 세팅비 줄(청구했든 면제했든)이 들어간 청구서를 발행하면 "다음 청구서에 세팅비 넣기" 표시를 끈다 (다음 달 자동 청구에 세팅비가 또 들어가지 않게)
+  if (items.some((i) => i.name.startsWith('세팅비'))) {
+    await supabase.from('outlet_plans').update({ setup_fee_pending: false, updated_at: new Date().toISOString() }).eq('outlet_id', outlet_id)
+  }
   // 이 매체를 매달 자동 청구로 (다음 달 1일부터 자동 발행). 이미 있는 설정은 그대로 두고 켜기만 한다
   if (form.get('enable_auto') === 'on') {
     const { data: cur2 } = await supabase.from('outlet_plans').select('*').eq('outlet_id', outlet_id).maybeSingle()
