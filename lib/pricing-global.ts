@@ -25,12 +25,12 @@ export type PlanEn = {
 export const PLANS_EN: PlanEn[] = [
   {
     id: 'basic', name: 'Basic', for: 'A small independent newsroom publishing every day', monthly: 79,
-    specs: [['Publications', '1'], ['AI drafts & reviews', '300 / month'], ['Storage (photos + video)', '30 GB'], ['Bandwidth', '800 GB / month'], ['Newsletter', 'Not included']],
+    specs: [['Publications', '1'], ['AI drafts & reviews', '500 / month'], ['Storage (photos + video)', '30 GB'], ['Bandwidth', '800 GB / month'], ['Newsletter', 'Not included']],
     extras: [],
   },
   {
     id: 'standard', name: 'Standard', for: 'A growing news site with several sections and steady output', monthly: 109, pick: true,
-    specs: [['Publications', '1'], ['AI drafts & reviews', '900 / month'], ['Storage (photos + video)', '60 GB'], ['Bandwidth', '1,000 GB / month'], ['Newsletter', 'Weekly · 2,000 recipients']],
+    specs: [['Publications', '1'], ['AI drafts & reviews', '1,100 / month'], ['Storage (photos + video)', '60 GB'], ['Bandwidth', '1,000 GB / month'], ['Newsletter', 'Weekly · 2,000 recipients']],
     extras: ['Homepage customization support'],
   },
   {

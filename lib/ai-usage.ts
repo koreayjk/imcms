@@ -12,7 +12,7 @@ export async function getAiStatus(supabase: SupabaseClient, outletId: string | n
   return data as AiStatus
 }
 
-// 자동 작성(서버가 보도자료로 쓰는 기사) 이번 달 건수·비용. 요금제 한도에는 넣지 않고 따로 보여 주기만 한다 (supabase/ai-usage-auto.sql, 실행 전이면 null)
+// 자동 작성(서버가 보도자료로 쓰는 기사) 이번 달 건수·비용. 따로 보여 주는 값이다 (맞춤 자료 매체의 자동 작성은 건당 1회로 한도에도 이미 들어 있다) (supabase/ai-usage-auto.sql, 실행 전이면 null)
 export type AiAuto = { count: number; cost: number }
 export async function getAiAuto(supabase: SupabaseClient, outletId: string | null): Promise<AiAuto | null> {
   if (!outletId) return null

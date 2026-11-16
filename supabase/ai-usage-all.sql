@@ -1,11 +1,11 @@
--- AI 사용 한도에 초안과 법적 검수를 함께 센다 · 요금제 기본 한도 300 / 900 / 2,000회
+-- AI 사용 한도에 초안과 법적 검수를 함께 센다 · 요금제 기본 한도 500 / 1,100 / 2,000회 (2026-11 개정, 이전 300 / 900 / 2,000)
 -- (Supabase SQL 에디터에서 실행, newsroom-settings.sql 다음. 여러 번 실행해도 된다)
 --   AI 기사 초안 1번 = 1회, 승인신청·발행 전 AI 법적 검수 1번 = 1회
 --   내용이 바뀌지 않아 저장된 검수 결과를 다시 쓰는 경우는 AI를 부르지 않으므로 세지 않는다
 --   기자별 한도(자동 배분·편집장 지정)도 두 가지를 합쳐서 본다
 
 create or replace function public.ai_limit_of(o uuid) returns integer language sql stable security definer set search_path = public as $$
-  select coalesce(ai_monthly_limit, case plan when 'basic' then 300 when 'standard' then 900 when 'premium' then 2000 end)
+  select coalesce(ai_monthly_limit, case plan when 'basic' then 500 when 'standard' then 1100 when 'premium' then 2000 end)
   from outlets where id = o;
 $$;
 

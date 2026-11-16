@@ -1,6 +1,6 @@
 -- 추가 매체는 베이직 사양 (Supabase SQL 에디터에서 실행, ai-usage-all.sql · billing-auto.sql 다음. 여러 번 실행해도 된다)
 --   매체 추가는 프리미엄 전용이고, 추가 매체(운영팀 '자동 청구'에서 '청구 받을 매체'를 정한 매체)는 베이직 사양으로 운영한다
---   · AI 한도: 매체마다 따로 (추가 매체는 베이직 월 300회) — 본 매체의 프리미엄 한도를 같이 쓰지 않는다
+--   · AI 한도: 매체마다 따로 (추가 매체는 베이직 월 500회) — 본 매체의 프리미엄 한도를 같이 쓰지 않는다
 --   · 뉴스레터 회당 2,000명 등 다른 한도도 베이직
 --   · 운영팀이 자동 청구 화면에서 추가 매체로 저장하면 그 매체 요금제가 자동으로 베이직이 된다 (이 파일은 이미 연결된 매체를 맞춘다)
 --   ai-shared-pool.sql(본 매체 한도 함께 쓰기)을 실행했다면 이 파일이 원래대로(매체마다 따로) 되돌린다
@@ -8,7 +8,7 @@
 drop function if exists public.ai_pool_ids(uuid);
 
 create or replace function public.ai_limit_of(o uuid) returns integer language sql stable security definer set search_path = public as $$
-  select coalesce(ai_monthly_limit, case plan when 'basic' then 300 when 'standard' then 900 when 'premium' then 2000 end)
+  select coalesce(ai_monthly_limit, case plan when 'basic' then 500 when 'standard' then 1100 when 'premium' then 2000 end)
   from outlets where id = o;
 $$;
 

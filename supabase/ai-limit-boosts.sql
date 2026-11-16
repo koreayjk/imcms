@@ -1,6 +1,6 @@
 -- 이번 달만 올리는 매체 AI 한도 (운영 DB에는 이미 적용됨: ai_limit_boosts, ai_limit_of, ai_usage_status)
 --   - 한 매체·한 달(한국시간 1일 기준)에 한 줄. 달이 바뀌면 저절로 원래 한도(요금제 기본 또는 ai_monthly_limit)로 돌아간다.
---   - 설정 화면의 "매체 전체 AI 사용" 줄에 "이번 달만 300 → 500회 상향"으로 표시된다 (ai_usage_status 의 boost_from·boost_to).
+--   - 설정 화면의 "매체 전체 AI 사용" 줄에 "이번 달만 300 → 500회 상향"으로 표시된다 (요금제 기본이 올라 기본값 이하면 표시하지 않는다) (ai_usage_status 의 boost_from·boost_to).
 --   - 올릴 때: 아래 맨 끝 insert 의 매체·달·한도를 바꿔 실행한다 (같은 달에 이미 있으면 update 로 고친다).
 
 create table if not exists public.ai_limit_boosts (
@@ -20,7 +20,7 @@ language sql stable security definer set search_path = public as $$
   select coalesce(
     (select b.boost_limit from ai_limit_boosts b where b.outlet_id = o and b.month = date_trunc('month', now() at time zone 'Asia/Seoul')::date),
     x.ai_monthly_limit,
-    case x.plan when 'basic' then 300 when 'standard' then 900 when 'premium' then 2000 end)
+    case x.plan when 'basic' then 500 when 'standard' then 1100 when 'premium' then 2000 end)
   from outlets x where x.id = o;
 $$;
 
