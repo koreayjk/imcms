@@ -49,7 +49,7 @@ export async function releaseAi(supabase: SupabaseClient, id: number | null) {
   await supabase.rpc('ai_usage_release', { rid: id })
 }
 
-// 내 몫(편집장이 정했거나 자동 배분된 기자별 한도) 안내
+// 내 몫(편집장이 정한 기자별 한도) 안내. 정하지 않았으면 개인 한도 없음
 export function myLimitMessage(s: AiStatus | null) {
   if (!s || s.mine_limit == null) return ''
   const used = s.mine_used ?? 0

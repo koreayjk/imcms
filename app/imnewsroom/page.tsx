@@ -103,7 +103,7 @@ const FEATURES: { icon: Icon; title: string; body: string; color: string }[] = [
   { icon: 'shield', title: '가입 → 발행인 승인', body: '가입 때 소속 매체 선택, 그 매체 발행인이 승인', color: '#0F766E' },
   { icon: 'phone', title: '휴대폰 편집국', body: '현장에서 휴대폰으로 쓰고 승인·발행', color: '#EC4899' },
   { icon: 'history', title: '자동 임시 저장·수정 이력', body: '컴퓨터가 꺼져도 쓰던 글 그대로, 발행 뒤 고친 내용은 기록·되돌리기', color: '#F97316' },
-  { icon: 'chart', title: '기자별 AI 사용량', body: '매체 한도를 인원수로 자동 배분, 편집장이 조정', color: '#65A30D' },
+  { icon: 'chart', title: '기자별 AI 사용량', body: '매체 전체 한도 안에서 쓰고, 필요하면 편집장이 기자별로 한도 지정', color: '#65A30D' },
   { icon: 'search', title: '검색·포털 노출', body: '뉴스 사이트맵·RSS 자동, 기사별 검색 제목·공유 이미지', color: '#06B6D4' },
   { icon: 'headset', title: '고객센터 내장', body: '업무요청은 담당 매니저에게 자동 배정', color: '#14B8A6' },
   { icon: 'receipt', title: '청구서·온라인 결제', body: '국내 카드·카카오페이·네이버페이 결제, 자동결제', color: '#A855F7' },

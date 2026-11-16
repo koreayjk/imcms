@@ -74,26 +74,14 @@ language sql stable security definer set search_path = public as $$
     and not (coalesce(p.is_staff, false) and not coalesce(p.is_super, false));
 $$;
 
--- 한 사람의 이번 달 한도 (null = 한도 없음)
---   편집장이 정한 값이 있으면 그 값, 없으면 (매체 한도 − 따로 정한 사람들 몫) ÷ 나머지 인원
+-- 한 사람의 이번 달 개인 한도 (null = 개인 한도 없음, 매체 전체 한도만 적용)
+--   편집장이 정한 값이 있으면 그 값. 정하지 않았으면 null — 인원수로 자동 배분하지 않는다 (2026-11 변경)
 create or replace function public.ai_member_limit_of(o uuid, uid uuid) returns integer
 language plpgsql stable security definer set search_path = public as $$
-declare
-  custom integer;
-  lim integer;
-  fixed_sum integer;
-  n_auto integer;
+declare custom integer;
 begin
   select monthly_limit into custom from ai_member_limits where outlet_id = o and profile_id = uid;
-  if custom is not null then return custom; end if;
-  lim := public.ai_limit_of(o);
-  if lim is null then return null; end if;
-  if not exists (select 1 from public.outlet_member_ids(o) m where m = uid) then return null; end if;
-  select coalesce(sum(l.monthly_limit), 0) into fixed_sum
-  from ai_member_limits l where l.outlet_id = o and l.profile_id in (select public.outlet_member_ids(o));
-  select count(*) into n_auto from public.outlet_member_ids(o) m
-  where not exists (select 1 from ai_member_limits l where l.outlet_id = o and l.profile_id = m);
-  return floor(greatest(0, lim - fixed_sum)::numeric / greatest(1, n_auto))::integer;
+  return custom;
 end $$;
 
 -- 이번 달 사용 현황 (보도자료·뉴스룸 화면용): 매체 전체 + 내 몫
