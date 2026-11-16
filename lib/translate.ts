@@ -1,11 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { AiDraftError, geminiRequest, providerReady, type AiModel } from './ai-draft'
 
-// 기사 한글 → 영어 번역 (홈페이지의 "한글 | English" 버튼에서 보이는 영어판). 서버(/api/cron/translate)가 부른다
+// 기사 한글 → 영어·일본어·중국어 번역 (홈페이지의 언어 버튼에서 보이는 번역판). 서버(/api/cron/translate)가 부른다
+export type TransLang = 'en' | 'ja' | 'zh'
 export type TranslateInput = { title: string; excerpt: string | null; body: string }
 export type Translated = { title: string; excerpt: string; body: string }
 
-const SYSTEM = `You are a professional Korean-to-English news translator for an online newspaper. Translate the given Korean news article into natural, accurate English news style.
+const EN_SYSTEM = `You are a professional Korean-to-English news translator for an online newspaper. Translate the given Korean news article into natural, accurate English news style.
 
 Rules
 - Translate faithfully. Do not add, remove, summarize or embellish any facts, numbers, dates, names or quotes.
@@ -17,6 +18,34 @@ Rules
 - Direct quotes stay in quotation marks. Use a headline style for the title (no period at the end) and plain sentences for the excerpt.
 - A sentence such as "※ 이 기사는 AI가 작성했습니다" is translated as a normal note ("This article was written with the help of AI.").
 - Output only the JSON object requested.`
+
+const COMMON = `- Translate faithfully. Do not add, remove, summarize or embellish any facts, numbers, dates, names or quotes.
+- The body is HTML. Keep the HTML structure exactly: the same tags in the same order, and all attributes unchanged — especially every <img> tag (src stays identical; translate only the alt text), links (href unchanged) and entities like &nbsp;. Translate only the human-readable text between tags and the alt/title text.
+- Photo captions that start with "▲" keep the "▲".
+- Direct quotes stay in quotation marks. The title is a headline (no period at the end); the excerpt is plain sentences.
+- Output only the JSON object requested.`
+
+const JA_SYSTEM = `You are a professional Korean-to-Japanese news translator for an online newspaper. Translate the given Korean news article into natural, accurate Japanese in standard newspaper style (である調 for reporting; keep quotes as spoken).
+
+Rules
+${COMMON}
+- "사진=…" becomes "写真=…". Bylines such as "[매체이름=홍길동 기자]" become "[媒体名=洪吉童記者]" (translate the outlet name; write the reporter's name the way Japanese media do — kanji when the name is written in hanja or has a standard kanji form, otherwise katakana — and use 記者).
+- Write Korean place names, organizations and laws with their established Japanese names when they exist, otherwise translate descriptively; Korean personal names in katakana (or kanji if well known).
+- Convert Korean date/number styles naturally (e.g. 3,000만 원 → 3000万ウォン). Keep the currency as in the source.
+- A sentence such as "※ 이 기사는 AI가 작성했습니다" is translated as a normal note.
+- The output must not contain Hangul.`
+
+const ZH_SYSTEM = `You are a professional Korean-to-Chinese news translator for an online newspaper. Translate the given Korean news article into natural, accurate Simplified Chinese in standard news style.
+
+Rules
+${COMMON}
+- "사진=…" becomes "图片=…". Bylines such as "[매체이름=홍길동 기자]" become "[媒体名=洪吉童 记者]" (translate the outlet name; write the reporter's name in hanzi — the hanja form if known, otherwise the standard Chinese transliteration — and use 记者).
+- Write Korean place names, organizations and laws with their established Chinese names when they exist, otherwise translate descriptively.
+- Convert Korean date/number styles naturally (e.g. 3,000만 원 → 3000万韩元). Keep the currency as in the source.
+- A sentence such as "※ 이 기사는 AI가 작성했습니다" is translated as a normal note.
+- The output must not contain Hangul.`
+
+const SYSTEMS: Record<TransLang, string> = { en: EN_SYSTEM, ja: JA_SYSTEM, zh: ZH_SYSTEM }
 
 const SCHEMA = {
   type: 'object',
@@ -53,13 +82,13 @@ export function checkTranslation(input: TranslateInput, out: Translated) {
   if (/[가-힣]/.test(out.title) && (out.title.match(/[가-힣]/g) ?? []).length > 3) throw new AiDraftError('번역 제목에 한글이 남아 있습니다')
 }
 
-async function withAnthropic(model: AiModel, input: TranslateInput, budgetMs: number) {
+async function withAnthropic(model: AiModel, input: TranslateInput, budgetMs: number, lang: TransLang) {
   const client = new Anthropic({ timeout: budgetMs, maxRetries: 0 })
   const response = await client.beta.messages.create({
     model: model.id,
     max_tokens: 16000,
     output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },
-    system: SYSTEM,
+    system: SYSTEMS[lang],
     messages: [{ role: 'user', content: userPrompt(input) }],
   })
   if (response.stop_reason === 'max_tokens') throw new AiDraftError('번역이 길어 중간에 끊겼습니다.')
@@ -67,9 +96,9 @@ async function withAnthropic(model: AiModel, input: TranslateInput, budgetMs: nu
   return parse(text)
 }
 
-async function withGemini(model: AiModel, input: TranslateInput, budgetMs: number) {
+async function withGemini(model: AiModel, input: TranslateInput, budgetMs: number, lang: TransLang) {
   const payload = JSON.stringify({
-    system_instruction: { parts: [{ text: SYSTEM }] },
+    system_instruction: { parts: [{ text: SYSTEMS[lang] }] },
     contents: [{ role: 'user', parts: [{ text: userPrompt(input) }] }],
     generationConfig: {
       thinkingConfig: { thinkingLevel: 'LOW' },
@@ -86,9 +115,9 @@ async function withGemini(model: AiModel, input: TranslateInput, budgetMs: numbe
   return parse(text)
 }
 
-export async function translateToEnglish(model: AiModel, input: TranslateInput, budgetMs = 45_000): Promise<Translated> {
+export async function translateArticle(model: AiModel, input: TranslateInput, lang: TransLang = 'en', budgetMs = 45_000): Promise<Translated> {
   if (!providerReady(model.provider)) throw new AiDraftError('AI 키가 설정되지 않았습니다.')
-  const out = model.provider === 'gemini' ? await withGemini(model, input, budgetMs) : await withAnthropic(model, input, budgetMs)
+  const out = model.provider === 'gemini' ? await withGemini(model, input, budgetMs, lang) : await withAnthropic(model, input, budgetMs, lang)
   checkTranslation(input, out)
   return out
 }

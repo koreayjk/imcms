@@ -2,18 +2,18 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { revalidateTag } from 'next/cache'
 import { activeModel } from '@/lib/ai-draft'
-import { translateToEnglish } from '@/lib/translate'
+import { translateArticle, type TransLang } from '@/lib/translate'
 import { outletTag } from '@/lib/outlet-cache'
 
 // Supabase 예약 작업(article-translations.sql)이 1분마다 부른다.
-//   번역이 없거나 낡은 발행 기사를 최신순으로 몇 건 영어로 번역해 article_translations 에 저장한다 (번역을 켠 매체만)
+//   번역이 없거나 낡은 발행 기사를 최신순으로 몇 건 영어·일본어·중국어로 번역해 article_translations 에 저장한다 (번역을 켠 매체만)
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
-const BATCH = 5            // 한 번에 동시에 번역하는 기사 수
+const BATCH = 8            // 한 번에 동시에 번역하는 기사 수
 const BUDGET_MS = 50_000   // 이 시간 안에 못 끝낸 기사는 다음 번에
 
-type Pending = { id: string; outlet_id: string; title: string; excerpt: string | null; body: string; src_hash: string }
+type Pending = { id: string; lang?: TransLang; outlet_id: string; title: string; excerpt: string | null; body: string; src_hash: string }
 
 export async function GET(req: NextRequest) {
   const started = Date.now()
@@ -37,14 +37,14 @@ export async function GET(req: NextRequest) {
   await Promise.all(todo.map(async (a) => {
     const left = BUDGET_MS - (Date.now() - started)
     try {
-      const t = await translateToEnglish(model, { title: a.title, excerpt: a.excerpt, body: a.body }, Math.max(15_000, left))
-      const { error: se } = await supabase.rpc('translate_save', { secret, p_article: a.id, p_title: t.title, p_excerpt: t.excerpt, p_body: t.body, p_hash: a.src_hash, p_model: model.id })
+      const t = await translateArticle(model, { title: a.title, excerpt: a.excerpt, body: a.body }, a.lang ?? 'en', Math.max(15_000, left))
+      const { error: se } = await supabase.rpc('translate_save', { secret, p_article: a.id, p_title: t.title, p_excerpt: t.excerpt, p_body: t.body, p_hash: a.src_hash, p_model: model.id, p_lang: a.lang ?? 'en' })
       if (se) throw new Error(se.message)
       done++
       outlets.add(a.outlet_id)
     } catch (e) {
       failed++
-      await supabase.rpc('translate_fail', { secret, p_article: a.id, p_error: e instanceof Error ? e.message : '번역 실패' })
+      await supabase.rpc('translate_fail', { secret, p_article: a.id, p_error: e instanceof Error ? e.message : '번역 실패', p_lang: a.lang ?? 'en' })
     }
   }))
   // 번역이 새로 생기면 그 매체의 홈페이지 캐시를 비운다 (영어판이 바로 보이게)

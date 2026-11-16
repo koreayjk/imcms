@@ -15,8 +15,9 @@ function walk(v: unknown, visit: (o: Obj) => void, seen: Set<unknown>) {
 }
 
 export async function overlayTranslations<T>(site: SiteConfig, data: T): Promise<T> {
-  if (site.viewLang !== 'en' || !process.env.NEXT_PUBLIC_SUPABASE_URL) return data
-  const names = site.translate?.sections ?? {}
+  const lang = site.viewLang
+  if (!lang || !process.env.NEXT_PUBLIC_SUPABASE_URL) return data
+  const names = (lang === 'en' ? site.translate?.sections : site.translate?.i18n?.[lang]?.sections) ?? {}
   const articles: Obj[] = []
   const seen = new Set<unknown>()
   walk(data, (o) => {
@@ -34,7 +35,7 @@ export async function overlayTranslations<T>(site: SiteConfig, data: T): Promise
     const { data: rows } = await supabase
       .from('article_translations')
       .select(wantBody ? 'article_id, title, excerpt, body' : 'article_id, title, excerpt')
-      .eq('lang', 'en')
+      .eq('lang', lang)
       .in('article_id', ids.slice(i, i + 60))
     for (const r of (rows ?? []) as unknown as { article_id: string; title: string | null; excerpt: string | null; body?: string | null }[]) {
       if (r.title) found.set(r.article_id, { title: r.title, excerpt: r.excerpt, body: r.body ?? null })

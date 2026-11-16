@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies, headers } from 'next/headers'
 import { unstable_cache } from 'next/cache'
 import { demoArticles, demoSite } from './demo-articles'
-import { englishView, withLayout } from './sites'
+import { englishView, parseViewLang, withLayout } from './sites'
 import { isLayoutDemoHost } from './home-layouts'
 import { SITES, applyOpenSchedule, buildSite, resolveSite, sectionFamily, topSections, type CategoryRow, type LogoBlock, type LogoStrip, type OutletRow, type SiteConfig } from './sites'
 import { heroSecondsOf, logoBlockOf, logoStripOf, normalizeLayout, type SlotKey } from './home-layout'
@@ -73,7 +73,8 @@ export async function currentSite(): Promise<SiteConfig> {
     if (isLayoutDemoHost(host)) return { ...site, layoutDemo: true }
     const shown = site.preview ? withLayout(site, layout) : site
     // 영어 번역판: 번역을 켠 매체에서 독자가 "English" 버튼을 눌러 쿠키가 있으면 영어판 설정으로 바꿔 준다
-    return jar.get(LANG_COOKIE)?.value === 'en' && shown.translate?.langs.includes('en') ? englishView(shown) : shown
+    const want = parseViewLang(jar.get(LANG_COOKIE)?.value)
+    return want && shown.translate?.langs.includes(want) ? englishView(shown, want) : shown
   } catch {
     return resolveSite(host)
   }
@@ -299,8 +300,8 @@ export async function searchArticles(site: SiteConfig, q: string) {
   const { data } = await published(scope).ilike('title', pattern).order('published_at', { ascending: false }).limit(30)
   let list = (data ?? []).map(toPublic)
   // 영어판에서는 영어 제목으로도 찾는다
-  if (site.viewLang === 'en') {
-    const { data: tr } = await scope.supabase.from('article_translations').select('article_id').eq('lang', 'en').ilike('title', pattern).limit(30)
+  if (site.viewLang) {
+    const { data: tr } = await scope.supabase.from('article_translations').select('article_id').eq('lang', site.viewLang).ilike('title', pattern).limit(30)
     const ids = (tr ?? []).map((r) => r.article_id as string).filter((id) => !list.some((a) => a.id === id))
     if (ids.length) {
       const { data: more } = await published(scope).in('id', ids).order('published_at', { ascending: false }).limit(30)
