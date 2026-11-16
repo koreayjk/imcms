@@ -18,7 +18,7 @@ export default async function AiUsagePage() {
     supabase.rpc('ai_usage_overview'),
     supabase.from('outlets').select('id, publisher_id, ai_monthly_limit'),
     supabase.from('publishers').select('id, name'),
-    // 자동 작성 건수·비용 (따로 보여 준다. 맞춤 자료 매체의 자동 작성은 건당 1회로 한도에도 들어 있다. SQL 실행 전이면 비어 있다)
+    // 자동 작성 건수·비용 (따로 보여 준다. 자동 작성은 건당 1회로 한도에도 들어 있다. SQL 실행 전이면 비어 있다)
     supabase.rpc('ai_usage_auto_overview'),
   ])
   const autoBy = new Map(((autoRows ?? []) as { outlet_id: string; auto_count: number; auto_cost_usd: number | string }[]).map((r) => [r.outlet_id, r]))
@@ -50,8 +50,8 @@ export default async function AiUsagePage() {
       <header className="mb-5">
         <h1 className="text-[22px] font-bold tracking-tight">{t('요금제 · AI 사용량', 'Plans · AI usage')}</h1>
         <p className="mt-1 text-[13px] text-muted">
-          {t(`${month} AI 사용량입니다(초안 1번·법적 검수 1번을 각각 1회로 세고, 매달 1일 한국 시간으로 새로 셉니다. 서버가 보도자료로 자동으로 쓰는 기사는 “자동 작성”으로 따로 보여 주며, 맞춤 자료로 자동 작성하는 매체는 기사 1건을 1회로 세어 한도에 포함합니다). 요금제 기본 한도는 베이직 500 · 스탠다드 1,100 · 프리미엄 2,000회이고, 한도 칸에 숫자를 적으면 그 값이 우선합니다.
-          “넘어도 계속”을 끄면 한도를 다 쓴 매체는 다음 달까지 AI 초안·법적 검수를 쓸 수 없습니다(원문 그대로 만들기, 검수 없이 승인신청은 됩니다).`, `AI usage for ${month}. Each AI draft and each legal check counts as one use, and the count resets on the 1st of every month (Korea time). Stories the server writes automatically from press releases are shown separately as “Auto-written”; for outlets that auto-write from custom sources, each story counts as 1 use toward the limit. Default plan limits are Basic 500, Standard 1,100 and Premium 2,000 uses per month; a number entered in the limit field takes priority.
+          {t(`${month} AI 사용량입니다(초안 1번·법적 검수 1번을 각각 1회로 세고, 매달 1일 한국 시간으로 새로 셉니다. 서버가 보도자료로 자동으로 쓰는 기사는 “자동 작성”으로 따로 보여 주며, 자동 작성 기사도 1건을 1회로 세어 한도에 포함합니다). 요금제 기본 한도는 베이직 300 · 스탠다드 900 · 프리미엄 2,000회이고, 한도 칸에 숫자를 적으면 그 값이 우선합니다.
+          “넘어도 계속”을 끄면 한도를 다 쓴 매체는 다음 달까지 AI 초안·법적 검수를 쓸 수 없습니다(원문 그대로 만들기, 검수 없이 승인신청은 됩니다).`, `AI usage for ${month}. Each AI draft and each legal check counts as one use, and the count resets on the 1st of every month (Korea time). Stories the server writes automatically from press releases are shown separately as “Auto-written”, and each one also counts as 1 use toward the limit. Default plan limits are Basic 300, Standard 900 and Premium 2,000 uses per month; a number entered in the limit field takes priority.
           If “Continue past limit” is off, an outlet that has used up its limit cannot use AI drafts or legal checks until next month (creating a story from the original text and submitting for review without a check still work).`)}
         </p>
       </header>

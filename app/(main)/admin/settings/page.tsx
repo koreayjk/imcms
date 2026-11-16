@@ -89,7 +89,7 @@ export default async function NewsroomSettingsPage(props: { searchParams: Promis
                       </span>
                     )}</>
                   : t('요금제 한도가 없는 매체입니다. ', 'This outlet has no plan limit. ')}
-                {auto && auto.count > 0 && <>{t('자동 작성', 'Auto-written')} <strong className="text-ink">{auto.count}{t('건', '')}</strong>{t('(보도자료로 서버가 자동으로 쓴 기사). 맞춤 자료로 자동 작성하는 매체는 기사 1건을 AI 사용 1회로 세어 위 매체 전체 사용량에 포함합니다. ', ' (stories the server wrote automatically from press releases). For outlets that auto-write from their own custom sources, each story counts as 1 AI use and is included in the outlet-wide usage above. ')}</>}
+                {auto && auto.count > 0 && <>{t('자동 작성', 'Auto-written')} <strong className="text-ink">{auto.count}{t('건', '')}</strong>{t('(보도자료로 서버가 자동으로 쓴 기사). 자동 작성 기사도 1건을 AI 사용 1회로 세어 위 매체 전체 사용량에 포함합니다. ', ' (stories the server wrote automatically from press releases). Each one counts as 1 AI use and is included in the outlet-wide usage above. ')}</>}
                 {manager
                   ? t('기자별 한도를 비워 두면 그 사람은 개인 한도 없이 매체 전체 한도 안에서 자유롭게 씁니다(자동으로 나누지 않습니다). 숫자를 적으면 그 사람만 그 한도를 따르고, 매체 전체 한도는 항상 함께 적용됩니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다.', 'If you leave a reporter\'s limit blank, that person has no personal limit and uses the outlet\'s total limit freely (it is not divided automatically). If you enter a number, only that person follows it; the outlet total limit always applies as well. One AI draft and one legal check each count as 1 use.')
                   : t('편집장이 정한 내 한도입니다. AI 초안 1번, 법적 검수 1번을 각각 1회로 셉니다. 더 필요하면 편집장에게 요청해 주세요.', 'This is your limit, set by the Editor-in-Chief. One AI draft and one legal check each count as 1 use. Ask the Editor-in-Chief if you need more.')}
