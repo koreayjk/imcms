@@ -365,7 +365,8 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
         p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)), p_hold: hold,
       })
       if (se) { await note(r.id, false, `저장 실패: ${se.message}`, cost); failures.push(se.message); continue }
-      if (counting && id) await supabase.rpc('auto_press_ai_count', { secret, p_outlet: outletId, p_user: p.cfg.author_id, p_model: model.id, p_tin: dr.inputTokens, p_tout: dr.outputTokens, p_cost: Number(cost.toFixed(5)) })
+      // 자동 작성 사용량은 매체 전체 한도에만 세고 어느 기자의 개인 한도에도 붙이지 않는다 (p_user: null)
+      if (counting && id) await supabase.rpc('auto_press_ai_count', { secret, p_outlet: outletId, p_user: null, p_model: model.id, p_tin: dr.inputTokens, p_tout: dr.outputTokens, p_cost: Number(cost.toFixed(5)) })
       return { outlet: name, status: 'saved', message: `${hold ? '승인 대기로 저장' : `${p.cfg.publish_hour}시 발행 예약`}: ${title}`, articleId: id as string | null }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류'

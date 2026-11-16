@@ -1,7 +1,7 @@
 import './globals.css'
 
 import type { Metadata, Viewport } from 'next'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { IOS_APP_SCRIPT } from '@/lib/ios-app'
 import KeepFormInputs from '@/components/KeepFormInputs'
 
@@ -22,7 +22,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // 아이폰 홈 막대 영역까지 쓰고, 아래 탭은 safe-area 만큼 띄운다
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' }
+//   휴대폰에서 "PC버전 보기"를 누른 독자(쿠키 pcview=1)에게는 PC 화면 폭(1200px)으로 그려 PC 화면 그대로 보여 준다 (핀치로 확대 가능)
+export async function generateViewport(): Promise<Viewport> {
+  const pc = (await cookies()).get('pcview')?.value === '1'
+  return pc ? { width: 1200, viewportFit: 'cover' } : { width: 'device-width', initialScale: 1, viewportFit: 'cover' }
+}
 
 export default function RootLayout({
   children,
