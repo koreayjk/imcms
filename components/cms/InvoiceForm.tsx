@@ -6,6 +6,9 @@ import { invoiceTotals, type InvoiceItem } from '@/lib/support'
 import { taxNote, wonL } from '@/lib/support-i18n'
 import { useCmsLang, useT } from '@/components/cms/CmsLang'
 import { SETUP_FEE, SETUP_WAIVER_NOTE } from '@/lib/pricing'
+
+// 개통일이 그 달 이 날짜 이후면 그 달 이용료는 무료로 서비스하고 다음 달 1일부터 청구한다
+const FREE_FROM_DAY = 25
 import PendingButton from './PendingButton'
 
 export default function InvoiceForm({ outlets }: { outlets: { id: string; name: string }[] }) {
@@ -68,6 +71,36 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       notice: `${md(end)}까지(${days}일)는 무료로 서비스해 드립니다. 이용료는 ${Number(month.slice(5, 7))}월 1일부터 청구됩니다.`,
     }
   })()
+  // 개통일이 청구 월 안이면 첫 달은 개통일부터 말일까지만 일할로 청구한다 (개통 전 날수만큼 이용료를 빼는 "조정" 줄을 자동으로 넣는다).
+  //   개통일이 그 달 25일 이후면 그 달 이용료는 무료로 서비스하고 다음 달 1일부터 청구한다. 요금제 줄("…요금제 (N월)")만 계산한다
+  const pro = (() => {
+    if (!freeOn || !/^\d{4}-\d{2}-\d{2}$/.test(openDate) || !/^\d{4}-\d{2}$/.test(month)) return null
+    const y = Number(month.slice(0, 4))
+    const m = Number(month.slice(5, 7))
+    const dim = new Date(y, m, 0).getDate()
+    if (openDate < `${month}-01` || openDate > `${month}-${String(dim).padStart(2, '0')}`) return null
+    const d = Number(openDate.slice(8, 10))
+    if (d === 1) return null
+    const planFee = items.filter((i) => i.name.includes('요금제')).reduce((n, i) => n + i.qty * i.unit_price, 0)
+    if (planFee <= 0) return null
+    const next = m === 12 ? 1 : m + 1
+    if (d >= FREE_FROM_DAY) {
+      return {
+        kind: 'free' as const, planFee,
+        name: `개통 월 이용료 무료 (${m}월 ${d}일 개통) — 서비스로 드립니다`,
+        price: -planFee,
+        notice: `${m}월 ${d}일에 개통하셔서 ${m}월 이용료는 무료로 서비스해 드립니다. 이용료는 ${next}월 1일부터 청구됩니다.`,
+      }
+    }
+    const used = dim - d + 1
+    const charged = Math.round((planFee * used) / dim / 10) * 10
+    return {
+      kind: 'prorate' as const, planFee, charged,
+      name: `이용료 일할 조정 (${m}월 1일~${d - 1}일 ${d - 1}일 제외, ${used}일/${dim}일 이용)`,
+      price: charged - planFee,
+      notice: `${m}월 ${d}일에 개통하셔서 ${m}월 이용료는 개통일부터 말일까지 ${used}일분(${dim}일 기준 일할 계산)을 청구합니다. ${next}월 1일부터는 한 달 요금이 청구됩니다.`,
+    }
+  })()
   const hasSetupLine = items.some((i) => i.name.startsWith('세팅비'))
   const waive = waivePick === true
   // 세팅비 면제: 켜면 실제로 청구되는 "세팅비" 줄을 표와 발행에서 빼고, 정가 줄 + 면제(마이너스) 줄로 바꾼다. 끄면 그 줄이 다시 나온다
@@ -77,9 +110,10 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const autoLines: InvoiceItem[] = [
     ...(waive ? [{ name: '세팅비 (처음 개통할 때 한 번)', qty: 1, unit_price: SETUP_FEE }, { name: '세팅비 면제 (개통 후 3개월 이상 이용 조건)', qty: 1, unit_price: -SETUP_FEE }] : []),
     ...(free ? [{ name: free.name, qty: 1, unit_price: 0 }] : []),
+    ...(pro ? [{ name: pro.name, qty: 1, unit_price: pro.price }] : []),
   ]
   const tot = invoiceTotals([...(waive ? items.filter((i) => !isSetup(i)) : items), ...autoLines])
-  const memoAll = [free?.notice, waive ? SETUP_WAIVER_NOTE : '', userMemo.trim()].filter(Boolean).join('\n')
+  const memoAll = [free?.notice, pro?.notice, waive ? SETUP_WAIVER_NOTE : '', userMemo.trim()].filter(Boolean).join('\n')
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
   return (
@@ -155,7 +189,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <label className="flex items-center gap-2 font-semibold">
             <input type="checkbox" checked={freeOn} onChange={(e) => setFreeOn(e.target.checked)} />
-            {t('개통 전 무료 기간 안내 넣기', 'Add a free-period notice before launch')}
+            {t('개통일 기준 무료·일할 계산 넣기', 'Add free period / proration from the launch date')}
           </label>
           <label className="flex items-center gap-2">
             <span className="text-muted">{t('개통일(오픈일)', 'Launch date')}</span>
@@ -164,10 +198,13 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         </div>
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
           {!freeOn ? t('꺼 두었습니다. 무료 기간 줄과 안내 문구는 청구서에 들어가지 않습니다.', 'Turned off. The free-period line and notice are not added to the invoice.')
+            : pro ? (lang === 'en'
+              ? <>The launch date is inside the billing month, so the invoice gets an automatic <strong className="text-ink">&ldquo;{pro.name}&rdquo; ({wonL(pro.price, 'en')}) line</strong> and the notice &ldquo;{pro.notice}&rdquo;. (Invoice text stays in Korean.)</>
+              : <>개통일이 청구 월 안이라 청구서에 <strong className="text-ink">&ldquo;{pro.name}&rdquo; {wonL(pro.price, 'ko')} 줄</strong>이 자동으로 들어갑니다. {pro.kind === 'prorate' ? <>요금제 {pro.planFee.toLocaleString('ko-KR')}원 중 <strong className="text-ink">{pro.charged.toLocaleString('ko-KR')}원</strong>만 청구됩니다. </> : <>요금제 {pro.planFee.toLocaleString('ko-KR')}원이 무료가 됩니다({FREE_FROM_DAY}일 이후 개통). </>}안내 문구도 함께 들어가고 고객 메일에도 보입니다.</>)
             : free ? (lang === 'en'
               ? <>The invoice automatically gets a <strong className="text-ink">&ldquo;{free.name}&rdquo; KRW 0 line</strong> and the notice &ldquo;{free.notice}&rdquo;. They also appear in the email sent to the customer. (Invoice text stays in Korean.)</>
               : <>청구서에 <strong className="text-ink">&ldquo;{free.name}&rdquo; 0원 줄</strong>과 안내 &ldquo;{free.notice}&rdquo;가 자동으로 들어갑니다. 고객에게 보내는 메일에도 보입니다.</>)
-            : t('개통일을 고르면 개통일부터 청구 월 전달 말일까지 무료인 기간과 안내 문구가 자동으로 만들어집니다. (개통일이 청구 월 1일 이후면 넣지 않습니다.)', 'Choose a launch date and the free period (from the launch date to the end of the month before the billing month) and its notice are created automatically. (Nothing is added if the launch date is on or after the 1st of the billing month.)')}
+            : t('개통일을 고르면 청구 월 전에 개통한 경우 무료 기간, 청구 월 안에 개통한 경우 개통일부터 말일까지 일할 계산(25일 이후 개통이면 그 달 무료)이 자동으로 만들어집니다.', 'Choose a launch date and the free period (from the launch date to the end of the month before the billing month) and its notice are created automatically. (Nothing is added if the launch date is on or after the 1st of the billing month.)')}
         </p>
       </div>
       <input type="hidden" name="memo" value={memoAll} />
@@ -209,6 +246,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         <input type="hidden" name="item_name" value="세팅비 (처음 개통할 때 한 번)" /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value={SETUP_FEE} />
         <input type="hidden" name="item_name" value="세팅비 면제 (개통 후 3개월 이상 이용 조건)" /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value={-SETUP_FEE} />
       </>}
+      {pro && <><input type="hidden" name="item_name" value={pro.name} /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value={pro.price} /></>}
       {free && <><input type="hidden" name="item_name" value={free.name} /><input type="hidden" name="item_qty" value="1" /><input type="hidden" name="item_price" value="0" /></>}
 
       <dl className="ml-auto w-full space-y-1 sm:w-64 text-[14px] tabular-nums">
