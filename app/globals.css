@@ -5,6 +5,8 @@
 body {
   @apply bg-paper text-ink;
 }
+/* 휴대폰(아이폰 사파리)에서 화면이 좌우로 밀려 가장자리가 보이는 일을 막는다 — 문서 폭 밖으로 삐져나온 요소가 있어도 옆으로 끌리지 않게 */
+html { overflow-x: hidden; overflow-x: clip; overscroll-behavior-x: none; }
 
 /* 상태 배지 — 기능이 한눈에 보이는 것이 우선 */
 .status-badge {
@@ -23,6 +25,7 @@ body {
 .site {
   @apply bg-white text-body;
   word-break: keep-all;
+  overflow-x: clip;
 }
 .site :focus-visible {
   outline: 2px solid var(--gold);
