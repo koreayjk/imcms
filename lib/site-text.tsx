@@ -180,9 +180,44 @@ const en: SiteText = {
   effective: 'Effective',
 }
 
-export function siteText(site: { lang?: SiteLang } | SiteLang | undefined | null): SiteText {
+// 일본어·중국어판(번역 버튼): 영어 문구를 바탕으로 눈에 잘 띄는 안내 문구만 그 언어로 바꾼다 (날짜 표기는 영어 그대로)
+const ja: Partial<SiteText> = {
+  htmlLang: 'ja', ogLocale: 'ja_JP',
+  tip: '情報提供', ads: '広告のお問い合わせ', login: '編集部ログイン',
+  allNews: '最新ニュース', home: 'ホーム', search: '検索', searchArticles: '記事を検索', searchPlaceholder: '検索',
+  openMenu: 'メニューを開く', closeMenu: 'メニューを閉じる', fullMenu: 'メニュー', allSections: 'すべてのセクション',
+  realtime: '最新ニュース', popular: 'よく読まれている記事', major: '主要ニュース', majorShort: '主要ニュース', latest: '最新', pick: '編集部おすすめ',
+  photoNews: 'フォトニュース', topStories: '主要ニュース', more: 'もっと見る',
+  moreOf: (name: string) => `${name}をもっと見る →`, moreOfPlain: (name: string) => `${name}をもっと見る`, moreLabel: (title: string) => `${title}をもっと見る`,
+  noArticles: '公開された記事はまだありません。', noArticlesSub: '編集部で公開した記事がここに表示されます。',
+  prev: '前へ', next: '次へ', all: 'すべて', reporter: (name: string) => `${name} 記者`, published: '公開', views: '閲覧数', related: '関連記事',
+  original: '原文を読む', copyright: (name: string) => `© ${name}. All rights reserved.`,
+  moreInSection: (name?: string | null) => (name ? `${name}のその他の記事` : 'その他の記事'),
+  notFound: '記事が見つかりません', share: '共有', copied: 'リンクをコピーしました。',
+  searchNone: '検索結果がありません。別の言葉でお試しください。',
+}
+const zh: Partial<SiteText> = {
+  htmlLang: 'zh-CN', ogLocale: 'zh_CN',
+  tip: '新闻线索', ads: '广告咨询', login: '编辑部登录',
+  allNews: '最新新闻', home: '首页', search: '搜索', searchArticles: '搜索文章', searchPlaceholder: '搜索',
+  openMenu: '打开菜单', closeMenu: '关闭菜单', fullMenu: '菜单', allSections: '全部栏目',
+  realtime: '最新新闻', popular: '阅读最多', major: '要闻', majorShort: '要闻', latest: '最新', pick: '编辑推荐',
+  photoNews: '图片新闻', topStories: '要闻', more: '更多',
+  moreOf: (name: string) => `更多${name} →`, moreOfPlain: (name: string) => `更多${name}`, moreLabel: (title: string) => `更多${title}`,
+  noArticles: '暂无已发布的文章。', noArticlesSub: '编辑部发布的文章将显示在这里。',
+  prev: '上一页', next: '下一页', all: '全部', reporter: (name: string) => `${name} 记者`, published: '发布', views: '阅读', related: '相关文章',
+  original: '阅读原文', copyright: (name: string) => `© ${name}. All rights reserved.`,
+  moreInSection: (name?: string | null) => (name ? `${name}更多文章` : '更多文章'),
+  notFound: '未找到文章', share: '分享', copied: '链接已复制。',
+  searchNone: '没有搜索结果，请换个词再试。',
+}
+const OVERRIDE: Record<string, Partial<SiteText>> = { ja, zh }
+
+export function siteText(site: { lang?: SiteLang; viewLang?: string } | SiteLang | undefined | null): SiteText {
   const lang = typeof site === 'string' ? site : site?.lang
-  return lang === 'en' ? en : ko
+  if (lang !== 'en') return ko
+  const view = typeof site === 'object' && site ? site.viewLang : undefined
+  return view && OVERRIDE[view] ? { ...en, ...OVERRIDE[view] } : en
 }
 
 // ───────── 날짜 (한국어: 한국 시간 2026.10.14 / 영어: 미국 동부 시간, AP 표기 Oct. 14, 2026) ─────────

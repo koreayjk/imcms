@@ -68,6 +68,13 @@ body {
   text-wrap: balance;
 }
 .site[data-layout='editorial'] :is(h1, h2, h3, .headline-text) { font-family: 'Noto Serif KR', 'Source Serif 4', Georgia, 'Times New Roman', serif; }
+/* 일본어·중국어판: 한글·영어용 규칙(낱말 단위 줄 바꿈 keep-all, 좁은 자간, 세리프 제목)을 한자·가나에 맞게 바꾼다.
+   keep-all 이면 띄어쓰기 없는 긴 문장이 한 덩어리가 되어 옆 칸을 밀어내므로 글자 단위로 줄을 바꾼다 */
+.site[data-view] { word-break: normal; overflow-wrap: anywhere; line-break: strict; letter-spacing: normal; }
+.site[data-view] * { letter-spacing: normal !important; }
+.site[data-view] :is(h1, h2, h3, .headline-text) { font-family: inherit; line-height: 1.45; font-weight: 700; }
+.site[data-view] .article-content { line-height: 2; }
+.site[data-view] .article-content figcaption, .site[data-view] .article-content img + p:has(> em:only-child) { word-break: normal; }
 /* 다른 프로그램에서 옮겨 온 기사의 사진 설명: <figure><img><figcaption>…. 우리 편집기 기사의 "사진 밑 기울임 글"과 같은 모양 */
 .article-content figure { margin-left: auto; margin-right: auto; text-align: center; }
 .article-content figure > div, .article-content figure > div > div { display: block; }
