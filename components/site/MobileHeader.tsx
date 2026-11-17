@@ -65,13 +65,19 @@ export default function MobileHeader({ site, current }: Props) {
         </button>
         <Logo site={site} size="sm" />
         <div className="flex items-center">
-          <LangSwitch site={site} className="mr-1 text-[12px]" />
+          {(site.translate?.langs.length ?? 0) < 2 && <LangSwitch site={site} className="mr-1 text-[12px]" />}
           <Link href="/search" aria-label={t.searchArticles} className="grid h-11 w-11 place-items-center text-body">
             <SearchIcon />
           </Link>
         </div>
       </div>
 
+      {/* 언어가 둘 이상(영어·일본어·중국어)이면 좁은 머리줄에 못 들어가므로 따로 한 줄 */}
+      {(site.translate?.langs.length ?? 0) >= 2 && (
+        <div className="flex justify-end border-b border-rule bg-white px-3 py-1.5">
+          <LangSwitch site={site} className="whitespace-nowrap text-[12.5px]" />
+        </div>
+      )}
       <nav className="bg-brand" aria-label={t.mainNav}>
         <ul data-mobile-nav className="no-scrollbar flex overflow-x-auto px-2">
           <li>
