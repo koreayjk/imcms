@@ -195,7 +195,7 @@ const raceTimeout = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Prom
 
 export type RunResult = { outlet: string; status: 'saved' | 'skipped' | 'failed'; message: string; articleId?: string | null }
 
-// opts.count === false 이면 맞춤 자료 매체의 자동 작성도 매체 AI 한도에 세지 않는다 (시험 실행용)
+// opts.count === false 이면 자동 작성도 매체 AI 한도에 세지 않는다 (시험 실행용)
 export async function runAutoArticle(supabase: SupabaseClient, secret: string, outletId: string, opts: { force?: boolean; count?: boolean } = {}): Promise<RunResult> {
   const started = Date.now()
   const { data: plan, error: pe } = await supabase.rpc('auto_press_plan', { secret, p_outlet: outletId })
@@ -212,9 +212,9 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
   if (!aiReady()) { await note(null, false, 'AI 키(ANTHROPIC_API_KEY 또는 GEMINI_API_KEY)가 설정되지 않았습니다'); return { outlet: name, status: 'failed', message: 'AI 키 없음' } }
   if (!p.cfg.author_id) { await note(null, false, '기자 계정(author_id)이 비어 있습니다'); return { outlet: name, status: 'failed', message: '기자 계정 없음' } }
 
-  // 맞춤 자료(그룹)를 정해 둔 매체는 그 자료 중에서 지역별로 골고루 고르고, 쓴 기사는 매체 AI 한도에 1회로 센다
+  // 맞춤 자료(그룹)를 정해 둔 매체는 그 자료 중에서 지역별로 골고루 고른다. 자동 작성 기사는 모든 매체가 매체 AI 한도에 건당 1회로 센다
   const tiered = hasPressTiers(buildSite(p.outlet, []).pressTiers)
-  const counting = tiered && opts.count !== false
+  const counting = opts.count !== false
   // 승인 없이 발행하는 매체(publish_hour)는 본문 500자 이상·사진 필수 (미달이면 그 보도자료는 건너뛰고 다음 후보로)
   const autoPublish = p.cfg.publish_hour != null
   const MIN_PUBLISH_CHARS = 500
@@ -365,7 +365,8 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
         p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)), p_hold: hold,
       })
       if (se) { await note(r.id, false, `저장 실패: ${se.message}`, cost); failures.push(se.message); continue }
-      if (counting && id) await supabase.rpc('auto_press_ai_count', { secret, p_outlet: outletId, p_user: p.cfg.author_id, p_model: model.id, p_tin: dr.inputTokens, p_tout: dr.outputTokens, p_cost: Number(cost.toFixed(5)) })
+      // 자동 작성 사용량은 매체 전체 한도에만 세고 어느 기자의 개인 한도에도 붙이지 않는다 (p_user: null)
+      if (counting && id) await supabase.rpc('auto_press_ai_count', { secret, p_outlet: outletId, p_user: null, p_model: model.id, p_tin: dr.inputTokens, p_tout: dr.outputTokens, p_cost: Number(cost.toFixed(5)) })
       return { outlet: name, status: 'saved', message: `${hold ? '승인 대기로 저장' : `${p.cfg.publish_hour}시 발행 예약`}: ${title}`, articleId: id as string | null }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류'

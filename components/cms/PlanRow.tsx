@@ -12,7 +12,7 @@ export type PlanRowData = {
   id: string; name: string; group: string | null
   plan: string | null; customLimit: number | null; limit: number | null; overage: boolean
   used: number; overCount: number; costWon: number; extraWon: number
-  // 자동 작성(한도에 넣지 않음): 이번 달 건수·원가(원)
+  // 자동 작성: 이번 달 건수·원가(원). 건당 1회로 한도에 포함
   autoCount?: number; autoWon?: number
 }
 
@@ -52,8 +52,8 @@ export default function PlanRow({ row }: { row: PlanRowData }) {
         {(row.autoCount ?? 0) > 0 && (
           <p className="mt-0.5 text-[11.5px] tabular-nums text-muted">
             {lang === 'en'
-              ? <>Auto-written {row.autoCount} (not counted toward the limit) · cost approx. KRW {(row.autoWon ?? 0).toLocaleString(loc)}</>
-              : <>자동 작성 {row.autoCount}건 (한도에 안 들어감) · 원가 약 {(row.autoWon ?? 0).toLocaleString()}원</>}
+              ? <>Auto-written {row.autoCount} (1 use each toward the limit) · cost approx. KRW {(row.autoWon ?? 0).toLocaleString(loc)}</>
+              : <>자동 작성 {row.autoCount}건 (건당 1회로 한도에 포함) · 원가 약 {(row.autoWon ?? 0).toLocaleString()}원</>}
           </p>
         )}
       </div>

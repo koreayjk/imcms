@@ -8,7 +8,7 @@ import { useCmsLang, useT } from './CmsLang'
 
 export type MemberAi = { profile_id: string; full_name: string | null; role: string; drafts: number; legal_checks: number; custom_limit: number | null; effective_limit: number | null }
 
-// 기자 한 줄: 이번 달 AI 사용 횟수(초안 + 법적 검수), 한도(빈 칸 = 자동 배분)
+// 기자 한 줄: 이번 달 AI 사용 횟수(초안 + 법적 검수), 한도(빈 칸 = 개인 한도 없음, 매체 전체 한도만 적용)
 export default function MemberAiRow({ m, editable }: { m: MemberAi; editable: boolean }) {
   const t = useT()
   const lang = useCmsLang()
@@ -36,14 +36,14 @@ export default function MemberAiRow({ m, editable }: { m: MemberAi; editable: bo
         <div className="flex flex-wrap items-center gap-2 text-[13px] md:justify-end">
           <label className="flex items-center gap-1.5">
             <span className="whitespace-nowrap text-muted">{t('월 한도', 'Monthly limit')}</span>
-            <input value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, ''))} inputMode="numeric" placeholder={m.custom_limit == null && lim != null ? t(`자동 ${lim}`, `Auto ${lim}`) : t('자동', 'Auto')} className="field-input py-1.5 text-right tabular-nums" style={{ width: 90 }} aria-label={t(`${m.full_name ?? ''} 월 AI 사용 한도 (비우면 자동 배분)`, `${m.full_name ?? ''} monthly AI usage limit (leave blank to allocate automatically)`)} />
+            <input value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, ''))} inputMode="numeric" placeholder={t('없음', 'None')} className="field-input py-1.5 text-right tabular-nums" style={{ width: 90 }} aria-label={t(`${m.full_name ?? ''} 월 AI 사용 한도 (비우면 개인 한도 없음)`, `${m.full_name ?? ''} monthly AI usage limit (leave blank for no personal limit)`)} />
           </label>
           <button type="button" disabled={!dirty || pending} onClick={() => start(async () => { const r = await saveMemberLimit(m.profile_id, value); setMsg(r.error ?? ''); if (!r.error) router.refresh() })} className="btn-primary px-3 py-1.5 text-[12.5px] disabled:opacity-40">{pending ? '…' : t('저장', 'Save')}</button>
           {m.custom_limit != null && <button type="button" disabled={pending} onClick={() => start(async () => { setValue(''); const r = await saveMemberLimit(m.profile_id, ''); setMsg(r.error ?? ''); router.refresh() })} className="text-[12px] text-muted underline">{t('자동으로', 'Set to auto')}</button>}
           {msg && <span role="alert" className="w-full text-right text-[12px] text-danger">{msg}</span>}
         </div>
       ) : (
-        <p className="text-[12.5px] text-muted md:text-right">{m.custom_limit != null ? t('편집장이 정한 한도', 'Limit set by the Editor-in-Chief') : t('매체 한도를 인원수로 나눈 값', 'Outlet limit divided by headcount')}</p>
+        <p className="text-[12.5px] text-muted md:text-right">{m.custom_limit != null ? t('편집장이 정한 한도', 'Limit set by the Editor-in-Chief') : t('개인 한도 없음 (매체 전체 한도만 적용)', 'No personal limit (outlet total limit only)')}</p>
       )}
     </li>
   )

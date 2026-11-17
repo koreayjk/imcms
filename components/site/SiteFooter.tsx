@@ -4,6 +4,7 @@ import Logo from './Logo'
 import { POLICIES } from '@/lib/policies'
 import NewsletterBox from './NewsletterBox'
 import SocialLinks from './SocialLinks'
+import ViewModeToggle from './ViewModeToggle'
 import { mailReady } from '@/lib/mail'
 import { siteText } from '@/lib/site-text'
 
@@ -71,6 +72,7 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
             {t.rights(site.name)}
           </p>
           <p className="text-[12px] text-[#8A918C]">© {year} {site.name}. All rights reserved.</p>
+          <div className="mt-3"><ViewModeToggle en={en} /></div>
         </div>
       </div>
       {/* 어느 프로그램으로 만든 홈페이지인지 표시 (누르면 IM 뉴스룸 소개로) */}

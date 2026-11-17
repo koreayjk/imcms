@@ -1,6 +1,6 @@
 -- 맞춤 자료(그룹)를 쓰는 매체의 자동 작성 (운영 DB에는 이미 적용됨. 여러 번 실행해도 된다)
 --   · auto_press_candidates_tiered: 품질 ok · 맞춤 자료(그룹의 출처, 또는 그룹 키워드가 제목·요약에 있는 뉴스와이어)에 걸리는 · 가리지 않은 · 아직 기사로 안 쓴 보도자료
---   · auto_press_ai_left / auto_press_ai_count: 이 매체의 이번 달 AI 한도를 확인하고, 자동 작성 기사 1건을 한도에 1회로 센다 (맞춤 자료 매체만)
+--   · auto_press_ai_left / auto_press_ai_count: 이 매체의 이번 달 AI 한도를 확인하고, 자동 작성 기사 1건을 한도에 1회로 센다 (자동 작성하는 모든 매체)
 --   · 서버(lib/auto-press.ts rankTiered)가 지역(광역)별로 번갈아 골라 쓴다. 기존 auto_press_* 함수는 그대로다.
 create or replace function public.auto_press_candidates_tiered(secret text, p_outlet uuid, p_days integer default 4, p_limit integer default 800)
 returns table(id uuid, source_key text, source_name text, title text, link text, summary text, body_html text, image_url text, published_at timestamptz)

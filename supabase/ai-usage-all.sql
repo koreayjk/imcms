@@ -5,7 +5,7 @@
 --   기자별 한도(자동 배분·편집장 지정)도 두 가지를 합쳐서 본다
 
 create or replace function public.ai_limit_of(o uuid) returns integer language sql stable security definer set search_path = public as $$
-  select coalesce(ai_monthly_limit, case plan when 'basic' then 300 when 'standard' then 900 when 'premium' then 2000 end)
+  select coalesce(ai_monthly_limit, case plan when 'basic' then 500 when 'standard' then 1100 when 'premium' then 2000 end)
   from outlets where id = o;
 $$;
 

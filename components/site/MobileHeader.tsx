@@ -8,6 +8,7 @@ import { childSections, dividerBefore, topSections, type SiteConfig } from '@/li
 import { siteText } from '@/lib/site-text'
 import Logo from './Logo'
 import SocialLinks from './SocialLinks'
+import ViewModeToggle from './ViewModeToggle'
 import { ChartTile, ClockTile, CloseIcon, CrownTile, MegaphoneTile, MenuIcon, PenTile, SearchIcon, UserIcon } from './icons'
 
 type Props = { site: SiteConfig; current?: string }
@@ -152,6 +153,8 @@ export default function MobileHeader({ site, current }: Props) {
                 <SocialLinks items={site.socials} en={site.lang === 'en'} size="sm" />
               </div>
             )}
+
+            <div className="border-b border-rule bg-white px-5 py-3"><ViewModeToggle en={site.lang === 'en'} /></div>
 
             <nav aria-label={t.allSections} className="bg-white px-5 pb-6 pt-4">
               <ul className="grid grid-cols-2 gap-x-4">

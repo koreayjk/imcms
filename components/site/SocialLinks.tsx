@@ -16,6 +16,7 @@ const BRAND: Record<SocialLink['kind'], { bg: string; glyph: React.ReactNode }> 
   threads: { bg: '#000', glyph: text('@') },
   tiktok: { bg: '#000', glyph: text('♪') },
   naverblog: { bg: '#03C75A', glyph: text('N') },
+  navercafe: { bg: '#03C75A', glyph: <svg {...svg}><path d="M6 9h9v5a4 4 0 0 1-4 4h-1a4 4 0 0 1-4-4z" /><path d="M15 10h1.4a2 2 0 0 1 0 4H15" /><path d="M9 5.5v1.5M12 5.5v1.5" /></svg> },
   kakao: { bg: '#FEE500', glyph: <svg {...svg} fill="#3C1E1E" stroke="none"><path d="M12 5C7.6 5 4 7.7 4 11.1c0 2.2 1.5 4.1 3.7 5.2l-.8 2.9c-.1.3.2.5.5.3l3.4-2.2c.4 0 .8.1 1.2.1 4.4 0 8-2.7 8-6.1S16.4 5 12 5z" /></svg> },
 }
 

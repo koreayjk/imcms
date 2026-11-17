@@ -20,7 +20,7 @@ export async function saveContactEmail(_prev: SettingsState, form: FormData): Pr
   return { ok: email ? t('저장했습니다. 앞으로 기자들의 기사에 이 이메일이 붙습니다.', 'Saved. This email will now appear on reporters\' stories.') : t('대표 이메일을 비웠습니다.', 'Cleared the outlet contact email.') }
 }
 
-// 기자별 월 AI 사용 한도 (초안·법적 검수 합계, 빈 칸 = 자동 배분)
+// 기자별 월 AI 사용 한도 (초안·법적 검수 합계, 빈 칸 = 개인 한도 없음)
 export async function saveMemberLimit(memberId: string, value: string): Promise<SettingsState> {
   const { supabase, outletId } = await getCmsContext()
   const { t } = await getT()

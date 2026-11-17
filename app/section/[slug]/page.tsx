@@ -1,6 +1,6 @@
 import AdArea from '@/components/site/AdArea'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { currentSite, getSectionData, SECTION_PAGE_SIZE } from '@/lib/public-data'
 import { childSections, findSection, siteIcon } from '@/lib/sites'
@@ -31,6 +31,8 @@ export default async function SectionPage(props: Props) {
   const t = siteText(site)
   const section = findSection(site, params.slug)
   if (!section) notFound()
+  // 메뉴의 "포토뉴스"(slug photo)는 사진 카드로 보여 주는 포토뉴스 모아보기 화면으로 보낸다 (홈 포토뉴스 띠의 더보기와 같은 화면)
+  if (section.slug === 'photo') redirect(Number(searchParams.page) > 1 ? `/news/photo?page=${Number(searchParams.page)}` : '/news/photo')
 
   const page = Math.max(1, Number(searchParams.page) || 1)
   const { articles, total, mostViewed } = await getSectionData(site, section.slug, page)
