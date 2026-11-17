@@ -16,7 +16,7 @@ import { buildSite, hasPressTiers, type OutletRow } from './sites'
 
 export type Plan = {
   outlet: OutletRow
-  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; publish_hour?: number | null; required_groups?: { name: string; sources: string[] }[] | null; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
+  cfg: { enabled: boolean; daily_limit: number; tz: string; start_hour: number; end_hour: number; publish_hour?: number | null; required_groups?: { name: string; sources: string[] }[] | null; region_bylines?: { byline: string; sources?: string[]; keywords?: string[] }[] | null; byline: string; author_id: string | null; require_words?: string[]; block_words?: string[]; trusted_sources?: string[] }
   today: number
   categories: { id: string; slug: string; name: string }[]
 }
@@ -196,6 +196,19 @@ const raceTimeout = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Prom
 export type RunResult = { outlet: string; status: 'saved' | 'skipped' | 'failed'; message: string; articleId?: string | null }
 
 // opts.count === false 이면 자동 작성도 매체 AI 한도에 세지 않는다 (시험 실행용)
+// 지역 담당 기자: 보도자료 출처(예: 인천 구청)가 정해 둔 지역에 속하면 그 기자 이름으로 쓴다.
+//   메일·분야별 자료처럼 지자체 출처가 아닌 자료는 제목·요약에 지역 낱말이 있을 때만 (예: '제주')
+function bylineFor(cfg: Plan['cfg'], r: { source_key: string; title: string; summary?: string | null }): string {
+  const local = r.source_key.startsWith('lg-')
+  const text = `${r.title} ${r.summary ?? ''}`
+  for (const g of cfg.region_bylines ?? []) {
+    if (!g.byline) continue
+    if (g.sources?.includes(r.source_key)) return g.byline
+    if (!local && g.keywords?.some((k) => k && text.includes(k))) return g.byline
+  }
+  return cfg.byline
+}
+
 export async function runAutoArticle(supabase: SupabaseClient, secret: string, outletId: string, opts: { force?: boolean; count?: boolean } = {}): Promise<RunResult> {
   const started = Date.now()
   const { data: plan, error: pe } = await supabase.rpc('auto_press_plan', { secret, p_outlet: outletId })
@@ -331,11 +344,12 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
       if (!photo) { await note(r.id, false, '넣을 사진을 찾지 못해 건너뜀', cost); failures.push('사진 없음'); continue }
 
       // 6) 본문 HTML
+      const reporter = bylineFor(p.cfg, r)
       const html = paras.map((x) => `<p>${escapeHtml(x)}</p>`)
       const photoHtml = `<img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.caption)}"><p><em>▲ ${escapeHtml(photo.caption)}</em></p>`
       let body = [html[0], photoHtml, ...html.slice(1)].join('')
       if (!english) {
-        const byline = `[${name}=${p.cfg.byline} 기자]&nbsp;`
+        const byline = `[${name}=${reporter} 기자]&nbsp;`
         body = body.replace(/^<p>/, `<p>${byline}`)
       }
       // AI 활용 표시는 매체 설정(홈페이지 설정 → AI 활용 표시)이 켜져 있을 때만 붙인다. 꺼져 있으면 넣지 않는다
@@ -362,7 +376,7 @@ export async function runAutoArticle(supabase: SupabaseClient, secret: string, o
       const { data: id, error: se } = await supabase.rpc('auto_press_save', {
         secret, p_outlet: outletId, p_press: r.id, p_category: pickCategory(p, { ...draft, title, paragraphs: paras }),
         p_title: title, p_body: body, p_excerpt: subtitle || null, p_thumb: photo.src, p_tags: draft.keywords ?? [],
-        p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)), p_hold: hold,
+        p_notes: notes.filter(Boolean).map((n) => `• ${n}`).join('\n'), p_legal: legal, p_cost: Number(cost.toFixed(5)), p_hold: hold, p_byline: reporter,
       })
       if (se) { await note(r.id, false, `저장 실패: ${se.message}`, cost); failures.push(se.message); continue }
       // 자동 작성 사용량은 매체 전체 한도에만 세고 어느 기자의 개인 한도에도 붙이지 않는다 (p_user: null)
