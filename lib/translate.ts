@@ -10,7 +10,7 @@ const EN_SYSTEM = `You are a professional Korean-to-English news translator for 
 
 Rules
 - Translate faithfully. Do not add, remove, summarize or embellish any facts, numbers, dates, names or quotes.
-- The body is HTML. Keep the HTML structure exactly: the same tags in the same order, and all attributes unchanged — especially every <img> tag (src stays identical; translate only the alt text), links (href unchanged) and entities like &nbsp;. Translate only the human-readable text between tags and the alt/title text.
+- The body is HTML. Keep the HTML structure exactly: the same tags in the same order, and all attributes unchanged — especially every <img data-ph="n"> placeholder (keep each one exactly as written, in the same place), links (href unchanged) and entities like &nbsp;. Translate only the human-readable text between tags and the alt/title text. The body may be one part of a longer article: translate it as given.
 - Photo captions that start with "▲" keep the "▲". "사진=…" becomes "Photo: …".
 - Bylines such as "[매체이름=홍길동 기자]" become "[Outlet Name=Gil-dong Hong]" (translate the outlet name, romanize the reporter's name, drop "기자").
 - Romanize Korean personal names with the Revised Romanization, given name after the family name written in Western order (e.g. 이호현 → Ho-hyun Lee). Use official English names for organizations, places and laws when they exist; otherwise translate descriptively.
@@ -20,7 +20,7 @@ Rules
 - Output only the JSON object requested.`
 
 const COMMON = `- Translate faithfully. Do not add, remove, summarize or embellish any facts, numbers, dates, names or quotes.
-- The body is HTML. Keep the HTML structure exactly: the same tags in the same order, and all attributes unchanged — especially every <img> tag (src stays identical; translate only the alt text), links (href unchanged) and entities like &nbsp;. Translate only the human-readable text between tags and the alt/title text.
+- The body is HTML. Keep the HTML structure exactly: the same tags in the same order, and all attributes unchanged — especially every <img data-ph="n"> placeholder (keep each one exactly as written, in the same place), links (href unchanged) and entities like &nbsp;. Translate only the human-readable text between tags and the alt/title text. The body may be one part of a longer article: translate it as given.
 - Photo captions that start with "▲" keep the "▲".
 - Direct quotes stay in quotation marks. The title is a headline (no period at the end); the excerpt is plain sentences.
 - Output only the JSON object requested.`
@@ -115,9 +115,71 @@ async function withGemini(model: AiModel, input: TranslateInput, budgetMs: numbe
   return parse(text)
 }
 
+// ───────── 긴 기사·사진이 많은 기사 ─────────
+// 사진 태그는 번역에 보내지 않고 짧은 표시(<img data-ph="n">)로 바꿔 두었다가 번역 뒤에 원래 태그로 되돌린다 (AI가 사진을 빠뜨리지 못하게)
+// 본문이 길면 문단 경계에서 나눠 동시에 번역한다 (한 번에 보내면 시간 안에 못 끝낸다)
+const CHUNK_CHARS = 5000
+const CHUNK_PARALLEL = 4
+
+function protectImages(html: string) {
+  const imgs: string[] = []
+  const out = html.replace(/<img\b[^>]*>/gi, (m) => { imgs.push(m); return `<img data-ph="${imgs.length - 1}">` })
+  return { html: out, imgs }
+}
+function restoreImages(html: string, imgs: string[]) {
+  let n = 0
+  const out = html.replace(/<img\b[^>]*data-ph=["']?(\d+)["']?[^>]*>/gi, (_m, i) => { n++; return imgs[Number(i)] ?? '' })
+  return { html: out, n }
+}
+function splitBody(html: string): string[] {
+  if (html.length <= CHUNK_CHARS * 1.3) return [html]
+  const parts = html.split(/(?<=<\/(?:p|h[1-6]|ul|ol|blockquote|figure|table|div)>)/i)
+  const chunks: string[] = []
+  let cur = ''
+  for (const p of parts) {
+    if (cur && cur.length + p.length > CHUNK_CHARS) { chunks.push(cur); cur = '' }
+    cur += p
+  }
+  if (cur) chunks.push(cur)
+  return chunks
+}
+
+async function translateOnce(model: AiModel, input: TranslateInput, budgetMs: number, lang: TransLang): Promise<Translated> {
+  return model.provider === 'gemini' ? withGemini(model, input, budgetMs, lang) : withAnthropic(model, input, budgetMs, lang)
+}
+
+// 조각 하나: 사진 표시 개수가 맞지 않으면 한 번 더 시도한다
+async function translateChunk(model: AiModel, input: TranslateInput, expectImgs: number, budgetMs: number, lang: TransLang) {
+  let last: Translated | null = null
+  for (let k = 0; k < 2; k++) {
+    last = await translateOnce(model, input, budgetMs, lang)
+    const got = (last.body.match(/data-ph=/gi) ?? []).length
+    if (got === expectImgs) return last
+  }
+  throw new AiDraftError(`번역 본문의 사진 표시 수가 달라졌습니다 (${expectImgs} → ${(last!.body.match(/data-ph=/gi) ?? []).length})`)
+}
+
 export async function translateArticle(model: AiModel, input: TranslateInput, lang: TransLang = 'en', budgetMs = 45_000): Promise<Translated> {
   if (!providerReady(model.provider)) throw new AiDraftError('AI 키가 설정되지 않았습니다.')
-  const out = model.provider === 'gemini' ? await withGemini(model, input, budgetMs, lang) : await withAnthropic(model, input, budgetMs, lang)
+  const { html, imgs } = protectImages(input.body)
+  const chunks = splitBody(html)
+  const results: Translated[] = new Array(chunks.length)
+  let next = 0
+  const worker = async () => {
+    while (true) {
+      const k = next++
+      if (k >= chunks.length) return
+      const expect = (chunks[k].match(/data-ph=/gi) ?? []).length
+      // 첫 조각만 제목·부제를 함께 번역한다
+      const part: TranslateInput = k === 0 ? { title: input.title, excerpt: input.excerpt, body: chunks[k] } : { title: '-', excerpt: '', body: chunks[k] }
+      results[k] = await translateChunk(model, part, expect, budgetMs, lang)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CHUNK_PARALLEL, chunks.length) }, worker))
+  const joined = results.map((r) => r.body).join('\n')
+  const restored = restoreImages(joined, imgs)
+  if (restored.n !== imgs.length) throw new AiDraftError(`번역 본문의 사진 태그 수가 달라졌습니다 (${imgs.length} → ${restored.n})`)
+  const out: Translated = { title: results[0].title, excerpt: results[0].excerpt, body: restored.html }
   checkTranslation(input, out)
   return out
 }
