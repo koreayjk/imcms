@@ -575,9 +575,11 @@ export const SOCIAL_KINDS = [
   { key: 'naverblog', label: '네이버 블로그', en: 'Naver Blog', example: 'https://blog.naver.com/아이디' },
   { key: 'navercafe', label: '네이버 카페', en: 'Naver Cafe', example: 'https://cafe.naver.com/카페주소' },
   { key: 'kakao', label: '카카오톡 채널', en: 'KakaoTalk Channel', example: 'https://pf.kakao.com/_채널' },
+  { key: 'kakaoopen', label: '카카오톡 오픈채팅', en: 'KakaoTalk Open Chat', example: 'https://open.kakao.com/o/방코드' },
 ] as const
 export type SocialKind = (typeof SOCIAL_KINDS)[number]['key']
-export type SocialLink = { kind: SocialKind; url: string }
+// text: 아이콘 오른쪽에 같이 보여 줄 글자 (예: "[ 협회 -관련링크 ]"), 비워 두면 아이콘만
+export type SocialLink = { kind: SocialKind; url: string; text?: string }
 export function cleanSocials(v: unknown): SocialLink[] | undefined {
   const known = new Set<string>(SOCIAL_KINDS.map((k) => k.key))
   const seen = new Set<string>()
@@ -587,7 +589,8 @@ export function cleanSocials(v: unknown): SocialLink[] | undefined {
     const url = String((x as { url?: unknown })?.url ?? '').trim().slice(0, 300)
     if (!known.has(kind) || seen.has(kind) || !/^https:\/\/[^\s<>"']+$/i.test(url)) continue
     seen.add(kind)
-    out.push({ kind: kind as SocialKind, url })
+    const text = String((x as { text?: unknown })?.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 60)
+    out.push(text ? { kind: kind as SocialKind, url, text } : { kind: kind as SocialKind, url })
     if (out.length >= 8) break
   }
   return out.length ? out : undefined

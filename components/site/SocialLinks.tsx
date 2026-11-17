@@ -17,6 +17,7 @@ const BRAND: Record<SocialLink['kind'], { bg: string; glyph: React.ReactNode }> 
   tiktok: { bg: '#000', glyph: text('♪') },
   naverblog: { bg: '#03C75A', glyph: text('N') },
   navercafe: { bg: '#03C75A', glyph: <svg {...svg}><path d="M6 9h9v5a4 4 0 0 1-4 4h-1a4 4 0 0 1-4-4z" /><path d="M15 10h1.4a2 2 0 0 1 0 4H15" /><path d="M9 5.5v1.5M12 5.5v1.5" /></svg> },
+  kakaoopen: { bg: '#FEE500', glyph: <svg {...svg} fill="#3C1E1E" stroke="none"><path d="M12 5C7.6 5 4 7.7 4 11.1c0 2.2 1.5 4.1 3.7 5.2l-.8 2.9c-.1.3.2.5.5.3l3.4-2.2c.4 0 .8.1 1.2.1 4.4 0 8-2.7 8-6.1S16.4 5 12 5z" /></svg> },
   kakao: { bg: '#FEE500', glyph: <svg {...svg} fill="#3C1E1E" stroke="none"><path d="M12 5C7.6 5 4 7.7 4 11.1c0 2.2 1.5 4.1 3.7 5.2l-.8 2.9c-.1.3.2.5.5.3l3.4-2.2c.4 0 .8.1 1.2.1 4.4 0 8-2.7 8-6.1S16.4 5 12 5z" /></svg> },
 }
 
@@ -32,12 +33,13 @@ export default function SocialLinks({ items, en, size = 'md', labels = false }: 
         return (
           <li key={x.kind}>
             <a href={x.url} target="_blank" rel="noopener noreferrer" aria-label={name} title={name}
-              className={`${labels ? 'inline-flex items-center gap-1.5' : 'inline-flex'} transition-opacity hover:opacity-80`}>
+              className={`${labels || x.text ? 'inline-flex items-center gap-1.5' : 'inline-flex'} transition-opacity hover:opacity-80`}>
               {/* 서비스 색 타일 + 그 안의 로고 모양 (글자 아이콘은 크기를 정해 줘야 SVG가 사라지지 않는다) */}
               <span className="grid place-items-center" style={{ width: box, height: box, background: b.bg, borderRadius: 5 }}>
                 <span className="grid place-items-center" style={{ width: box * 0.78, height: box * 0.78 }}>{b.glyph}</span>
               </span>
-              {labels && <span className="text-[13px] font-bold text-body">{name}</span>}
+              {labels && !x.text && <span className="text-[13px] font-bold text-body">{name}</span>}
+              {x.text && <span className="text-[12.5px] font-semibold text-body">{x.text}</span>}
             </a>
           </li>
         )
