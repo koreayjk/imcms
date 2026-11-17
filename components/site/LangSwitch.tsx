@@ -19,7 +19,7 @@ export default function LangSwitch({ site, className = '', tone = 'dark' }: { si
   return (
     <span className={`inline-flex items-center gap-1.5 ${className}`} role="group" aria-label="Language">
       {items.map((it, i) => (
-        <span key={it.code} className="inline-flex items-center gap-1.5">
+        <span key={it.code} className="inline-flex items-center gap-1.5 whitespace-nowrap">
           {i > 0 && <span aria-hidden className={tone === 'light' ? 'text-white/40' : 'text-rule'}>|</span>}
           <a href={`/lang?to=${it.code}`} onClick={go(it.code)} lang={it.code} aria-current={cur === it.code ? 'true' : undefined} className={cur === it.code ? on : off}>{it.label}</a>
         </span>
