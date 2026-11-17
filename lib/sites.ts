@@ -573,6 +573,7 @@ export const SOCIAL_KINDS = [
   { key: 'threads', label: '스레드', en: 'Threads', example: 'https://www.threads.net/@계정이름' },
   { key: 'tiktok', label: '틱톡', en: 'TikTok', example: 'https://www.tiktok.com/@계정이름' },
   { key: 'naverblog', label: '네이버 블로그', en: 'Naver Blog', example: 'https://blog.naver.com/아이디' },
+  { key: 'navercafe', label: '네이버 카페', en: 'Naver Cafe', example: 'https://cafe.naver.com/카페주소' },
   { key: 'kakao', label: '카카오톡 채널', en: 'KakaoTalk Channel', example: 'https://pf.kakao.com/_채널' },
 ] as const
 export type SocialKind = (typeof SOCIAL_KINDS)[number]['key']
