@@ -25,12 +25,23 @@ export default function SiteFrame({ site, current, children, home }: Props) {
 
   const t = siteText(site)
   const en = site.lang === 'en'
+  // 일본어·중국어판: 그 나라 글꼴로 바꾸고(영문용 세리프에는 한자·가나가 없다), 글자 사이 줄 바꿈은 globals.css 의 data-view 규칙이 맞춘다
+  const cjk = site.viewLang === 'ja' || site.viewLang === 'zh' ? site.viewLang : null
+  const CJK_FONT = {
+    ja: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', Meiryo, sans-serif",
+    zh: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif",
+  } as const
+  const CJK_CSS = {
+    ja: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap',
+    zh: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap',
+  } as const
   return (
-    <div className="site relative min-h-screen" data-layout={site.homeLayout ?? 'standard'} data-thumb-fill={site.thumbFill ?? 'gray'} style={en ? { ...vars, fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif" } : vars} lang={t.htmlLang} data-lang={t.htmlLang}>
+    <div className="site relative min-h-screen" data-layout={site.homeLayout ?? 'standard'} data-thumb-fill={site.thumbFill ?? 'gray'} style={cjk ? { ...vars, fontFamily: CJK_FONT[cjk] } : en ? { ...vars, fontFamily: "'Source Serif 4', Georgia, 'Times New Roman', serif" } : vars} lang={t.htmlLang} data-lang={t.htmlLang} data-view={cjk ?? undefined}>
       {/* 영문 매체: 문서 언어를 영어로 (루트 html 은 편집국과 같이 쓰므로 여기서 바꾼다), 미국 신문 느낌의 세리프 글꼴 */}
       {en && (
         <>
-          <script dangerouslySetInnerHTML={{ __html: "document.documentElement.lang='en'" }} />
+          <script dangerouslySetInnerHTML={{ __html: `document.documentElement.lang='${t.htmlLang}'` }} />
+          {cjk && <link rel="stylesheet" href={CJK_CSS[cjk]} />}
           <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700;8..60,800&display=swap" />
         </>
       )}
