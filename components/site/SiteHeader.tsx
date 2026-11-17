@@ -26,7 +26,7 @@ export default function SiteHeader({ site, current }: Props) {
         <div className={`mx-auto flex ${site.socials?.length ? 'h-11' : 'h-9'} max-w-[1200px] items-center justify-between px-4 text-[12px] text-sub`}>
           <div className="flex items-center gap-3">
             <span>{formatToday(site.lang, site.timeZone)}</span>
-            {!!site.socials?.length && <SocialLinks items={site.socials} en={site.lang === 'en'} size="sm" labels={site.socials.length <= 2} />}
+            {!!site.socials?.length && <SocialLinks items={site.socials} en={site.lang === 'en'} size="sm" />}
           </div>
           <nav className="flex items-center gap-4" aria-label={t.utilNav}>
             <LangSwitch site={site} />
