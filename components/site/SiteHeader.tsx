@@ -107,16 +107,20 @@ function HeaderBanner({ item }: { item?: { name: string; img: string; url?: stri
 function NavList({ site, current, centered = false, size = 'text-[16.5px]' }: { site: SiteConfig; current?: string; centered?: boolean; size?: string }) {
   const tops = topSections(site)
   const t = siteText(site)
+  // 번역판(영어 등)은 메뉴 이름이 길어 한 줄에 안 들어가므로 글자와 간격을 줄인다
+  const tight = !!site.viewLang && centered
+  if (tight) size = 'text-[14.5px]'
+  const pad = tight ? 'px-[8px]' : 'px-[12px]'
   return (
     <ul className={centered ? 'flex flex-wrap items-center justify-center' : 'flex items-center'}>
       <li>
         <Link
           href="/news"
           aria-current={current === ALL_NEWS ? 'page' : undefined}
-          className={`relative block whitespace-nowrap px-[12px] py-2 ${size} font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${current === ALL_NEWS ? 'text-brand' : 'text-body'}`}
+          className={`relative block whitespace-nowrap ${pad} py-2 ${size} font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${current === ALL_NEWS ? 'text-brand' : 'text-body'}`}
         >
           {t.allNews}
-          {current === ALL_NEWS && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
+          {current === ALL_NEWS && <span className="absolute inset-x-2 -bottom-0.5 h-[3px] bg-gold" />}
         </Link>
       </li>
       {tops.map((s, i) => {
@@ -128,12 +132,12 @@ function NavList({ site, current, centered = false, size = 'text-[16.5px]' }: { 
             <Link
               href={`/section/${s.slug}`}
               aria-current={current === s.slug ? 'page' : undefined}
-              className={`relative block whitespace-nowrap px-[12px] py-2 ${size} font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${
+              className={`relative block whitespace-nowrap ${pad} py-2 ${size} font-semibold tracking-[-0.02em] transition-colors hover:text-brand ${
                 active ? 'text-brand' : 'text-body'
               }`}
             >
               {s.name}
-              {active && <span className="absolute inset-x-3 -bottom-0.5 h-[3px] bg-gold" />}
+              {active && <span className="absolute inset-x-2 -bottom-0.5 h-[3px] bg-gold" />}
             </Link>
             {/* 2차 메뉴: 마우스를 올리거나 키보드로 들어가면 펼친다 */}
             {kids.length > 0 && (
