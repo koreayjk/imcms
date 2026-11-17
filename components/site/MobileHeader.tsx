@@ -149,7 +149,7 @@ export default function MobileHeader({ site, current }: Props) {
 
             {!!site.socials?.length && (
               <div className="flex items-center gap-3 border-b border-rule bg-white px-5 py-3">
-                <span className="text-[13px] font-semibold text-sub">{site.lang === 'en' ? 'Follow us' : '공식 SNS'}</span>
+                <span className="text-[13px] font-semibold text-sub">{site.socialsTitle || (site.lang === 'en' ? 'Follow us' : '공식 SNS')}</span>
                 <SocialLinks items={site.socials} en={site.lang === 'en'} size="sm" />
               </div>
             )}
