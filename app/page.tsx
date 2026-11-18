@@ -34,7 +34,7 @@ import { siteText } from '@/lib/site-text'
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite()
   return {
-    title: `${site.name} | ${site.nameEn}`,
+    title: site.nameEn ? `${site.name} | ${site.nameEn}` : site.name,
     description: site.description,
     icons: { icon: siteIcon(site) },
     // 독자용 앱이 있는 매체만 앱 설치 정보 (lib/android.ts)
