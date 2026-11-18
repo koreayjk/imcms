@@ -81,7 +81,8 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
     if (openDate < `${month}-01` || openDate > `${month}-${String(dim).padStart(2, '0')}`) return null
     const d = Number(openDate.slice(8, 10))
     if (d === 1) return null
-    const planFee = items.filter((i) => i.name.includes('요금제')).reduce((n, i) => n + i.qty * i.unit_price, 0)
+    // 베타 반값 할인 줄(마이너스)도 함께 센다: 반값이 걸린 달은 반값 금액을 기준으로 일할·무료를 계산해야 청구액이 0원 아래로 내려가지 않는다
+    const planFee = items.filter((i) => i.name.includes('요금제') || i.name.startsWith('베타 반값')).reduce((n, i) => n + i.qty * i.unit_price, 0)
     if (planFee <= 0) return null
     const next = m === 12 ? 1 : m + 1
     if (d >= FREE_FROM_DAY) {

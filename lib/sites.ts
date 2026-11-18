@@ -59,6 +59,8 @@ export type SiteConfig = {
   headerBanners?: HeaderBanners
   // 하단에 보이는 SNS 링크 줄 (유튜브·인스타그램 등)
   socials?: SocialLink[]
+  // SNS 줄 앞에 붙는 제목 (비우면 "공식 SNS")
+  socialsTitle?: string
   // 홈페이지 "쇼츠" 구역 (유튜브 채널의 쇼츠를 자동으로 가져온다)
   shorts?: ShortsSettings
   // 구글 '선호하는 소스' 버튼 (구글이 이 매체를 아직 모르면 '결과 없음'이 나오므로 운영팀이 확인한 뒤에만 켠다)
@@ -288,6 +290,8 @@ export type OutletSiteSettings = {
   logoStrip?: LogoStrip
   headerBanners?: HeaderBanners
   socials?: SocialLink[]
+  // SNS 줄 앞에 붙는 제목 (비우면 "공식 SNS")
+  socialsTitle?: string
   shorts?: ShortsSettings
   // 구글 '선호하는 소스' 버튼 (구글이 이 매체를 아직 모르면 '결과 없음'이 나오므로 운영팀이 확인한 뒤에만 켠다)
   googlePreferred?: boolean
@@ -444,6 +448,7 @@ export function buildSite(o: OutletRow, cats: CategoryRow[], preview = false): S
     logoStrip: cleanLogoStrip(s.logoStrip),
     headerBanners: cleanHeaderBanners(s.headerBanners),
     socials: cleanSocials(s.socials),
+    socialsTitle: cleanSocialsTitle(s.socialsTitle),
     shorts: cleanShorts(s.shorts),
     googlePreferred: s.googlePreferred === true,
     adSlots: cleanAdSlots(s.adSlots),
@@ -575,9 +580,12 @@ export const SOCIAL_KINDS = [
   { key: 'naverblog', label: '네이버 블로그', en: 'Naver Blog', example: 'https://blog.naver.com/아이디' },
   { key: 'navercafe', label: '네이버 카페', en: 'Naver Cafe', example: 'https://cafe.naver.com/카페주소' },
   { key: 'kakao', label: '카카오톡 채널', en: 'KakaoTalk Channel', example: 'https://pf.kakao.com/_채널' },
+  { key: 'kakaoopen', label: '카카오톡 오픈채팅', en: 'KakaoTalk Open Chat', example: 'https://open.kakao.com/o/방코드' },
 ] as const
 export type SocialKind = (typeof SOCIAL_KINDS)[number]['key']
-export type SocialLink = { kind: SocialKind; url: string }
+// text: 아이콘 오른쪽에 같이 보여 줄 글자 (예: "[ 협회 -관련링크 ]"), 비워 두면 아이콘만
+export type SocialLink = { kind: SocialKind; url: string; text?: string }
+export const cleanSocialsTitle = (v: unknown): string | undefined => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, 40) || undefined
 export function cleanSocials(v: unknown): SocialLink[] | undefined {
   const known = new Set<string>(SOCIAL_KINDS.map((k) => k.key))
   const seen = new Set<string>()
@@ -587,7 +595,8 @@ export function cleanSocials(v: unknown): SocialLink[] | undefined {
     const url = String((x as { url?: unknown })?.url ?? '').trim().slice(0, 300)
     if (!known.has(kind) || seen.has(kind) || !/^https:\/\/[^\s<>"']+$/i.test(url)) continue
     seen.add(kind)
-    out.push({ kind: kind as SocialKind, url })
+    const text = String((x as { text?: unknown })?.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 60)
+    out.push(text ? { kind: kind as SocialKind, url, text } : { kind: kind as SocialKind, url })
     if (out.length >= 8) break
   }
   return out.length ? out : undefined

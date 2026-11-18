@@ -188,7 +188,7 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
     if (self) {
       const r = await saveSelfSiteSettings(outlet.id, {
         name,
-        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, socials: s.socials, shorts: s.shorts, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill, pressKeywords: s.pressKeywords, pressFields: s.pressFields },
+        site: { nameEn: s.nameEn, slogan: s.slogan, sloganEn: s.sloganEn, description: s.description, logoUrl: s.logoUrl, logoMode: s.logoMode, logoSize: s.logoSize, colors: s.colors, legal: s.legal, aiNotice: s.aiNotice, pressForeignTopics: s.pressForeignTopics, pressForeign: s.pressForeign, logoStrip: s.logoStrip, socials: s.socials, socialsTitle: s.socialsTitle, shorts: s.shorts, iconUrl: s.iconUrl, ogImage: s.ogImage, cmsLang: s.cmsLang, commentsOn: s.commentsOn, commentsMode: s.commentsMode, commentsKind: s.commentsKind, thumbFill: s.thumbFill, pressKeywords: s.pressKeywords, pressFields: s.pressFields },
         sections: sections.map((c) => ({ id: c.id, specialty: !!c.specialty, description: c.description ?? '' })),
       })
       setMsg(r)
@@ -465,12 +465,23 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
         </div>
       </Card>
 
-      <Card id="s-social" title={t('SNS 링크 (홈페이지 하단)', 'Social links (website footer)')} note={t('유튜브·인스타그램 같은 공식 계정 주소를 넣으면 홈페이지 맨 아래에 아이콘 줄로 나옵니다. 종류마다 하나씩, 주소는 https:// 로 시작해야 합니다. 비워 두면 보이지 않습니다.', 'Add your official channel links and they appear as a row of icons at the bottom of your website. One link per platform; links must start with https://. Leave empty to hide the row.')}>
+      <Card id="s-social" title={t('SNS 링크 (홈페이지 하단)', 'Social links (website footer)')} note={t('유튜브·인스타그램 같은 공식 계정 주소를 넣으면 홈페이지 맨 위(날짜 옆)·메뉴·맨 아래에 아이콘 줄로 나옵니다. 오른쪽 칸에 글자를 적으면 아이콘 옆에 같이 보입니다. 종류마다 하나씩, 주소는 https:// 로 시작해야 합니다. 비워 두면 보이지 않습니다.', 'Add your official channel links and they appear as a row of icons at the bottom of your website. One link per platform; links must start with https://. Leave empty to hide the row.')}>
+        <div className="mb-3 grid items-center gap-2 sm:grid-cols-[150px_1fr]">
+          <span className="text-[13px] font-semibold">{t('줄 제목', 'Row title')}</span>
+          <input
+            value={s.socialsTitle ?? ''}
+            maxLength={40}
+            placeholder={t('공식 SNS (예: 청년후계농업경영협회- 공식 SNS)', 'Follow us')}
+            aria-label={t('SNS 줄 제목', 'Social links row title')}
+            onChange={(e) => set({ socialsTitle: e.target.value || undefined })}
+            className="field-input"
+          />
+        </div>
         <div className="space-y-2">
           {SOCIAL_KINDS.map((k) => {
             const cur = s.socials?.find((x) => x.kind === k.key)
             return (
-              <div key={k.key} className="grid items-center gap-2 sm:grid-cols-[150px_1fr]">
+              <div key={k.key} className="grid items-center gap-2 sm:grid-cols-[150px_1fr_minmax(0,0.8fr)]">
                 <span className="text-[13px] font-semibold">{lang === 'en' ? k.en : k.label}</span>
                 <input
                   value={cur?.url ?? ''}
@@ -481,12 +492,25 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
                   onChange={(e) => {
                     const rest = (s.socials ?? []).filter((x) => x.kind !== k.key)
                     const v = e.target.value.trim()
-                    const next = v ? [...rest, { kind: k.key, url: e.target.value }] : rest
+                    const next = v ? [...rest, { kind: k.key, url: e.target.value, ...(cur?.text ? { text: cur.text } : {}) }] : rest
                     // 정해진 순서로 둔다
                     next.sort((a, b) => SOCIAL_KINDS.findIndex((z) => z.key === a.kind) - SOCIAL_KINDS.findIndex((z) => z.key === b.kind))
                     set({ socials: next.length ? next : undefined })
                   }}
                   className="field-input"
+                />
+                <input
+                  value={cur?.text ?? ''}
+                  maxLength={60}
+                  disabled={!cur}
+                  placeholder={t('아이콘 옆에 쓸 글자(선택)', 'Text beside the icon (optional)')}
+                  aria-label={lang === 'en' ? `${k.en} text` : `${k.label} 옆 글자`}
+                  onChange={(e) => {
+                    if (!cur) return
+                    const next = (s.socials ?? []).map((x) => (x.kind === k.key ? (e.target.value.trim() ? { ...x, text: e.target.value } : { kind: x.kind, url: x.url }) : x))
+                    set({ socials: next })
+                  }}
+                  className="field-input disabled:opacity-50"
                 />
               </div>
             )

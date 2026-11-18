@@ -38,7 +38,7 @@ export default function SiteFooter({ site }: { site: SiteConfig }) {
       {!!site.socials?.length && (
         <div className="border-b border-rule bg-white">
           <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
-            <span className="text-[12.5px] font-semibold text-sub">{en ? 'Follow us' : '공식 SNS'}</span>
+            <span className="text-[12.5px] font-semibold text-sub">{site.socialsTitle || (en ? 'Follow us' : '공식 SNS')}</span>
             <SocialLinks items={site.socials} en={en} />
           </div>
         </div>
