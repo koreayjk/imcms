@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata(): Promise<Metadata> {
   const indexable = PRODUCT.indexable && isProductHost((await headers()).get('host'))
   const title = `${PRODUCT.name} — The AI newsroom and website for independent publishers`
-  const description = 'Write, review and publish from one place: AI drafts checked against your sources, editor approval, one account for several titles, newsletters and a fast news site. From $79 a month.'
+  const description = 'Write, review and publish from one place: AI drafts checked against your sources, editor approval, one account for several titles, newsletters and a fast news site. From $99 a month.'
   return {
     title,
     description,
@@ -53,7 +53,7 @@ const faq = (beta: boolean) => [
   { q: 'Can I use my own domain?', a: 'Yes. You keep ownership of your domain. We tell you exactly which DNS records to add and confirm it is working.' },
   { q: 'Can you move my existing articles?', a: 'Yes, on request. We move articles and photos and set up redirects from old URLs where feasible, so your search rankings are not lost. Scope depends on your current system and is agreed up front.' },
   { q: 'How does AI drafting work, and is my data used for training?', a: 'We send your source text and instructions to Anthropic and Google under paid terms where they do not train models on your data. AI output is a starting point for a reporter to check; you decide what to publish.' },
-  { q: 'What does it cost?', a: `Plans start at ${usd(79)} a month. There is a one-time setup fee of ${usd(SETUP_FEE_USD)} that covers launch, customization, domain connection and migration support. Pay annually and get one month free. Prices are final prices. Any sales, VAT or similar tax your country requires is your responsibility.` },
+  { q: 'What does it cost?', a: `Plans start at ${usd(PLANS_EN[0].monthly ?? 99)} a month. There is a one-time setup fee of ${usd(SETUP_FEE_USD)} that covers launch, customization, domain connection and migration support. Pay annually and get one month free. Prices are final prices. Any sales, VAT or similar tax your country requires is your responsibility.` },
   { q: 'Is there a launch offer?', a: beta ? `Yes. Apply by ${BETA_END_LABEL_EN} and get 50% off the plan fee for your first ${BETA_MONTHS} months, with the setup fee waived. The waiver assumes you stay at least ${SETUP_WAIVER_MONTHS} months after launch; if you cancel earlier, we charge the waived setup fee.` : 'Ask us about current offers.' },
   { q: 'Can I cancel?', a: 'Any time. Monthly plans run to the end of the month you cancel. Annual plans are refunded for unused months. We give you your articles and photos as downloadable files and keep your data for 30 days after you leave.' },
   { q: 'How do I pay?', a: 'We invoice in US dollars. After you confirm the contract we send an invoice you can pay by card. We never store card numbers.' },
@@ -62,7 +62,7 @@ const faq = (beta: boolean) => [
 const jsonLd = (beta: boolean) => JSON.stringify({
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'SoftwareApplication', name: PRODUCT.name, applicationCategory: 'BusinessApplication', operatingSystem: 'Web, Android', url: `${PRODUCT.url}/en`, inLanguage: 'en', offers: { '@type': 'Offer', price: '79', priceCurrency: 'USD' } },
+    { '@type': 'SoftwareApplication', name: PRODUCT.name, applicationCategory: 'BusinessApplication', operatingSystem: 'Web, Android', url: `${PRODUCT.url}/en`, inLanguage: 'en', offers: { '@type': 'Offer', price: String(PLANS_EN[0].monthly ?? 99), priceCurrency: 'USD' } },
     { '@type': 'FAQPage', mainEntity: faq(beta).map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
   ],
 }).replace(/</g, '\\u003c')
@@ -107,7 +107,7 @@ export default function ProductHomeEn() {
                 The newsroom, the website and the AI assistant. <span className="text-[#1D3461]">One service.</span>
               </h1>
               <p className="mt-6 max-w-[34em] text-[18px] leading-[1.7] text-[#5B616B]">
-                Write, review and publish from one place. AI drafts checked against your sources, editor approval, several titles on one account, newsletters and a fast news site, from <b className="font-semibold text-[#0F1115]">$79 a month</b>.
+                Write, review and publish from one place. AI drafts checked against your sources, editor approval, several titles on one account, newsletters and a fast news site, from <b className="font-semibold text-[#0F1115]">$99 a month</b>.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Pill href="#apply">Apply now</Pill>
