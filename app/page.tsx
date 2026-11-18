@@ -328,7 +328,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             </FitRows>
           </section>
 
-          <aside data-fit-side className="space-y-9">
+          <aside data-fit-side className="space-y-9 lg:sticky lg:top-6 lg:self-start">
             <div id="realtime" className="scroll-mt-28 lg:hidden">
               <SectionHeading title={t.realtime} as="h3" lang={L} />
               <RealtimeList items={realtime.slice(0, 5)} lang={L} />
