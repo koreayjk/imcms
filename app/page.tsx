@@ -345,7 +345,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             <AdArea site={site} slot="sidebar" className="mx-auto max-w-[300px]" />
             {/* 광고 아래가 왼쪽보다 짧아 비면 기사를 이어서 채운다 (큰 화면) */}
             <AsideFill title={L === 'en' ? 'More stories' : '기사 더 보기'}>
-              {pool.filter((a) => !gapUsed.has(a.id)).slice(0, 30).map((a) => <ArticleRow key={a.id} article={a} showCategory tz={site.timeZone} lang={L} />)}
+              {pool.filter((a) => !gapUsed.has(a.id)).slice(0, 30).map((a) => (
+                <li key={a.id} className="py-2.5">
+                  <Link href={`/news/${a.id}`} className="headline-link group block">
+                    <span className="headline-text line-clamp-2 text-[14.5px] leading-[1.45] text-body">{a.title}</span>
+                  </Link>
+                </li>
+              ))}
             </AsideFill>
           </aside>
         </div>
