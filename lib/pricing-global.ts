@@ -5,9 +5,9 @@ import { BETA_END, BETA_MONTHS, BETA_RATE, ANNUAL_MONTHS, SETUP_WAIVER_MONTHS, a
 
 export { BETA_END, BETA_MONTHS, ANNUAL_MONTHS, SETUP_WAIVER_MONTHS, isBeta }
 export const BETA_END_LABEL_EN = 'October 31, 2026'
-export const SETUP_FEE_USD = 110
-export const EXTRA_OUTLET_USD = 65
-export const EXTRA_AI_USD = 8 // per 100 uses (AI drafts + AI risk reviews combined)
+export const SETUP_FEE_USD = 150
+export const EXTRA_OUTLET_USD = 79
+export const EXTRA_AI_USD = 10 // per 100 uses (AI drafts + AI risk reviews combined)
 
 export type PlanIdEn = 'basic' | 'standard' | 'premium' | 'enterprise'
 export type BillingEn = 'monthly' | 'annual'
