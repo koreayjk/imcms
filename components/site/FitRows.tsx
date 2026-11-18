@@ -23,7 +23,7 @@ export default function FitRows({ children, min, as: Tag = 'div', className = ''
       if (!side || !wide.matches) return
       // 오른쪽 칸은 스크롤을 따라다니므로(sticky) 현재 위치가 아니라 격자 맨 위 + 그 칸의 높이로 잰다
       const grid = box.closest('[data-fit-grid]') as HTMLElement | null
-      const limit = grid ? grid.getBoundingClientRect().top + parseFloat(getComputedStyle(grid).paddingTop || '0') + side.offsetHeight : side.getBoundingClientRect().bottom
+      const limit = grid ? grid.getBoundingClientRect().top + parseFloat(getComputedStyle(grid).paddingTop || '0') + side.offsetHeight - (side.querySelector<HTMLElement>('[data-fit-filler]')?.offsetHeight ?? 0) : side.getBoundingClientRect().bottom
       // 오른쪽 칸 끝까지 왼쪽이 닿을 때까지 줄을 더 연다 (마지막 줄이 조금 넘쳐도 된다 — 오른쪽 칸은 스크롤을 따라다녀 빈 곳이 보이지 않는다)
       let last = kids[Math.min(min, kids.length) - 1]
       for (let i = min; i < kids.length; i++) {
