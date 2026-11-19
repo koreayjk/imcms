@@ -34,17 +34,21 @@ export function annualItemized(o: AnnualOpts): { items: InvoiceItem[]; memo: str
   const items: InvoiceItem[] = []
   const list = M * 12
   items.push({ name: `IM 뉴스룸 ${o.planLabel} 1년 정가 (월 ${M.toLocaleString('ko-KR')}원 × 12개월, ${label(y0, m0)}~${label(end.y, end.m)})`, qty: 1, unit_price: list })
-  if (d0 > 1) items.push({ name: `개통일 일할 조정 (${m0}월 1일~${d0 - 1}일 제외, ${used}일/${dim}일 이용)`, qty: 1, unit_price: -round10(M * (1 - f0)) })
-  if (o.freeMonth) items.push({ name: '1년 결제 혜택 · 1개월 무료 (월 이용료 1개월분)', qty: 1, unit_price: -M })
   const n = Math.max(0, o.betaMonths) + Math.max(0, o.extraHalfMonths)
+  // 첫 달이 반값(할인) 기간이면, 개통 전 미이용분도 반값 기준으로 뺀다: 정가 한 달 − 그 달 반값 − 미이용분(반값 적용) = 이용한 날짜분의 반값
+  const firstDiscounted = n > 0
+  if (d0 > 1) {
+    const unused = round10(M * (1 - f0) * (firstDiscounted ? 1 - o.rate : 1))
+    const basis = firstDiscounted ? ` × ${100 - pct}%` : ''
+    items.push({ name: `개통 전 미이용분 조정 (${m0}월 1일~${d0 - 1}일, ${d0 - 1}일/${dim}일분${basis})`, qty: 1, unit_price: -unused })
+  }
+  if (o.freeMonth) items.push({ name: '1년 결제 혜택 · 1개월 무료 (월 이용료 1개월분)', qty: 1, unit_price: -M })
   for (let j = 0; j < n; j++) {
     const { y, m } = ym(y0, m0 - 1 + j)
-    const f = j === 0 ? f0 : 1
-    const amount = round10(M * f * o.rate)
+    const amount = round10(M * o.rate)
     if (amount <= 0) continue
     const kind = j < o.betaMonths ? `베타 ${half} 할인` : `추가 ${half} 할인 (특별 조건)`
-    const part = j === 0 && d0 > 1 ? ` (${m}월 ${d0}일~${dim}일, ${used}일분)` : ''
-    items.push({ name: `${kind} · ${label(y, m)}${part}`, qty: 1, unit_price: -amount })
+    items.push({ name: `${kind} · ${label(y, m)}`, qty: 1, unit_price: -amount })
   }
   const total = items.reduce((s, i) => s + i.qty * i.unit_price, 0)
   const discount = list - total
