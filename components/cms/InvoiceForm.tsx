@@ -145,7 +145,8 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
     setAnnMsg('')
     setItems([...r.items, ...draftItems.filter((i) => !isPlanOrBetaLine(i.name))])
     setEdited(false)
-    setUserMemo((m) => (!m || m === lastMemo.current ? r.memo : m))
+    const prevGen = lastMemo.current   // 이전에 자동으로 넣은 안내 문구 (직접 고치지 않았을 때만 새 문구로 바꾼다)
+    setUserMemo((m) => (!m || m === prevGen ? r.memo : m))
     lastMemo.current = r.memo
     if (annualStart.slice(0, 7) !== month) setMonth(annualStart.slice(0, 7))
     // eslint-disable-next-line react-hooks/exhaustive-deps

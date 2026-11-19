@@ -54,7 +54,7 @@ export function annualItemized(o: AnnualOpts): { items: InvoiceItem[]; memo: str
   const discount = list - total
   const startLabel = `${y0}.${String(m0).padStart(2, '0')}.${String(d0).padStart(2, '0')}`
   const endLabel = `${end.y}.${String(end.m).padStart(2, '0')}.${String(endDay).padStart(2, '0')}`
-  const memo = `이용 기간은 ${startLabel}부터 ${endLabel}까지입니다. 정가 ${list.toLocaleString('ko-KR')}원에서 아래 할인 ${discount.toLocaleString('ko-KR')}원을 빼고 ${total.toLocaleString('ko-KR')}원을 청구합니다. 할인은 항목마다 따로 적었습니다.`
+  const memo = `이용 기간은 ${startLabel}부터 ${endLabel}까지입니다. 1년 이용료는 정가 ${list.toLocaleString('ko-KR')}원에서 아래 할인 ${discount.toLocaleString('ko-KR')}원을 빼고 ${total.toLocaleString('ko-KR')}원입니다. 할인은 항목마다 따로 적었습니다.`
   return { items, memo, list, total, discount }
 }
 
