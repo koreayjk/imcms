@@ -346,10 +346,10 @@ export async function sendInvoicePreview(form: FormData): Promise<{ ok?: boolean
 
 // 청구서 발행 화면: 요금표와 그 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·AI 추가 사용·세팅비)으로 항목을 채운다
 //   자동 청구를 켠 매체는 자동 청구와 똑같이, 아니면 요금제·청구 설정만으로 계산한다 (AI 추가 사용은 빠진다)
-export async function invoiceDraft(outletId: string, month: string, over?: { beta: boolean; start: string; cycle?: 'monthly' | 'annual' }): Promise<{ items: InvoiceItem[]; note: string; beta: boolean; start: string | null; auto: boolean; cycle: 'monthly' | 'annual' }> {
+export async function invoiceDraft(outletId: string, month: string, over?: { beta: boolean; start: string; cycle?: 'monthly' | 'annual' }): Promise<{ items: InvoiceItem[]; note: string; beta: boolean; start: string | null; auto: boolean; cycle: 'monthly' | 'annual'; monthly: number | null; planLabel: string }> {
   const { supabase } = await superContext()
   const { t } = await getT()
-  if (!/^[0-9a-f-]{36}$/.test(outletId) || !/^\d{4}-\d{2}$/.test(month)) return { items: [], note: '', beta: false, start: null, auto: false, cycle: 'monthly' }
+  if (!/^[0-9a-f-]{36}$/.test(outletId) || !/^\d{4}-\d{2}$/.test(month)) return { items: [], note: '', beta: false, start: null, auto: false, cycle: 'monthly', monthly: null, planLabel: '' }
   let target: BillingTarget | null = null
   if (process.env.PAYMENT_DB_SECRET) {
     try {
@@ -364,7 +364,7 @@ export async function invoiceDraft(outletId: string, month: string, over?: { bet
       supabase.from('outlet_plans').select('*').eq('outlet_id', outletId).maybeSingle(),
       supabase.from('outlet_plans').select('outlet_id, outlet:outlets!outlet_plans_outlet_id_fkey(name, plan)').eq('bill_to', outletId),
     ])
-    if (!o) return { items: [], note: t('매체를 찾지 못했습니다.', 'Publication not found.'), beta: false, start: null, auto: false, cycle: 'monthly' }
+    if (!o) return { items: [], note: t('매체를 찾지 못했습니다.', 'Publication not found.'), beta: false, start: null, auto: false, cycle: 'monthly', monthly: null, planLabel: '' }
     // 부가 서비스(보도자료 메일 자동 수신) 켜짐: press-email-addon.sql 실행 전에는 열이 없어 읽지 못하므로 따로 읽는다
     const kidIds = ((kids ?? []) as unknown as { outlet_id: string }[]).map((k) => k.outlet_id)
     const { data: addons } = await supabase.from('outlets').select('*').in('id', [o.id, ...kidIds])
@@ -373,7 +373,7 @@ export async function invoiceDraft(outletId: string, month: string, over?: { bet
     const sinceOf = (id: string) => addonRow(id)?.press_mail_addon_since ?? null
     autoOn = !!(p as { auto?: boolean } | null)?.auto
     const plan = p as { cycle?: string; beta?: boolean; start_month?: string | null; setup_fee_pending?: boolean; custom_monthly?: number | null; bill_to?: string | null } | null
-    if (plan?.bill_to) return { items: [], note: t('추가 매체는 청구 받는 매체의 청구서에 함께 들어갑니다. 그 매체를 골라 주세요.', 'Additional publications are included in the invoice of the publication that is billed. Please choose that publication.'), beta: false, start: null, auto: false, cycle: 'monthly' }
+    if (plan?.bill_to) return { items: [], note: t('추가 매체는 청구 받는 매체의 청구서에 함께 들어갑니다. 그 매체를 골라 주세요.', 'Additional publications are included in the invoice of the publication that is billed. Please choose that publication.'), beta: false, start: null, auto: false, cycle: 'monthly', monthly: null, planLabel: '' }
     target = {
       outlet_id: o.id, name: o.name, plan: o.plan ?? null, press_addon: addonOf(o.id), press_addon_since: sinceOf(o.id),
       cycle: plan?.cycle === 'annual' ? 'annual' : 'monthly', beta: !!plan?.beta, start_month: plan?.start_month ?? null,
@@ -394,7 +394,7 @@ export async function invoiceDraft(outletId: string, month: string, over?: { bet
   if (!planById(target.plan) && target.custom_monthly == null) notes.push(t('이 매체는 요금제가 정해지지 않았습니다 (AI 사용량 화면에서 정합니다).', 'This publication has no plan yet (set it on the AI usage screen).'))
   if (target.cycle === 'annual' && !items.some((i) => i.name.includes('1년'))) notes.push(t('1년 결제 매체라 이번 달은 이용료 청구 월이 아닙니다.', 'This publication pays annually, and this month is not a plan-fee billing month.'))
   if (partial) notes.push(t('자동 청구가 꺼진 매체라 지난달 AI 추가 사용은 넣지 않았습니다.', 'Automatic billing is off for this publication, so last month\'s extra AI usage is not included.'))
-  return { items, note: notes.join(' '), beta: over ? over.beta : settings.beta, start: over ? over.start : settings.start, auto: settings.auto, cycle: target.cycle === 'annual' ? 'annual' : 'monthly' }
+  return { items, note: notes.join(' '), beta: over ? over.beta : settings.beta, start: over ? over.start : settings.start, auto: settings.auto, cycle: target.cycle === 'annual' ? 'annual' : 'monthly', monthly: target.custom_monthly ?? planById(target.plan)?.monthly ?? null, planLabel: target.custom_monthly != null ? '이용료' : planById(target.plan) ? `${planById(target.plan)!.name} 요금제` : '' }
 }
 
 export async function setInvoicePaid(id: string, paid: boolean) {
