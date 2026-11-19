@@ -36,10 +36,14 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   // 세팅비 면제(베타): 정가 줄과 면제 줄(마이너스)을 함께 넣는다. 베타 반값을 고르면 기본으로 켜진다
   const [waivePick, setWaivePick] = useState<boolean | null>(null)
   const [enableAuto, setEnableAuto] = useState(true)
-  const fill = (over?: { beta: boolean; start: string }, fresh = false) => {
+  // 청구 방식: 처음엔 그 매체의 자동 청구 설정(월/1년)을 따르고, 여기서 고르면 이번 청구서 계산에 쓴다
+  const [cycle, setCycle] = useState<'monthly' | 'annual'>('monthly')
+  const fill = (over?: { beta: boolean; start: string }, fresh = false, cyc?: 'monthly' | 'annual') => {
     if (!outletId || !/^\d{4}-\d{2}$/.test(month)) return
     startFill(async () => {
-      const r = await invoiceDraft(outletId, month, over ?? (picked && !fresh ? { beta, start: start || month } : undefined))
+      const base = over ?? (picked && !fresh ? { beta, start: start || month } : undefined)
+      const r = await invoiceDraft(outletId, month, cyc ? { ...(base ?? { beta, start: start || month }), cycle: cyc } : base)
+      setCycle(r.cycle)
       setNote(r.note)
       if (!over && (!picked || fresh)) { setBeta(r.beta); setStart(r.start ?? '') }
       setAuto(r.auto)
@@ -159,6 +163,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
           )}
         </p>
       )}
+      <input type="hidden" name="cycle" value={cycle} />
       <input type="hidden" name="beta_on" value={beta ? 'on' : ''} />
       <input type="hidden" name="beta_start" value={start} />
       {outletId && !auto && (
@@ -169,6 +174,25 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
             : <span><strong>이 매체를 매달 자동 청구로 설정</strong> — 발행하면 다음 달부터 매월 1일에 이용료 청구서가 자동으로 발행되고(지난달 AI 추가 사용분 포함), 카드를 등록해 두면 자동으로 결제됩니다. 위의 베타 반값·첫 청구 월이 그대로 저장됩니다.</span>}
         </label>
       )}
+
+      <div className="rounded-lg border border-line px-4 py-3 text-[13.5px]">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <span className="font-semibold">{t('청구 방식', 'Billing cycle')}</span>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="cycle_pick" checked={cycle === 'monthly'} disabled={!outletId} onChange={() => { setCycle('monthly'); fill(undefined, false, 'monthly') }} />
+            {t('매월 청구', 'Monthly')}
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="cycle_pick" checked={cycle === 'annual'} disabled={!outletId} onChange={() => { setCycle('annual'); fill(undefined, false, 'annual') }} />
+            {t('1년 결제 (12개월 이용을 11개월 값으로 한 번에)', 'Annual (12 months for the price of 11, in one invoice)')}
+          </label>
+        </div>
+        {cycle === 'annual' && (
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
+            {t('이 청구 월부터 12개월 이용분을 한 번에 청구합니다. 발행하면 이 매체는 1년 결제로 기록되어, 다음 달부터 매달 이용료가 또 청구되지 않고 12개월 뒤 같은 달에 1년 청구서가 나옵니다. 추가 매체는 1년치로 이 청구서에 함께 들어가고, 부가 서비스와 AI 추가 사용은 해당하는 달마다 따로 청구됩니다.', 'This invoice bills 12 months of use at once. After issuing, this publication is recorded as annual: no monthly plan invoice follows, and the next annual invoice comes in the same month a year later. Extra publications are included in this invoice for the full year; add-on services and extra AI use are billed separately in the months they apply.')}
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#F4F6FA] px-4 py-2.5 text-[12.5px] text-muted">
         <span>{filling ? t('요금표로 계산하는 중…', 'Calculating from the price list…') : note || (outletId ? t('요금표와 이 매체의 자동 청구 설정(요금제·베타 반값·추가 매체·세팅비)으로 채웠습니다. 고쳐서 발행해도 됩니다.', 'Filled in from the price list and this publication\'s auto-billing settings (plan, beta half price, additional publications, setup fee). You can edit before issuing.') : t('매체를 고르면 요금표대로 항목이 채워집니다.', 'Choose a publication to fill in the line items from the price list.'))}</span>
