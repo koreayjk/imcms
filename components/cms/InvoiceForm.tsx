@@ -58,7 +58,13 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
       setNote(r.note)
       if (!over && (!picked || fresh)) { setBeta(r.beta); setStart(r.start ?? '') }
       setAuto(r.auto)
-      if (r.items.length) { setItems(r.items); setEdited(false) }
+      // 1년 결제는 처음부터 정가 12개월 한 줄 + 할인 줄로 보여 준다 (11개월 값 한 줄만 나오면 헷갈린다). 개통일·추가 반값은 아래 패널에서 정하고 다시 만든다
+      let list = r.items
+      if (r.cycle === 'annual' && r.monthly && (cyc === 'annual' || r.items.some((i) => i.name.includes('요금제 1년')))) {
+        const a = annualItemized({ monthly: r.monthly, planLabel: r.planLabel || '요금제', start: annStart || `${month}-01`, freeMonth: annFree, betaMonths: r.beta ? BETA_MONTHS : 0, extraHalfMonths: annExtra, rate: Math.min(100, Math.max(1, annRate)) / 100 })
+        if (a) { list = [...a.items, ...r.items.filter((i) => !isPlanOrBetaLine(i.name))]; setUserMemo((m) => m || a.memo) }
+      }
+      if (list.length) { setItems(list); setEdited(false) }
     })
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
