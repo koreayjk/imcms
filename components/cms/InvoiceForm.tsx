@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition, useActionState } from 'react'
+import { useEffect, useRef, useState, useTransition, useActionState } from 'react'
 import { invoiceDraft, outletBillingStatus, saveInvoice, sendInvoicePreview, type FormState } from '@/app/(main)/support/actions'
 import { invoiceTotals, type InvoiceItem } from '@/lib/support'
 import { taxNote, wonL } from '@/lib/support-i18n'
@@ -43,7 +43,9 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   const [monthly, setMonthly] = useState<number | null>(null)
   const [planLabel, setPlanLabel] = useState('')
   const [draftItems, setDraftItems] = useState<InvoiceItem[]>([])
-  const [annStart, setAnnStart] = useState('')
+  const [chosen, setChosen] = useState('')   // 청구 방식을 직접 고른 매체 (청구 월을 바꿔도 그 선택을 유지한다)
+  const [annTick, setAnnTick] = useState(0)
+  const lastMemo = useRef('')
   const [annFree, setAnnFree] = useState(true)
   const [annExtra, setAnnExtra] = useState(0)
   const [annRate, setAnnRate] = useState(50)
@@ -52,18 +54,14 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
     if (!outletId || !/^\d{4}-\d{2}$/.test(month)) return
     startFill(async () => {
       const base = over ?? (picked && !fresh ? { beta, start: start || month } : undefined)
-      const r = await invoiceDraft(outletId, month, cyc ? { ...(base ?? { beta, start: start || month }), cycle: cyc } : base)
+      const eff = cyc ?? (chosen === outletId ? cycle : undefined)
+      const r = await invoiceDraft(outletId, month, eff ? { ...(base ?? { beta, start: start || month }), cycle: eff } : base)
       setCycle(r.cycle)
       setMonthly(r.monthly); setPlanLabel(r.planLabel); setDraftItems(r.items)
       setNote(r.note)
       if (!over && (!picked || fresh)) { setBeta(r.beta); setStart(r.start ?? '') }
       setAuto(r.auto)
-      // 1년 결제는 처음부터 정가 12개월 한 줄 + 할인 줄로 보여 준다 (11개월 값 한 줄만 나오면 헷갈린다). 개통일·추가 반값은 아래 패널에서 정하고 다시 만든다
-      let list = r.items
-      if (r.cycle === 'annual' && r.monthly && (cyc === 'annual' || r.items.some((i) => i.name.includes('요금제 1년')))) {
-        const a = annualItemized({ monthly: r.monthly, planLabel: r.planLabel || '요금제', start: annStart || `${month}-01`, freeMonth: annFree, betaMonths: r.beta ? BETA_MONTHS : 0, extraHalfMonths: annExtra, rate: Math.min(100, Math.max(1, annRate)) / 100 })
-        if (a) { list = [...a.items, ...r.items.filter((i) => !isPlanOrBetaLine(i.name))]; setUserMemo((m) => m || a.memo) }
-      }
+      const list = r.items
       if (list.length) { setItems(list); setEdited(false) }
     })
   }
@@ -136,17 +134,22 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
   ]
   const tot = invoiceTotals([...(waive ? items.filter((i) => !isSetup(i)) : items), ...autoLines])
   const memoAll = [free?.notice, pro?.notice, waive ? SETUP_WAIVER_NOTE : '', userMemo.trim()].filter(Boolean).join('\n')
-  // 1년 결제 할인 내역 만들기: 정가 12개월 한 줄 + 개통일 일할·1개월 무료·반값 기간을 한 줄씩 (서버가 채운 다른 줄은 그대로 둔다)
-  const applyAnnual = () => {
-    const start = annStart || `${month}-01`
-    const r = annualItemized({ monthly: monthly ?? 0, planLabel: planLabel || '요금제', start, freeMonth: annFree, betaMonths: beta ? BETA_MONTHS : 0, extraHalfMonths: annExtra, rate: Math.min(100, Math.max(1, annRate)) / 100 })
-    if (!r) { setAnnMsg(t('월 이용료를 알 수 없습니다. 매체의 요금제(또는 맞춤 금액)를 먼저 정해 주세요.', 'The monthly fee is unknown. Set the publication\'s plan (or a custom amount) first.')); return }
+  // 1년 결제 할인 내역: 정가 12개월 한 줄 + 개통일 일할·1개월 무료·반값 기간을 한 줄씩. 조건(개통일·무료·반값·추가 개월·할인율)을 바꾸면 바로 다시 만든다 (서버가 채운 다른 줄은 그대로 둔다)
+  //   이용 시작일은 위 "개통일(오픈일)"을 따른다 (비어 있으면 청구 월 1일)
+  const annualStart = /^\d{4}-\d{2}-\d{2}$/.test(openDate) ? openDate : `${month}-01`
+  useEffect(() => {
+    if (cycle !== 'annual' || !outletId) return
+    if (!monthly) { setAnnMsg(t('월 이용료를 알 수 없습니다. 매체의 요금제(또는 맞춤 금액)를 먼저 정해 주세요.', 'The monthly fee is unknown. Set the publication\'s plan (or a custom amount) first.')); return }
+    const r = annualItemized({ monthly, planLabel: planLabel || '요금제', start: annualStart, freeMonth: annFree, betaMonths: beta ? BETA_MONTHS : 0, extraHalfMonths: annExtra, rate: Math.min(100, Math.max(1, annRate)) / 100 })
+    if (!r) return
     setAnnMsg('')
-    setEdited(true)
     setItems([...r.items, ...draftItems.filter((i) => !isPlanOrBetaLine(i.name))])
-    setUserMemo(r.memo)
-    if (start.slice(0, 7) !== month) setMonth(start.slice(0, 7))
-  }
+    setEdited(false)
+    setUserMemo((m) => (!m || m === lastMemo.current ? r.memo : m))
+    lastMemo.current = r.memo
+    if (annualStart.slice(0, 7) !== month) setMonth(annualStart.slice(0, 7))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cycle, monthly, planLabel, draftItems, annualStart, annFree, beta, annExtra, annRate, annTick])
   const set = (i: number, patch: Partial<InvoiceItem>) => { setEdited(true); setItems(items.map((x, j) => (j === i ? { ...x, ...patch } : x))) }
 
   return (
@@ -207,11 +210,11 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <span className="font-semibold">{t('청구 방식', 'Billing cycle')}</span>
           <label className="flex items-center gap-2">
-            <input type="radio" name="cycle_pick" checked={cycle === 'monthly'} disabled={!outletId} onChange={() => { setCycle('monthly'); fill(undefined, false, 'monthly') }} />
+            <input type="radio" name="cycle_pick" checked={cycle === 'monthly'} disabled={!outletId} onChange={() => { setChosen(outletId); setCycle('monthly'); fill(undefined, false, 'monthly') }} />
             {t('매월 청구', 'Monthly')}
           </label>
           <label className="flex items-center gap-2">
-            <input type="radio" name="cycle_pick" checked={cycle === 'annual'} disabled={!outletId} onChange={() => { setCycle('annual'); fill(undefined, false, 'annual') }} />
+            <input type="radio" name="cycle_pick" checked={cycle === 'annual'} disabled={!outletId} onChange={() => { setChosen(outletId); setCycle('annual'); fill(undefined, false, 'annual') }} />
             {t('1년 결제 (12개월 이용을 11개월 값으로 한 번에)', 'Annual (12 months for the price of 11, in one invoice)')}
           </label>
         </div>
@@ -224,10 +227,7 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
           <div className="mt-3 space-y-3 rounded-lg bg-[#F4F6FA] px-4 py-3">
             <p className="text-[13px] font-semibold">{t('할인 내역을 항목마다 따로 넣기', 'List every discount as its own line')}</p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <label className="flex items-center gap-2">
-                <span className="text-muted">{t('이용 시작일', 'Start date')}</span>
-                <input type="date" value={annStart || `${month}-01`} onChange={(e) => setAnnStart(e.target.value)} className="field-input w-44 py-1" />
-              </label>
+              <span className="text-muted">{t('이용 시작일', 'Start date')} <strong className="text-ink">{annualStart}</strong> {t(openDate ? '(위 개통일)' : '(개통일을 넣으면 일할 계산이 들어갑니다)', openDate ? '(launch date above)' : '(enter the launch date above for proration)')}</span>
               <label className="flex items-center gap-2"><input type="checkbox" checked={annFree} onChange={(e) => setAnnFree(e.target.checked)} />{t('1년 결제 1개월 무료', '1 month free for annual billing')}</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={beta} onChange={(e) => setBeta(e.target.checked)} />{t(`베타 반값 ${BETA_MONTHS}개월`, `Beta half price, ${BETA_MONTHS} months`)}</label>
               <label className="flex items-center gap-2">
@@ -240,10 +240,10 @@ export default function InvoiceForm({ outlets }: { outlets: { id: string; name: 
               </label>
             </div>
             <p className="text-[12.5px] leading-relaxed text-muted">
-              {t('정가(월 이용료 × 12개월) 한 줄을 먼저 넣고, 개통일 일할 조정·1년 결제 1개월 무료·반값 기간(시작 월부터 이어서, 첫 달은 이용한 날짜분만)을 줄마다 빼서 보여 줍니다. 고객에게 간 청구서에도 줄 그대로 나갑니다.', 'The list price (monthly fee × 12) goes in first, then proration, the free month and each discounted month are subtracted line by line. The customer sees the same lines.')}
+              {t('정가(월 이용료 × 12개월) 한 줄을 먼저 넣고, 개통일 일할 조정·1년 결제 1개월 무료·반값 기간(시작 월부터 이어서, 첫 달은 이용한 날짜분만)을 줄마다 빼서 보여 줍니다. 고객에게 간 청구서에도 줄 그대로 나갑니다. 조건을 바꾸면 항목이 자동으로 다시 만들어지니, 줄을 직접 고치는 것은 조건을 다 정한 뒤에 하세요.', 'The list price (monthly fee × 12) goes in first, then proration, the free month and each discounted month are subtracted line by line. The customer sees the same lines. Changing a condition rebuilds the lines, so edit lines by hand last.')}
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <button type="button" onClick={applyAnnual} disabled={!outletId} className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[13.5px] font-bold text-white disabled:opacity-50">{t('이 조건으로 항목 만들기', 'Build the lines')}</button>
+              <button type="button" onClick={() => setAnnTick((n) => n + 1)} disabled={!outletId} className="rounded-full bg-[#2F6BF0] px-5 py-2 text-[13.5px] font-bold text-white disabled:opacity-50">{t('항목 다시 만들기', 'Rebuild the lines')}</button>
               {monthly != null && <span className="text-[12.5px] text-muted">{t(`월 이용료 ${monthly.toLocaleString('ko-KR')}원 (${planLabel})`, `Monthly fee KRW ${monthly.toLocaleString('en-US')} (${planLabel})`)}</span>}
               {annMsg && <span role="alert" className="text-[12.5px] text-danger">{annMsg}</span>}
             </div>
