@@ -1,4 +1,4 @@
-import { notFound, permanentRedirect } from 'next/navigation'
+import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { currentSite, getArticleData, legacyArticleId, siteBaseUrl } from '@/lib/public-data'
@@ -71,10 +71,12 @@ export default async function ArticlePage(props: Props) {
     const id = legacy ? await legacyArticleId(site, legacy) : null
     if (id) permanentRedirect(`/news/${id}`)
     if (/list/i.test(params.id)) permanentRedirect('/')
-    notFound()
+    // 옮기지 않았거나 지운 기사의 옛 주소: 오류 화면 대신 첫 화면으로 안내
+    redirect('/')
   }
   const data = await getArticleData(site, params.id)
-  if (!data) notFound()
+  // 없어졌거나 지운 기사 주소(검색엔진·포털에 남은 주소)로 들어오면 오류 화면 대신 첫 화면으로 안내
+  if (!data) redirect('/')
   const { article: a, related, relatedLinks, mostViewed, latest, more, source } = data
   const section = a.category ? findSection(site, a.category.slug) : undefined
   const base = siteBaseUrl(site, (await headers()).get('host'))
