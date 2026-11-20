@@ -27,13 +27,12 @@ export default function AsideFill({ title, children }: { title: string; children
       kids.forEach((k) => { k.style.display = 'none' })
       if (side && left && wide.matches) {
         const room = left.offsetHeight - side.offsetHeight
-        if (room > 140) {
+        if (room > 70) {
           sec.style.display = ''
-          const startH = side.offsetHeight
           let shown = 0
           for (const k of kids) {
             k.style.display = ''
-            if (side.offsetHeight > startH + room) { k.style.display = 'none'; break }
+            if (side.offsetHeight > left.offsetHeight) { k.style.display = 'none'; break }
             shown++
           }
           if (!shown) sec.style.display = 'none'

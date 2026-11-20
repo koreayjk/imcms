@@ -297,11 +297,23 @@ export async function searchArticles(site: SiteConfig, q: string) {
   const scope = await outletScope(site)
   if (!scope) return []
   const pattern = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
-  const { data } = await published(scope).ilike('title', pattern).order('published_at', { ascending: false }).limit(30)
-  let list = (data ?? []).map(toPublic)
-  // 영어판에서는 영어 제목으로도 찾는다
+  // 제목·부제·본문에서 찾는다 (제목에 있는 기사가 먼저). 검색 함수(article-search.sql)가 아직 없으면 예전처럼 제목만 찾는다
+  const { data: hits, error: hitErr } = await scope.supabase.rpc('search_article_ids', { p_outlet: scope.outletId, p_q: term, p_limit: 30 })
+  let list: PublicArticle[]
+  if (!hitErr && Array.isArray(hits)) {
+    const ids = (hits as { id: string }[]).map((h) => h.id)
+    if (ids.length) {
+      const { data } = await published(scope).in('id', ids)
+      const byId = new Map((data ?? []).map((r) => [(r as unknown as { id: string }).id, r]))
+      list = ids.map((id) => byId.get(id)).filter(Boolean).map((r) => toPublic(r as never))
+    } else list = []
+  } else {
+    const { data } = await published(scope).ilike('title', pattern).order('published_at', { ascending: false }).limit(30)
+    list = (data ?? []).map(toPublic)
+  }
+  // 번역판(영어·일본어·중국어)에서는 번역된 제목·본문으로도 찾는다
   if (site.viewLang) {
-    const { data: tr } = await scope.supabase.from('article_translations').select('article_id').eq('lang', site.viewLang).ilike('title', pattern).limit(30)
+    const { data: tr } = await scope.supabase.from('article_translations').select('article_id').eq('lang', site.viewLang).or(`title.ilike.${JSON.stringify(pattern)},excerpt.ilike.${JSON.stringify(pattern)},body.ilike.${JSON.stringify(pattern)}`).limit(30)
     const ids = (tr ?? []).map((r) => r.article_id as string).filter((id) => !list.some((a) => a.id === id))
     if (ids.length) {
       const { data: more } = await published(scope).in('id', ids).order('published_at', { ascending: false }).limit(30)
