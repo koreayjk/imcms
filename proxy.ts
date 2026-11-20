@@ -89,6 +89,11 @@ export async function proxy(request: NextRequest) {
     return res
   }
 
+  // 옛 사이트에서 검색엔진에 남은 언어별 주소(/en-us 등)는 로그인 화면이 아니라 첫 화면으로
+  {
+    const p = request.nextUrl.pathname
+    if (p === '/en-us' || p.startsWith('/en-us/')) return NextResponse.redirect(new URL('/', request.url))
+  }
   // 편집국 주소(app.imnewsroom.com)의 첫 화면은 편집국 (로그인 전이면 로그인 화면으로 넘어간다)
   const host = request.headers.get('host')
   if (isAppHost(host) && request.nextUrl.pathname === '/') {
