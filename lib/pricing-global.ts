@@ -5,9 +5,9 @@ import { BETA_END, BETA_MONTHS, BETA_RATE, ANNUAL_MONTHS, SETUP_WAIVER_MONTHS, a
 
 export { BETA_END, BETA_MONTHS, ANNUAL_MONTHS, SETUP_WAIVER_MONTHS, isBeta }
 export const BETA_END_LABEL_EN = 'October 31, 2026'
-export const SETUP_FEE_USD = 110
-export const EXTRA_OUTLET_USD = 65
-export const EXTRA_AI_USD = 8 // per 100 uses (AI drafts + AI risk reviews combined)
+export const SETUP_FEE_USD = 150
+export const EXTRA_OUTLET_USD = 79
+export const EXTRA_AI_USD = 10 // per 100 uses (AI drafts + AI risk reviews combined)
 
 export type PlanIdEn = 'basic' | 'standard' | 'premium' | 'enterprise'
 export type BillingEn = 'monthly' | 'annual'
@@ -24,17 +24,17 @@ export type PlanEn = {
 
 export const PLANS_EN: PlanEn[] = [
   {
-    id: 'basic', name: 'Basic', for: 'A small independent newsroom publishing every day', monthly: 79,
+    id: 'basic', name: 'Basic', for: 'A small independent newsroom publishing every day', monthly: 99,
     specs: [['Publications', '1'], ['AI drafts & reviews', '300 / month'], ['Storage (photos + video)', '30 GB'], ['Bandwidth', '800 GB / month'], ['Newsletter', 'Not included']],
     extras: [],
   },
   {
-    id: 'standard', name: 'Standard', for: 'A growing news site with several sections and steady output', monthly: 109, pick: true,
+    id: 'standard', name: 'Standard', for: 'A growing news site with several sections and steady output', monthly: 149, pick: true,
     specs: [['Publications', '1'], ['AI drafts & reviews', '900 / month'], ['Storage (photos + video)', '60 GB'], ['Bandwidth', '1,000 GB / month'], ['Newsletter', 'Weekly · 2,000 recipients']],
     extras: ['Homepage customization support'],
   },
   {
-    id: 'premium', name: 'Premium', for: 'High-traffic sites and publishers running more than one title', monthly: 169,
+    id: 'premium', name: 'Premium', for: 'High-traffic sites and publishers running more than one title', monthly: 199,
     specs: [['Publications', '2 (more available)'], ['AI drafts & reviews', '2,000 / month'], ['Storage (photos + video)', '100 GB'], ['Bandwidth', '1,500 GB / month'], ['Newsletter', 'Twice weekly · 5,000 recipients']],
     extras: ['Homepage customization support', 'Group dashboard and one-click publishing to several titles', `3rd title onward: $${EXTRA_OUTLET_USD} / month each (Basic specs)`, 'Priority support'],
   },
