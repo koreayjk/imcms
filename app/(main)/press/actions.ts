@@ -193,9 +193,11 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai', for
   const ours = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/`
   for (const src of srcs) {
     // 직접 등록한 보도자료 사진은 이미 우리 저장소에 있다
-    const copied = src.startsWith(ours) ? src : await copyImage(supabase, src, outletId)
+    // 본문 HTML 속 주소는 &amp; 로 적혀 있다 → 실제 주소(&)로 받아 오고 대표 사진 주소에도 실제 주소를 쓴다 (&amp; 그대로 두면 홈 썸네일이 안 뜬다)
+    const real = src.replace(/&amp;/g, '&')
+    const copied = src.startsWith(ours) ? src : await copyImage(supabase, real, outletId)
     if (copied) body = body.split(`src="${src}"`).join(`src="${copied}"`)
-    thumbnail ??= copied ?? src
+    thumbnail ??= copied ?? real
   }
 
   const { data: outlet } = outletId
@@ -288,9 +290,11 @@ export async function createAiReviewArticle(id: string, length?: number): Promis
   const srcs = Array.from(new Set(Array.from(body.matchAll(/<img[^>]+src="([^"]+)"/g), (m) => m[1]))).slice(0, 4)
   const ours = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/`
   for (const src of srcs) {
-    const copied = src.startsWith(ours) ? src : await copyImage(supabase, src, outletId)
+    // 본문 HTML 속 주소는 &amp; 로 적혀 있다 → 실제 주소(&)로 받아 오고 대표 사진 주소에도 실제 주소를 쓴다 (&amp; 그대로 두면 홈 썸네일이 안 뜬다)
+    const real = src.replace(/&amp;/g, '&')
+    const copied = src.startsWith(ours) ? src : await copyImage(supabase, real, outletId)
     if (copied) body = body.split(`src="${src}"`).join(`src="${copied}"`)
-    thumbnail ??= copied ?? src
+    thumbnail ??= copied ?? real
   }
 
   const { data: outlet } = await supabase.from('outlets').select('name, site').eq('id', outletId).single()
