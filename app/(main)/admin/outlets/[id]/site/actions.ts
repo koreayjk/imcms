@@ -20,6 +20,8 @@ export type SitePayload = {
 const HEX = /^#[0-9a-f]{6}$/i
 const LEGAL_KEYS: (keyof SiteLegal)[] = ['company', 'ceo', 'publisher', 'editor', 'youthOfficer', 'registrationNo', 'registeredAt', 'bizNo', 'postcode', 'address', 'phone', 'email']
 const cut = (v: unknown, n: number) => String(v ?? '').trim().slice(0, n)
+// 다음 웹마스터도구 인증 줄: '#DaumWebMasterTool:해시:아이디' 형식만 받는다 (앞의 #은 빼고 붙여 넣어도 된다)
+const daumCode = (v: unknown) => { const t = cut(v, 300).replace(/^#?\s*/, ''); const m = t.match(/^DaumWebMasterTool:([0-9a-f]{32,128}):([A-Za-z0-9+/=]{4,64})$/i); return m ? `#DaumWebMasterTool:${m[1]}:${m[2]}` : '' }
 const verifyCode = (v: unknown) => { const t = cut(v, 300); const m = t.match(/content=["']([^"']+)["']/); return (m ? m[1] : t).replace(/[^A-Za-z0-9_\-]/g, '').slice(0, 100) }
 
 export async function saveSiteSettings(outletId: string, p: SitePayload): Promise<{ error?: string; ok?: string }> {
@@ -52,6 +54,7 @@ export async function saveSiteSettings(outletId: string, p: SitePayload): Promis
     naverVerification: verifyCode(s.naverVerification) || undefined,
     googleVerification: verifyCode(s.googleVerification) || undefined,
     bingVerification: verifyCode(s.bingVerification) || undefined,
+    daumVerification: daumCode(s.daumVerification) || undefined,
     logoUrl: logoUrl || undefined,
     logoMode: mode,
     // 'normal'은 기본값이므로 저장하지 않는다
