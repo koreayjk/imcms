@@ -12,7 +12,16 @@ import { AiDraftError, draftFromPressRelease } from '@/lib/ai-draft'
 import { aiLimitMessage, finishAi, releaseAi, reserveAi } from '@/lib/ai-usage'
 import { duplicateNotes } from '@/lib/duplicate-check'
 import { aiNoticeText, withAiNotice } from '@/lib/ai-notice'
+import { pickRegionByline, type RegionByline } from '@/lib/region-byline'
 import { cleanPressSources, cleanPressTiers, type OutletSiteSettings } from '@/lib/sites'
+
+// 지역 담당 기자: 매체가 정해 둔 지역(보도자료 출처)이면 로그인한 기자 대신 그 지역 담당 기자 이름을 쓴다 (뉴스폭탄 등, supabase/auto-press-region-bylines.sql)
+async function regionReporter(supabase: SupabaseClient, outletId: string | null, r: { source_key: string; title: string; summary?: string | null }): Promise<string | null> {
+  if (!outletId) return null
+  const { data, error } = await supabase.rpc('outlet_region_bylines', { p_outlet: outletId })
+  if (error || !Array.isArray(data)) return null
+  return pickRegionByline(data as RegionByline[], r)
+}
 
 const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
 
@@ -193,9 +202,11 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai', for
   const ours = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/`
   for (const src of srcs) {
     // 직접 등록한 보도자료 사진은 이미 우리 저장소에 있다
-    const copied = src.startsWith(ours) ? src : await copyImage(supabase, src, outletId)
+    // 본문 HTML 속 주소는 &amp; 로 적혀 있다 → 실제 주소(&)로 받아 오고 대표 사진 주소에도 실제 주소를 쓴다 (&amp; 그대로 두면 홈 썸네일이 안 뜬다)
+    const real = src.replace(/&amp;/g, '&')
+    const copied = src.startsWith(ours) ? src : await copyImage(supabase, real, outletId)
     if (copied) body = body.split(`src="${src}"`).join(`src="${copied}"`)
-    thumbnail ??= copied ?? src
+    thumbnail ??= copied ?? real
   }
 
   const { data: outlet } = outletId
@@ -203,8 +214,10 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai', for
     : { data: null }
   // 영문 매체는 본문 첫머리 바이라인을 넣지 않는다 (기사 위 "By 이름 - 매체 - 날짜" 줄이 대신한다)
   const englishOutlet = (outlet as { site?: { lang?: string } | null } | null)?.site?.lang === 'en'
+  const region = await regionReporter(supabase, outletId, r)
+  const reporter = region ?? profile?.full_name ?? ''
   if (!englishOutlet) {
-    const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${profile?.full_name ?? ''} 기자]&nbsp;`
+    const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${reporter} 기자]&nbsp;`
     body = body.startsWith('<p>') ? body.replace(/^<p>/, `<p>${byline}`) : `<p>${byline}</p>${body}`
   }
   // AI 활용 표시 (기사 작성 가이드 · 네이버 운영평가 D항): 매체 설정이 켜져 있으면 본문 끝에 붙이고, 아니면 메모로 알린다
@@ -226,6 +239,7 @@ export async function createArticleFromPress(id: string, mode: 'raw' | 'ai', for
     author_id: user.id,
     status: 'draft',
     press_release_id: r.id,
+    ...(region ? { byline: region } : {}),
   }
   if (aiNotes) row.ai_notes = aiNotes
   // AI가 뽑은 키워드를 기사 키워드(태그)로 (기사 작성 가이드: 3개 이상)
@@ -288,15 +302,19 @@ export async function createAiReviewArticle(id: string, length?: number): Promis
   const srcs = Array.from(new Set(Array.from(body.matchAll(/<img[^>]+src="([^"]+)"/g), (m) => m[1]))).slice(0, 4)
   const ours = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/`
   for (const src of srcs) {
-    const copied = src.startsWith(ours) ? src : await copyImage(supabase, src, outletId)
+    // 본문 HTML 속 주소는 &amp; 로 적혀 있다 → 실제 주소(&)로 받아 오고 대표 사진 주소에도 실제 주소를 쓴다 (&amp; 그대로 두면 홈 썸네일이 안 뜬다)
+    const real = src.replace(/&amp;/g, '&')
+    const copied = src.startsWith(ours) ? src : await copyImage(supabase, real, outletId)
     if (copied) body = body.split(`src="${src}"`).join(`src="${copied}"`)
-    thumbnail ??= copied ?? src
+    thumbnail ??= copied ?? real
   }
 
   const { data: outlet } = await supabase.from('outlets').select('name, site').eq('id', outletId).single()
   const englishOutlet = (outlet as { site?: { lang?: string } | null } | null)?.site?.lang === 'en'
+  const region = await regionReporter(supabase, outletId, r)
+  const reporter = region ?? profile?.full_name ?? ''
   if (!englishOutlet) {
-    const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${profile?.full_name ?? ''} 기자]&nbsp;`
+    const byline = `[${outlet?.name ? `${outlet.name}=` : ''}${reporter} 기자]&nbsp;`
     body = body.startsWith('<p>') ? body.replace(/^<p>/, `<p>${byline}`) : `<p>${byline}</p>${body}`
   }
   const notice = aiNoticeText((outlet as { site?: OutletSiteSettings | null } | null)?.site)
@@ -319,6 +337,7 @@ export async function createAiReviewArticle(id: string, length?: number): Promis
     thumbnail_url: thumbnail,
     outlet_id: outletId,
     author_id: user.id,
+    ...(region ? { byline: region } : {}),
     status: 'in_review',
     press_release_id: r.id,
     ai_notes: notes.join('\n'),

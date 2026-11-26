@@ -27,8 +27,11 @@ export async function GET() {
   const base = siteBaseUrl(site, host)
   // 매체 도메인으로 들어온 경우만 허용 (imcms.vercel.app 같은 관리 주소는 같은 기사가 중복 수집되지 않게 막는다)
   const ownHost = site.domains.includes(host)
+  // 다음 웹마스터도구 인증 줄은 주석이라 수집 규칙에 영향이 없다 (매체 도메인에서만 보인다)
+  const daumLine = ownHost && site.verification?.daum ? [site.verification.daum, ''] : []
   const body = site.indexable && !site.preview && ownHost
     ? [
+        ...daumLine,
         ...aiBotRobotsLines(site.aiBots),
         'User-agent: *',
         'Allow: /',

@@ -729,6 +729,11 @@ export default function SiteSettingsForm({ outlet, sections: initialSections, de
           <Field label={t('구글 서치콘솔 확인 코드', 'Google Search Console verification code')} hint={t('“HTML 태그” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다', 'You can paste the whole meta tag from the “HTML tag” method')}>
             <input value={s.googleVerification ?? ''} onChange={(e) => set({ googleVerification: e.target.value })} maxLength={300} placeholder='<meta name="google-site-verification" content="…" />' className="field-input" />
           </Field>
+          {s.lang !== 'en' && (
+          <Field label={t('다음 웹마스터도구 인증 코드', 'Daum Webmaster Tool verification line')} hint={t('PIN 발급 뒤 나오는 “#DaumWebMasterTool:…” 한 줄을 통째로 붙여 넣으세요. robots.txt에 들어갑니다', 'Paste the whole “#DaumWebMasterTool:…” line shown after issuing a PIN. It is added to robots.txt')}>
+            <input value={s.daumVerification ?? ''} onChange={(e) => set({ daumVerification: e.target.value })} maxLength={300} placeholder='#DaumWebMasterTool:…:…' className="field-input" />
+          </Field>
+          )}
           {s.lang === 'en' && (
             <Field label={t('빙 웹마스터 도구 확인 코드', 'Bing Webmaster Tools verification code')} hint={t('“HTML Meta Tag” 방식의 메타 태그를 통째로 붙여 넣어도 됩니다. 빙은 코파일럿·덕덕고 검색에도 쓰입니다', 'You can paste the whole meta tag from the “HTML Meta Tag” method. Bing also powers Copilot and DuckDuckGo search')}>
               <input value={s.bingVerification ?? ''} onChange={(e) => set({ bingVerification: e.target.value })} maxLength={300} placeholder='<meta name="msvalidate.01" content="…" />' className="field-input" />

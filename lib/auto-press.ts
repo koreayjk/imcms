@@ -1,3 +1,4 @@
+import { pickRegionByline } from './region-byline'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isNonPhotoImage } from './press-quality'
 import { AiDraftError, activeModel, aiReady, draftWithModel, type AiDraft } from './ai-draft'
@@ -196,17 +197,9 @@ const raceTimeout = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Prom
 export type RunResult = { outlet: string; status: 'saved' | 'skipped' | 'failed'; message: string; articleId?: string | null }
 
 // opts.count === false 이면 자동 작성도 매체 AI 한도에 세지 않는다 (시험 실행용)
-// 지역 담당 기자: 보도자료 출처(예: 인천 구청)가 정해 둔 지역에 속하면 그 기자 이름으로 쓴다.
-//   메일·분야별 자료처럼 지자체 출처가 아닌 자료는 제목·요약에 지역 낱말이 있을 때만 (예: '제주')
+// 지역 담당 기자: 보도자료 출처가 정해 둔 지역에 속하면 그 기자 이름으로 쓴다 (lib/region-byline.ts). 안 맞으면 매체 기본 기자
 function bylineFor(cfg: Plan['cfg'], r: { source_key: string; title: string; summary?: string | null }): string {
-  const local = r.source_key.startsWith('lg-')
-  const text = `${r.title} ${r.summary ?? ''}`
-  for (const g of cfg.region_bylines ?? []) {
-    if (!g.byline) continue
-    if (g.sources?.includes(r.source_key)) return g.byline
-    if (!local && g.keywords?.some((k) => k && text.includes(k))) return g.byline
-  }
-  return cfg.byline
+  return pickRegionByline(cfg.region_bylines, r) ?? cfg.byline
 }
 
 export async function runAutoArticle(supabase: SupabaseClient, secret: string, outletId: string, opts: { force?: boolean; count?: boolean } = {}): Promise<RunResult> {

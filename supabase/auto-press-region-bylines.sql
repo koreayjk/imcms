@@ -63,3 +63,13 @@ update auto_press_outlets set region_bylines = $j$[
   {"byline":"이슬기","sources":["lg-chuncheon","lg-wonju","lg-hoengseong","lg-yeongwol"],"keywords":["강원"]}
 ]$j$::jsonb
 where outlet_id = (select id from outlets where name = '뉴스폭탄');
+
+-- 보도자료함에서 기사를 만들 때(수동 AI 기사)도 지역 담당 기자를 쓰도록, 편집국 사람이 그 매체의 지역 기자 목록을 읽는 함수
+--   (auto_press_outlets 는 정책이 없어 직접 읽을 수 없다). 그 매체를 볼 수 있는 사람만 읽는다
+create or replace function public.outlet_region_bylines(p_outlet uuid)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select c.region_bylines from auto_press_outlets c
+  where c.outlet_id = p_outlet and public.can_view_outlet(p_outlet)
+$$;
+revoke all on function public.outlet_region_bylines(uuid) from public;
+grant execute on function public.outlet_region_bylines(uuid) to authenticated;
